@@ -2,6 +2,17 @@
 
 Updated 19 October 2026; source notes checked 18 October. **Immediate phase: backend feasibility prototype for Bolna's role in the call flow.** Meaningful Bolna integration is mandatory by user instruction. The ordinary own-number Phone call remains the target; do not route the user's call through Bolna or have Bolna place a second call. Build the backend/process-flow proof before product app UX.
 
+
+## Parallel teammate task: validate pretrained recognition
+
+The user has requested an independent validation of AI4Bharat INCLUDE, without
+training from scratch. Follow [the validation handoff](docs/tasks/validate-include-recognizer.md).
+Start with the published large-transformer checkpoint, record real clip predictions
+and timing, and return a go/no-go recommendation. This does not pass the Bolna/device
+gate or authorize claiming continuous signing works. See the
+[reuse-options audit](<docs/research_notes/Ishara hackathon product directions/recognizer-reuse-options.md>)
+for pretrained alternatives, Jev and Laya.
+
 ## Immediate plan: Bolna call-path backend prototype
 
 **Question to answer:** can Ishara send one user-approved utterance through Bolna, receive controllable speech audio, and make that audio available to Apple's supported injection path for the user's existing Phone call?
