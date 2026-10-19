@@ -1,0 +1,46 @@
+# Shared project context (README.md, AGENTS.md, PLAN.md and docs/) is committed.
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+.secrets/
+secrets/
+credentials/
+*.pem
+*.key
+*.p12
+*.pfx
+*api-key*.txt
+*api_key*.txt
+
+# Dependencies and generated build output
+node_modules/
+vendor/
+dist/
+coverage/
+.next/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+DerivedData/
+.build/
+
+# Machine-specific editor and operating system files
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+*.xcuserstate
+xcuserdata/
+.idea/workspace.xml
+.vscode/settings.json
+
+# Logs and temporary files
+*.log
+*.tmp
