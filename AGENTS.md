@@ -2,7 +2,7 @@
 
 ## Current phase and controlling constraints
 
-- The user has authorized a backend feasibility prototype for Bolna's role in the call flow. Keep this phase to backend/process flow plus a diagnostic device harness only; defer polished app UX and sign-recognition implementation until the backend checkpoint in `PLAN.md`.
+- The user has authorized and begun the backend ML feasibility prototype: local recognition comparisons, capture/review, sentence composition and approval, alongside the separate Bolna/device diagnostics. Follow the active section in `PLAN.md`; defer polished app UX and do not imply that recognition or the call flow has passed its validation gates.
 - Do not route the user's target call through Bolna or have Bolna place a second call. The preferred target remains an ordinary own-number Phone call with speech injected into that existing call. Clearly label any app-owned-call pivot.
 - An actual cellular test must use the user's normal line, synthetic content and a consenting recipient; never initiate an unexpected Bolna-originated call.
 - Meaningful Bolna integration is **mandatory**, confirmed by the user. Ordinary own-number Phone calls remain preferred; the user now permits research into explicit product/workflow pivots when needed. Label app-owned/service-originated calling or delegation as deviations rather than claiming they preserve native calling.
@@ -12,6 +12,7 @@
 
 ## Where to look
 
+- [Teammate handoff: capability, setup, research and next steps](docs/HANDOFF.md)
 - [Research entrypoint and corrections](docs/RESEARCH.md)
 - [Current product recommendation and alternatives](<docs/reports/Ishara hackathon product directions.md>)
 - [Current product research notes](<docs/research_notes/Ishara hackathon product directions/>)
