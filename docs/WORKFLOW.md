@@ -1,90 +1,170 @@
-# Ishara working user workflow
+# Ishara: proposed recognition and call flow
 
-Research state: **18 October 2026.** This is a provisional workflow for discovery, not an approved architecture or implementation specification. Read the [research entrypoint](RESEARCH.md) and [evidence ledger](CLAIM-LEDGER.md) for qualifications.
+20 October 2026. Candidate composition, not an approved or validated architecture.
 
-## User and goal
+SignCLIP reference matching leads the fresh-data pilot; SL-GCN remains the
+comparison and the browser diagnostic's recognizer. Fixed intent templates are
+the default composer. See the [handoff](HANDOFF.md) for current capability and the
+[experiment record](experiments/recognition.md) for measured evidence.
 
-The working persona is an **adult ISL signer who has a smartphone and wants to communicate directly with a hearing person**. The user calls through ordinary Phone/Contacts, from their existing number, and Ishara mediates that same cellular call. The hearing person needs no Ishara app. Bolna-originated PSTN calls, calling Bolna before the clinic, callbacks, forwarding schemes and second-call bridges are excluded.
+[Open the earlier editable Eraser diagrams](https://app.eraser.io/workspace/zVc3HKAZJoPNLIRzV2Ud).
+The external file is an earlier snapshot; the source below reflects this cleanup.
+Eraser reports this as a team file with link sharing disabled. Its privacy-update
+tool failed, so owner-only access was not established. Eraser MCP uses OAuth in the
+local client; credentials and account metadata are not part of this repository.
 
-The demo device is an iPhone 17; installed iOS is unknown. Clinic appointment conversation remains a candidate bounded demonstration. A successful demo must show the supported exchange faithfully rather than claim unrestricted sign translation or Deaf-community validation.
+## User flow
 
-| Provisional assumption | Why it matters | What could challenge it |
-|---|---|---|
-| The user can read captions in a chosen language | System captions are the candidate return channel | Preferred written language and reading pace are unknown; spoken mother tongue does not establish written preference |
-| A propped phone is usable | Both hands, upper body and face need framing | Distance, environment, mobility, posture and caption legibility |
-| Opening Ishara after calling is acceptable | Avoids replacing Phone or claiming automatic camera takeover | App switching may interrupt capture or increase effort |
-| Bounded supported intents can cover the demonstration | Limits recognition and output risk | Unexpected receptionist questions, names, dates and alternative slots |
-| Rare deliberate repair is preferable to repeated Send actions | Preserves conversational flow | Automatic wrong speech could be less tolerable than confirmation |
+1. The user starts an ordinary call, then explicitly opens Ishara and positions
+   the camera. Phone calling remains preferred; WhatsApp is a separate diagnostic
+   path from the existing plan.
+2. The user signs a supported meaning, or deliberately types/selects an exact
+   phrase. Early recognition can use explicit clip boundaries to isolate the
+   classifier problem.
+3. The recognizer proposes a label or abstains. Fixed intent templates
+   use supported concepts and explicitly supplied purpose/details to prepare draft text.
+   A label such as `hello` cannot establish an appointment request or a date.
+4. The user sees, edits and explicitly approves the exact sentence before speech.
+   Uncertain input stays silent and offers retry, correction or explicit phrase
+   input. New analysis, reset or a failed/new draft invalidates the old approval;
+   approval is single-use. Manual and recognized concepts cannot mix in one draft.
+5. A backend adapter submits that exact text to a Bolna speech session. The intended
+   role is non-telephony speech orchestration with streaming, playback markers, and
+   cancellation. This is an OSS integration candidate requiring engineering;
+   hosted standalone speech access has not been established.
+6. Audio returns to the iPhone. Apple's AAC injection path is a device feasibility
+   gate: the recipient must hear the exact audio in the existing call while camera
+   capture and captions remain usable.
+7. The recipient replies through the same call. The user reads system Live Captions,
+   where available, and chooses the next response. Ishara has no established access
+   to the remote call audio or the system caption text.
 
-No Deaf participant, interview or usability study is available. Online accessibility and language sources can inform assumptions; held-out dataset evaluation can test recognition. Neither establishes that this interaction is natural, acceptable or linguistically correct for the persona. Record the actual demo performer and avoid presenting hearing reenactments as participant validation. See [platform/workflow evidence](<research_notes/Ishara feasibility research/ios-and-workflow.md>) and [recognition evidence](<research_notes/Ishara feasibility research/recognition-and-models.md>).
+Stop/cancel must clear pending generation and playback. A new session must not replay
+an old utterance. Audio already heard cannot be retracted. Hanging up remains under
+the user's native call controls.
 
-## Preserve the existing call and expose necessary additions
+## Recognition choice
 
-| Stage | Existing calling action | Proposed Ishara addition | Still unverified |
-|---|---|---|---|
-| One-time setup | Normal carrier service and contacts | Enable Add Audio in Calls; grant app speech-injection and camera permissions; enable supported system Live Captions; select readable language and privacy/retention preference | Exact OS, setting persistence, language options, system prompts |
-| Start | Choose contact and call in Phone/Contacts | Open/return to Ishara explicitly; place phone so signing space and captions are usable | Camera/session continuity, shortcut feasibility; no automatic launch promised |
-| Converse | Hear/read the other person and respond | User reads system caption overlay, signs; supported completed intent becomes approved speech through AAC | Full simultaneous media behavior, boundaries and remote audibility |
-| Repair | Repeat, clarify or correct | Re-sign or select a candidate only when needed; cancel pending speech; deliberately correct speech already heard | Gesture intent, correction burden, duplicate suppression |
-| Finish | Hang up using native Phone/system controls | Ishara stops capture/output and clears pending work when call ends or user stops it | Call-state observation and cleanup behavior |
+The leading experiment uses frozen SignCLIP features and verified ISL references.
+SL-GCN features provide a comparison on the same clips. Each requires its own
+training-matched landmark layout, sampling, missing-data handling and normalization;
+neither can reuse the original INCLUDE transformer's 134-value input.
 
-An Ishara **Stop capture** control is separate from **Hang up**. No supported authority for Ishara to end the unrelated existing cellular Phone call was established. Native mute also mutes injected speech. The consulted AAC docs do not promise room-microphone suppression, so pressing ordinary Phone mute cannot be the noise-management solution.
+Fresh, session-separated development data must support encoder choice and rejection
+thresholds before a final test. Reference matching currently always abstains:
+a high cosine similarity is not calibrated confidence. Limited adaptation or an
+RGB temporal model remains a later possibility if fresh-data evidence warrants it.
+These are alternatives, not an assumed ensemble.
 
-## Bounded conversation and repair
+For the prototype, recognition can remain on the Mac. If camera input later comes
+from the phone, clip/landmark transport is a separate integration step. On-device
+recognition and the final component placement are undecided.
 
-The candidate dialogue starts with a supported introduction and appointment inquiry, lets the receptionist respond, supports a deliberately expressed answer, and ends with the user checking the final details. This is a coverage target to audit, not an already supported script. The app must not mark a booking confirmed merely because its outgoing text sounds conclusive.
+## What has and has not been established
 
-| Situation | User-owned action | What Ishara can responsibly do | Missing coverage to resolve |
-|---|---|---|---|
-| Ask about an appointment | Sign a supported intent; optionally approve call purpose/details before calling | Emit an approved sentence whose meaning is grounded in observed input | Suitable natural ISL phrase examples and variants |
-| Receptionist proposes another time | Read system captions and deliberately accept/reject or express a time | Speak only the supported observed response; use preapproved details only where they remain valid | No incoming transcript tells the model the newly offered slot |
-| Receptionist asks for a name or unexpected information | Supply a supported response or signal inability/repair | Abstain instead of guessing personal details | Name/number input, fingerspelling coverage and deliberate fallback |
-| Recognition is uncertain | Re-sign or select a candidate | Remain silent until adequate evidence or explicit selection | Threshold calibration and candidate recall |
-| User signs an unknown phrase, adjusts the camera or rests | No communication is necessarily intended | Keep unknown/no-sign separate from supported utterances | Rejection and continuous-boundary evaluation |
-| An incorrect phrase is pending | Cancel/correct before playback | Remove pending audio/text | Commitment-window timing |
-| An incorrect phrase has already played | Deliberately correct it | Stop remaining queued output and speak an approved correction | The already-heard phrase cannot be retracted |
-| Capture/app/network is interrupted | Notice the interruption and resume deliberately | Clearly expose paused capture; prevent stale or duplicate output | Actual interruption recovery |
-| Call ends | Use native hangup | Stop pending output and capture appropriately | No cross-session leakage |
+- INCLUDE, SL-GCN and SignCLIP run locally. Reused public and intended-hello webcam
+  clips remain development evidence; a fresh verified five-concept pilot is missing.
+- The browser miniature stops at exact local approval. SignCLIP matching and
+  calibration are separate tools; their ranks do not enter the sentence flow.
+- Bolna account access is not evidence of controllable speech output.
+- A local Apple-voice control can isolate the device-audio question. It does not
+  satisfy the mandatory Bolna integration.
+- No end-to-end proof of camera, genuine Bolna speech, injected audio, and captions
+  operating together exists.
+- Failure of the preferred path prompts an explicit product decision. An app-owned
+  or service-originated call would be a disclosed pivot, not automatic fallback.
+- No natural-conversation or Deaf-user validation has occurred.
 
-A casual nod or shake must not automatically become consent. Head movement can be linguistic or incidental. The app also cannot infer that “a yes/no question just arrived” from a system overlay it cannot read. State gating must rely on actual app-known evidence or explicit user input.
+## Eraser source: conversation flow
 
-## Conceptual data flow, not frozen architecture
+Current proposed flow. [The earlier Mermaid workflow](archive/2026-10-18-workflow.md)
+is retained as history. Speech and call arrows below are unvalidated integration steps.
 
-```mermaid
-flowchart LR
-    S[Signer] --> C[Foreground Ishara camera]
-    C --> R[Quality checks and temporal recognition]
-    R --> U{Supported intent and deliberate commitment?}
-    U -->|No| Q[Re-sign or explicit correction]
-    Q --> R
-    U -->|Yes| P[Approved content or template]
-    P --> T[Local synthesized speech]
-    T --> A[Apple AAC injection]
-    A --> N[Existing native Phone call]
-    N --> H[Hearing recipient]
-    H --> N
-    N --> L[System Live Captions]
-    L --> S
+```eraser
+direction right
+
+User signs [icon: hand, color: green, label: "User signs a supported meaning"]
+Recognize [icon: camera, color: blue, label: "Capture, recognize or abstain"]
+Compose [icon: file-text, color: blue, label: "Supported concepts + explicit intent -> template"]
+Preview [icon: file-text, color: blue, label: "Preview the exact sentence"]
+Approve [shape: diamond, color: green, label: "User approves?"]
+Retry [icon: repeat, color: orange, label: "Retry, edit or choose a phrase"]
+Bolna [icon: volume-2, color: orange, label: "Bolna speech session - integration unproven"]
+Inject [icon: smartphone, color: orange, label: "iPhone AAC injection - device gate"]
+Call [icon: phone, color: blue, label: "Existing user-started Phone call"]
+Recipient [icon: user, color: green, label: "Recipient hears speech and replies"]
+Captions [icon: message-square, color: orange, label: "System captions visible to user - device gate"]
+Start call [icon: phone-call, color: green, label: "User starts ordinary own-number call"]
+Paused [icon: pause-circle, color: orange, label: "Pause output and clear pending speech"]
+
+User signs > Recognize
+Recognize > Compose: accepted supported concepts
+Compose > Preview: compatible meaning
+Compose > Retry: missing intent or conflicting concepts
+Recognize > Retry: unsure or unsupported
+Retry > Preview: explicit correction or phrase
+Retry > User signs: re-sign
+Preview > Approve
+Approve > Retry: no
+Approve > Bolna: exact approved text
+Bolna > Inject: speech audio
+Inject > Call
+Start call > Call
+Call > Recipient: outbound speech
+Recipient > Captions: reply through same call, OS caption path
+Captions > User signs: user reads and responds
+Bolna > Paused: error or user cancel
+Inject > Paused: injection unavailable or user cancel
 ```
 
-The diagram describes a candidate composition. It does not assert that the device gate has passed. There is deliberately **no arrow from system captions or remote Phone audio into Ishara**. Optional Jev frame verification would add a disclosed cloud-image path; optional Laya decisions would consume supported text/state, not unseen receptionist content. A non-telephony external speech provider is an independent qualification branch; no standalone Bolna synthesis endpoint was established.
+## Eraser source: recognition routes
 
-| Ishara can know if implemented and validated | Ishara cannot presently assume it knows |
-|---|---|
-| Captured sign observations and framing/recognition state | Remote Phone audio or a live app-readable transcript |
-| User-selected scenario and explicitly approved profile/appointment details | Receptionist's offered time, current question or agreement |
-| Its own candidate, pending, committed and playback states | What the recipient actually understood or whether booking completed |
-| Observed system call-state changes where supported | Authority to hang up any unrelated Phone call |
-| Available AAC injection state | Guaranteed caption visibility, accuracy or translated return channel |
+```eraser
+direction down
 
-## Vocabulary follows the exchange
+Camera [icon: camera, label: "Camera frames and timestamps"]
+Tracking [icon: activity, label: "Track hands and body; retain raw frames"]
+Quality [shape: diamond, label: "Usable signing capture?"]
+Retry [icon: repeat, color: orange, label: "No speech - improve framing or retry"]
+Segment [icon: scissors, label: "One sign segment - explicit boundary first"]
+Route [shape: diamond, color: purple, label: "Design choice: select ONE route"]
 
-The historical **25 signs + two head gestures** inventory is written out in the [recognition note](<research_notes/Ishara feasibility research/recognition-and-models.md>). It is a candidate inventory, not a frozen requirement. APPOINTMENT was supplied by the selected scenario, not a classifier label. Date/time selection before a call does not solve changed times or unexpected questions during it.
+Leading pilot candidate [color: blue] {
+  SignCLIP prep [label: "SignCLIP training-matched body, hand and face preprocessing"]
+  SignCLIP [label: "Frozen SignCLIP features + verified ISL references"]
+}
 
-Audit each concept for dialogue utility, exact meaning/variant, licensed examples, signer/session coverage, continuous or isolated context, and unknown/repair behavior. Do not force the user to sign in English word order or equate concatenated isolated labels with ISL translation. Phrase/sentence resources exist, but suitability for this conversation is unverified. If only separated signs are feasible, expose the added pauses/actions and obtain an explicit scope decision rather than describing it as seamless natural signing.
+Comparison [color: purple] {
+  SLGCN prep [label: "OpenHands training-matched 27-joint preprocessing"]
+  SLGCN [label: "Frozen SL-GCN features + same verified references"]
+}
 
-## Adjacent mode and next decision
+Accept [shape: diamond, color: orange, label: "Frozen calibrated policy accepts? - pilot pending"]
+Abstain [color: orange, label: "Unsure - retry or enter phrase explicitly"]
+Compose [label: "Fixed template from supported concepts + explicit intent"]
+Preview [color: green, label: "Preview exact text; user edits and approves"]
+Speech [color: orange, label: "Approved text to Bolna speech path"]
 
-Face-to-face communication can use the app's own microphone and ASR for in-app captions, with camera/TTS and echo handling. It avoids the unrelated-call audio restriction but remains a separate mode with its own validation. It must not silently replace the call-first requirement.
+Camera > Tracking
+Tracking > Quality
+Quality > Retry: no
+Retry > Camera
+Quality > Segment: yes
+Segment > Route
+Route > SignCLIP prep: leading pilot candidate
+SignCLIP prep > SignCLIP
+Route > SLGCN prep: comparison
+SLGCN prep > SLGCN
+SignCLIP > Accept
+SLGCN > Accept
+Accept > Abstain: no
+Abstain > Camera: retry
+Abstain > Preview: explicit phrase
+Accept > Compose: yes
+Compose > Preview
+Preview > Speech: user approves
+```
 
-Proceed through the [validation gates](VALIDATION-PLAN.md), then resolve the [founder questions](<reports/Ishara feasibility research.md#unresolved-founder-questions>). Requirements, architecture, tickets and build remain subsequent phases.
+See the [recognition landscape](research/recognition/landscape.md),
+[Bolna paths](research/speech-device/bolna-paths.md)
+and [active plan](../PLAN.md) for the evidence and implementation gates.

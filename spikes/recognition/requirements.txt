@@ -1,0 +1,11 @@
+# Pinned on 20 Oct 2026, macOS 27 / Apple Silicon / Python 3.11. See requirements.lock for the full freeze.
+# mediapipe must stay <0.10.22: later releases drop the legacy mp.solutions Hands/Pose that INCLUDE's
+# preprocessing was built on. transformers must stay <5: BertLayer cannot be used standalone in 5.x.
+torch==2.14.1
+transformers==4.57.6
+mediapipe==0.10.21
+# MediaPipe uses the contrib distribution. Install one cv2 provider, not both.
+opencv-contrib-python==4.11.0.86
+numpy==1.26.4
+pandas==3.0.6
+omegaconf==2.3.0

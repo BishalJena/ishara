@@ -1,78 +1,105 @@
-# Ishara project plan
+# Active plan
 
-Updated 19 October 2026; source notes checked 18 October. **Immediate phase: backend feasibility prototype for Bolna's role in the call flow.** Meaningful Bolna integration is mandatory by user instruction. The ordinary own-number Phone call remains the target; do not route the user's call through Bolna or have Bolna place a second call. Build the backend/process-flow proof before product app UX.
+Updated 20 October 2026. This file owns active tasks and acceptance criteria.
+Read the [handoff](docs/HANDOFF.md) for current capability, the
+[experiment record](docs/experiments/recognition.md) for measurements, and the
+[archive](docs/archive/README.md) for completed investigations.
 
+## Recognition: fresh-data pilot
 
-## Parallel teammate task: validate pretrained recognition
+Goal: one seated signer intentionally produces a complete supported sign, gets a
+correct concept or an unsure result, and can approve a sentence preserving the
+explicit meaning. SignCLIP is the leading representation; SL-GCN is the comparison.
 
-The user has requested an independent validation of AI4Bharat INCLUDE, without
-training from scratch. Follow [the validation handoff](docs/tasks/validate-include-recognizer.md).
-Start with the published large-transformer checkpoint, record real clip predictions
-and timing, and return a go/no-go recommendation. This does not pass the Bolna/device
-gate or authorize claiming continuous signing works. See the
-[reuse-options audit](<docs/research_notes/Ishara hackathon product directions/recognizer-reuse-options.md>)
-for pretrained alternatives, Jev and Laya.
+Vocabulary: **hello, thankyou, doctor, hospital, tomorrow**. Use explicit clip
+boundaries. This is personalized isolated-sign recognition, not unrestricted
+translation or sign spotting within continuous signing.
 
-## Immediate plan: Bolna call-path backend prototype
+- [ ] Capture 3–5 complete takes per concept in one enrollment session. Preserve
+  raw video, timestamps, camera configuration and a consistent session ID.
+- [ ] Review tracking overlays and verify sign forms with appropriate ISL
+  expertise/reference material. Human verification notes are required; good
+  tracking alone does not establish correct signing.
+- [ ] Collect a different calibration session: at least 5 supported attempts per
+  concept and 20 negatives spanning idle, transitions, incomplete and unsupported
+  signs. Do not reuse enrollment or test sources.
+- [ ] Compare both encoders on those same development inputs. Calibrate rejection
+  using development data only; retain at least 60% correct accepts per concept
+  without wrong accepts. Reject-all cannot qualify.
+- [ ] Choose the encoder and freeze its thresholds and development fingerprint
+  before inspecting the final test.
+- [ ] Collect a different final session: at least 10 attempts per concept and
+  50 negatives across the same four negative categories. Evaluate once the labels
+  and capture quality have been reviewed.
+- [ ] Measure sign completion to visible prediction with fresh extraction in the
+  actual capture flow. Diagnose extraction cost; cached or batch timings cannot
+  substitute for this measurement.
+- [ ] Connect the selected calibrated recognizer to the existing composition and
+  approval boundary only after the pilot supports it.
 
-**Question to answer:** can Ishara send one user-approved utterance through Bolna, receive controllable speech audio, and make that audio available to Apple's supported injection path for the user's existing Phone call?
+Start with the 15 enrollment clips. The [capture runbook](spikes/recognition/README.md#capture-and-review)
+has the command and controls. Actual camera keyboard operation awaits this session.
 
-This is a backend feasibility spike, not a sign-recognition model or polished mobile application. Begin with synthetic, approved text provided through a CLI/test harness. Keep the process flow visible: approved text → Bolna session/transport → speech audio and playback markers → cancellation/session end. Do not feed unseen receptionist audio or allow the model to invent or accept appointment details.
+### Recognition acceptance gate
 
-### Ordered tasks
+- At least 90% correctly accepted attempts for **each** concept (at least 9/10).
+- Zero wrong accepted labels among supported-sign attempts.
+- Zero accepted labels across at least 50 held-out negative clips.
+- Under two seconds from sign completion to visible prediction, including fresh
+  extraction; record hardware, camera and processing configuration.
+- Sentence fixtures preserve explicit intent, day and subject. Editing and
+  single-use approval remain exact; abstention cannot feed composition.
 
-1. **Pin and isolate the Bolna path.** Record the upstream commit/license, required services and configuration; reproduce the source-level text-routing and synthesis behavior in an isolated development setup. Keep credentials in local environment variables and out of the repo.
-2. **Build the smallest text-to-audio adapter.** Send a fixed, user-approved utterance over Bolna's supported/engineered text path, receive audio and playback acknowledgments, and support clear/cancel/end so stale speech cannot leak into another turn. Avoid speech interpretation or a general-purpose agent in this slice.
-3. **Measure the backend flow.** Repeat an ordinary utterance, a long pause, cancellation during generation/playback, and a second utterance. Record exact text, audio format, time to first and complete audio, cancellation behavior, errors, and any Bolna/provider cost. A catalog response or local speaker playback alone is not a passing call-path result.
-4. **Check call compatibility with a diagnostic device harness.** Once backend output is reliable, use a minimal trigger on the iPhone to pass the returned audio to Apple's AAC injection mechanism during the user's normal own-number call. This harness may expose permission/status and a test button only; defer product navigation, visual design, sign recognition, and dynamic island work.
-5. **Decide the product route.** Preserve native calling only if Bolna speech, camera capture, and the user's return-caption setup can coexist. If a required part fails, document a user-visible app-owned-call alternative and its caller-ID/workflow change before selecting it.
+If a final test informs changes, retire it as development evidence and collect a
+new final test session. If reference matching cannot separate the concepts, inspect
+tracking/sign variation before choosing limited adaptation and more development
+data. Do not train merely to improve the seven old intended-hello clips.
 
-### Acceptance evidence
+## Speech: establish meaningful Bolna output
 
-- Bolna receives exactly the submitted approved utterance; audio output is captured/played and its encoding is known.
-- Cancel/clear stops pending output; repeated turns do not duplicate or leak speech.
-- Backend session failure and unavailable/disabled Bolna service fail closed without emitting guessed content.
-- The device gate records whether the recipient hears the exact speech in the existing Phone call. No Bolna-originated call or second-call bridge counts as passing.
-- Findings include source commit, reproducible setup, latency/error observations and costs. No accuracy claim is made for synthetic text or a hearing participant.
+This track can progress independently of recognition, using approved synthetic
+text and the [call-flow runbook](spikes/call_flow/README.md).
 
-### Checkpoint before app UX
+- [ ] Establish a usable Bolna text/audio integration. Inspect the OSS routing and
+  lifecycle issues identified in [the source study](docs/research/speech-device/bolna-paths.md);
+  a successful account or catalog request is not speech synthesis.
+- [ ] Produce genuine audio for exactly the approved text; record format, sample
+  rate, first-audio/completion timing and provider configuration.
+- [ ] Exercise cancellation, duplicate/late results, new sessions and output
+  failures. Old or unapproved utterances must not play.
+- [ ] Confirm which Bolna integration and submission assets satisfy the organizer's
+  rules. Mandatory Bolna use is already a product requirement; hosted-only versus
+  OSS eligibility and the judging rubric remain unestablished.
 
-Review the backend sequence, measured results and pivot consequences. Then write the bounded conversation/repair requirements, decide recognizer ownership and caption language, and design the app workflow. The founder's coding pause was lifted for this backend prototype only; app UX and broader implementation remain deferred until this checkpoint.
+Pass requires actual provider audio and controllable output, not mock events or
+Apple local speech. No target call may be routed through Bolna or duplicated.
+Calls, paid inference, installations and deployment need task authorization.
 
-**Call test boundary:** no real external call has been placed. The user has authorized the prototype; an actual cellular test must use the user's ordinary line and a consenting recipient, with synthetic content. Never originate a Bolna call to demonstrate the target workflow.
+## Device: verify the recipient's experience
 
-## Current product direction
+- [ ] Record the iPhone's installed iOS, available AAC/caption settings, camera
+  permissions, caption language and audio route; install the diagnostic harness.
+- [ ] Use a user-started call and a consenting recipient to verify exact approved
+  speech is heard. An Apple-voice control isolates platform behavior; repeat with
+  genuine Bolna audio before claiming the integration works.
+- [ ] Verify Stop, interruptions, quiet signing pauses, mute, route changes,
+  app switching, call end and a subsequent call. Prevent stale playback.
+- [ ] Test foreground camera, speech injection and readable system captions
+  together. WhatsApp voice-call success does not establish carrier Phone behavior;
+  the ordinary Phone call needs its own test.
+- [ ] Record remote audibility and exactness, duplicates/dropped output, caption
+  readability and timing. Observe the full flow rather than relying on local
+  playback or an injection-availability indicator.
 
-- [x] Compare everyday access barriers, existing alternatives and physical signing workflow in the [everyday-workflows note](<docs/research_notes/Ishara hackathon product directions/everyday-workflows.md>).
-- [x] Inspect supported hosted interfaces and pinned OSS text/audio transport in the [Bolna paths note](<docs/research_notes/Ishara hackathon product directions/bolna-paths.md>); real source primitives exist, with routing/lifecycle defects still unexecuted.
-- [x] Audit available recognition starting points and propose a complete changed-offer/repair demonstration in the [demo-feasibility note](<docs/research_notes/Ishara hackathon product directions/demo-feasibility.md>).
-- [x] Synthesize a [product recommendation and four directions](<docs/reports/Ishara hackathon product directions.md>): first demonstrate a user-controlled seated appointment call; preserve native own-number flow if meaningful Bolna/device proof works; otherwise explicitly evaluate app-owned calling for the same user-led task.
-- [ ] Complete the immediate Bolna backend prototype and device gate above before starting app UX.
-- [ ] After the backend checkpoint, run blinded bounded recognition/conversation with a changed offer and repair; source research did not validate model performance.
-- [ ] Turn the results into one conversation/repair map, source-qualified phrase/data manifest, supported spoken/readable languages and transport decision. The team owns this technical investigation; do not ask the founder to solve integration details.
-- [ ] Clarify hosted-only versus OSS integration eligibility, submission assets and exact deadline timezone. Mandatory meaningful Bolna is settled by the user, not an open product question.
+System captions remain user-visible, not an app-readable transcript. Native call
+controls own hangup. Camera capture in the background is not assumed.
 
-## Earlier feasibility research — retained background
+## Checkpoint before polished app UX
 
-## Research
+Proceed only when the bounded recognition, approved speech and intended device
+composition have supporting evidence. If native calling fails, explicitly decide
+whether an app-owned/service-originated route is an acceptable product pivot.
 
-- [x] Capture the earlier hard native-call requirement. **Updated:** ordinary Phone/Contacts calling is still preferred; latest user permission allows researching clearly disclosed app-owned calling or delegation pivots.
-- [x] Research public [iOS/call/camera/caption capabilities](<docs/research_notes/Ishara feasibility research/ios-and-workflow.md>) and distinguish user-visible captions from app-readable transcripts.
-- [x] Research [Bolna non-telephony fit and buildathon constraints](<docs/research_notes/Ishara feasibility research/bolna-and-calls.md>); complete only three read-only auth/catalog checks.
-- [x] Research [ISL data, model choices, licensing and historical vocabulary](<docs/research_notes/Ishara feasibility research/recognition-and-models.md>), without claiming model performance was reproduced.
-- [x] Consolidate [research entrypoint](docs/RESEARCH.md), [narrative report](<docs/reports/Ishara feasibility research.md>), [claim/source ledger](docs/CLAIM-LEDGER.md), [provisional workflow](docs/WORKFLOW.md) and [validation plan](docs/VALIDATION-PLAN.md).
-- [ ] Inspect actual iPhone 17 iOS/build/settings and required caption language; do not prescribe an update without that evidence.
-- [ ] If native calling remains the selected experiment, after separate authorization prove actual Bolna speech + AAC + foreground camera + system captions concurrently with a consenting recipient. No Bolna number verification is required for that native path; an explicitly selected service-originated experiment has separate operational requirements.
-- [ ] Audit dialogue coverage, exact licensed sign/phrase assets, signer/session splits, unknown handling and language/grammar limitations.
-- [ ] Agree acceptance measures, then compare baseline recognition/templates with optional decision/visual verification models on held-out and continuous/idle inputs.
-- [ ] Qualify the source/hosted path in the current product report; do not interpret the earlier hosted standalone-TTS not-found result as excluding OSS engineering.
-- [ ] Resolve remaining language/workflow choices using evidence; [earlier questions](<docs/reports/Ishara feasibility research.md#unresolved-founder-questions>) are background, superseded where the current report settles direction or user instruction. No Deaf participant validation is available.
-
-## Subsequent stages — not started
-
-1. **Requirements:** persona assumptions, supported conversation, accessibility/privacy behavior, failure/repair, acceptance criteria and explicit exclusions.
-2. **Architecture:** choose components, device/session ownership, interfaces and state based on passed gates; record remaining risks and decisions.
-3. **Delivery planning:** milestones and assignable tickets with dependencies, acceptance criteria and verification, sized for the team and confirmed hackathon constraints.
-4. **Build:** implement only after the user requests it, then verify the actual supported experience.
-
-No code, installations, actual test calls, paid inference or deployments are authorized by this research plan.
+A small personalized pilot does not establish general ISL reliability, natural
+conversation or accessibility validation. No Deaf participant study has occurred;
+the [workflow](docs/WORKFLOW.md) keeps those limits explicit.

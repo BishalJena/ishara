@@ -1,5 +1,11 @@
 # Ishara consolidated claim ledger
 
+This is the dated **source claim ledger**. Executed ML results, timing and semantic
+regressions are consolidated in the [experiment record](experiments/recognition.md).
+Use the [handoff](HANDOFF.md) and [active plan](../PLAN.md) for current direction:
+the later mandatory-Bolna requirement and explicitly labeled pivot permission
+supersede earlier product assumptions below.
+
 Evidence checked **18 October 2026**. The latest user requirement controls product scope: ordinary cellular Phone call from the user's own number, mediated in place. Earlier service-originated proposals are superseded. All actual account observations are redacted below; no keys, account identifiers, telephone values or raw responses are recorded.
 
 ## Status legend
@@ -45,7 +51,7 @@ Evidence checked **18 October 2026**. The latest user requirement controls produ
 | ID | Claim | Status | Exact source and evidence limits |
 |---|---|---|---|
 | R01 | The inherited baseline is 62% top-1 / 83% top-3 on 26 words. | UNVERIFIED — inherited | User-supplied brief/updates; no reviewed artifact, split, script or confusion matrix. Not a live-phone result or final-vocabulary score. |
-| R02 | Historical inventory arithmetic gives 25 classifier labels plus two proposed head inputs. | VERIFIED — arithmetic only | Inventory in [recognition note](<research_notes/Ishara feasibility research/recognition-and-models.md>); 26 − 5 + 4 = 25. Data coverage, utility, gesture semantics and deliberate consent remain unverified. |
+| R02 | Historical inventory arithmetic gives 25 classifier labels plus two proposed head inputs. | VERIFIED — arithmetic only | Inventory in [recognition note](archive/2026-10-18-recognition-notes.md); 26 − 5 + 4 = 25. Data coverage, utility, gesture semantics and deliberate consent remain unverified. |
 | R03 | INCLUDE has 263 isolated classes; original paper 4,287 videos, archive 4,292 after five additions. | VERIFIED — source metadata | [Paper](https://dl.acm.org/doi/10.1145/3394171.3413528), [archive](https://zenodo.org/records/4010759). Original/current counts differ for an explained reason; not independent validation examples. |
 | R04 | INCLUDE is CC-BY-4.0; repository code licensing is separate. | VERIFIED — metadata | [Machine-readable data terms](https://zenodo.org/api/records/4010759), [code repository](https://github.com/AI4Bharat/INCLUDE). MIT code does not change data terms. |
 | R05 | A Hugging Face INCLUDE-derived copy has 5,250 entries, proving more independent validated samples. | UNVERIFIED — unsupported inference | [Mirror](https://huggingface.co/datasets/ai4bharat/INCLUDE) card/search surfaced 5,250 rows, but no manifest was audited. Unique-video count, extra independent source clips, signer diversity and validation are unverified; use original archive manifests. |
