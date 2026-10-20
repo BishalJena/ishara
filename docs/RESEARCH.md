@@ -2,6 +2,8 @@
 
 ## Current recommendation and scope — 19 October 2026
 
+**New teammate handoff:** [validate AI4Bharat INCLUDE pretrained inference](tasks/validate-include-recognizer.md), with a [reuse-options audit](<research_notes/Ishara hackathon product directions/recognizer-reuse-options.md>). Recognition validation can run independently of the call-audio gate; model quality remains untested.
+
 **Meaningful Bolna integration is mandatory by the user's latest instruction.** The user still prefers ordinary own-number Phone calling, and now explicitly permits researching deviations when needed. The immediate authorized work is a Bolna backend feasibility prototype; the polished app UX and sign-recognition implementation are deferred until its backend checkpoint. The earlier blanket prohibition on evaluating service-originated/app-owned calls or delegation is superseded. Researching a pivot does not approve its architecture.
 
 Read the [new product-directions report](<reports/Ishara hackathon product directions.md>) first. The primary bet is one user-controlled administrative appointment conversation, demonstrated seated with a propped iPhone, a changed offer and real repair. Preserve native calling if a substantive Bolna/device proof works; otherwise make an explicit app-owned Bolna-call pivot for the same task. Supervised errands and a face-to-face counter exchange are compared alternatives, not additional promised modes. Pickup coordination has strong specific problem evidence but more difficult outdoor signing posture.
