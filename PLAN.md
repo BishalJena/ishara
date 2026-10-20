@@ -1,401 +1,105 @@
-# Ishara project plan
+# Active plan
 
-Updated 20 October 2026. **Immediate phase: prove the backend ML path for the hackathon**, explicitly authorized by the user's latest instruction to plan and execute. Meaningful Bolna integration remains mandatory. The ordinary own-number Phone call remains the target; do not route the user's call through Bolna or have Bolna place a second call. Keep this work to ML experiments and diagnostic tooling before product app UX.
+Updated 20 October 2026. This file owns active tasks and acceptance criteria.
+Read the [handoff](docs/HANDOFF.md) for current capability, the
+[experiment record](docs/experiments/recognition.md) for measurements, and the
+[archive](docs/archive/README.md) for completed investigations.
 
-## Active execution: bounded recognition proof
+## Recognition: fresh-data pilot
 
-**Outcome:** a seated signer can intentionally produce supported ISL concepts,
-see uncertainty when recognition fails, and approve a sentence that preserves
-their explicit meaning. A polished interface is not the current success criterion.
-The existing seven intended-hello failures remain development evidence.
+Goal: one seated signer intentionally produces a complete supported sign, gets a
+correct concept or an unsure result, and can approve a sentence preserving the
+explicit meaning. SignCLIP is the leading representation; SL-GCN is the comparison.
 
-The user has authorized proceeding with the local implementation and experiments,
-including required public model downloads and isolated dependencies. Do not start
-paid inference, upload recordings, or make calls under this ML task.
+Vocabulary: **hello, thankyou, doctor, hospital, tomorrow**. Use explicit clip
+boundaries. This is personalized isolated-sign recognition, not unrestricted
+translation or sign spotting within continuous signing.
 
-### Work to execute now
+- [ ] Capture 3–5 complete takes per concept in one enrollment session. Preserve
+  raw video, timestamps, camera configuration and a consistent session ID.
+- [ ] Review tracking overlays and verify sign forms with appropriate ISL
+  expertise/reference material. Human verification notes are required; good
+  tracking alone does not establish correct signing.
+- [ ] Collect a different calibration session: at least 5 supported attempts per
+  concept and 20 negatives spanning idle, transitions, incomplete and unsupported
+  signs. Do not reuse enrollment or test sources.
+- [ ] Compare both encoders on those same development inputs. Calibrate rejection
+  using development data only; retain at least 60% correct accepts per concept
+  without wrong accepts. Reject-all cannot qualify.
+- [ ] Choose the encoder and freeze its thresholds and development fingerprint
+  before inspecting the final test.
+- [ ] Collect a different final session: at least 10 attempts per concept and
+  50 negatives across the same four negative categories. Evaluate once the labels
+  and capture quality have been reviewed.
+- [ ] Measure sign completion to visible prediction with fresh extraction in the
+  actual capture flow. Diagnose extraction cost; cached or batch timings cannot
+  substitute for this measurement.
+- [ ] Connect the selected calibrated recognizer to the existing composition and
+  approval boundary only after the pilot supports it.
 
-- [x] Pin SignCLIP multilingual source/weights and reproduce its documented
-      body + hand + face input and inference path locally. Preserve the existing
-      SL-GCN environment. Record artifact hashes, compatibility changes and costs.
-      Gate: real finite, deterministic embeddings from actual recorded clips;
-      no substituted or randomly initialized model components.
-      **Executed:** official checkpoint SHA-256
-      `a739751dd5b79a42f335725b4de4811c632f9f0cba616b74a8c8d87e55784df9`;
-      source `a819944093876443119f294a2c50c663cecd65b0`. All 205 video state entries
-      load strictly. The old positional-ID buffer is checked against its
-      deterministic replacement before exclusion. A real 63-frame hello clip
-      produced a finite 768-value embedding, with zero difference on repeat.
-      Isolated dependencies live in `artifacts/signclip/.venv`.
-- [x] Compare SignCLIP reference matching with frozen SL-GCN features on the same
-      saved corpus. Exclude the query and duplicate content from reference lookup.
-      Separate public reference clips from the user's intended-hello attempts.
-      Report ranks/similarities and extraction/inference latency. These are
-      uncalibrated development results, not accepted speech or reliability claims.
-      **Executed:** SignCLIP ranked hello first on 7/7 old intended-hello clips;
-      SL-GCN reference matching ranked hello first on 0/7. Public leave-one-clip-out
-      queries with another same-label reference: SignCLIP 5/6, SL-GCN 6/6.
-      Doctor/tomorrow singleton references cannot be scored against themselves.
-      Median embedding inference: ~54 ms SignCLIP, ~20 ms SL-GCN.
-      **Rejection remains unresolved:** an out-of-scope today clip matches hello
-      at 0.931 cosine similarity, above all seven own-signer hello similarities
-      (0.532–0.590). Similarities are not calibrated confidence. All replay outputs
-      deliberately abstain. Evidence: `artifacts/retrieval/replay-{signclip,slgcn}.json`.
-      Original landmark extraction medians: SignCLIP ~1.59 s/public clip and
-      ~2.93 s/recorded attempt; SL-GCN ~3.72 s and ~7.08 s respectively.
-      These batch measurements do not meet or establish the live two-second gate.
-- [x] Build an explicit start/stop diagnostic capture workflow and a dataset
-      manifest carrying concept, signer, session, split, provenance and sign-form
-      verification. Preserve raw video so both encoders can use their own inputs.
-      Add overlay/quality review and prevent session/source overlap between
-      enrollment, calibration and test data.
-      **Implemented:** `pilot_capture.py` records unmirrored takes, measured frame
-      timing, provenance and hashes; SPACE starts/stops, X discards. Separate
-      `review` renders tracking; explicit `verify` requires human sign-form evidence.
-      MP4 round-trip and a real public-clip overlay pass. Camera keyboard operation
-      awaits the first new capture; no fresh user signing or verified labels exist.
-- [x] Prepare a reproducible evaluation path with correct accepts, wrong accepts,
-      abstentions and negative false accepts. Refuse to claim a pass without
-      verified examples, disjoint sessions and adequate test coverage.
-      `retrieval.py calibrate/evaluate` pins thresholds to encoder and development
-      fingerprints; checks per-concept coverage and negatives; refuses reject-all
-      calibration. `status` currently reports blocked for missing fresh data.
-      Batch latency is separated from untested live latency; `demo_ready` stays false.
-- [x] Keep core sentence composition deterministic for supported explicit intents;
-      retain exact preview/edit/approval. A fluent LLM output cannot repair an
-      abstained recognition or supply missing intent.
-      Default `mini.py serve` now uses fixed templates. Doctor + tomorrow with
-      appointment intent gives “I would like an appointment with a doctor tomorrow.”
-      Requested-day today stays a statement; conflicting days block the draft.
-      `--composer llm` retains the earlier experiment separately.
-- [x] Review and test the data boundaries and model adapter, record actual
-      outcomes here and in the spike README, and leave a precise next capture step.
-      Tests cover leakage, duplicates, self-match, nonfinite evidence, meaningful
-      calibration, actual video round-trip, label review, semantic conflicts and
-      approval controls: **34 backend tests pass**. The real public
-      doctor/tomorrow → template → edited approval path passes in Helium with
-      **20 browser assertions**. Review found and fixed nonfinite thresholds
-      accepting candidates and calibration selection favoring aggregate coverage
-      over required coverage for every concept. See the spike README for commands.
+Start with the 15 enrollment clips. The [capture runbook](spikes/recognition/README.md#capture-and-review)
+has the command and controls. Actual camera keyboard operation awaits this session.
 
-**Current decision:** take SignCLIP into the fresh-data pilot as the leading
-representation, with SL-GCN as the comparison. This is evidence of improved
-reference ranking on one reused concept, not an approved recognizer. Do not start
-training or feed these uncalibrated ranks into speech.
+### Recognition acceptance gate
 
-**Next human step:** capture 3 complete examples each of hello, thankyou, doctor,
-hospital and tomorrow in one seated session (15 clips), then review tracking and
-sign forms. The exact command is in the spike README. After that, collect a
-different calibration session; choose the encoder and freeze its thresholds
-before recording/evaluating the final test. If a final test informs a change,
-retire it as development evidence and collect a new final test session.
+- At least 90% correctly accepted attempts for **each** concept (at least 9/10).
+- Zero wrong accepted labels among supported-sign attempts.
+- Zero accepted labels across at least 50 held-out negative clips.
+- Under two seconds from sign completion to visible prediction, including fresh
+  extraction; record hardware, camera and processing configuration.
+- Sentence fixtures preserve explicit intent, day and subject. Editing and
+  single-use approval remain exact; abstention cannot feed composition.
 
-### Data needed before the final decision
+If a final test informs changes, retire it as development evidence and collect a
+new final test session. If reference matching cannot separate the concepts, inspect
+tracking/sign variation before choosing limited adaptation and more development
+data. Do not train merely to improve the seven old intended-hello clips.
 
-Initial vocabulary: **hello, thank you, doctor, hospital, tomorrow**. Intent such
-as “request appointment” is explicitly supplied; it is not inferred from two
-nouns. Verify the sign forms with ISL expertise/reference material before treating
-recordings as semantic ground truth. Use explicit isolated-sign capture first.
+## Speech: establish meaningful Bolna output
 
-1. Enrollment session: start with 3–5 verified examples per concept.
-2. Separate calibration session: supported attempts plus idle, transitions,
-   incomplete signs and unsupported signs. Select rejection thresholds only here.
-3. Separate locked test session: at least 10 attempts per concept and 50 negative
-   clips. Do not move test clips into enrollment or tune thresholds against them.
+This track can progress independently of recognition, using approved synthetic
+text and the [call-flow runbook](spikes/call_flow/README.md).
 
-The small reference budget is a hypothesis, not a promise. If reference matching
-is insufficient, use the comparison to choose an encoder and collect additional
-development sessions before trying a small classifier or limited fine-tuning.
-Do not launch new training just to improve scores on the seven old hello clips.
+- [ ] Establish a usable Bolna text/audio integration. Inspect the OSS routing and
+  lifecycle issues identified in [the source study](docs/research/speech-device/bolna-paths.md);
+  a successful account or catalog request is not speech synthesis.
+- [ ] Produce genuine audio for exactly the approved text; record format, sample
+  rate, first-audio/completion timing and provider configuration.
+- [ ] Exercise cancellation, duplicate/late results, new sessions and output
+  failures. Old or unapproved utterances must not play.
+- [ ] Confirm which Bolna integration and submission assets satisfy the organizer's
+  rules. Mandatory Bolna use is already a product requirement; hosted-only versus
+  OSS eligibility and the judging rubric remain unestablished.
 
-### Pilot acceptance gate
+Pass requires actual provider audio and controllable output, not mock events or
+Apple local speech. No target call may be routed through Bolna or duplicated.
+Calls, paid inference, installations and deployment need task authorization.
 
-- At least 9/10 correctly accepted attempts per supported concept.
-- Zero wrong accepted labels in the supported-sign pilot.
-- Zero accepted labels across the 50 held-out negative clips.
-- Target under two seconds from sign completion to visible prediction, including
-  fresh extraction; report camera and processing configuration.
-- Sentence fixtures preserve intent, day and subject, and approval remains exact.
+## Device: verify the recipient's experience
 
-Passing this small pilot supports a bounded personalized demo, not general ISL
-translation or validated accessibility. Fresh signing requires the user or an
-appropriate signer; proceed with all source, replay and tooling work before that
-human step. The Bolna/existing-call feasibility gate remains separate.
+- [ ] Record the iPhone's installed iOS, available AAC/caption settings, camera
+  permissions, caption language and audio route; install the diagnostic harness.
+- [ ] Use a user-started call and a consenting recipient to verify exact approved
+  speech is heard. An Apple-voice control isolates platform behavior; repeat with
+  genuine Bolna audio before claiming the integration works.
+- [ ] Verify Stop, interruptions, quiet signing pauses, mute, route changes,
+  app switching, call end and a subsequent call. Prevent stale playback.
+- [ ] Test foreground camera, speech injection and readable system captions
+  together. WhatsApp voice-call success does not establish carrier Phone behavior;
+  the ordinary Phone call needs its own test.
+- [ ] Record remote audibility and exactness, duplicates/dropped output, caption
+  readability and timing. Observe the full flow rather than relying on local
+  playback or an injection-availability indicator.
 
-## Earlier recognition miniature checkpoint (20 October)
+System captions remain user-visible, not an app-readable transcript. Native call
+controls own hangup. Camera capture in the background is not assumed.
 
-The user subsequently asked to build a miniature to validate expectations,
-authorizing this local recognition/sentence prototype after the research pause.
-Code and recorded results: [recognition spike README](spikes/recognition/README.md).
+## Checkpoint before polished app UX
 
-- [x] Load pinned OpenHands INCLUDE SL-GCN with its own preprocessing and label order.
-- [x] Build a local browser diagnostic: clip → candidate concepts → real local LLM
-      suggestion → exact edited-text approval. No speech provider is connected.
-- [x] Replay all 11 saved dataset clips and seven documented intended-hello segments.
-      Result: **8/11 dataset matches, 0/7 intended-hello matches**. All seven
-      recorded attempts abstained because their predicted classes were unsupported.
-- [x] Exercise two synthetic negative clips, six sentence-input cases, and a real
-      doctor + tomorrow clip-to-suggestion path. “Today” exposed a sentence-meaning
-      error. These are development checks, not a fresh acceptance test.
-- [x] Pass 19 contract tests for input rejection, concept provenance, exact approval,
-      stale drafts, reset, and HTTP origin/host restrictions. Verify the main browser
-      flow; reproduce and fix the preview proxy's cross-origin rejection with an
-      explicit `--preview-origin` option.
-- [x] Test all 18 saved clips through the user's open Helium browser. Reproduce
-      the same recognition scores using cached landmarks, verify 16 browser
-      assertions, and fix stale sentence/provenance display after a failed draft.
-      Repeat the manual today case: the sentence-meaning error remains.
-- [x] Decide the next data/adaptation experiment: the active execution above
-      compares frozen representations first and prepares fresh reference capture.
-      SL-GCN alone did not improve the original seated recordings. No training or
-      new live camera session occurred.
+Proceed only when the bounded recognition, approved speech and intended device
+composition have supporting evidence. If native calling fails, explicitly decide
+whether an app-owned/service-originated route is an acceptable product pivot.
 
-Start with `cd spikes/recognition && .venv/bin/python mini.py serve`, then open
-`http://127.0.0.1:8088`. Use recorded examples or the explicitly labeled
-sentence-only mode. Bolna and call-audio feasibility remain separate gates.
-
-### Earlier proposal after the ASL transfer review
-
-The user asked whether ASL pretraining could help with limited ISL data.
-[ASL transfer for Ishara](<docs/reports/ASL transfer for Ishara.md>) rechecks
-primary papers and released artifacts. CISLR directly demonstrates ASL-trained
-features with ISL prototype matching; SignCLIP publishes multilingual weights
-and an inventory containing ISL. This historical proposal is now partly executed
-in the active section; the fresh-session comparison remains pending.
-
-- [ ] Verify a small set of correctly performed ISL signs and tracking in the seated setup.
-- [ ] Compare SignCLIP multilingual reference matching with the existing SL-GCN
-      representation on the same session-separated recordings, before selecting
-      an encoder for a new classifier. Use model-specific preprocessing.
-- [ ] Evaluate rejection on real idle, transition and unsupported-sign examples;
-      report wrong accepted outputs alongside recognition and abstention.
-- [ ] Only then decide whether a small classifier or fine-tuning is justified.
-      No new weights were downloaded and no training started in this review.
-
-### Earlier research checkpoint
-
-**Independent Ishaara AI audit (20 October):**
-[Website, paper and repository findings](<docs/reports/Ishaara AI source audit.md>).
-The released GRU is a six-class temporal recognizer; the current site uses an
-eighteen-label image detector plus sentence generation. Neither contains our
-appointment vocabulary or establishes performance on our setup. Public source
-has evaluation/reproducibility limits and no explicit repository license.
-Local browser inference, verified target-sign collection and a compact temporal
-baseline are useful takeaways. This review does not replace the proposed
-reference-matching experiment or authorize training; no new recognizer was run.
-
-An [editable Eraser flow](<docs/reports/Ishara proposed flow.md>) now maps the
-candidate recognition and call composition, with approval, abstention, mandatory
-Bolna speech, and the unverified device-audio path. This is a proposal, not an
-architecture approval or completed integration test.
-
-The user requested a deeper study of ISL methods, papers, models, and datasets
-before further trials. Read the [recognition landscape](<docs/reports/ISL recognition landscape.md>)
-and [source audit](<docs/research_notes/ISL recognition source audit.md>) first.
-This research pass ran no new recognition tests.
-
-- [x] Audit the user's Hugging Face/Kaggle links against actual labels and artifacts.
-- [x] Study normalization, temporal models, transfer, retrieval, fusion, and translation.
-- [x] Record dataset provenance, split risks, licenses, and source-based recommendations.
-- [x] Use **OpenHands INCLUDE SL-GCN** as the first
-      concrete recognition backend to implement and evaluate, with its own
-      training-matched preprocessing. This recommendation has now been tested in
-      the miniature above; it is not an approved product architecture. The 27-point
-      preset excludes hip landmarks and normalizes around the shoulders; it provides
-      a specific reason to investigate seated capture, without proving it works.
-      Keep DPC and SignCLIP/reference matching as alternatives rather than starting
-      another broad model trial.
-- [ ] Establish whether the chosen pretrained checkpoint is sufficient on the intended
-      setup. If it is not, assess limited adaptation using correctly labeled examples
-      from that setup and a separate evaluation set. No training is authorized or
-      started by this recommendation.
-- [ ] Sentence-composition option: an LLM may propose wording from recognized
-      concepts and user-supplied context, followed by approval of the exact sentence.
-      It does not resolve recognition failures or establish missing intentions.
-- [ ] Keep the existing clips for development. Any later final evaluation needs fresh
-      data from the intended seated setup and appropriate ISL expertise.
-
-**Interpretation correction:** framing is a plausible contributor, not an established
-root cause. A standing trial cannot settle feasibility. The 10/11 selected-clip score
-does not prove exact upstream preprocessing, and repeated tuning has made those clips
-development data. The observations below are preserved with that qualification.
-
-### Recorded INCLUDE experiment
-
-The validation in [the handoff doc](docs/tasks/validate-include-recognizer.md) was
-done in-house instead of by a teammate. Task A (model runs, real predictions) is
-complete; Task B (is it useful for our demo) is where we stopped. Everything lives in
-[`spikes/recognition/`](spikes/recognition/README.md); weights, clips and recorded
-sessions are under its gitignored `artifacts/`.
-
-### What was observed
-
-- Pretrained large INCLUDE transformer (263 ISL signs, 17.1 M params) loads and runs
-  on the Mac, CPU, ~10 ms per sign. Landmark extraction ~19 ms per frame.
-- On 11 official test-split dataset clips for our demo words it scored **10/11**
-  (hello, thankyou, hospital, location, today, tomorrow at 0.80-1.00; one doctor clip
-  lost narrowly to "slow"). This is a small pipeline check, not proof of exact
-  upstream preprocessing or generalization.
-- Fixed upstream's always-on dropout (predictions were random before). Pinned
-  mediapipe 0.10.21 and transformers 4.x; newer versions break the model.
-- Live tool `live.py` works: auto-segments a sign, shows top-3 with confidence, saves
-  every attempt (mp4 + landmarks + prediction) and has a scoring mode.
-
-### What the first live attempt showed (one session, laptop webcam, "hi")
-
-Five attempts, none recognised as hello; the model guessed warm/good/orange.
-Differences observed in the saved clips, without an established causal ranking:
-
-1. **Framing.** Dataset signers stand ~2 m back: head is ~1/6 of frame height, whole
-   torso visible, arms end at rest by the sides. The webcam had the face filling the
-   frame and the hand leaving the top edge. The model uses raw screen positions, so
-   framing could contribute to failure.
-2. **Different reference form.** The sampled INCLUDE "hello" is a salute from the
-   forehead moving outward. No qualified linguistic assessment of the user's
-   greeting or its regional validity occurred.
-3. **Segments too long** (5-9 s vs 2-3 s in the dataset). Recording stops only when
-   the hands leave the frame or drop; drop them right after the sign.
-4. **Capture ran at 14 fps.** Fixed since: hands/pose run in parallel and capture is
-   threaded. The second session subsequently captured about 30 fps.
-
-Fixes added after that session: dataset-matched framing guide, a picture-in-picture
-loop of the real dataset clip for the current target (`--reference hello` or
-automatic in scoring mode), faster capture.
-
-### Second live attempt (same day, seated, attempted reference salute)
-
-Capture ran at 30 fps, but both segments still came out orange/warm.
-Replaying the saved clips through several diagnostic changes
-of (body re-centring/scaling to the dataset's shoulder position, single-salute
-windows, dataset rest frames spliced in, mirrored image) never produced "hello".
-Measured facts behind that:
-
-- Dataset shoulder midpoint is at (0.50, 0.38) of the frame with width 0.14 in every
-  clip (std ~0.02). Seated at the laptop ours was at (0.55, 0.85) with width 0.28-0.36:
-  twice as large and the hips/lap out of frame.
-- Dataset clips always show **both hands**, starting and ending at rest by the hips,
-  with the arm rising and falling (~0.6 s rest before, ~0.6 s after). Our clips had
-  the hand entering already at the forehead and the other hand never in frame.
-- The segmenter has been rewritten to match that: start when a wrist rises above the
-  hips, keep 0.7 s of rest before, stop 0.8 s after both wrists are down. On dataset
-  clips this now accepts 8/9 (doctor went from a miss to 0.97). Body normalisation
-  stays on by default (`--no-normalize` to compare); its effect outside these
-  reused clips remains unknown.
-
-The sampled dataset and webcam inputs differ. Those differences do not isolate the
-cause: tracking, hand-slot ordering, legacy preprocessing, and temporal handling
-remain possible confounders. No general standing-distance requirement is established.
-
-### Earlier test ideas — parked pending the research-based choice above
-
-- [ ] **Stand-back test.** Put the Mac (or iPhone via Continuity Camera) on a table,
-      stand ~2 m away so head, shoulders and hips sit on the guide, hands by your
-      sides. Run `cd spikes/recognition && .venv/bin/python live.py --reference hello`.
-      Check the status line reads "rest" with hands down and "RAISED" when you lift
-      one. Do one salute like the picture-in-picture clip, hands back down, wait for
-      the result. This would be one diagnostic condition, not a go/no-go by itself.
-- [ ] If investigating INCLUDE again, compare normalization and input handling
-      systematically. A lower threshold is diagnostic and can increase wrong accepts.
-- [ ] Try the iPhone as camera (Continuity Camera; `--list-cameras` to find its index),
-      landscape, at the propped-phone distance we'd actually demo with. Note that the
-      current close-up attempts failed. Whether this model can support the intended
-      seated setup remains unresolved.
-- [ ] Run the scoring pass and keep the summary:
-      `live.py --score hello,thankyou,hospital,location,today,tomorrow,doctor,idle,other --attempts 10`.
-      Pass marks agreed before running: >= 8/10 per sign accepted and correct;
-      <= 1 wrong word accepted across the 20 idle/other attempts; < 1.5 s from hand
-      drop to label. "idle" = hands up but still; "other" = any sign not in the list.
-- [ ] Decide the missing words (wait, repeat, stop, yes, no, appointment are not
-      INCLUDE classes): tap buttons in the app, or a second recogniser.
-- [ ] If a later comparison is authorized, use the distinct routes in the
-      [recognition landscape](<docs/reports/ISL recognition landscape.md>).
-      Saved clips can diagnose differences; reserve fresh clips for final evaluation.
-- [ ] Write the go/no-go into `docs/tasks/validate-include-recognizer.md` result
-      summary with the counts.
-
-Passing this does not pass the Bolna/device gate and does not show continuous signing
-or Deaf-user usability; it shows isolated signs by our signers under demo conditions.
-
-## Immediate plan: Bolna call-path backend prototype
-
-### Latest checkpoint: mock locally, test WhatsApp first
-
-- The user wants one consistent Ishara interface for Phone and WhatsApp voice calls.
-  WhatsApp is available for a later test; carrier Phone calls need a separate test.
-- Run a minimal offline lifecycle simulation now. Synthetic sign events, speech
-  completion and captions must stay labeled as mocks; they do not validate models,
-  Bolna or either call platform.
-- Real Bolna account/catalog checks returned 200; the historical speech-sample
-  route returned 403. Hosted speech access remains unresolved. Only a Bolna key is
-  available; the OSS provider path is still unexecuted.
-- Use an Apple-voice control in the minimal diagnostic harness to test WhatsApp
-  audio injection first, then the caption overlay. Repeat with genuine Bolna audio
-  when available. Camera coexistence, recognition and carrier calls remain gates.
-- See [the spike instructions and evidence](spikes/call_flow/README.md).
-- Recognition research now prioritizes reuse over training: evaluate accessible
-  INCLUDE pretrained weights and compare Jev image-history/video-model candidates
-  on the same bounded clips. See the [no-training options audit](<docs/research_notes/Ishara hackathon product directions/recognizer-reuse-options.md>).
-  These are source/artifact checks, not completed recognition experiments.
-
-**Question to answer:** can Ishara send one user-approved utterance through Bolna, receive controllable speech audio, and make that audio available to Apple's supported injection path for the user's existing Phone call?
-
-This is a backend feasibility spike, not a sign-recognition model or polished mobile application. Begin with synthetic, approved text provided through a CLI/test harness. Keep the process flow visible: approved text → Bolna session/transport → speech audio and playback markers → cancellation/session end. Do not feed unseen receptionist audio or allow the model to invent or accept appointment details.
-
-### Ordered tasks
-
-1. **Pin and isolate the Bolna path.** Record the upstream commit/license, required services and configuration; reproduce the source-level text-routing and synthesis behavior in an isolated development setup. Keep credentials in local environment variables and out of the repo.
-2. **Build the smallest text-to-audio adapter.** Send a fixed, user-approved utterance over Bolna's supported/engineered text path, receive audio and playback acknowledgments, and support clear/cancel/end so stale speech cannot leak into another turn. Avoid speech interpretation or a general-purpose agent in this slice.
-3. **Measure the backend flow.** Repeat an ordinary utterance, a long pause, cancellation during generation/playback, and a second utterance. Record exact text, audio format, time to first and complete audio, cancellation behavior, errors, and any Bolna/provider cost. A catalog response or local speaker playback alone is not a passing call-path result.
-4. **Check call compatibility with a diagnostic device harness.** Once backend output is reliable, use a minimal trigger on the iPhone to pass the returned audio to Apple's AAC injection mechanism during the user's normal own-number call. This harness may expose permission/status and a test button only; defer product navigation, visual design, sign recognition, and dynamic island work.
-5. **Decide the product route.** Preserve native calling only if Bolna speech, camera capture, and the user's return-caption setup can coexist. If a required part fails, document a user-visible app-owned-call alternative and its caller-ID/workflow change before selecting it.
-
-### Acceptance evidence
-
-- Bolna receives exactly the submitted approved utterance; audio output is captured/played and its encoding is known.
-- Cancel/clear stops pending output; repeated turns do not duplicate or leak speech.
-- Backend session failure and unavailable/disabled Bolna service fail closed without emitting guessed content.
-- The device gate records whether the recipient hears the exact speech in the existing Phone call. No Bolna-originated call or second-call bridge counts as passing.
-- Findings include source commit, reproducible setup, latency/error observations and costs. No accuracy claim is made for synthetic text or a hearing participant.
-
-### Checkpoint before app UX
-
-Review the backend sequence, measured results and pivot consequences. Then write the bounded conversation/repair requirements, decide recognizer ownership and caption language, and design the app workflow. The founder's coding pause was lifted for this backend prototype only; app UX and broader implementation remain deferred until this checkpoint.
-
-**Call test boundary:** no real external call has been placed. The user has authorized the prototype; an actual cellular test must use the user's ordinary line and a consenting recipient, with synthetic content. Never originate a Bolna call to demonstrate the target workflow.
-
-## Current product direction
-
-- [x] Compare everyday access barriers, existing alternatives and physical signing workflow in the [everyday-workflows note](<docs/research_notes/Ishara hackathon product directions/everyday-workflows.md>).
-- [x] Inspect supported hosted interfaces and pinned OSS text/audio transport in the [Bolna paths note](<docs/research_notes/Ishara hackathon product directions/bolna-paths.md>); real source primitives exist, with routing/lifecycle defects still unexecuted.
-- [x] Audit available recognition starting points and propose a complete changed-offer/repair demonstration in the [demo-feasibility note](<docs/research_notes/Ishara hackathon product directions/demo-feasibility.md>).
-- [x] Synthesize a [product recommendation and four directions](<docs/reports/Ishara hackathon product directions.md>): first demonstrate a user-controlled seated appointment call; preserve native own-number flow if meaningful Bolna/device proof works; otherwise explicitly evaluate app-owned calling for the same user-led task.
-- [ ] Complete the immediate Bolna backend prototype and device gate above before starting app UX.
-- [ ] After the backend checkpoint, run blinded bounded recognition/conversation with a changed offer and repair; source research did not validate model performance.
-- [ ] Turn the results into one conversation/repair map, source-qualified phrase/data manifest, supported spoken/readable languages and transport decision. The team owns this technical investigation; do not ask the founder to solve integration details.
-- [ ] Clarify hosted-only versus OSS integration eligibility, submission assets and exact deadline timezone. Mandatory meaningful Bolna is settled by the user, not an open product question.
-
-## Earlier feasibility research — retained background
-
-## Research
-
-- [x] Capture the earlier hard native-call requirement. **Updated:** ordinary Phone/Contacts calling is still preferred; latest user permission allows researching clearly disclosed app-owned calling or delegation pivots.
-- [x] Research public [iOS/call/camera/caption capabilities](<docs/research_notes/Ishara feasibility research/ios-and-workflow.md>) and distinguish user-visible captions from app-readable transcripts.
-- [x] Research [Bolna non-telephony fit and buildathon constraints](<docs/research_notes/Ishara feasibility research/bolna-and-calls.md>); complete only three read-only auth/catalog checks.
-- [x] Research [ISL data, model choices, licensing and historical vocabulary](<docs/research_notes/Ishara feasibility research/recognition-and-models.md>), without claiming model performance was reproduced.
-- [x] Consolidate [research entrypoint](docs/RESEARCH.md), [narrative report](<docs/reports/Ishara feasibility research.md>), [claim/source ledger](docs/CLAIM-LEDGER.md), [provisional workflow](docs/WORKFLOW.md) and [validation plan](docs/VALIDATION-PLAN.md).
-- [ ] Inspect actual iPhone 17 iOS/build/settings and required caption language; do not prescribe an update without that evidence.
-- [ ] If native calling remains the selected experiment, after separate authorization prove actual Bolna speech + AAC + foreground camera + system captions concurrently with a consenting recipient. No Bolna number verification is required for that native path; an explicitly selected service-originated experiment has separate operational requirements.
-- [ ] Audit dialogue coverage, exact licensed sign/phrase assets, signer/session splits, unknown handling and language/grammar limitations.
-- [ ] Agree acceptance measures, then compare baseline recognition/templates with optional decision/visual verification models on held-out and continuous/idle inputs.
-- [ ] Qualify the source/hosted path in the current product report; do not interpret the earlier hosted standalone-TTS not-found result as excluding OSS engineering.
-- [ ] Resolve remaining language/workflow choices using evidence; [earlier questions](<docs/reports/Ishara feasibility research.md#unresolved-founder-questions>) are background, superseded where the current report settles direction or user instruction. No Deaf participant validation is available.
-
-## Subsequent stages — not started
-
-1. **Requirements:** persona assumptions, supported conversation, accessibility/privacy behavior, failure/repair, acceptance criteria and explicit exclusions.
-2. **Architecture:** choose components, device/session ownership, interfaces and state based on passed gates; record remaining risks and decisions.
-3. **Delivery planning:** milestones and assignable tickets with dependencies, acceptance criteria and verification, sized for the team and confirmed hackathon constraints.
-4. **Build:** implement only after the user requests it, then verify the actual supported experience.
-
-The user subsequently authorized the minimal feasibility prototype, an offline mock
-and a later WhatsApp test. Broader app implementation and deployment remain deferred.
+A small personalized pilot does not establish general ISL reliability, natural
+conversation or accessibility validation. No Deaf participant study has occurred;
+the [workflow](docs/WORKFLOW.md) keeps those limits explicit.

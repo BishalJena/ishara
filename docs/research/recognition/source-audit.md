@@ -4,7 +4,7 @@ Checked 20 October 2026. This pass studies methods, papers, datasets, and releas
 artifacts. It does not run models, train models, upload signing footage, or resume
 the paused webcam tests.
 
-The starting inventory is the user's `research-links.md`. Additional searches used
+The starting inventory is the user's [research leads](../links.md). Additional searches used
 Exa. Hugging Face metadata and small configuration files were read through public
 HTTP endpoints. GitHub source files and release metadata were also inspected.
 Context7 supplied current Hugging Face Hub inspection documentation.

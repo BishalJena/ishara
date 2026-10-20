@@ -1,5 +1,8 @@
 # Ishara feasibility validation plan
 
+> Historical experiment design, not current authorization or status. The
+> [active plan](../../PLAN.md) owns current tasks and acceptance gates.
+
 Status: proposed experiments, **none executed**, except the explicitly listed read-only Bolna checks. Research date: 18 October 2026. No product code, installation, outbound call, billable inference or deployment is authorized by this document. The purpose is to determine which requirements and architecture are justified next.
 
 **Invariant:** the user places an ordinary cellular call from their own existing number through Phone/Contacts. Ishara mediates that existing call. No Bolna-originated PSTN, callback, calling Bolna first or second-call bridge qualifies as passing a gate.
@@ -8,12 +11,12 @@ Status: proposed experiments, **none executed**, except the explicitly listed re
 
 | Check | Actual result | What it does not prove |
 |---|---|---|
-| Public documentation research | Sources and contradictions recorded in [claim ledger](CLAIM-LEDGER.md) | Runtime coexistence, latency, recognition quality or usability |
+| Public documentation research | Sources and contradictions recorded in [claim ledger](../CLAIM-LEDGER.md) | Runtime coexistence, latency, recognition quality or usability |
 | Authenticated `GET /user/me` | HTTP 200; auth works; concurrency max 2/current 0; balance field exists, value not retained | Credit sufficiency, telephony eligibility, SDK enablement, synthesis |
 | `GET /api/v1/voice-config/tts?language=en` | HTTP 200; 16 provider entries / 29 model entries | Every entry supports English or actual synthesis quality/cost |
 | `GET /api/v1/voice-config/tts?language=hi` | HTTP 200; 16 provider entries / 29 model entries | Hindi synthesis, recognition or code-switching quality |
 
-Exactly three authenticated requests were executed. No key, account ID, email, phone number or raw account response belongs in repository documents. See [Bolna note](<research_notes/Ishara feasibility research/bolna-and-calls.md>) for scope.
+Exactly three authenticated requests were executed. No key, account ID, email, phone number or raw account response belongs in repository documents. See [Bolna note](../research/speech-device/bolna-and-calls.md) for scope.
 
 ## Gate A: prove native call composition before choosing architecture
 
@@ -72,4 +75,4 @@ If no appropriate supported Bolna component exists, document the integration gap
 
 Confirm organizer rules: mandatory Bolna use or minimum integration, submission assets, judging rubric and deadline timezone. The official page establishes a voice component and 31 October submission date, not the remaining conditions.
 
-Resolve [founder questions](<reports/Ishara feasibility research.md#unresolved-founder-questions>) using device/data findings: return language, per-call navigation, posture, correction tradeoffs, phrase boundaries, cloud-frame consent, supported booking outcome and distribution route. Only then write requirements with measurable acceptance criteria, choose architecture/interfaces, and break work into assignable tickets. A failed gate is evidence for a scope discussion, not permission to discard the ordinary-call requirement.
+Resolve [founder questions](2026-10-18-feasibility.md#unresolved-founder-questions) using device/data findings: return language, per-call navigation, posture, correction tradeoffs, phrase boundaries, cloud-frame consent, supported booking outcome and distribution route. Only then write requirements with measurable acceptance criteria, choose architecture/interfaces, and break work into assignable tickets. A failed gate is evidence for a scope discussion, not permission to discard the ordinary-call requirement.

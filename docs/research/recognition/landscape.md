@@ -13,7 +13,7 @@ does not yet support selecting one for our appointment-call demo.
 
 This is a research recommendation, not a selected production architecture.
 No new model inference, training, webcam tests, or paid service calls occurred.
-The [source audit](<../research_notes/ISL recognition source audit.md>) records
+The [source audit](source-audit.md) records
 the inspected files, revisions, reported results, access limits, and licenses.
 
 ## First, separate the tasks hidden behind “ISL detection”

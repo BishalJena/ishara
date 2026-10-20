@@ -1,5 +1,9 @@
 # ISL recognition, datasets, and decision models for Ishara
 
+> Historical source study, including inherited vocabulary and model assumptions.
+> See the [research index](../research/README.md) for later studies and the
+> [experiment record](../experiments/recognition.md) for executed local results.
+
 Research checked 18 October 2026. Target: iPhone 17; installed iOS version unknown. This is feasibility research, with no model execution, training, checkpoint downloads, API inference, installation, or accuracy validation. Source-backed facts, inferences, and gaps are distinguished below.
 
 **Controlling workflow correction:** the latest user clarification requires an ordinary cellular call from the user's own number directly to the clinic, with Ishara's synthesized speech injected into that existing Phone call. Bolna-originated calls, callbacks and two-call bridges are excluded. The platform researcher's candidate is Apple's AAC microphone injection plus system Live Captions. No API exposing the remote Phone audio or system caption text to Ishara has been verified; never assume the recognizer/decision model receives the receptionist's speech. Earlier appointment-form/relay ideas below are explicitly historical candidates, not requirements that override this clarification.
@@ -107,7 +111,7 @@ The inherited vocabulary arithmetic can be reconciled, but 25 signs is a capacit
 
 ### Cited Findings
 
-- The vocabulary/baseline inputs below are inherited project claims from the user's brief and updates, not new dataset verification. Original 26: Hello, Thank you, How are you, Good Morning, I, you, we, good, bad, happy, sad, sick, Doctor, Hospital, Restaurant, Medicine, Money, Bathroom, Telephone, Bus, Train, Today, Tomorrow, Mother, Father, Friend. Proposed operation: remove Tomorrow/we/Money/Friend/Train; add SORRY/PLEASE/PAIN/HELP. Arithmetic: 26 − 5 + 4 = **25 classifier labels**, then two separate head inputs. [Original brief](/Users/bishaljena/Downloads/ishara-readme-prompt.md); [updates](/Users/bishaljena/Downloads/ishara-updates.md)
+- The vocabulary/baseline inputs below are inherited project claims from the user's brief and updates, not new dataset verification. Original 26: Hello, Thank you, How are you, Good Morning, I, you, we, good, bad, happy, sad, sick, Doctor, Hospital, Restaurant, Medicine, Money, Bathroom, Telephone, Bus, Train, Today, Tomorrow, Mother, Father, Friend. Proposed operation: remove Tomorrow/we/Money/Friend/Train; add SORRY/PLEASE/PAIN/HELP. Arithmetic: 26 − 5 + 4 = **25 classifier labels**, then two separate head inputs. Sources: user-supplied `ishara-readme-prompt.md` and `ishara-updates.md`, local materials not distributed in this repository.
 - The literature distinguishes isolated recognition from sentence-level translation; ISLRTC's dictionary documents variants and non-one-to-one English mappings. This is why label count alone cannot define conversational coverage. [iSign project tasks](https://exploration-lab.github.io/iSign/); [ISLRTC FAQ](https://islrtc.nic.in/faq/)
 
 ### Inferences

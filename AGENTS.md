@@ -13,15 +13,16 @@
 ## Where to look
 
 - [Teammate handoff: capability, setup, research and next steps](docs/HANDOFF.md)
-- [Research entrypoint and corrections](docs/RESEARCH.md)
-- [Current product recommendation and alternatives](<docs/reports/Ishara hackathon product directions.md>)
-- [Current product research notes](<docs/research_notes/Ishara hackathon product directions/>)
-- [Earlier feasibility synthesis](<docs/reports/Ishara feasibility research.md>) — historical hard no-pivot constraint and unknown mandatory-Bolna status are superseded by the latest user instruction above.
+- [Research reading guide](docs/research/README.md)
+- [Product recommendation and alternatives](docs/research/product-directions.md)
+- [Measured ML results and limits](docs/experiments/recognition.md)
+- [Recognition commands](spikes/recognition/README.md)
+- [Bolna/device commands](spikes/call_flow/README.md)
+- [Earlier feasibility synthesis](docs/archive/2026-10-18-feasibility.md) — historical hard no-pivot constraint and unknown mandatory-Bolna status are superseded by the latest user instruction above.
 - [Claim ledger and external source inventory](docs/CLAIM-LEDGER.md)
 - [Provisional user workflow](docs/WORKFLOW.md)
-- [Validation gates](docs/VALIDATION-PLAN.md)
-- [Topic evidence notes](<docs/research_notes/Ishara feasibility research/>)
-- [Phase plan](PLAN.md): research → requirements → architecture → tickets → build
+- [Active tasks and validation gates](PLAN.md)
+- [Historical plans and experiment notebooks](docs/archive/README.md)
 
 Current recommendation is one user-controlled administrative appointment conversation, demonstrated seated with a propped phone. Preserve native calling if meaningful Bolna OSS speech orchestration and device composition prove out; an app-owned Bolna call is an explicit conditional pivot. No architecture has been approved. Bolna OSS text/audio/marks/clear primitives exist but routing/lifecycle defects require engineering; absence of a hosted standalone TTS endpoint does not mean there is no source-integration path.
 

@@ -1,6 +1,9 @@
 # Ishara research entrypoint
 
-New to the project? Start with the [teammate handoff](HANDOFF.md) for current
+> Historical sequence of research updates. Use the [research index](../research/README.md)
+> for navigation and the [handoff](../HANDOFF.md) for the current state.
+
+New to the project? Start with the [teammate handoff](../HANDOFF.md) for current
 capability, execution results, setup and next tasks. This index preserves the
 dated research and corrections that led to those decisions.
 
@@ -21,13 +24,13 @@ The fresh capture/review and session-separated calibration/evaluation tools are
 implemented. The prototype now defaults to deterministic intent templates, fixing
 the observed today-to-question behavior for the supported sentence fixtures.
 The LLM remains optional; no fresh user recordings, training, Bolna speech or
-call integration ran in this follow-up. See [PLAN.md](../PLAN.md) and the
-[recognition spike README](../spikes/recognition/README.md) for current commands.
+call integration ran in this follow-up. See [PLAN.md](../../PLAN.md) and the
+[recognition spike README](../../spikes/recognition/README.md) for current commands.
 The earlier paused/LLM-default statements below describe their dated checkpoints.
 
 ## Independent Ishaara AI audit — 20 October 2026
 
-[Website, paper and repository audit](<reports/Ishaara AI source audit.md>)
+[Website, paper and repository audit](../research/recognition/ishaara-ai-audit.md)
 distinguishes the released six-class GRU from the current eighteen-label YOLO
 browser pipeline. Real trained artifacts exist; the public evidence does not
 establish general ISL translation, independent-signer reliability or our
@@ -37,7 +40,7 @@ This was source/artifact inspection, not a new recognition benchmark.
 
 ## ASL transfer follow-up — 20 October 2026
 
-[ASL transfer for Ishara](<reports/ASL transfer for Ishara.md>) checks whether
+[ASL transfer for Ishara](../research/recognition/asl-transfer.md) checks whether
 sign-specific pretraining and a few ISL references can reduce our target-data
 needs. CISLR provides direct ASL-to-ISL prototype evidence; SignCLIP provides a
 released multilingual candidate with ISL in its inventory. The proposed next
@@ -53,7 +56,7 @@ now run in a small browser diagnostic. Replay yielded 8/11 selected dataset matc
 and 0/7 recorded intended-hello matches. Sentence generation worked for a bounded
 appointment request with an explicit purpose, but changed the meaning of a
 requested-day example. Recognition is not ready for the intended seated setup.
-See the [commands, measured results, and limitations](../spikes/recognition/README.md).
+See the [commands, measured results, and limitations](../../spikes/recognition/README.md).
 No new live footage, training, cloud inference, speech-provider output, or call
 integration was tested.
 
@@ -66,9 +69,9 @@ check and its limitations.
 
 ## Recognition update — 20 October 2026
 
-The [ISL recognition landscape](<reports/ISL recognition landscape.md>) studies
+The [ISL recognition landscape](../research/recognition/landscape.md) studies
 the user's Hugging Face/Kaggle leads, relevant papers, and the techniques behind
-them. The [source audit](<research_notes/ISL recognition source audit.md>) records
+them. The [source audit](../research/recognition/source-audit.md) records
 artifact revisions, exact label inventories, evaluation limits, and data terms.
 This source-based study supersedes the earlier default ordering of model trials.
 
@@ -80,15 +83,15 @@ the demo, and the call-audio gate remains separate.
 
 ## Current recommendation and scope — 19 October 2026
 
-**Recognition handoff and recorded results:** [validate AI4Bharat INCLUDE pretrained inference](tasks/validate-include-recognizer.md), with the earlier [reuse-options audit](<research_notes/Ishara hackathon product directions/recognizer-reuse-options.md>). The 20 October update above governs current recognition status.
+**Recognition handoff and recorded results:** [validate AI4Bharat INCLUDE pretrained inference](2026-10-20-include-validation.md), with the earlier [reuse-options audit](../research/recognition/reuse-options.md). The 20 October update above governs current recognition status.
 
 **Meaningful Bolna integration is mandatory by the user's latest instruction.** The user still prefers ordinary own-number Phone calling, and now explicitly permits researching deviations when needed. The immediate authorized work is a Bolna backend feasibility prototype; the polished app UX and sign-recognition implementation are deferred until its backend checkpoint. The earlier blanket prohibition on evaluating service-originated/app-owned calls or delegation is superseded. Researching a pivot does not approve its architecture.
 
-Read the [new product-directions report](<reports/Ishara hackathon product directions.md>) first. The primary bet is one user-controlled administrative appointment conversation, demonstrated seated with a propped iPhone, a changed offer and real repair. Preserve native calling if a substantive Bolna/device proof works; otherwise make an explicit app-owned Bolna-call pivot for the same task. Supervised errands and a face-to-face counter exchange are compared alternatives, not additional promised modes. Pickup coordination has strong specific problem evidence but more difficult outdoor signing posture.
+Read the [new product-directions report](../research/product-directions.md) first. The primary bet is one user-controlled administrative appointment conversation, demonstrated seated with a propped iPhone, a changed offer and real repair. Preserve native calling if a substantive Bolna/device proof works; otherwise make an explicit app-owned Bolna-call pivot for the same task. Supervised errands and a face-to-face counter exchange are compared alternatives, not additional promised modes. Pickup coordination has strong specific problem evidence but more difficult outdoor signing posture.
 
 Pinned OSS source now establishes an engineerable **text-input/audio-output Bolna transport with marks and clear messages**. Inspected routing/lifecycle defects mean it is not configuration-only or runtime-validated. The older hosted standalone-TTS not-found result remains valid for those checked hosted docs; it does not rule out source integration. Current research proposes two decisive engineering experiments for a future authorized build phase, rather than asking the founder to solve the integration.
 
-The [earlier feasibility report](<reports/Ishara feasibility research.md>), [claim ledger](CLAIM-LEDGER.md), [workflow](WORKFLOW.md) and [validation plan](VALIDATION-PLAN.md) preserve dated findings. Their hard no-pivot scope, optional-Bolna wording and unknown mandatory-use statements are historical and superseded by this notice and the new report. Platform audio boundaries and unexecuted empirical gates still apply. Impact/seamlessness are the user's working product criteria; no official judging weights or winning probability were established.
+The [earlier feasibility report](2026-10-18-feasibility.md), [claim ledger](../CLAIM-LEDGER.md), [workflow](../WORKFLOW.md) and [validation plan](../../PLAN.md) preserve dated findings. Their hard no-pivot scope, optional-Bolna wording and unknown mandatory-use statements are historical and superseded by this notice and the new report. Platform audio boundaries and unexecuted empirical gates still apply. Impact/seamlessness are the user's working product criteria; no official judging weights or winning probability were established.
 
 ## Corrections that govern the next phase
 
@@ -110,18 +113,18 @@ The iPhone 17 is confirmed, installed iOS is not. The current consulted Apple fe
 
 | Artifact | Purpose |
 |---|---|
-| [Current product-directions report](<reports/Ishara hackathon product directions.md>) | Primary appointment-call bet, four concrete directions, meaningful Bolna paths, explicit pivots, two decisive experiments and subsequent design work |
-| [Everyday workflow/product note](<research_notes/Ishara hackathon product directions/everyday-workflows.md>) | Primary Indian DHH research, existing VRS/text options, concrete tasks, agency and physical signing posture |
-| [Bolna integration-path note](<research_notes/Ishara hackathon product directions/bolna-paths.md>) | Pinned OSS input/output/lifecycle findings, hosted tools/events and exact supported-versus-engineerable boundaries |
-| [Demo/recognition feasibility note](<research_notes/Ishara hackathon product directions/demo-feasibility.md>) | Checkpoint/label-map audit, model/data limits, changed-offer repair demonstration and evidence priorities |
-| [Narrative feasibility report](<reports/Ishara feasibility research.md>) | Recommendation, rationale, alternatives, engineering gaps and founder questions |
-| [Working workflow](WORKFLOW.md) | Provisional persona, existing-call steps, added friction, user-owned decisions, conceptual data flow and repair |
-| [Validation plan](VALIDATION-PLAN.md) | Ordered device/data/model/provider gates, measurements and decision implications; none of the future experiments executed |
-| [Claim ledger and complete source inventory](CLAIM-LEDGER.md) | Stable claim IDs, exact URLs, evidence limits, source conflicts and every external URL retained from the topic notes |
-| [iOS and workflow note](<research_notes/Ishara feasibility research/ios-and-workflow.md>) | AAC, Phone ownership, captions/translation, camera/Dynamic Island, device and future face-to-face ASR constraints |
-| [Bolna and calls note](<research_notes/Ishara feasibility research/bolna-and-calls.md>) | Non-telephony qualification, three redacted read-only checks, competition facts; archived service-call findings explicitly superseded |
-| [Recognition and models note](<research_notes/Ishara feasibility research/recognition-and-models.md>) | Data/license distinctions, temporal/phrase recognition, Jev/Laya/Google limits, historical 27-item inventory and evaluation design |
-| [Project plan](../PLAN.md) | Completed source research and remaining gates; requirements → architecture → tickets → build are not started |
+| [Current product-directions report](../research/product-directions.md) | Primary appointment-call bet, four concrete directions, meaningful Bolna paths, explicit pivots, two decisive experiments and subsequent design work |
+| [Everyday workflow/product note](../research/everyday-workflows.md) | Primary Indian DHH research, existing VRS/text options, concrete tasks, agency and physical signing posture |
+| [Bolna integration-path note](../research/speech-device/bolna-paths.md) | Pinned OSS input/output/lifecycle findings, hosted tools/events and exact supported-versus-engineerable boundaries |
+| [Demo/recognition feasibility note](../research/speech-device/demo-feasibility.md) | Checkpoint/label-map audit, model/data limits, changed-offer repair demonstration and evidence priorities |
+| [Narrative feasibility report](2026-10-18-feasibility.md) | Recommendation, rationale, alternatives, engineering gaps and founder questions |
+| [Working workflow](../WORKFLOW.md) | Provisional persona, existing-call steps, added friction, user-owned decisions, conceptual data flow and repair |
+| [Validation plan](../../PLAN.md) | Ordered device/data/model/provider gates, measurements and decision implications; none of the future experiments executed |
+| [Claim ledger and complete source inventory](../CLAIM-LEDGER.md) | Stable claim IDs, exact URLs, evidence limits, source conflicts and every external URL retained from the topic notes |
+| [iOS and workflow note](../research/speech-device/ios-and-workflow.md) | AAC, Phone ownership, captions/translation, camera/Dynamic Island, device and future face-to-face ASR constraints |
+| [Bolna and calls note](../research/speech-device/bolna-and-calls.md) | Non-telephony qualification, three redacted read-only checks, competition facts; archived service-call findings explicitly superseded |
+| [Recognition and models note](2026-10-18-recognition-notes.md) | Data/license distinctions, temporal/phrase recognition, Jev/Laya/Google limits, historical 27-item inventory and evaluation design |
+| [Project plan](../../PLAN.md) | Completed source research and remaining gates; requirements → architecture → tickets → build are not started |
 
 ## Evidence date and meaning
 
@@ -133,4 +136,4 @@ No Deaf participant validation is available. Online sources and signer/session-h
 
 ## Next boundary
 
-Current source research is complete enough to guide the authorized backend prototype, not to promise feasibility. Follow the revised [immediate plan](../PLAN.md#immediate-plan-bolna-call-path-backend-prototype): prove text-to-audio/session control first, then use only a minimal diagnostic device harness to test Apple's AAC path on an existing call. Any cellular test uses the user's line, synthetic content and a consenting recipient; no Bolna-originated call. Full requirements, architecture and tickets for the app follow the backend checkpoint.
+Current source research is complete enough to guide the authorized backend prototype, not to promise feasibility. Follow the revised [immediate plan](2026-10-20-plan.md#immediate-plan-bolna-call-path-backend-prototype): prove text-to-audio/session control first, then use only a minimal diagnostic device harness to test Apple's AAC path on an existing call. Any cellular test uses the user's line, synthetic content and a consenting recipient; no Bolna-originated call. Full requirements, architecture and tickets for the app follow the backend checkpoint.

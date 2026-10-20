@@ -4,7 +4,8 @@ Checked 20 October 2026. This is a focused source review following the miniature
 experiment. No additional model was downloaded, executed, or trained.
 
 **Later execution:** the reference comparison has now run locally. See the
-[teammate handoff](../HANDOFF.md) for measured results and the fresh-data gate.
+[experiment record](../../experiments/recognition.md) for measured results and
+[active plan](../../../PLAN.md) for the fresh-data gate.
 The statements below describe this source-review checkpoint.
 
 ## Recommendation

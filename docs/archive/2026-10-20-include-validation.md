@@ -1,5 +1,8 @@
 # Validate the pretrained AI4Bharat INCLUDE recognizer
 
+> Archived task brief and results. Continue from [the active plan](../../PLAN.md);
+> do not repeat this task merely because an old checklist remains incomplete.
+
 **Current handoff:** [backend capability and next steps](../HANDOFF.md). This file
 preserves the original INCLUDE task and its execution. The later SignCLIP
 reference comparison and fixed-template composer are covered in the handoff and
@@ -13,8 +16,8 @@ dataset clips and 0/7 intended-hello recordings. Its local LLM/approval pipeline
 also exposed a sentence-meaning error. See the
 [miniature results and commands](../../spikes/recognition/README.md).
 The original INCLUDE checkpoint results below are preserved separately. See the
-[recognition landscape](<../reports/ISL recognition landscape.md>) and
-[source audit](<../research_notes/ISL recognition source audit.md>).
+[recognition landscape](../research/recognition/landscape.md) and
+[source audit](../research/recognition/source-audit.md).
 Results are preserved below; code is in `spikes/recognition/`.
 **Owner:** recognition/backend teammate. **Priority:** feasibility spike.
 
@@ -156,7 +159,7 @@ conversation.
 - [Pinned preprocessing](https://github.com/AI4Bharat/INCLUDE/blob/df348f4a640060d4d39f02556d9f96851e8c46c7/generate_keypoints.py)
 - [Pinned code license (MIT)](https://github.com/AI4Bharat/INCLUDE/blob/df348f4a640060d4d39f02556d9f96851e8c46c7/LICENSE)
 - [Original INCLUDE dataset (CC-BY-4.0)](https://zenodo.org/records/4010759)
-- [Broader pretrained/Jev/Laya/video-model comparison](<../research_notes/Ishara hackathon product directions/recognizer-reuse-options.md>)
+- [Broader pretrained/Jev/Laya/video-model comparison](../research/recognition/reuse-options.md)
 
 ### Result summary (20 October 2026, done in-house)
 
