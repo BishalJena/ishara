@@ -1,5 +1,10 @@
 # Ishara working user workflow
 
+**20 October update:** the [proposed recognition and call flow](<reports/Ishara proposed flow.md>)
+and its Eraser diagrams incorporate mandatory Bolna speech orchestration, current
+recognition research, and explicit approval before speech. The older local-TTS-only
+diagram below is historical and does not satisfy the current Bolna requirement.
+
 Research state: **18 October 2026.** This is a provisional workflow for discovery, not an approved architecture or implementation specification. Read the [research entrypoint](RESEARCH.md) and [evidence ledger](CLAIM-LEDGER.md) for qualifications.
 
 ## User and goal

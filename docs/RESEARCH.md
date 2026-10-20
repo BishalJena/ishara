@@ -1,8 +1,86 @@
 # Ishara research entrypoint
 
+New to the project? Start with the [teammate handoff](HANDOFF.md) for current
+capability, execution results, setup and next tasks. This index preserves the
+dated research and corrections that led to those decisions.
+
+## Executed reference-matching follow-up — 20 October 2026
+
+SignCLIP multilingual now runs locally with pinned source and checkpoint.
+Against the same five-concept public reference bank, its top match was hello for
+7/7 saved intended-hello attempts; SL-GCN features achieved 0/7. Public queries
+with another same-label reference scored 5/6 and 6/6 respectively, excluding the
+query itself. This is a development comparison, not an acceptance test.
+
+Unknown-sign rejection remains unresolved: an out-of-scope today clip matched
+hello at 0.931 similarity, above the 0.532–0.590 for the intended hello attempts.
+All retrieval replay outputs abstain. SignCLIP's original landmark extraction
+took a median 2.93 s on the webcam clips, so live latency is also unproven.
+
+The fresh capture/review and session-separated calibration/evaluation tools are
+implemented. The prototype now defaults to deterministic intent templates, fixing
+the observed today-to-question behavior for the supported sentence fixtures.
+The LLM remains optional; no fresh user recordings, training, Bolna speech or
+call integration ran in this follow-up. See [PLAN.md](../PLAN.md) and the
+[recognition spike README](../spikes/recognition/README.md) for current commands.
+The earlier paused/LLM-default statements below describe their dated checkpoints.
+
+## Independent Ishaara AI audit — 20 October 2026
+
+[Website, paper and repository audit](<reports/Ishaara AI source audit.md>)
+distinguishes the released six-class GRU from the current eighteen-label YOLO
+browser pipeline. Real trained artifacts exist; the public evidence does not
+establish general ISL translation, independent-signer reliability or our
+appointment vocabulary. The report checks exact input/output contracts, metric
+provenance, evaluation defects, sentence safeguards and practical reuse limits.
+This was source/artifact inspection, not a new recognition benchmark.
+
+## ASL transfer follow-up — 20 October 2026
+
+[ASL transfer for Ishara](<reports/ASL transfer for Ishara.md>) checks whether
+sign-specific pretraining and a few ISL references can reduce our target-data
+needs. CISLR provides direct ASL-to-ISL prototype evidence; SignCLIP provides a
+released multilingual candidate with ISL in its inventory. The proposed next
+experiment is reference matching against the existing SL-GCN baseline, before
+committing to classifier training. The local recognition failures, semantic
+limitations and call-path gates below remain unresolved.
+
+## Executed miniature — 20 October 2026
+
+The user authorized a local prototype after the source study. OpenHands SL-GCN,
+training-matched input handling, a local Qwen sentence model, and explicit approval
+now run in a small browser diagnostic. Replay yielded 8/11 selected dataset matches
+and 0/7 recorded intended-hello matches. Sentence generation worked for a bounded
+appointment request with an explicit purpose, but changed the meaning of a
+requested-day example. Recognition is not ready for the intended seated setup.
+See the [commands, measured results, and limitations](../spikes/recognition/README.md).
+No new live footage, training, cloud inference, speech-provider output, or call
+integration was tested.
+
+Follow-up testing used the user's open Helium browser and the real preview URL.
+All 18 saved clips reproduced those recognition results with cached landmarks.
+Nineteen backend tests and sixteen browser assertions pass. The check exposed and
+fixed stale draft text remaining visible after a failed request; the today
+sentence-meaning error remains. See the spike README for the reproducible browser
+check and its limitations.
+
+## Recognition update — 20 October 2026
+
+The [ISL recognition landscape](<reports/ISL recognition landscape.md>) studies
+the user's Hugging Face/Kaggle leads, relevant papers, and the techniques behind
+them. The [source audit](<research_notes/ISL recognition source audit.md>) records
+artifact revisions, exact label inventories, evaluation limits, and data terms.
+This source-based study supersedes the earlier default ordering of model trials.
+
+INCLUDE now runs in the local diagnostic harness. Recorded results are 10/11
+selected dataset clips and no hello predictions from seven intended-hello webcam
+segments. Tests are paused. Framing is a hypothesis, not a proven root cause;
+those reused recordings are development evidence. No candidate is approved for
+the demo, and the call-audio gate remains separate.
+
 ## Current recommendation and scope — 19 October 2026
 
-**New teammate handoff:** [validate AI4Bharat INCLUDE pretrained inference](tasks/validate-include-recognizer.md), with a [reuse-options audit](<research_notes/Ishara hackathon product directions/recognizer-reuse-options.md>). Recognition validation can run independently of the call-audio gate; model quality remains untested.
+**Recognition handoff and recorded results:** [validate AI4Bharat INCLUDE pretrained inference](tasks/validate-include-recognizer.md), with the earlier [reuse-options audit](<research_notes/Ishara hackathon product directions/recognizer-reuse-options.md>). The 20 October update above governs current recognition status.
 
 **Meaningful Bolna integration is mandatory by the user's latest instruction.** The user still prefers ordinary own-number Phone calling, and now explicitly permits researching deviations when needed. The immediate authorized work is a Bolna backend feasibility prototype; the polished app UX and sign-recognition implementation are deferred until its backend checkpoint. The earlier blanket prohibition on evaluating service-originated/app-owned calls or delegation is superseded. Researching a pivot does not approve its architecture.
 

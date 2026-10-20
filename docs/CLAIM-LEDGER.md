@@ -1,5 +1,30 @@
 # Ishara consolidated claim ledger
 
+## Executed ML update — 20 October 2026
+
+- **VERIFIED — bounded development replay:** pinned SignCLIP multilingual
+  embeddings ranked hello first for 7/7 reused intended-hello webcam segments,
+  compared with 0/7 using frozen SL-GCN features and identical public references.
+  Public leave-one-clip-out scorable queries: 5/6 SignCLIP, 6/6 SL-GCN.
+  These are nearest-reference ranks within five concepts, not accepted predictions,
+  signer-independent accuracy, or natural conversation evidence.
+- **VERIFIED — rejection limitation:** an unsupported today clip ranks hello
+  at 0.931 cosine similarity, exceeding every intended-hello match (0.532–0.590).
+  Similarity is not confidence. All diagnostic retrieval outputs abstain.
+- **VERIFIED — batch timing only:** original SignCLIP landmark extraction median
+  is ~2.93 s for the seven webcam clips; embedding median across the corpus is
+  ~54 ms. Cached replays do not measure live response. Two-second live latency,
+  fresh-session accuracy and unknown rejection remain **UNVERIFIED**.
+- **VERIFIED — sentence fixture:** fixed templates preserve the explicit
+  appointment request and requested day, and block conflicting days. Exact
+  editing and single-use approval pass browser checks. This replaces the LLM
+  as the default composer; it cannot correct a misrecognized concept.
+
+Evidence and exact scope: [recognition commands/results](../spikes/recognition/README.md),
+local ignored `artifacts/retrieval/replay-{signclip,slgcn}.json`, and
+`artifacts/mini/evaluation-templates.json`. This ML update does not validate the
+separate Bolna/device/call gates. The dated source ledger follows.
+
 Evidence checked **18 October 2026**. The latest user requirement controls product scope: ordinary cellular Phone call from the user's own number, mediated in place. Earlier service-originated proposals are superseded. All actual account observations are redacted below; no keys, account identifiers, telephone values or raw responses are recorded.
 
 ## Status legend
