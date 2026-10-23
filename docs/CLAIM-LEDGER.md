@@ -114,7 +114,8 @@ Evidence originally checked **18 October 2026**; rows marked *(23 Oct)* were che
 | H01 | Submission is 31 Oct2026; ideas with a voice component qualify. | VERIFIED — official page | [Buildathon](https://www.bolna.ai/symphony/buildathon/): shortlist Nov3, interviews Nov5–7, results Nov8, finale Nov20 Bengaluru; top3 travel/top10 tickets. Not independent organizer confirmation beyond retrieved page. |
 | H02 | Bolna integration is mandatory under the buildathon rules. | CONTRADICTED *(23 Oct)* | [Official page](https://www.bolna.ai/symphony/buildathon/): "Build whatever you like, as long as voice is part of it." Sponsors listed: Plivo, Exotel, Sarvam, Cartesia, Deepgram, Kalpa Labs. The team chose Bolna anyway. Exact deadline time/timezone, assets and rubric remain unestablished. |
 | H03 | Heroku Eco dynos stay awake for a live custom-LLM endpoint. | CONTRADICTED *(23 Oct)* | [Heroku app sleeping](https://www.heroku.com/blog/app_sleeping_on_heroku/): Eco web dynos sleep after 30 min without traffic. [Request timeout](https://devcenter.heroku.com/articles/request-timeout): 30 s to respond; [WebSockets](https://devcenter.heroku.com/articles/websockets): idle connections need pings. Use Basic+ dynos. |
-| H04 | Cerebras inference is free without setup. | CONTRADICTED — qualified *(23 Oct)* | [Change log](https://inference-docs.cerebras.ai/support/change-log): new accounts get $5 credit after adding a verified payment method; free tier has lower limits ([rate limits](https://inference-docs.cerebras.ai/support/rate-limits)). [Models](https://inference-docs.cerebras.ai/models/overview): `gpt-oss-120b` ~3000 tok/s, `qwen-3.8-27b` ~1850 tok/s (vendor figures). |
+| H04 | Cerebras inference is free without setup. | CONTRADICTED — qualified *(23 Oct)* | [Change log](https://inference-docs.cerebras.ai/support/change-log): new accounts get $5 credit after adding a verified payment method; free tier has lower limits ([rate limits](https://inference-docs.cerebras.ai/support/rate-limits)). [Models](https://inference-docs.cerebras.ai/models/overview): `gpt-oss-120b` ~3000 tok/s, `qwen-3.8-27b` ~1850 tok/s (vendor figures). The composer moved to Groq on 23 Oct (H05). |
+| H05 | Groq serves `openai/gpt-oss-120b` through an OpenAI-compatible Chat Completions API at about $0.15 per million input and $0.60 per million output tokens. | DOCS-ONLY *(23 Oct)* | [OpenAI compatibility](https://console.groq.com/docs/openai): base URL `https://api.groq.com/openai/v1` with the OpenAI SDKs. [Model page](https://console.groq.com/docs/model/openai/gpt-oss-120b) and [pricing](https://groq.com/pricing): input $0.15/M, cached input $0.075/M, output $0.60/M (snapshot). No live Groq request executed; latency against the 1.5 s budget and free-tier limits unmeasured. |
 
 ## Complete checked-source inventory
 
@@ -261,6 +262,9 @@ Sources checked for the demo build decisions. Not renumbered into the S-series a
 | [Bolna custom LLM inference](https://www.bolna.ai/docs/custom-llm-inference.md) | B23, B27 |
 | [Bolna graph agent settings](https://www.bolna.ai/docs/graph-agent/settings.md) | B23 |
 | [Bolna open-source runtime](https://github.com/bolna-ai/bolna) | B23, B28 |
+| [Groq OpenAI compatibility](https://console.groq.com/docs/openai) | H05 |
+| [Groq gpt-oss-120b model page](https://console.groq.com/docs/model/openai/gpt-oss-120b) | H05 |
+| [Groq pricing](https://groq.com/pricing) | H05 |
 
 ## Retrieval limits and conflicts
 
