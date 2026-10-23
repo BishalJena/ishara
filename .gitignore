@@ -57,3 +57,6 @@ backend/artifacts/
 
 # Light test venvs (e.g. spikes/recognition/.venv-light)
 .venv-*/
+
+# Mutation testing workspace (mutmut)
+backend/mutants/

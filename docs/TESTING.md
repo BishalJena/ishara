@@ -57,38 +57,32 @@ with a custom LLM), real latency, Deepgram transcripts or Sarvam audio. V4 does 
 ## 4. Mutation testing for the safety rules
 
 PLAN §8: every safety rule needs a test that fails if the rule is removed. Measure it
-with [mutmut](https://github.com/boxed/mutmut) (no new dependency; run it ad hoc).
-
-| Module | Rule | Target kill rate |
-|---|---|---|
-| `app/calls.py` | single-use approval, stale turn, ended call, allowlist, `not_delivered` | > 90% |
-| `app/custom_llm.py` | speak only after `claim_reply`, `[silence]` → holding line, captions | > 90% |
-| `app/validator.py`, `app/templates.py` | no invented day/time/number/name, chip meanings kept, 25-word cap | > 90% |
-| `app/markers.py`, `app/contacts.py` | marker parsing, `contact_id=+E164` parsing | > 90% |
+with [mutmut](https://github.com/boxed/mutmut) (a dev dependency; `[tool.mutmut]` in
+`backend/pyproject.toml` lists the modules, `backend/mutants/` is git-ignored).
 
 ```sh
 cd backend
-uv run --with mutmut mutmut run                  # reads [tool.mutmut] below
-uv run --with mutmut mutmut results              # survivors and kill counts
-uv run --with mutmut mutmut show <mutant-name>   # the diff of one survivor
-uv run --with mutmut mutmut browse               # interactive retest after fixing tests
+rm -rf mutants && uv run mutmut run --max-children 4   # more children crash workers on macOS ("segfault")
+uv run mutmut results --all true                       # status of every mutant
+uv run mutmut show <mutant-name>                       # the diff of one survivor
 ```
 
-Suggested `[tool.mutmut]` block when the team adopts it (add `mutants/` to `.gitignore`):
+Last run (23 Oct 2026, after the backend integration):
 
-```toml
-[tool.mutmut]
-source_paths = ["app/"]
-only_mutate = ["app/calls.py", "app/custom_llm.py", "app/validator.py", "app/templates.py", "app/markers.py", "app/contacts.py"]
-also_copy = ["fakes/", "tests/"]
-pytest_add_cli_args_test_selection = ["tests/"]
-```
+| Module | Rule | Killed / mutants | Survivors |
+|---|---|---|---|
+| `app/sessions.py` | single-use approval, stale turn, ended call, single claim | 102 / 104 (98.1%) | 2 equivalent: exception text, phase of a turn already dropped from flight |
+| `app/calls.py` | allowlist, approval → event, delivery timer, `not_delivered`, webhook | 355 / 384 (92.4%) | 29: error and exception message texts (10), socket `open` flags after a disconnect (6), timer cancellation (7, equivalent: an expired timer checks the turn id), task set retention (2), default timeout, bearer parsing edge cases (2), exception args |
+| `app/custom_llm.py` | speak only after `claim_reply`, routing first, `[silence]`, captions | 131 / 133 (98.5%) | 2 equivalent: join separator before a substring check, an `assert` |
+| `app/validator.py` | no invented day/time/number/name, chip meanings kept, 25-word cap | 228 / 281 (81.1%); 228 / 238 (95.8%) without the 43 import-time mutants | 43 in `_temporal_table`, which runs at import so mutmut can't switch it; a hand pass of 20 mutants on that table killed 18 (the other 2 are a redundant row and a stricter-only regex). 10 more are equivalent |
+| `app/tts.py` | one voice per `turn_id`, failures release the turn | 18 / 18 (100%) | none |
+| `app/contacts.py` | `contact_id=+E164` parsing, no number in errors | 18 / 19 (94.7%) | 1 equivalent (`rpartition`) |
+| `app/markers.py` | marker parsing | 57 / 58 (98.3%) | 1 equivalent (both groups are in one optional group) |
 
 Each surviving mutant is either a missing test (write it) or an equivalent mutant (note
-why in the PR). Run before G1 and after any change to a safety module. The E2E suite
-was checked this way against a throwaway implementation: removing single-use claims,
-stale-turn checks, the ended-call guard, the allowlist, the `[silence]` branch, caption
-forwarding or the `spoken` confirmation each fails at least one test.
+why in the PR). Run before G1 and after any change to a safety module. The test suite
+refuses DNS lookups of non-loopback hosts (`tests/conftest.py`), so a mutant that drops
+a fake transport fails instead of reaching a real API.
 
 ## 5. Day-by-day checklist
 
