@@ -243,3 +243,162 @@ class BlockingSource:
         iterator = await asyncio.to_thread(self._make_iterator)
         while (item := await asyncio.to_thread(next, iterator, _End.DONE)) is not _End.DONE:
             yield item
+
+
+# ---- backend client ----
+
+
+class Transport(Protocol):
+    """The slice of a websockets ClientConnection the bridge uses; tests pass a fake."""
+
+    async def send(self, message: str) -> None: ...
+
+    def __aiter__(self) -> AsyncIterator[str | bytes]: ...
+
+    async def close(self) -> None: ...
+
+
+HELP = (f"signs: {' '.join(SIGNS)}  (? = unsure, never sent)\n"
+        "x remove last chip | c clear turn | s SEND draft | q yes|no|wait|repeat quick reply\n"
+        "stop cancel unspoken output | e end call | h help")
+
+
+class Bridge:
+    """Connects recognition sources and terminal commands to one call's WebSocket."""
+
+    def __init__(self, transport: Transport, state: TurnState | None = None,
+                 out: Callable[[str], None] = print) -> None:
+        self.transport, self.out = transport, out
+        self.state = state or TurnState()
+        self.manual = ManualSource()
+        self._tasks: list[asyncio.Task[None]] = []
+
+    async def send(self, message: Message | None) -> None:
+        if message is not None:
+            await self.transport.send(json.dumps(message))
+
+    async def on_result(self, result: Result) -> None:
+        try:
+            message = self.state.add(result)
+        except ChipLimit as error:
+            self.out(f"! {error}")
+            return
+        self._show_chips()
+        await self.send(message)
+
+    async def handle_line(self, line: str) -> bool:
+        """Runs one terminal line. Returns False when the user ended the call."""
+        words = line.split()
+        if not words:
+            return True
+        command, args = words[0].lower(), words[1:]
+        if command == "x":
+            message = self.state.remove_last()
+            self._show_chips()
+            await self.send(message)
+        elif command == "c":
+            self.state.clear()
+            self.out("turn cleared")
+        elif command == "s":
+            await self._send_approval(self.state.approve())
+        elif command == "q":
+            name = args[0].lower() if len(args) == 1 else ""
+            if name not in QUICK_REPLIES:
+                self.out(f"! quick reply is one of: {' '.join(QUICK_REPLIES)}")
+                return True
+            await self._send_approval(self.state.quick_reply(name))
+        elif command == "stop":
+            await self.send(self.state.stop())
+        elif command == "e":
+            await self.send(self.state.end())
+            self.out("call ended by you; nothing more will be sent")
+            return False
+        elif command in ("h", "help"):
+            self.out(HELP)
+        else:
+            try:
+                results = [parse_result(word) for word in words]
+            except ValueError as error:
+                self.out(f"! {error}")
+                return True
+            for result in results:
+                self.manual.feed(result)
+        return True
+
+    async def on_server(self, raw: str | bytes) -> None:
+        message = json.loads(raw)
+        kind = message["type"]
+        if kind == "status":
+            self.out(f"[status] {message['state']}")
+            if message["state"] == "speaking":
+                self.out("Speaking now...")
+            elif message["state"] == "ended":
+                self.state.on_ended()
+                self.out("call ended; nothing more will be sent")
+        elif kind == "caption":
+            self.out(f"receptionist: {message['text']}")
+        elif kind == "draft":
+            draft = self.state.on_draft(message["turn_id"], message["text"], message["source"])
+            if draft is not None:
+                self.out(f"draft ({draft.source}): {draft.text}   [s = SEND]")
+        elif kind == "spoken":
+            if (text := self.state.on_spoken(message["turn_id"])) is not None:
+                self.out(f"Delivered: {text}")
+        elif kind == "not_delivered":
+            if (text := self.state.on_not_delivered(message["turn_id"])) is not None:
+                self.out(f"! not delivered ({message['reason']}), tap SEND again (s): {text}")
+        elif kind == "error":
+            self.out(f"! backend error {message['code']}: {message['message']}")
+        else:
+            self.out(f"(ignored unknown message type {kind!r})")
+
+    async def run(self, lines: AsyncIterator[str],
+                  sources: tuple[RecognitionSource, ...] = ()) -> None:
+        """Runs until the user ends the call, the terminal closes or the backend hangs up."""
+        self.out(HELP)
+        try:
+            async with asyncio.TaskGroup() as group:
+                self._tasks = [group.create_task(self._pump_server()),
+                               group.create_task(self._pump_lines(lines)),
+                               *(group.create_task(self._pump_source(source))
+                                 for source in (self.manual, *sources))]
+        finally:
+            await self.transport.close()
+
+    async def _send_approval(self, message: Message | None) -> None:
+        if message is None:
+            self.out("nothing to send yet: wait for a draft" if not self.state.ended
+                     else "call ended; nothing will be sent")
+            return
+        self.out(f"SEND: {message['text']}")
+        await self.send(message)
+
+    def _show_chips(self) -> None:
+        chips = " ".join(f"[{chip or '?'}]" for chip in self.state.chips) or "(none)"
+        self.out(f"chips: {chips}")
+
+    async def _pump_server(self) -> None:
+        try:
+            async for raw in self.transport:
+                await self.on_server(raw)
+        finally:
+            if not self.state.ended:
+                self.state.on_ended()
+                self.out("connection closed; nothing will be sent")
+            self._stop_others()
+
+    async def _pump_lines(self, lines: AsyncIterator[str]) -> None:
+        async for line in lines:
+            if not await self.handle_line(line):
+                break
+        self._stop_others()
+
+    async def _pump_source(self, source: RecognitionSource) -> None:
+        async for result in source.results():
+            await self.on_result(result)
+
+    def _stop_others(self) -> None:
+        current = asyncio.current_task()
+        for task in self._tasks:
+            if task is not current:
+                task.cancel()
