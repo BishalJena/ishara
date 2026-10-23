@@ -31,8 +31,9 @@ it is plan task R0. The older browser diagnostic also supports today and locatio
 Its recognizer is still SL-GCN; uncalibrated SignCLIP ranks are not connected to
 composition or speech.
 
-**Composer (decided 23 Oct):** a Cerebras LLM drafts the sentence from the chips
-plus the live call transcript, a validator rejects missing meanings or invented
+**Composer (decided 23 Oct):** a Groq LLM (`openai/gpt-oss-120b`; it replaced
+Cerebras, which is not free) drafts the sentence from the chips plus the live call
+transcript, a validator rejects missing meanings or invented
 days, times, numbers and names, and the fixed templates are the fallback. The
 earlier local Qwen experiment changed the meaning of a requested-day example, which
 is why the validator and template fallback exist. No composer can repair an
