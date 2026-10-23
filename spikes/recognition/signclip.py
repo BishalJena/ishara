@@ -6,6 +6,7 @@ The unused text encoder and optimizer are not instantiated.
 from __future__ import annotations
 
 import argparse
+import functools
 import hashlib
 import importlib.util
 import json
@@ -35,6 +36,7 @@ def sha256(path):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
+@functools.cache  # the git checks cost tens of ms; a live segment cannot pay them each time
 def upstream():
     revision = subprocess.check_output(
         ["git", "-C", str(SOURCE), "rev-parse", "HEAD"], text=True).strip()
@@ -129,16 +131,28 @@ def extract(path, cache_dir=None):
                              additional_holistic_config={"model_complexity": 1})
     finally:
         cap.release()
+    features, measured = pose_features(pose)
+    quality = {"source_sha256": digest, "extractor": CONTRACT, "fps": fps,
+               "width": width, "height": height, **measured, "cache_hit": False}
+    quality["landmark_ms"] = 1000 * (time.perf_counter() - start)
+    if cache:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(cache, features=features, quality=json.dumps(quality))
+    return features, quality
+
+
+def pose_features(pose):
+    """Upstream preprocessing plus the tracking-quality fractions the decision reads."""
     confidence = pose.body.confidence[:, 0]
     if len(confidence) < 4:
         raise ValueError("Need at least four video frames")
+    if len(confidence) > MAX_FRAMES:
+        raise ValueError("SignCLIP limit is 256 frames; no silent truncation")
     quality = {
-        "source_sha256": digest, "extractor": CONTRACT, "frames": len(confidence),
-        "fps": fps, "width": width, "height": height,
+        "frames": len(confidence),
         "pose_fraction": float(np.mean(np.min(confidence[:, [11, 12]], axis=1) >= 0.5)),
         "hand_fraction": float(np.mean(np.any(confidence[:, 501:543] > 0, axis=1))),
         "face_fraction": float(np.mean(np.any(confidence[:, 33:501] > 0, axis=1))),
-        "cache_hit": False,
     }
     if quality["pose_fraction"] == 0:
         raise ValueError("No tracked shoulders; cannot normalize SignCLIP input")
@@ -146,11 +160,37 @@ def extract(path, cache_dir=None):
     features = np.asarray(demo.preprocess_pose(pose)[0], dtype=np.float32)
     if features.shape != (len(confidence), 609) or not np.isfinite(features).all():
         raise ValueError("Invalid SignCLIP pose features")
-    quality["landmark_ms"] = 1000 * (time.perf_counter() - start)
-    if cache:
-        cache.parent.mkdir(parents=True, exist_ok=True)
-        np.savez_compressed(cache, features=features, quality=json.dumps(quality))
     return features, quality
+
+
+def holistic_frame(results, width, height):
+    """One legacy Holistic result in pose-format's process_holistic layout.
+
+    Lets a live tracker reuse its per-frame landmarks instead of re-running
+    Holistic on the cut segment. Order: body, face, left hand, right hand, body world.
+    """
+    from pose_format.utils.holistic import FACE_POINTS_NUM, body_points, component_points
+
+    parts = (body_points(results.pose_landmarks, width, height, 33),
+             component_points(results.face_landmarks, width, height, FACE_POINTS_NUM(0)),
+             component_points(results.left_hand_landmarks, width, height, 21),
+             component_points(results.right_hand_landmarks, width, height, 21),
+             body_points(results.pose_world_landmarks, width, height, 33))
+    return np.concatenate([p[0] for p in parts]), np.concatenate([p[1] for p in parts])
+
+
+def holistic_pose(frames, fps, width, height):
+    """A Pose from holistic_frame() outputs, with load_holistic's header (no refined face)."""
+    from pose_format import Pose
+    from pose_format.numpy.pose_body import NumPyPoseBody
+    from pose_format.pose_header import PoseHeader, PoseHeaderDimensions
+    from pose_format.utils.holistic import holistic_components
+
+    header = PoseHeader(version=0.2, dimensions=PoseHeaderDimensions(width=width, height=height, depth=0),
+                        components=holistic_components("XYZC", 0))
+    data = np.expand_dims(np.stack([points for points, _ in frames]), axis=1)
+    confidence = np.expand_dims(np.stack([conf for _, conf in frames]), axis=1)
+    return Pose(header, NumPyPoseBody(data=data, confidence=confidence, fps=fps))
 
 
 @torch.inference_mode()
