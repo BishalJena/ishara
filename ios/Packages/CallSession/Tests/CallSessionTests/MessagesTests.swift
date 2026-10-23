@@ -31,11 +31,11 @@ final class MessagesTests: XCTestCase {
         try assertEncodes(AppMessage.end, python: #"{"type":"end"}"#)
     }
 
-    func testEveryChipEncodesAsBackendSignLiteral() throws {
-        let text = try WireCoding.encodeText(.chips(turnID: t1, chips: Sign.allCases))
+    func testEverySignEncodesAsBackendSignLiteral() throws {
+        let data = try WireCoding.makeEncoder().encode(Sign.allCases)
         XCTAssertEqual(
-            text,
-            #"{"chips":["hello","thankyou","yes","no","sorry","doctor","today","tomorrow","morning","afternoon","evening","time"],"turn_id":"t1","type":"chips"}"#
+            String(decoding: data, as: UTF8.self),
+            #"["hello","thankyou","yes","no","sorry","doctor","today","tomorrow","morning","afternoon","evening","time"]"#
         )
     }
 
