@@ -18,13 +18,30 @@ struct AppServices {
     }
 
     func makeRecognition() -> any RecognitionController {
-        ScriptedRecognitionController(script: options.replayScript, timeScale: options.fakeTimeScale)
+        switch options.recognition {
+        case .scripted:
+            return ScriptedRecognitionController(script: options.replayScript, timeScale: options.fakeTimeScale)
+        case .pipeline:
+            let assets = RecognitionAssets.inMainBundle()
+            let feed: any FrameFeed = Self.isSimulator ? ClipFeed(clips: assets.sampleClips) : CameraFeed()
+            return PipelineRecognitionController(feed: feed, notice: assets.notice) {
+                try assets.makeComponents()
+            }
+        }
     }
 
     func makeDriver(recognition: any RecognitionController) -> any CallDriver {
-        // The fake call plays its script through the scripted recognizer.
+        // The fake call plays its script through the scripted recognizer, if that's in use.
         FakeCallDriver(
             options: options.fakeDriverOptions,
             recognition: options.replayScript.isEmpty ? recognition as? ScriptedRecognitionController : nil)
+    }
+
+    static var isSimulator: Bool {
+        #if targetEnvironment(simulator)
+        true
+        #else
+        false
+        #endif
     }
 }

@@ -1,0 +1,5 @@
+# Personal recordings and large models bundled locally; see Ishara/LocalAssets/README.md.
+Ishara/LocalAssets/*
+!Ishara/LocalAssets/README.md
+
+xcuserdata/

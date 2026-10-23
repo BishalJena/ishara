@@ -16,4 +16,11 @@ final class AppServicesTests: XCTestCase {
         XCTAssertTrue(services.makeRecognition() is ScriptedRecognitionController)
         XCTAssertTrue(services.makeDriver(recognition: StubRecognition()) is FakeCallDriver)
     }
+
+    func testPipelineRecognitionWhenAsked() {
+        var options = DemoLaunchOptions()
+        options.recognitionOverride = .pipeline
+
+        XCTAssertTrue(AppServices(options: options).makeRecognition() is PipelineRecognitionController)
+    }
 }

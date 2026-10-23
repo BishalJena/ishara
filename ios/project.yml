@@ -38,6 +38,13 @@ targets:
     platform: iOS
     sources:
       - path: Ishara
+        excludes:
+          - LocalAssets
+          - LocalAssets/**
+      # Untracked models and recordings (see Ishara/LocalAssets/README.md), copied as a folder.
+      - path: Ishara/LocalAssets
+        type: folder
+        buildPhase: resources
     dependencies:
       - package: CallSession
       - package: RecognitionCore
