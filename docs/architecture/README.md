@@ -33,3 +33,9 @@ is re-exported:
   to Groq on 23 October because Cerebras is not free; the validator and template fallback
   are unchanged.
 
+## Build status behind the board (23 October)
+
+The board shows the target design. The backend, iOS app shell and packages, Core ML
+conversion and Mac fallback exist as open PRs with offline tests; nothing has run against
+real Bolna or on an iPhone yet. See [PLAN.md §6](../../PLAN.md#6-schedule-and-todos) and
+the component table in [§3](../../PLAN.md#components-and-repo-layout-new-code).
