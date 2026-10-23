@@ -45,7 +45,7 @@ class Chips(unittest.TestCase):
             turn.add("hospital")
         for _ in range(mb.MAX_CHIPS):
             turn.add("yes")
-        with self.assertRaises(ValueError):
+        with self.assertRaises(mb.ChipLimit):
             turn.add("no")
         turn.add(None)  # unsure entries are not sent, so they don't count
         self.assertEqual(len(turn.sendable), mb.MAX_CHIPS)
@@ -158,6 +158,12 @@ class Delivery(unittest.TestCase):
 
 
 class End(unittest.TestCase):
+    def test_stop_never_queues_text(self):
+        turn = state("hello")
+        turn.on_draft("t1", "Hello.", "llm")
+        self.assertEqual(turn.stop(), {"type": "stop"})
+        self.assertEqual((turn.turn_id, turn.draft), ("t1", mb.Draft("t1", "Hello.", "llm")))
+
     def test_end_is_sent_once_and_blocks_everything_after(self):
         turn = state("hello")
         turn.on_draft("t1", "Hello.", "llm")
@@ -165,7 +171,7 @@ class End(unittest.TestCase):
         self.assertIsNone(turn.end())
         self.assertEqual((turn.chips, turn.draft), ([], None))
         for action in (lambda: turn.add("yes"), lambda: turn.add(None), turn.remove_last,
-                       turn.approve, lambda: turn.quick_reply("yes"),
+                       turn.approve, turn.stop, lambda: turn.quick_reply("yes"),
                        lambda: turn.on_draft(turn.turn_id, "Yes.", "llm")):
             self.assertIsNone(action())
         self.assertEqual(turn.chips, [])

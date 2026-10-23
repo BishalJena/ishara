@@ -32,6 +32,10 @@ def new_turn_id() -> str:
     return uuid.uuid4().hex
 
 
+class ChipLimit(ValueError):
+    """The turn already holds MAX_CHIPS sendable chips."""
+
+
 @dataclass(frozen=True)
 class Draft:
     turn_id: str
@@ -65,7 +69,7 @@ class TurnState:
         if self.ended:
             return None
         if result is not None and len(self.sendable) >= MAX_CHIPS:
-            raise ValueError(f"at most {MAX_CHIPS} chips per turn")
+            raise ChipLimit(f"at most {MAX_CHIPS} chips per turn; remove one (x) or clear (c)")
         before = self.sendable
         self.chips.append(result)
         return self._chips_message(before)
@@ -120,6 +124,10 @@ class TurnState:
         if text is not None and not self.ended:
             self.undelivered = (turn_id, text)
         return text
+
+    def stop(self) -> Message | None:
+        """STOP cancels unspoken output on the backend; it never queues anything new."""
+        return None if self.ended else {"type": "stop"}
 
     def end(self) -> Message | None:
         if self.ended:
