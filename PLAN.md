@@ -55,7 +55,7 @@ Agreed on 23 October 2026. Raise any change explicitly; don't switch silently.
 | D4 | Chips → sentence | **Groq LLM** (OpenAI-compatible API, model `openai/gpt-oss-120b`) drafts the sentence using the chips plus the live transcript, then a **validator** checks it. Fixed **templates** are the fallback. Replaced Cerebras on 23 Oct | Fast, context-aware wording; templates catch meaning drift. Cerebras is not free; Groq is billed per token at a low rate (§10) |
 | D5 | Vocabulary | **12 signs** (see §5), one sign at a time with hands down between signs. Wait and Repeat are buttons | Enough for the script; small enough to record and rehearse |
 | D6 | Where recognition runs | **On the iPhone**: MediaPipe Holistic for iOS plus SignCLIP converted to Core ML. The **Mac is the backup** | On-device is the pitch; the Mac replay pipeline (extraction, SignCLIP embedding, reference matching) already runs, though it has no calibrated cut-off yet and abstains on everything until R2b |
-| D7 | Backend hosting | Small Python backend on **Heroku** (**Basic dyno or higher**, never Eco) | Team has credits; Eco dynos sleep and Bolna would hear silence |
+| D7 | Backend hosting | Small Python backend on **Heroku**, **EU** region, **Basic dyno or higher** (never Eco). Deployed by pushing `backend/` with `git subtree` (`backend/HEROKU.md`) | Team has credits; Eco dynos sleep and Bolna would hear silence. EU is closer to India than the default US region (latency not measured) |
 
 Already settled: native **SwiftUI** app, **SignCLIP** as the main recognizer
 (SL-GCN as comparison), and **nothing is spoken unless the user taps SEND**.
@@ -157,10 +157,19 @@ Captions (the app can't read them), so the composer gets chips only and no trans
 `POST /v1/chat/completions` (custom LLM, OpenAI streaming format, bearer
 `CUSTOM_LLM_TOKEN`, must be public HTTPS).
 
-**Environment variables** (names only; values stay in Heroku config / local `.env`):
-`APP_TOKEN`, `BOLNA_API_KEY`, `BOLNA_AGENT_ID`, `CUSTOM_LLM_TOKEN`,
-`CEREBRAS_API_KEY`, `CEREBRAS_MODEL`, `SARVAM_API_KEY` (Path A only),
-`ALLOWED_RECIPIENTS` (consenting test numbers only).
+**Environment variables** (names only; values stay in Heroku config / local `.env`;
+`.env.example` lists them):
+
+| Name | What it is |
+|---|---|
+| `APP_TOKEN` | Bearer token the app and the Mac bridge send to the backend |
+| `BOLNA_API_KEY`, `BOLNA_AGENT_ID` | Bolna account key and the graph agent made in V3 |
+| `CUSTOM_LLM_TOKEN` | Bearer token Bolna sends to our custom-LLM endpoint |
+| `GROQ_API_KEY`, `GROQ_MODEL` | Composer LLM; model defaults to `openai/gpt-oss-120b`. No key means templates only |
+| `SARVAM_API_KEY` | Path A only (`/tts`) |
+| `ALLOWED_RECIPIENTS` | Comma-separated `contact_id=+E164` entries, consenting teammates only (e.g. contact id `clinic`). The app sends the contact id, never a number |
+| `PUBLIC_BASE_URL` | Public HTTPS base URL of the backend; the custom LLM is registered at `PUBLIC_BASE_URL/v1` |
+| `CUSTOM_LLM_SHAPE_LOG` | Optional. File under the ignored `backend/artifacts/` that gets one redacted line per custom-LLM request (for the V4 spike) |
 
 ---
 
@@ -231,11 +240,11 @@ picked up without earlier context.
 ### Fri 23 Oct: set up
 
 - [ ] **H1 [You]** Create or confirm accounts and put the keys in the local `.env` (never in Git):
-  Bolna API key with credits, Groq API key, Heroku app with a **Basic** dyno, and an
-  Apple developer team in Xcode.
+  Bolna API key with credits, Groq API key, Heroku app in the **EU** region with a
+  **Basic** dyno, and an Apple developer team in Xcode.
   *Done:* the backend's config check (V1) reports every key present.
 - [ ] **H2 [You]** Give the consenting receptionist-teammate's number for `ALLOWED_RECIPIENTS`
-  (it goes only in Heroku config / `.env`, never in the repo).
+  as a `clinic=+E164` entry (it goes only in Heroku config / `.env`, never in the repo).
 - [ ] **H3 [You]** Start learning the 12 signs from the reference videos (§5).
 - [x] **P0 [Build]** Plan, decisions, board and doc fixes (this branch).
 - [ ] **R0 [Build]** Extend the recognition tools from 5 to the 12 signs:
