@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -7,8 +8,11 @@ import pytest
 from app.bolna_agent import (
     CALL_TIMEOUT_S,
     CUSTOM_LLM_MODEL,
+    PLACEHOLDER_PUBLIC_BASE_URL,
     build_agent_payload,
     custom_llm_base_url,
+    placeholder_payload,
+    render_agent_json,
 )
 from app.markers import (
     DISCLOSURE,
@@ -20,6 +24,7 @@ from app.markers import (
 )
 
 BASE_URL = "https://ishara.example.com/v1"
+AGENT_JSON = Path(__file__).resolve().parents[1] / "bolna" / "agent.json"
 
 
 @pytest.fixture
@@ -178,3 +183,11 @@ def _keys(value: object) -> list[str]:
 def test_payload_holds_no_credential_fields(payload) -> None:
     suspicious = [k for k in _keys(payload) if "key" in k or "token" in k or "auth" in k]
     assert suspicious == ["max_tokens"]
+
+
+def test_committed_agent_json_matches_builder() -> None:
+    assert AGENT_JSON.read_text() == render_agent_json(placeholder_payload())
+
+
+def test_committed_agent_json_uses_the_placeholder_backend() -> None:
+    assert _llm_config(placeholder_payload())["base_url"] == (PLACEHOLDER_PUBLIC_BASE_URL + "/v1")
