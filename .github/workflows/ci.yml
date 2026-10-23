@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A new push to the same PR or branch makes the older run useless; cancel it to save minutes.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install (Python from backend/.python-version)
+        run: uv sync --locked
+      - name: Format
+        run: uv run --locked ruff format --check .
+      - name: Lint
+        run: uv run --locked ruff check .
+      - name: Tests
+        run: uv run --locked pytest -q
+
+  spikes-light:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      LIGHT_PY: ${{ github.workspace }}/.venv-light/bin/python
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          enable-cache: true
+          cache-dependency-glob: spikes/recognition/requirements-light.txt
+      - name: Create light venv
+        run: |
+          uv venv --python 3.11 .venv-light
+          uv pip install --python "$LIGHT_PY" -r spikes/recognition/requirements-light.txt
+      - name: call_flow tests (stdlib only)
+        run: |
+          "$LIGHT_PY" -m unittest discover -s spikes/call_flow -p 'test_*.py'
+      - name: Recognition tests (light deps)
+        working-directory: spikes/recognition
+        run: |
+          "$LIGHT_PY" -m unittest -v test_retrieval
+          echo "::notice::test_mini is not run in CI: it imports torch and transformers (requirements.txt)."
