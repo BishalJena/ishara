@@ -47,7 +47,7 @@ class ChatMessage(_Lenient):
     @property
     def text(self) -> str:
         if isinstance(self.content, list):
-            return "".join(part.text or "" for part in self.content if part.type == "text")
+            return "".join(part.text or "" for part in self.content)
         return self.content or ""
 
 

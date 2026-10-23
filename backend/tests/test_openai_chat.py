@@ -63,13 +63,20 @@ def test_request_keeps_unknown_fields_and_reads_content_parts() -> None:
                 {"role": "assistant", "content": None, "tool_calls": []},
             ],
             "tools": [{"type": "function", "function": {"name": "end_call"}}],
+            "functions": [{"name": "legacy"}],
             "chat_template_kwargs": {"enable_thinking": False},
         }
     )
     assert request.texts_by_role("system") == ["a"]
     assert request.texts_by_role("assistant") == [""]
-    assert request.tool_names() == ["end_call"]
-    assert request.top_level_keys() == ["chat_template_kwargs", "messages", "model", "tools"]
+    assert request.tool_names() == ["end_call", "legacy"]
+    assert request.top_level_keys() == [
+        "chat_template_kwargs",
+        "functions",
+        "messages",
+        "model",
+        "tools",
+    ]
 
 
 @pytest.mark.parametrize(
