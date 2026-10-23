@@ -36,8 +36,8 @@ from app.markers import WEBHOOK_PATH
 
 REQUIRED_ENV = {
     "register-llm": ("PUBLIC_BASE_URL", "BOLNA_API_KEY", "CUSTOM_LLM_TOKEN"),
-    "create": ("PUBLIC_BASE_URL", "BOLNA_API_KEY", "CUSTOM_LLM_TOKEN"),
-    "update": ("PUBLIC_BASE_URL", "BOLNA_API_KEY", "BOLNA_AGENT_ID", "CUSTOM_LLM_TOKEN"),
+    "create": ("PUBLIC_BASE_URL", "BOLNA_API_KEY", "BOLNA_WEBHOOK_SECRET"),
+    "update": ("PUBLIC_BASE_URL", "BOLNA_API_KEY", "BOLNA_AGENT_ID", "BOLNA_WEBHOOK_SECRET"),
 }
 
 
@@ -58,7 +58,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def status_webhook_url(public_base_url: str, secret: SecretStr) -> str:
-    """The calls.py webhook route; the secret must match CUSTOM_LLM_TOKEN."""
+    """The calls.py webhook route; the secret must match BOLNA_WEBHOOK_SECRET."""
     return f"{public_base_url.rstrip('/')}{WEBHOOK_PATH}/{secret.get_secret_value()}"
 
 
@@ -75,7 +75,7 @@ async def _run(
             print(f"Registered custom model {CUSTOM_LLM_MODEL} at {base_url}")
             return
         webhook_url = args.webhook_url or status_webhook_url(
-            cast(str, settings.public_base_url), cast(SecretStr, settings.custom_llm_token)
+            cast(str, settings.public_base_url), cast(SecretStr, settings.bolna_webhook_secret)
         )
         payload = build_agent_payload(base_url, webhook_url)
         if args.command == "create":

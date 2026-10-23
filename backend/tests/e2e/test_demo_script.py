@@ -29,7 +29,7 @@ from app import custom_llm
 from app.main import create_app
 from app.markers import DISCLOSURE, GOODBYE, HOLDING_LINE, SILENCE_MARKER
 from fakes.fake_bolna import FakeBolna, FakeRun, asgi_client
-from tests.conftest import APP_TOKEN, CUSTOM_LLM_TOKEN, make_settings
+from tests.conftest import APP_TOKEN, CUSTOM_LLM_TOKEN, WEBHOOK_SECRET, make_settings
 
 
 def _module_has(module_name: str, attribute: str) -> bool:
@@ -179,7 +179,7 @@ def make_harness() -> Iterator[Callable[..., Harness]]:
 
         def make(delivery_timeout_s: float = TIMEOUT_S) -> Harness:
             settings = make_settings(groq_api_key=None, allowed_recipients=f"{CONTACT}={NUMBER}")
-            fake = FakeBolna(CUSTOM_LLM_TOKEN)
+            fake = FakeBolna(CUSTOM_LLM_TOKEN, webhook_secret=WEBHOOK_SECRET)
             composer = composer_module.build_composer(settings)
             manager = calls_module.CallManager(
                 settings, composer, fake, delivery_timeout_s=delivery_timeout_s

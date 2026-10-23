@@ -20,7 +20,7 @@ from app.main import create_app
 from app.markers import EVENT_END_CALL, EVENT_USER_REPLY
 from app.ports import BolnaClient, BolnaError
 from app.protocol import ComposeRequest, Draft
-from tests.conftest import APP_TOKEN, CUSTOM_LLM_TOKEN, make_settings
+from tests.conftest import APP_TOKEN, CUSTOM_LLM_TOKEN, WEBHOOK_SECRET, make_settings
 
 CLINIC = "+910000000001"
 PHARMACY = "+910000000002"
@@ -137,7 +137,7 @@ class Harness:
         assert response.status_code == 200, response.text
         return response.json()["call_id"]
 
-    def webhook(self, run_id: str, bolna_status: str, secret: str = CUSTOM_LLM_TOKEN) -> int:
+    def webhook(self, run_id: str, bolna_status: str, secret: str = WEBHOOK_SECRET) -> int:
         payload = {"id": run_id, "status": bolna_status, "telephony_data": {"to_number": CLINIC}}
         response = self.client.post(f"/bolna/webhook/{secret}", json=payload)
         self.seen.append(response.text)
@@ -842,6 +842,7 @@ def test_webhook_secret_checked(harness: Harness) -> None:
     call_id = harness.start()
     assert harness.webhook("run-1", "in-progress", secret="wrong") == 404
     assert harness.webhook("run-1", "in-progress", secret=APP_TOKEN) == 404
+    assert harness.webhook("run-1", "in-progress", secret=CUSTOM_LLM_TOKEN) == 404
     with harness.socket(call_id) as ws:
         assert harness.receive(ws) == status("dialing")
 
@@ -857,7 +858,7 @@ def test_webhook_accepts_numeric_execution_ids(harness: Harness) -> None:
     harness.bolna.start_call = _numeric_start(harness.bolna)
     call_id = harness.start()
     response = harness.client.post(
-        f"/bolna/webhook/{CUSTOM_LLM_TOKEN}", json={"id": 7432382142914, "status": "ringing"}
+        f"/bolna/webhook/{WEBHOOK_SECRET}", json={"id": 7432382142914, "status": "ringing"}
     )
     assert response.status_code == 204
     with harness.socket(call_id) as ws:
@@ -874,7 +875,7 @@ def _numeric_start(bolna: FakeBolna):
 
 def test_webhook_bad_payload_does_not_echo_it(harness: Harness) -> None:
     response = harness.client.post(
-        f"/bolna/webhook/{CUSTOM_LLM_TOKEN}", json={"telephony_data": {"to_number": CLINIC}}
+        f"/bolna/webhook/{WEBHOOK_SECRET}", json={"telephony_data": {"to_number": CLINIC}}
     )
     assert response.status_code == 422
     assert CLINIC not in response.text

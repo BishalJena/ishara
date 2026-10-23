@@ -4,7 +4,8 @@ It follows what Bolna documents and what PLAN.md §3 expects (ledger B24, B25):
 
 - `start_call`: the callee answers at once and hears the static welcome (DISCLOSURE).
   Like the agent-level webhook, the run reports `ringing` then `in-progress` to our
-  `/bolna/webhook/{secret}` (secret = the custom-LLM token, as the backend expects).
+  `/bolna/webhook/{secret}` (secret = BOLNA_WEBHOOK_SECRET; defaults to the custom-LLM token
+  for stand-alone use).
 - listen node: each receptionist utterance, or the `[silence]` repeat, becomes a user
   message and Bolna asks our custom LLM for a reply using the listen prompt.
 - `user_reply` event: its properties merge into the call context, the node moves to
@@ -112,8 +113,10 @@ class FakeBolna:
         duplicate_events: bool = False,
         receptionist_mid_speech: bool = False,
         report_status: bool = True,
+        webhook_secret: str | None = None,
     ) -> None:
         self._token = custom_llm_token
+        self._webhook_secret = webhook_secret or custom_llm_token
         self._http = http
         self._prompts: dict[NodeName, str] = {"listen": listen_prompt, "speak": speak_prompt}
         self.latency_s = latency_s
@@ -236,7 +239,7 @@ class FakeBolna:
 
     async def _report(self, run: FakeRun, *statuses: str) -> None:
         """POST each execution status to the backend's webhook, in order."""
-        path = WEBHOOK_PATH.format(secret=self._token)
+        path = WEBHOOK_PATH.format(secret=self._webhook_secret)
         for status in statuses:
             response = await self._client().post(path, json={"id": run.run_id, "status": status})
             response.raise_for_status()

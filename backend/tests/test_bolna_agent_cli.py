@@ -13,12 +13,12 @@ from app.composer import TemplateComposer
 from app.config import Settings
 from app.main import create_app
 from scripts.bolna_agent import main
-from tests.conftest import CUSTOM_LLM_TOKEN, make_settings
+from tests.conftest import CUSTOM_LLM_TOKEN, WEBHOOK_SECRET, make_settings
 
 AGENT_JSON = Path(__file__).resolve().parents[1] / "bolna" / "agent.json"
 PUBLIC_URL = "https://ishara-test.example.com"
 BOLNA_KEY = "test-bolna-key"
-WEBHOOK_URL = f"{PUBLIC_URL}/bolna/webhook/{CUSTOM_LLM_TOKEN}"
+WEBHOOK_URL = f"{PUBLIC_URL}/bolna/webhook/{WEBHOOK_SECRET}"
 
 
 class _NoBolna:
@@ -70,8 +70,8 @@ def test_write_commands_refuse_without_yes(command: str, capsys) -> None:
     [
         ("create", "public_base_url", "PUBLIC_BASE_URL"),
         ("create", "bolna_api_key", "BOLNA_API_KEY"),
-        ("create", "custom_llm_token", "CUSTOM_LLM_TOKEN"),
-        ("update", "custom_llm_token", "CUSTOM_LLM_TOKEN"),
+        ("create", "bolna_webhook_secret", "BOLNA_WEBHOOK_SECRET"),
+        ("update", "bolna_webhook_secret", "BOLNA_WEBHOOK_SECRET"),
         ("update", "public_base_url", "PUBLIC_BASE_URL"),
         ("update", "bolna_api_key", "BOLNA_API_KEY"),
         ("update", "bolna_agent_id", "BOLNA_AGENT_ID"),

@@ -19,6 +19,7 @@ REQUIRED_PATH_B = (
     "BOLNA_API_KEY",
     "BOLNA_AGENT_ID",
     "CUSTOM_LLM_TOKEN",
+    "BOLNA_WEBHOOK_SECRET",
     "GROQ_API_KEY",
     "ALLOWED_RECIPIENTS",
 )
@@ -35,6 +36,7 @@ class Settings(BaseSettings):
     bolna_api_key: SecretStr | None = None
     bolna_agent_id: str | None = None
     custom_llm_token: SecretStr | None = None
+    bolna_webhook_secret: SecretStr | None = None
     groq_api_key: SecretStr | None = None
     groq_model: str = "openai/gpt-oss-120b"
     sarvam_api_key: SecretStr | None = None
@@ -45,6 +47,7 @@ class Settings(BaseSettings):
         "app_token",
         "bolna_api_key",
         "custom_llm_token",
+        "bolna_webhook_secret",
         "groq_api_key",
         "sarvam_api_key",
         "bolna_agent_id",

@@ -10,6 +10,7 @@ from app.main import create_app
 
 APP_TOKEN = "test-app-token"
 CUSTOM_LLM_TOKEN = "test-custom-llm-token"
+WEBHOOK_SECRET = "test-webhook-secret"
 
 
 def make_settings(**overrides: object) -> Settings:
@@ -17,6 +18,7 @@ def make_settings(**overrides: object) -> Settings:
     values: dict[str, object] = {
         "app_token": APP_TOKEN,
         "custom_llm_token": CUSTOM_LLM_TOKEN,
+        "bolna_webhook_secret": WEBHOOK_SECRET,
         "bolna_api_key": "test-bolna-key",
         "bolna_agent_id": "test-agent",
         "groq_api_key": "test-groq-key",

@@ -138,7 +138,7 @@ uv run python -m scripts.bolna_agent update --yes           # also needs BOLNA_A
 ```
 
 `create` and `update` set the agent's `webhook_url` to
-`PUBLIC_BASE_URL/bolna/webhook/<CUSTOM_LLM_TOKEN>` (override with `--webhook-url`).
+`PUBLIC_BASE_URL/bolna/webhook/<BOLNA_WEBHOOK_SECRET>` (override with `--webhook-url`).
 The backend refuses SEND until this webhook reports `in-progress` (or the
 receptionist's first words arrive as a caption), so without it the first reply of a
 call is refused. The URL holds a secret, so it is never printed and the committed

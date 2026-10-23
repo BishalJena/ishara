@@ -378,7 +378,7 @@ async def bolna_webhook(
     settings: Settings = Depends(get_settings_dep),
     manager: CallManager = Depends(get_manager),
 ) -> Response:
-    if not token_matches(settings.custom_llm_token, secret):
+    if not token_matches(settings.bolna_webhook_secret, secret):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not Found")
     try:
         update = ExecutionUpdate.model_validate_json(await request.body())
