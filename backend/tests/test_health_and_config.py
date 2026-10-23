@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.auth import require_app_token, require_custom_llm_token
 from app.config import REQUIRED_PATH_B, Settings
+from app.contacts import parse_contacts
 from app.main import create_app
 from tests.conftest import APP_TOKEN, CUSTOM_LLM_TOKEN, make_settings
 
@@ -28,9 +29,13 @@ def test_blank_values_count_as_missing() -> None:
 
 
 def test_allowed_recipients_parsed_from_comma_list(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("ALLOWED_RECIPIENTS", " +910000000001, +910000000002 ,")
+    monkeypatch.setenv("ALLOWED_RECIPIENTS", " clinic=+910000000001, pharmacy=+910000000002 ,")
     settings = Settings(_env_file=None)
-    assert settings.allowed_recipients == {"+910000000001", "+910000000002"}
+    assert settings.allowed_recipients == {"clinic=+910000000001", "pharmacy=+910000000002"}
+
+
+def test_default_test_settings_use_the_contact_id_allowlist_format(settings: Settings) -> None:
+    assert parse_contacts(settings.allowed_recipients) == {"clinic": "+910000000001"}
 
 
 def test_presence_never_exposes_secret_values(settings: Settings) -> None:

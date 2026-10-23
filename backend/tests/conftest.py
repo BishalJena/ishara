@@ -18,7 +18,7 @@ def make_settings(**overrides: object) -> Settings:
         "bolna_api_key": "test-bolna-key",
         "bolna_agent_id": "test-agent",
         "groq_api_key": "test-groq-key",
-        "allowed_recipients": "+910000000001",
+        "allowed_recipients": "clinic=+910000000001",
     }
     values.update(overrides)
     return Settings(_env_file=None, **values)
