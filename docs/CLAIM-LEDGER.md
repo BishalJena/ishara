@@ -118,6 +118,7 @@ Evidence originally checked **18 October 2026**; rows marked *(23 Oct)* were che
 | H03 | Heroku Eco dynos stay awake for a live custom-LLM endpoint. | CONTRADICTED *(23 Oct)* | [Heroku app sleeping](https://www.heroku.com/blog/app_sleeping_on_heroku/): Eco web dynos sleep after 30 min without traffic. [Request timeout](https://devcenter.heroku.com/articles/request-timeout): 30 s to respond; [WebSockets](https://devcenter.heroku.com/articles/websockets): idle connections need pings. Use Basic+ dynos. |
 | H04 | Cerebras inference is free without setup. | CONTRADICTED — qualified *(23 Oct)* | [Change log](https://inference-docs.cerebras.ai/support/change-log): new accounts get $5 credit after adding a verified payment method; free tier has lower limits ([rate limits](https://inference-docs.cerebras.ai/support/rate-limits)). [Models](https://inference-docs.cerebras.ai/models/overview): `gpt-oss-120b` ~3000 tok/s, `qwen-3.8-27b` ~1850 tok/s (vendor figures). The composer moved to Groq on 23 Oct (H05). |
 | H05 | Groq serves `openai/gpt-oss-120b` through an OpenAI-compatible Chat Completions API at about $0.15 per million input and $0.60 per million output tokens. | DOCS-ONLY *(23 Oct)* | [OpenAI compatibility](https://console.groq.com/docs/openai): base URL `https://api.groq.com/openai/v1` with the OpenAI SDKs. [Model page](https://console.groq.com/docs/model/openai/gpt-oss-120b) and [pricing](https://groq.com/pricing): input $0.15/M, cached input $0.075/M, output $0.60/M (snapshot). No live Groq request executed; latency against the 1.5 s budget and free-tier limits unmeasured. |
+| H06 | Heroku's stock Python buildpack can build a uv project, so `backend/` needs no extra Heroku files. | DOCS-ONLY *(23 Oct)* | [Python behavior](https://devcenter.heroku.com/articles/python-behavior-in-heroku) and [uv support announcement](https://devcenter.heroku.com/changelog-items/3238): the Python buildpacks support uv; the build uses `pyproject.toml`, `uv.lock` and `.python-version`. Heroku script tests ran against a fake CLI only; no real build or deploy executed. |
 
 ## Complete checked-source inventory
 
@@ -269,6 +270,8 @@ Sources checked for the demo build decisions. Not renumbered into the S-series a
 | [Groq OpenAI compatibility](https://console.groq.com/docs/openai) | H05 |
 | [Groq gpt-oss-120b model page](https://console.groq.com/docs/model/openai/gpt-oss-120b) | H05 |
 | [Groq pricing](https://groq.com/pricing) | H05 |
+| [Heroku Python behavior](https://devcenter.heroku.com/articles/python-behavior-in-heroku) | H06 |
+| [Heroku uv support](https://devcenter.heroku.com/changelog-items/3238) | H06 |
 | [MediaPipe iOS setup](https://developers.google.com/edge/mediapipe/solutions/setup_ios) | R17 |
 | [MediaPipe repository (SwiftPM)](https://github.com/google-ai-edge/mediapipe) | R17 |
 
