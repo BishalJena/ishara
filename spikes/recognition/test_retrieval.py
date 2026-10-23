@@ -1,6 +1,6 @@
 """Data leakage and abstention contracts; no model downloads or inference."""
 import unittest
-from contextlib import redirect_stderr
+from contextlib import ExitStack, contextmanager, redirect_stderr, redirect_stdout
 from io import StringIO
 from itertools import count
 from pathlib import Path
@@ -11,7 +11,8 @@ from unittest.mock import patch
 import numpy as np
 
 import recognition_data as data
-from retrieval import calibrate_policy, rank_records, score
+import retrieval
+from retrieval import calibrate_policy, calibration_report, rank_records, score
 
 
 def record(ident="a", split="enrollment"):
@@ -62,6 +63,46 @@ def calibration_rows(signs=None, extra=(), negatives=20):
                for a in signs.get(label, [attempt(label, 0.95) for _ in range(5)])]
     queries += [attempt(None, 0.3, "hello") for _ in range(negatives)] + list(extra)
     return rank_records(queries, REFERENCES)
+
+
+def pilot_row(split, label, looks_like, similarity, negative_kind=None):
+    ident = f"p{next(_query_ids)}"
+    return {"id": ident, "signer_id": "demo", "session_id": split, "source_id": ident,
+            "sha256": ident, "split": split, "label": label, "negative_kind": negative_kind,
+            "verified": True, "fixture": {"looks_like": looks_like, "similarity": similarity}}
+
+
+def pilot_records():
+    """A manifest that meets the PLAN minimum, with synthetic embeddings per clip."""
+    rows = [pilot_row(split, label, label, similarity)
+            for split, copies, similarity in (("enrollment", 3, 1.0), ("calibration", 5, 0.95))
+            for label in DEMO_SIGNS for _ in range(copies)]
+    return rows + [pilot_row("calibration", None, "hello", 0.3, data.NEGATIVES[i % 4])
+                   for i in range(20)]
+
+
+class FakeEncoder:
+    """Stands in for a loaded model: embeds each clip from its fixture, no inference."""
+    contract = {"encoder": "signclip", "checkpoint": "synthetic", "input": "synthetic:v1"}
+
+    def __init__(self, name):
+        self.name = name
+
+    def extract(self, row, fresh=False):
+        fixture = row["fixture"]
+        return {**row, "embedding": data.unit(toward(fixture["looks_like"], fixture["similarity"])),
+                "quality": {"pose_fraction": 1, "hand_fraction": 1}}
+
+
+@contextmanager
+def fake_pilot(records, root, contract=FakeEncoder.contract):
+    encoder = type("Encoder", (FakeEncoder,), {"contract": contract})
+    with ExitStack() as stack:
+        stack.enter_context(patch.object(data, "load_dataset", lambda manifest: records))
+        stack.enter_context(patch.object(retrieval, "Encoder", encoder))
+        stack.enter_context(patch.object(retrieval, "EVIDENCE", root / "retrieval"))
+        stack.enter_context(patch.object(retrieval, "REPORTS", root / "evidence"))
+        yield stack.enter_context(redirect_stdout(StringIO()))
 
 
 class DatasetContracts(unittest.TestCase):
@@ -234,6 +275,43 @@ class CalibrationContracts(unittest.TestCase):
     def test_every_sign_needs_calibration_attempts(self):
         with self.assertRaisesRegex(ValueError, "missing evening$"):
             calibrate_policy(calibration_rows({"evening": []}))
+
+    def test_report_lists_per_sign_counts_and_denominators(self):
+        time = [attempt("time", 0.9) for _ in range(3)] + [attempt("time", 0.7) for _ in range(2)]
+        policy, result = calibrate_policy(
+            calibration_rows({"time": time}, [attempt(None, 0.8, "hello")]))
+        report = calibration_report("signclip", policy, result, "f" * 64)
+        for line in ("# Calibration report: signclip",
+                     f"- Similarity cut-off: {policy['similarity']:.7f}",
+                     f"- Margin over the runner-up: {policy['margin']:.7f}",
+                     "- Tracking quality: pose >= 0.6, hands >= 0.2",
+                     "- Wrong accepts: 0 of 60 sign attempts",
+                     "- Negative accepts: 0 of 21 negative clips",
+                     f"- Enrollment/calibration fingerprint: `{'f' * 64}`",
+                     "| time | 3 | 5 | 60% | 0 |", "| hello | 5 | 5 | 100% | 0 |"):
+            with self.subTest(line=line):
+                self.assertIn(line + "\n", report)
+        self.assertEqual(sum(row.startswith("| ") for row in report.splitlines()), 13)
+
+    def test_report_shows_wrong_and_negative_accepts_of_a_loose_cut_off(self):
+        yes = [attempt("yes", 0.9) for _ in range(5)] + [attempt("yes", 0.85, looks_like="no")]
+        rows = calibration_rows({"yes": yes}, [attempt(None, 0.85, "hello")])
+        loose = {"similarity": 0.8, "margin": 0.0}
+        report = calibration_report("slgcn", loose, score(rows, loose), "0" * 64)
+        self.assertIn("| yes | 5 | 6 | 83% | 1 |\n", report)
+        self.assertIn("- Wrong accepts: 1 of 61 sign attempts\n", report)
+        self.assertIn("- Negative accepts: 1 of 21 negative clips\n", report)
+
+    def test_calibrate_command_freezes_policy_and_writes_the_report(self):
+        with TemporaryDirectory() as temporary, fake_pilot(pilot_records(), Path(temporary)) as out:
+            root = Path(temporary)
+            self.assertEqual(retrieval.pilot("calibrate", "signclip", None, False), 0)
+            policy = (root / "retrieval" / "policy-signclip.json").read_text()
+            report = (root / "evidence" / "calibration-signclip.md").read_text()
+        self.assertIn('"data_fingerprint"', policy)
+        self.assertIn("| evening | 5 | 5 | 100% | 0 |", report)
+        self.assertIn("- Negative accepts: 0 of 20 negative clips", report)
+        self.assertIn(report, out.getvalue())
 
 
 class CaptureContracts(unittest.TestCase):

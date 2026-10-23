@@ -15,6 +15,7 @@ import numpy as np
 import recognition_data as data
 
 EVIDENCE = data.ARTIFACTS / "retrieval"
+REPORTS = data.ARTIFACTS / "evidence"
 
 
 class Encoder:
@@ -126,6 +127,29 @@ def calibrate_policy(rows):
     return best, score(rows, best)
 
 
+def calibration_report(name, thresholds, summary, data_fingerprint):
+    """Markdown record of a frozen cut-off with every count and denominator."""
+    classes = summary["per_concept"]
+    attempts = sum(c["total"] for c in classes.values())
+    wrong = sum(c["wrong_accepted"] for c in classes.values())
+    lines = [f"# Calibration report: {name}", "",
+             "Frozen on the calibration session only (PLAN R2b). Similarities are not probabilities.",
+             "", f"- Similarity cut-off: {thresholds['similarity']:.7f}",
+             f"- Margin over the runner-up: {thresholds['margin']:.7f}",
+             f"- Tracking quality: pose >= {data.QUALITY['min_pose_fraction']}, "
+             f"hands >= {data.QUALITY['min_hand_fraction']}",
+             f"- Wrong accepts: {wrong} of {attempts} sign attempts",
+             f"- Negative accepts: {summary['negative_false_accepts']} of "
+             f"{summary['negative_count']} negative clips",
+             f"- Enrollment/calibration fingerprint: `{data_fingerprint}`", "",
+             "| Sign | Accepted | Attempts | Accepted % | Wrong accepts |",
+             "|---|---:|---:|---:|---:|"]
+    lines += [f"| {label} | {c['correct_accepted']} | {c['total']} | "
+              f"{100 * c['correct_accepted'] / c['total']:.0f}% | {c['wrong_accepted']} |"
+              for label, c in classes.items()]
+    return "\n".join(lines) + "\n"
+
+
 def replay(name):
     from mini import inventory
 
@@ -189,10 +213,17 @@ def pilot(command, name, manifest, fresh):
     rows = rank_records([r for r in embedded if r["split"] == split], references)
     if command == "calibrate":
         thresholds, summary = calibrate_policy(rows)
+        data_fingerprint = fingerprint(development)
         data.write_json(policy_path, {"version": 1, "encoder": encoder.contract,
-                                     "data_fingerprint": fingerprint(development),
+                                     "data_fingerprint": data_fingerprint,
                                      "thresholds": thresholds, "calibration": summary})
+        report = calibration_report(name, thresholds, summary, data_fingerprint)
+        report_path = REPORTS / f"calibration-{name}.md"
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(report)
         print("Calibration policy frozen from enrollment/calibration only:", thresholds)
+        print(report, flush=True)
+        print(f"Report: {report_path}")
         return 0
     summary = score(rows, saved_policy["thresholds"])
     measured_fresh = all("total_ms" in r and not r["quality"].get("cache_hit", True) for r in rows)
