@@ -269,8 +269,10 @@ public final class TurnStore {
         return false
     }
 
+    /// 1–300 Unicode scalars and not just whitespace, which would approve silence.
     private static func isSendable(_ text: String) -> Bool {
         (1...ProtocolLimits.maxSpokenCharacters).contains(text.unicodeScalars.count)
+            && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private func recognisedChipsChanged() {

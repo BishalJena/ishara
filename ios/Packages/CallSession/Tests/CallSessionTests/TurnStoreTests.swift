@@ -387,6 +387,15 @@ final class TurnStoreTests: XCTestCase {
         XCTAssertEqual(sink.approvals, [])
     }
 
+    func testWhitespaceOnlyDraftIsNotSent() {
+        showDraft(" \n ")
+
+        store.send()
+
+        XCTAssertFalse(store.canSend)
+        XCTAssertEqual(sink.approvals, [])
+    }
+
     func testEmptyDraftIsNotSent() {
         showDraft("")
 
