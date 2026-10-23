@@ -170,6 +170,21 @@ class AppSession:
     async def end(self) -> None:
         await self._send(EndMessage())
 
+    async def hang_up(self, timeout: float) -> bool:
+        """End the call unless it already ended; True once `status ended` arrives.
+        Tools call this on every exit path so an aborted run never leaves a paid call up."""
+        if self.ended:
+            return True
+        if self.closed:
+            return False
+        since = self.mark()
+        await self.end()
+        try:
+            await self.wait_for_status(CallState.ENDED, since=since, timeout=timeout)
+        except (TimeoutError, SessionClosedError):
+            return self.ended
+        return True
+
     async def _approve(self, text: str) -> None:
         message = ApproveMessage(turn_id=self._turn_id, text=text)
         timing = self._current_timing()

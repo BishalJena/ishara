@@ -283,3 +283,30 @@ async def test_wait_raises_when_socket_closes_and_sending_fails_after() -> None:
             await session.wait_for_caption(since=0, timeout=1)
     with pytest.raises(SessionClosedError):
         await session.end()
+
+
+async def test_hang_up_sends_end_once_and_waits_for_ended() -> None:
+    transport = FakeTransport(FakeBackend().respond)
+    session = _session(transport)
+    async with running(session, transport):
+        assert await session.hang_up(timeout=1) is True
+        assert await session.hang_up(timeout=1) is True
+    assert transport.sent == [EndMessage()]
+
+
+async def test_hang_up_reports_false_without_ended_status() -> None:
+    transport = FakeTransport()
+    session = _session(transport)
+    async with running(session, transport):
+        assert await session.hang_up(timeout=0.01) is False
+    assert transport.sent == [EndMessage()]
+
+
+async def test_hang_up_on_closed_socket_sends_nothing() -> None:
+    transport = FakeTransport()
+    session = _session(transport)
+    async with running(session, transport):
+        transport.push(None)
+        await drain(transport)
+        assert await session.hang_up(timeout=1) is False
+    assert transport.raw_sent == []
