@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import re
 import uuid
 
@@ -318,3 +319,15 @@ async def test_turn_label_never_exposes_ids() -> None:
     assert session.turn_label(approved) == "T5"
     assert session.turn_label(session.turn_id) == "current turn"
     assert session.turn_label("other") == "unknown turn"
+
+
+async def test_hang_up_after_end_waits_without_sending_end_again() -> None:
+    transport = FakeTransport()
+    session = _session(transport)
+    async with running(session, transport):
+        await session.end()
+        waiting = asyncio.create_task(session.hang_up(timeout=1))
+        await drain(transport)
+        transport.push(StatusMessage(state=CallState.ENDED))
+        assert await waiting is True
+    assert transport.sent == [EndMessage()]

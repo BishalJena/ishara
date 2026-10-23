@@ -79,6 +79,7 @@ class AppSession:
         self.history: list[ServerMessage] = []
         self.closed = False
         self.ended = False
+        self.end_requested = False
         self.turns: list[TurnTiming] = []
         self.spoken_counts: Counter[str] = Counter()
         self._timings: dict[str, TurnTiming] = {}
@@ -176,16 +177,18 @@ class AppSession:
 
     async def end(self) -> None:
         await self._send(EndMessage())
+        self.end_requested = True
 
     async def hang_up(self, timeout: float) -> bool:
-        """End the call unless it already ended; True once `status ended` arrives.
+        """Send `end` (unless already sent) and wait for `status ended`; True once it arrives.
         Tools call this on every exit path so an aborted run never leaves a paid call up."""
         if self.ended:
             return True
         if self.closed:
             return False
         since = self.mark()
-        await self.end()
+        if not self.end_requested:
+            await self.end()
         try:
             await self.wait_for_status(CallState.ENDED, since=since, timeout=timeout)
         except (TimeoutError, SessionClosedError):
