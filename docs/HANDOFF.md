@@ -1,6 +1,7 @@
 # Teammate handoff
 
-Current state: **20 October 2026**, branch `spike/slgcn-miniature`.
+Current state: **23 October 2026**, branch `main` (the `spike/slgcn-miniature`
+work is merged).
 This file owns the current capability and direction. Detailed measurements belong
 in the [experiment record](experiments/recognition.md), active tasks in
 [PLAN.md](../PLAN.md), and commands in the spike runbooks.
@@ -23,30 +24,37 @@ matching improved the ranking of the saved intended-hello attempts, but those
 recordings cover one intended meaning. Unknown-sign rejection remains unresolved,
 and whole-clip extraction has not met the live response target.
 
-The next vocabulary is hello, thankyou, doctor, hospital and tomorrow, for one
-seated signer and one complete sign at a time. The older browser diagnostic also
-supports today and location. Its recognizer is still SL-GCN; uncalibrated
-SignCLIP ranks are not connected to composition or speech.
+The demo vocabulary is now **12 signs** (hello, thankyou, yes, no, sorry, doctor,
+today, tomorrow, morning, afternoon, evening, time), for one seated signer and one
+complete sign at a time. The capture tool still lists the earlier five; extending
+it is plan task R0. The older browser diagnostic also supports today and location.
+Its recognizer is still SL-GCN; uncalibrated SignCLIP ranks are not connected to
+composition or speech.
 
-**Fixed intent templates are the default composer.** The earlier Qwen experiment
-changed the meaning of a requested-day example. Templates require explicit purpose,
-block conflicts and retain user editing and approval. Neither composer can repair
-an incorrectly recognized concept. The LLM remains an optional experiment.
+**Composer (decided 23 Oct):** a Cerebras LLM drafts the sentence from the chips
+plus the live call transcript, a validator rejects missing meanings or invented
+days, times, numbers and names, and the fixed templates are the fallback. The
+earlier local Qwen experiment changed the meaning of a requested-day example, which
+is why the validator and template fallback exist. No composer can repair an
+incorrectly recognized concept; the user still edits and approves.
 
-**Bolna speech and existing-call delivery are unproven.** The provider probe has
-not produced usable speech. The iPhone harness has been built, but physical
-call/camera/caption coexistence has not been demonstrated. An offline mock or
-Apple local voice does not establish Bolna integration.
+**Bolna speech is unproven.** The old hosted sample-speech route returned 403
+and should not be retried. The chosen route (Path B) is a Bolna graph agent that
+places the call, with our backend as its custom LLM and graph events carrying the
+approved text; day-1 task V4 in the plan tests it. The iPhone harness has been
+built, but physical call/camera/caption coexistence (Path A) has not been
+demonstrated. An offline mock or Apple local voice does not establish Bolna
+integration.
 
 There is no end-to-end validated product, trained personalized model or Deaf
 participant validation. See the [workflow](WORKFLOW.md) for the proposed composition.
 
 ## Start working
 
-Clone this branch, or fetch and switch to it after preserving local work:
+Clone the repository (all spike work is on `main`):
 
 ```sh
-git clone --branch spike/slgcn-miniature git@github.com:BishalJena/ishara.git
+git clone git@github.com:BishalJena/ishara.git
 cd ishara
 ```
 
@@ -62,10 +70,11 @@ and signing identities are excluded. Setup fetches public assets; a fresh clone
 does not contain the private footage behind the recorded webcam results.
 Mac/Python 3.11 is the tested ML setup; other platforms are unverified.
 
-The immediate human input is fresh, correctly labeled signing. Begin with three
-takes per concept, review tracking and sign forms, then follow the separate-session
-calibration and final-test gates in the plan. The speech track can independently
-work with fixed, approved synthetic text.
+The immediate human input is fresh, correctly labeled signing of the 12 demo
+signs. Begin with three to five takes per sign, review tracking and sign forms,
+then follow the separate-session calibration and final-test gates in the
+[plan](../PLAN.md#6-schedule-and-todos). The voice track can independently work
+with fixed, approved synthetic text.
 
 ## Reading map
 
@@ -76,8 +85,9 @@ work with fixed, approved synthetic text.
 - [Source claim ledger](CLAIM-LEDGER.md): dated platform/provider claims.
 - [Archive](archive/README.md): earlier proposals and completed task notebooks.
 
-The preferred product remains one seated administrative appointment conversation.
-Meaningful Bolna integration is mandatory. The user starts their ordinary
-own-number Phone call; Bolna must not create a duplicate call. Any service-owned
-call is a disclosed pivot. System captions are visible to the user, not a proven
-source of transcript text for Ishara.
+The product remains one seated administrative appointment conversation. On
+23 October the team chose Option C: Bolna places the call first (Path B, disclosed
+as coming from a Bolna number, with real in-app captions from Bolna's transcriber),
+and the user's own-number call with Apple call-audio injection (Path A) is a bonus.
+In Path A, system captions are visible to the user but are not readable by Ishara.
+See [PLAN.md](../PLAN.md#2-decisions).
