@@ -2,7 +2,7 @@ import AVFoundation
 
 /// Decodes a saved clip into BGRA frames with their presentation timestamps.
 /// Used to replay recordings in the simulator, which has no camera.
-public final class VideoFileFrameSource: FrameSource {
+public final class VideoFileFrameSource: FrameSource, Sendable {
     public enum Pacing: Sendable {
         /// Yield frames as fast as they decode (tests, batch embedding).
         case asFastAsPossible
