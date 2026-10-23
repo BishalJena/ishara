@@ -8,10 +8,17 @@
 - **The LLM composer (Groq, `openai/gpt-oss-120b`) may reword but not add facts.** A validator rejects missing chip meanings and any invented day, time, number or name; templates are the fallback (also when Groq is slower than 1.5 s or has no key).
 - **Calls:** only to numbers in `ALLOWED_RECIPIENTS` (consenting teammates; comma-separated `contact_id=+E164` entries, e.g. contact id `clinic`, so the app sends only the contact id), with synthetic appointment details. Never place an unexpected or third-party call. Give a cost heads-up before paid runs. Placing calls, paid inference, device installations and deployments need explicit task authorization; a task in `PLAN.md` is not authorization by itself.
 - **Buildathon rule:** any project with a voice component qualifies; Bolna is not mandatory by the rules. The team chose Bolna (Sarvam voice, Deepgram ASR, Plivo line) anyway.
-- **Hosting:** the backend runs on Heroku with a Basic dyno or higher. Eco dynos sleep, and a sleeping custom-LLM endpoint means silence on the call. API keys stay on the backend, never in the iOS app.
+- **Hosting:** the backend runs on Heroku (EU region) with a Basic dyno or higher, deployed by pushing `backend/` as a `git subtree`. Eco dynos sleep, and a sleeping custom-LLM endpoint means silence on the call. API keys stay on the backend, never in the iOS app.
 - **Device:** iPhone 17 (teammate's, from Thursday); installed iOS unknown. Until then use the iOS simulator with saved videos; it has no camera and cannot place calls.
 - No Deaf participant validation. Don't present the personalised 12-sign pilot, hearing reenactment or isolated-sign benchmarks as validated natural conversation or usability.
 - No secret keys, account identifiers, telephone values, raw account responses or private credential paths in repository artifacts.
+
+## Verify before committing
+
+- Everything: `scripts/verify.sh` (add `--keep-going` to see every failure). Missing tools or parts show as `SKIPPED`. Light recognition tests need `spikes/recognition/.venv-light` or the full `.venv`.
+- Backend: `cd backend && uv run ruff format --check . && uv run ruff check . && uv run pytest -q`
+- Env names are listed in `.env.example`; `cd backend && uv run python -m app.config` shows which are set.
+- Heroku deploys follow `backend/HEROKU.md` and still need explicit deploy authorization.
 
 ## Where to look
 
