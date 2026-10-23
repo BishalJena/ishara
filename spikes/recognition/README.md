@@ -82,7 +82,9 @@ and one session ID throughout a recording session, including across commands:
   --concept hello --takes 3 --camera 0
 ```
 
-Repeat for thankyou, doctor, hospital and tomorrow. **SPACE** starts/stops a take;
+Repeat for each of the 12 demo signs (`--concept` accepts exactly these):
+hello, thankyou, yes, no, sorry, doctor, today, tomorrow, morning, afternoon,
+evening, time. **SPACE** starts/stops a take;
 **X** discards; **Q/escape** exits and discards an unfinished take. Keep face,
 shoulders and hands visible, with a complete sign and brief neutral boundaries.
 Long takes are rejected, not cropped. The camera requests 1280×720 at 30 FPS;
@@ -121,6 +123,38 @@ The [active plan](../../PLAN.md) owns coverage and pass criteria. Manifests reje
 duplicate videos and session/source/hash overlap across splits. Frozen policies
 are bound to encoder and development fingerprints. Missing data, unverified labels,
 nonfinite evidence and reject-all calibration cannot pass.
+
+`calibrate` uses the calibration session only. It needs attempts for all 12 signs
+and at least 20 negatives, then picks the cut-off (similarity plus margin over the
+runner-up) that keeps the most correct accepts with **at least 60% per sign, 0 wrong
+accepts and 0 negative accepts** (PLAN R2b). If no cut-off qualifies it fails rather
+than freezing one that rejects everything. Besides `artifacts/retrieval/policy-<encoder>.json`
+it writes and prints `artifacts/evidence/calibration-<encoder>.md`: cut-off, margin,
+accepted/attempts per sign, wrong accepts and negative accepts with denominators.
+
+## Export the iPhone bundle
+
+```sh
+artifacts/signclip/.venv/bin/python retrieval.py export-bundle --encoder signclip
+```
+
+Writes `artifacts/evidence/recognition-bundle-<encoder>.json` for the on-device
+matcher (P2):
+
+```json
+{"version": 1, "encoder": "<encoder contract as canonical JSON>", "embedding_dim": 768,
+ "thresholds": {"similarity": 0.0, "margin": 0.0},
+ "quality": {"min_pose_fraction": 0.6, "min_hand_fraction": 0.2},
+ "references": [{"id": "<clip id>", "label": "hello", "embedding": [0.0]}]}
+```
+
+It refuses when the enrollment/calibration data changed since `calibrate`, or the
+loaded encoder contract differs from the frozen policy; re-run `calibrate` first.
+The quality values come from `recognition_data.QUALITY`, the same constant the Mac
+decision uses. References are Mac-extracted embeddings of the enrollment clips;
+the parity task (P3) re-embeds them with the iOS extractor before the iPhone relies
+on them. The bundle contains personal enrollment embeddings, so it stays under
+ignored `artifacts/`.
 
 `--fresh` disables feature caching. Reported batch timing still excludes capture,
 ranking and display; `live_latency_validated` and `demo_ready` stay false.
