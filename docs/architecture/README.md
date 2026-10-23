@@ -9,7 +9,7 @@ The board has six parts, top to bottom:
 | Part | What it shows |
 |---|---|
 | Architecture | Signer → on-device recognition → word chips → SEND → Bolna voice → call → captions back |
-| A. Decisions | The seven choices agreed on 23 October (see [PLAN.md](../../PLAN.md#decisions)) |
+| A. Decisions | The seven choices agreed on 23 October (see [PLAN.md](../../PLAN.md#2-decisions)) |
 | B. Edge cases | What the app does when signing or the call goes off-script |
 | C. Build plan | Day-by-day lanes from 23 to 31 October, with four go/no-go gates |
 | D. Testing plan | Six test layers, from unit tests to the rehearsed demo |
