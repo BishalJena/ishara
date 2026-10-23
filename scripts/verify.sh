@@ -134,7 +134,7 @@ check_shellcheck() {
     [[ -f $file ]] && scripts+=("$file")
   done
   ((${#scripts[@]})) || skip "no shell scripts"
-  step shellcheck "${scripts[@]}"
+  step shellcheck -x "${scripts[@]}"
 }
 
 check_script_tests() {
