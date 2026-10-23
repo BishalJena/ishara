@@ -16,7 +16,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
-from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Mapping
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -252,6 +252,41 @@ class BlockingSource:
         iterator = await asyncio.to_thread(self._make_iterator)
         while (item := await asyncio.to_thread(next, iterator, _End.DONE)) is not _End.DONE:
             yield item
+
+
+def result_line(result: Result, **details: object) -> str:
+    """One recognizer result as a JSON line: the wire format of `SubprocessSource`."""
+    return json.dumps({"sign": result, **details})
+
+
+def parse_result_line(line: str) -> Result:
+    sign: object = json.loads(line)["sign"]
+    if sign is None or (isinstance(sign, str) and sign in SIGNS):
+        return sign
+    raise ValueError(f"recognizer sent unknown sign {sign!r}")
+
+
+class SubprocessSource:
+    """Results from a recognizer running in another Python (the SignCLIP venv has torch,
+    this one does not). Its stdout carries `result_line`s; its stderr goes straight to the
+    terminal; its stdin is closed so it never competes with typed commands."""
+
+    def __init__(self, argv: Sequence[str], out: Callable[[str], None] = print) -> None:
+        self.argv, self.out = tuple(argv), out
+
+    async def results(self) -> AsyncIterator[Result]:
+        process = await asyncio.create_subprocess_exec(
+            *self.argv, stdin=asyncio.subprocess.DEVNULL, stdout=asyncio.subprocess.PIPE)
+        try:
+            assert process.stdout is not None  # requested as a pipe above
+            async for raw in process.stdout:
+                yield parse_result_line(raw.decode())
+            if code := await process.wait():
+                self.out(f"! live recognizer stopped (exit {code}); type signs instead")
+        finally:
+            if process.returncode is None:
+                process.terminate()
+                await process.wait()
 
 
 # ---- backend client ----

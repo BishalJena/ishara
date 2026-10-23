@@ -3,6 +3,8 @@ import asyncio
 import io
 import itertools
 import json
+import os
+import sys
 import unittest
 import urllib.error
 from contextlib import redirect_stderr, redirect_stdout
@@ -246,6 +248,59 @@ class Sources(unittest.IsolatedAsyncioTestCase):
     async def test_blocking_source_drains_the_iterator(self):
         source = mb.BlockingSource(lambda: iter(["yes", None, "thankyou"]))
         self.assertEqual(await collect(source), ["yes", None, "thankyou"])
+
+
+def child(code):
+    """argv for a throwaway recognizer process that runs `code`."""
+    return [sys.executable, "-c", "import json, os, sys, time\n" + code]
+
+
+class SubprocessSourceTests(unittest.IsolatedAsyncioTestCase):
+    def test_result_lines_round_trip_and_reject_unknown_signs(self):
+        line = mb.result_line("doctor", latency_ms=812.5)
+        self.assertEqual(json.loads(line), {"sign": "doctor", "latency_ms": 812.5})
+        self.assertEqual(mb.parse_result_line(line), "doctor")
+        self.assertIsNone(mb.parse_result_line(mb.result_line(None, reason="low similarity")))
+        for bad in ('{"sign": "hospital"}', '{"sign": "?"}', '{"sign": 3}', '{"sign": ""}'):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                mb.parse_result_line(bad)
+        with self.assertRaises(KeyError):
+            mb.parse_result_line('{"latency_ms": 1}')
+
+    async def test_yields_child_results_with_stdin_closed(self):
+        lines = []
+        source = mb.SubprocessSource(child(
+            'assert sys.stdin.read() == ""\n'
+            'for sign in ("hello", None, "doctor"):\n'
+            '    print(json.dumps({"sign": sign, "latency_ms": 5}), flush=True)\n'), lines.append)
+        self.assertEqual(await asyncio.wait_for(collect(source), 30), ["hello", None, "doctor"])
+        self.assertEqual(lines, [])
+
+    async def test_a_crashed_child_is_reported_after_its_results(self):
+        lines = []
+        source = mb.SubprocessSource(child('print(json.dumps({"sign": "yes"}))\nsys.exit(3)'),
+                                     lines.append)
+        self.assertEqual(await asyncio.wait_for(collect(source), 30), ["yes"])
+        self.assertEqual(lines, ["! live recognizer stopped (exit 3); type signs instead"])
+
+    async def test_an_unknown_sign_from_the_child_fails_loudly(self):
+        source = mb.SubprocessSource(child('print(json.dumps({"sign": "hospital"}))'))
+        with self.assertRaises(ValueError):
+            await asyncio.wait_for(collect(source), 30)
+
+    async def test_stopping_the_bridge_terminates_the_child(self):
+        with TemporaryDirectory() as directory:
+            pid_file = Path(directory) / "pid"
+            source = mb.SubprocessSource(child(
+                f'open({str(pid_file)!r}, "w").write(str(os.getpid()))\n'
+                'print(json.dumps({"sign": "hello"}), flush=True)\ntime.sleep(60)'))
+            results = source.results()
+            self.assertEqual(await asyncio.wait_for(anext(results), 30), "hello")
+            pid = int(pid_file.read_text())
+            os.kill(pid, 0)  # still running while the bridge listens
+            await asyncio.wait_for(results.aclose(), 10)
+            with self.assertRaises(ProcessLookupError):
+                os.kill(pid, 0)
 
 
 class FakeTransport:
