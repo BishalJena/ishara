@@ -261,6 +261,10 @@ Owners: **[You]** = founder, **[Mate]** = teammate with the iPhone, **[Build]** 
 engineering work in this repo. Each task says what "done" means, so it can be
 picked up without earlier context.
 
+**Progress (23 Oct, evening).** A tick means the code is in a pull request **and** the
+task's *Done* is fully met offline; the PRs are still open for review. Other tasks list
+the PR and what is still pending. Nothing has run against real Bolna, Heroku or a device yet.
+
 ### Fri 23 Oct: set up
 
 - [ ] **H1 [You]** Create or confirm accounts and put the keys in the local `.env` (never in Git):
@@ -271,12 +275,13 @@ picked up without earlier context.
   as a `clinic=+E164` entry (it goes only in Heroku config / `.env`, never in the repo).
 - [ ] **H3 [You]** Start learning the 12 signs from the reference videos (§5).
 - [x] **P0 [Build]** Plan, decisions, board and doc fixes (this branch).
-- [ ] **R0 [Build]** Extend the recognition tools from 5 to the 12 signs:
+- [x] **R0 [Build]** Extend the recognition tools from 5 to the 12 signs:
   `VOCABULARY` in `spikes/recognition/recognition_data.py`, plus tests.
-  *Done:* `pilot_capture.py capture --concept morning` is accepted; tests pass.
+  *Done:* `pilot_capture.py capture --concept morning` is accepted; tests pass. (PR #12)
 - [ ] **V1 [Build]** Backend skeleton in `backend/`: FastAPI app, config loading from env,
   `/health`, pytest, `Procfile`, deployed to the Heroku Basic dyno.
   *Done:* `/health` is green on Heroku; tests pass locally.
+  (code in PR #6, deploy scripts in PR #15; pending: Heroku deploy and `/health` on Heroku)
 - [ ] **V2 [Build]** Custom-LLM endpoint `/v1/chat/completions` that **logs the request
   shapes** Bolna sends (conversation, routing, end-of-call, voicemail) with secrets
   redacted, and streams an empty reply. Register it after V1 is deployed:
@@ -284,6 +289,8 @@ picked up without earlier context.
   model key (Bolna checks the endpoint at registration). *Done:* registered in Bolna as a
   custom model **and selectable as the LLM of a graph agent** (ledger B23). If a graph agent
   cannot use it, go straight to G1 fallback 1.
+  (code in PR #13: shape log plus single-use verbatim replies; pending: deploy, registration
+  and the graph-agent check)
 
 ### Sat 24 Oct: day-1 Bolna test → Gate 1
 
@@ -293,6 +300,7 @@ picked up without earlier context.
   off. Create it via the API **only after the custom LLM is registered (V2)**, because the
   agent refers to the registered model by name. *Done:* the agent exists and its id is saved
   in `BOLNA_AGENT_ID`.
+  (builder, `agent.json` and CLI in PR #14; pending: `register-llm` and `create` against Bolna)
 - [ ] **V4 [Build + Mate]** Spike call to the teammate's phone (cost about ₹20–30, heads-up first):
   1. The agent stays quiet while the teammate talks.
   2. A `user_reply` event makes it speak the **exact** text.
@@ -307,45 +315,53 @@ picked up without earlier context.
      with "words to interrupt" at 0 (ledger B25)?
 
   Record times from SEND to first audio. *Done:* results written in `docs/experiments/voice.md`.
+  (guided runner and the empty `voice.md` template in PR #17; pending: the call itself.
+  The runner measures SEND → `spoken`, not first audio, so first audio still needs a stopwatch)
 - [ ] **G1 Gate 1** (see §7).
 - [ ] **R1 [You]** Enrollment session: 3–5 takes × 12 signs with `pilot_capture.py`, then
   review the overlays and `verify` each label against its reference video.
 - [ ] **R2 [Build]** Start/stop detector on the Mac (rest calibration, hands-up start,
   0.4 s rest end, minimum and maximum length) over live webcam and saved clips.
   *Done:* it cuts the enrollment takes correctly; unit tests cover the boundaries.
-- [ ] **P1 [Build]** Convert the SignCLIP video encoder to Core ML (`ml/coreml/`), FP16, with
+  (code and boundary tests in PR #11; pending: R1 enrollment takes and a live webcam check)
+- [x] **P1 [Build]** Convert the SignCLIP video encoder to Core ML (`ml/coreml/`), FP16, with
   padding to ≤256 frames. *Done:* the `.mlpackage` gives the same embeddings as PyTorch (cosine ≥ 0.999)
   on the saved clips.
   *Measured on a Mac (M4 Pro), 47 public INCLUDE clips:* with compute units `.cpuAndGPU` all
   47 pass (p50 about 11 ms). With the Neural Engine allowed (the default `.all`) the
   embeddings are wrong (min cosine 0.63, 0/47 pass), so the app must set `.cpuAndGPU`.
-  Re-check on the iPhone in P3.
+  Re-check on the iPhone in P3. (PR #21)
 
 ### Sun 25 Oct: composer, calibration
 
-- [ ] **V5 [Build]** Composer: templates for the 12 signs plus purpose, a Groq prompt, the validator,
+- [x] **V5 [Build]** Composer: templates for the 12 signs plus purpose, a Groq prompt, the validator,
   a 1.5 s timeout and the fallback. *Done:* a fixture test for every script turn (§1), and
-  validator tests for invented times, a missing "no" and an over-long draft.
+  validator tests for invented times, a missing "no" and an over-long draft. (PR #10; the live
+  Groq check is not run yet, and the app entry point still has to pass `build_composer`)
 - [ ] **R3 [You]** Calibration session: 5 × 12 signs plus 20 negatives.
 - [ ] **R2b [Build]** Set the "close enough" cut-off on the calibration session only, then freeze it.
   *Done:* on the calibration clips the frozen cut-off accepts **at least 60% of attempts for
   every sign with 0 wrong accepts and 0 accepts on the 20 negatives**. A cut-off that rejects
   everything does not pass. Record the cut-off and the per-sign counts.
+  (calibration report and bundle export in PR #12; pending: R3 calibration session)
 - [ ] **A1 [Build]** Xcode project `ios/Ishara/` with the 4 screens from the board (Home, Get ready,
   Active call signing, Active call speaking) running on fake data in the simulator.
+  (code in PR #22, draft; pending: Xcode build, simulator run and screenshots)
 
 ### Mon 26 Oct: final recognition test → Gate 2
 
 - [ ] **R4 [You]** Final test session: 10 × 12 signs plus 50 negatives. **Evaluate once.**
 - [ ] **G2 Gate 2** (see §7).
-- [ ] **V6 [Build]** Call session layer: `POST /calls` with the allowlist, the WebSocket messages (§3),
+- [x] **V6 [Build]** Call session layer: `POST /calls` with the allowlist, the WebSocket messages (§3),
   `turn_id` handling, single-use approval, stale-turn rejection, caption forwarding and
-  WebSocket pings. *Done:* tests for double SEND, stale approval and an ended call.
+  WebSocket pings. *Done:* tests for double SEND, stale approval and an ended call. (PR #16)
 
 ### Tue 27 Oct: on-device pipeline → Gate 3
 
 - [ ] **P2 [Build]** MediaPipe Holistic (iOS) feeding the Swift detector and matcher, using the
   frozen cut-off and your enrollment references bundled in the app.
+  (SignPipeline in PR #18 and RecognitionCore in PR #23, both draft; pending: `swift test` under
+  Xcode, the R2b cut-off, enrollment references and wiring into the app)
 - [ ] **P3 [Build]** Parity: run the same saved videos through the simulator pipeline and through the Mac.
   Note the Mac uses the legacy `mp.solutions.holistic` (MediaPipe 0.10.21) while iOS only has the
   newer Holistic Landmarker task, so landmarks will differ. The iOS task's pose model is
@@ -357,15 +373,20 @@ picked up without earlier context.
 - [ ] **G3 Gate 3** (see §7).
 - [ ] **A2 [Build]** Wire the app to the backend: start call, chips → draft, SEND, captions,
   status, STOP, End. Uses the replay-video recognizer in the simulator.
+  (CallSession package in PR #20, draft; pending: `swift test` under Xcode and wiring into the app)
 
 ### Wed 28 Oct: full flow in the simulator
 
 - [ ] **A3 [Build]** Full script with a **real Bolna call** to the teammate, the app in the simulator
   replaying recorded sign videos. *Done:* the whole §1 script works twice in a row.
+  (offline rehearsal with a fake Bolna in PR #8 and a fake app in PR #17; pending: the real call)
 - [ ] **A4 [Build]** Mac fallback: the Mac webcam recognizer posts chips to the same backend
   WebSocket, so the demo works even without the on-device recognizer.
+  (Mac bridge with manual and replay input in PR #9; pending: the live webcam source and a run
+  against the deployed backend)
 - [ ] **A5 [Build]** Path A mode (bonus): backend `/tts` (Sarvam) → WAV → app plays it
   with the injection mode on. Needs `SARVAM_API_KEY`.
+  (backend `/tts` in PR #7; pending: a live Sarvam request and playback in the app)
 
 ### Thu 29 Oct: real iPhone → Gate 4
 
