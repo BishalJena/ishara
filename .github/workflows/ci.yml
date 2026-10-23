@@ -58,3 +58,57 @@ jobs:
         run: |
           "$LIGHT_PY" -m unittest -v test_retrieval
           echo "::notice::test_mini is not run in CI: it imports torch and transformers (requirements.txt)."
+
+  # macOS minutes cost 10x on a private repo, so decide on a cheap Linux runner whether the
+  # Swift job is needed at all: only when ios/** changed and at least one package exists.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      swift: ${{ steps.filter.outputs.ios == 'true' && steps.packages.outputs.found == 'true' }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            ios:
+              - 'ios/**'
+              - '.github/workflows/ci.yml'
+      - id: packages
+        name: Find Swift packages
+        run: |
+          shopt -s nullglob
+          manifests=(ios/Packages/*/Package.swift)
+          if (( ${#manifests[@]} )); then
+            printf 'Found: %s\n' "${manifests[@]}"
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::No ios/Packages/*/Package.swift yet; swift-packages job skipped."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  swift-packages:
+    needs: changes
+    if: needs.changes.outputs.swift == 'true'
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: swift test each package
+        run: |
+          shopt -s nullglob
+          manifests=(ios/Packages/*/Package.swift)
+          for manifest in "${manifests[@]}"; do
+            package=$(dirname "$manifest")
+            echo "::group::swift test $package"
+            swift test --package-path "$package"
+            echo "::endgroup::"
+          done
