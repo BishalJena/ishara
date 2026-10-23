@@ -85,10 +85,18 @@ Bolna, Groq or Sarvam key.
 
 ### How Bolna is made to say exactly the approved text (Path B)
 
-Each step uses a documented Bolna feature, except one: **the docs do not say whether a
-graph agent can use a custom LLM** (the custom-LLM guide only shows `simple_llm_agent`;
-[ledger B23](docs/CLAIM-LEDGER.md)). That is the load-bearing assumption, so V2/V3
-check it first. **The combination has not been run yet**; day 1 (task V4) proves it.
+Each step uses a documented Bolna feature, except one: **the docs only say indirectly
+that a graph agent can use a custom LLM** (the custom-LLM inference page sends
+`extra_body` on "graph agent routing" and checks "graph agent nodes" before deleting a
+model, but the quick config still only shows `simple_llm_agent` and the graph settings
+page lists only OpenAI, Anthropic and Google; [ledger B23](docs/CLAIM-LEDGER.md)). That
+is the load-bearing assumption, so V2/V3 check it first. **The combination has not been
+run yet**; day 1 (task V4) proves it.
+
+Set-up order: deploy the backend → **register the custom LLM** with Bolna
+(`POST /user/model/custom`, base URL `PUBLIC_BASE_URL/v1`; Bolna appends
+`/chat/completions`, stores `CUSTOM_LLM_TOKEN` and checks the endpoint) → create the graph
+agent, which refers to the model by name.
 
 ```
 receptionist speaks ──▶ Bolna Deepgram ──▶ calls OUR /v1/chat/completions (custom LLM)
@@ -111,6 +119,16 @@ receptionist talking over the approved sentence cannot cut it off (Bolna's stopw
 "Stop / Wait / Hold on" still pause the agent). The silence repeat on the `listen` node
 sends `[silence]` in the history; the backend uses that marker to return the holding
 line instead of treating it as a transcript.
+
+**What our endpoint can and cannot see** (from Bolna's docs and its open-source runtime;
+the hosted service may differ, and the V4 shape log confirms it):
+
+- Requests carry **no call id**. A marker block in each node prompt (call id, node,
+  `turn_id`, approved text) is the only link from a request to a call and turn.
+- **Routing requests** can reach our endpoint too, and they embed the node prompt, so they
+  contain the approved text. The endpoint detects routing first and answers with no tool
+  call ("stay"), so routing can never claim or speak a reply. The agent uses only event and
+  unconditional edges to keep routing calls away.
 
 **Known timing rule:** if the receptionist is mid-sentence when the `user_reply` event
 arrives, Bolna transitions to `speak` but **does not speak** ([ledger B24](docs/CLAIM-LEDGER.md)).
@@ -159,9 +177,9 @@ Captions (the app can't read them), so the composer gets chips only and no trans
 | backend → app (WS) | `draft {turn_id, text, source: llm\|template}` | Composer result for the latest chips |
 | backend → app (WS) | `spoken {turn_id}` | Bolna has spoken that reply |
 
-**Backend ↔ Bolna:** `POST /call`, `POST /v1/call/{run_id}/events`, and our
-`POST /v1/chat/completions` (custom LLM, OpenAI streaming format, bearer
-`CUSTOM_LLM_TOKEN`, must be public HTTPS).
+**Backend ↔ Bolna:** `POST /user/model/custom` (once, before creating the agent),
+`POST /call`, `POST /v1/call/{run_id}/events`, and our `POST /v1/chat/completions`
+(custom LLM, OpenAI streaming format, bearer `CUSTOM_LLM_TOKEN`, must be public HTTPS).
 
 **Environment variables** (names only; values stay in Heroku config / local `.env`;
 `.env.example` lists them):
@@ -261,16 +279,20 @@ picked up without earlier context.
   *Done:* `/health` is green on Heroku; tests pass locally.
 - [ ] **V2 [Build]** Custom-LLM endpoint `/v1/chat/completions` that **logs the request
   shapes** Bolna sends (conversation, routing, end-of-call, voicemail) with secrets
-  redacted, and streams an empty reply. *Done:* registered in Bolna as a custom model
-  **and selectable as the LLM of a graph agent** (ledger B23). If a graph agent cannot use
-  it, go straight to G1 fallback 1.
+  redacted, and streams an empty reply. Register it after V1 is deployed:
+  `POST /user/model/custom` with base URL `PUBLIC_BASE_URL/v1` and `CUSTOM_LLM_TOKEN` as the
+  model key (Bolna checks the endpoint at registration). *Done:* registered in Bolna as a
+  custom model **and selectable as the LLM of a graph agent** (ledger B23). If a graph agent
+  cannot use it, go straight to G1 fallback 1.
 
 ### Sat 24 Oct: day-1 Bolna test → Gate 1
 
 - [ ] **V3 [Build]** `backend/bolna/agent.json`: graph agent with a disclosure welcome, a `listen`
   node (silence repeat about 15 s), a `speak` node (`{{reply_text}}`), and a static goodbye with
   `end_call`. Sarvam voice, Deepgram nova-3 en-IN, silence hangup and online check
-  off. Create it via the API. *Done:* the agent exists and its id is saved in `BOLNA_AGENT_ID`.
+  off. Create it via the API **only after the custom LLM is registered (V2)**, because the
+  agent refers to the registered model by name. *Done:* the agent exists and its id is saved
+  in `BOLNA_AGENT_ID`.
 - [ ] **V4 [Build + Mate]** Spike call to the teammate's phone (cost about ₹20–30, heads-up first):
   1. The agent stays quiet while the teammate talks.
   2. A `user_reply` event makes it speak the **exact** text.
