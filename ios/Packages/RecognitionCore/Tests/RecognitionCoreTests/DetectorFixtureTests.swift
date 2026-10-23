@@ -29,7 +29,7 @@ final class DetectorFixtureTests: XCTestCase {
         let params = try fixture.detectorParams()
 
         let restY: Double
-        do {
+        do throws(CalibrationError) {
             restY = try SignDetector.calibrate(frames: fixture.calibration.map(\.frame), params: params)
         } catch {
             XCTAssertEqual(error.rawValue, fixture.expectedCalibrationError, "\(label): calibration error")
