@@ -22,13 +22,16 @@ package with no dependencies. iOS 17+ and macOS 14+.
 | `BackendClient.swift` | `BackendConfig` (base URL + `APP_TOKEN`, injected), `startCall`, `connect`, `send`, `events` |
 | `MessageOutbox.swift` | Sends in tap order; drops queued messages after a failure, a disconnect or End |
 | `TurnStore.swift` | Call state, captions, current turn, chips, draft and sending phase, with the safety rules |
-| `LiveCall.swift` | Wires the client, outbox and store for one call |
+| `LiveCall.swift` | Wires the client, outbox and store for one call; `onConnectionLost` tells the owner when the socket closes by itself so it can `connect()` again |
 
 ## Safety rules enforced by `TurnStore`
 
 - Only recognised chips are sent; `?` chips never are, and nothing is sent when no recognised chip remains.
 - A draft is shown only if it is for the current turn and recognised chips exist. Any chip change clears the old draft.
-- SEND approves exactly the shown draft once (1–300 Unicode scalars, while the call is `in_call` or `speaking`), then a new turn starts with no chips or draft.
+- SEND approves exactly the shown draft once (1–300 Unicode scalars, while the call is `in_call` or `speaking`), then a new turn starts with no chips or draft. While that reply is still being spoken, SEND waits; the screen shows STOP instead.
+- STOP is sent at most once per reply, and only while a reply is being spoken.
+- Clear wipes chips and draft on a new turn id, so a late draft for the old chips is stale. Nothing is sent.
+- `spoken` marks the reply delivered and adds it to the transcript as the user's words.
 - `not_delivered` offers re-SEND. Only an explicit `resend()` approves the same text again, on a new turn id.
 - End drops anything queued, sends `end`, wipes everything and ignores later input and events.
 - A lost socket (or a backend `error` status) shows "Nothing will be sent", wipes chips and draft and drops the queue. Nothing is resent after reconnecting; the store leaves `.error` when the backend sends a status.
