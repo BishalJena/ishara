@@ -54,6 +54,8 @@ Two kinds of "end":
 | Receptionist asks something with no sign | Quick replies or saved profile phrases |
 | Receptionist talks while the user signs | New caption appears; the draft is kept and the user decides |
 | SEND tapped twice | The approval is single use, so nothing is spoken twice |
+| SEND while the receptionist is still talking | Bolna moves to the speak step but does not speak over them. If no "spoken" confirmation arrives, the app shows "not delivered, tap SEND again". It never resends by itself |
+| Receptionist talks over the approved sentence | The speak step is set so ordinary talk cannot cut it off; "stop / wait / hold on" still pauses it. The caption shows what they said |
 | Stop mid-sentence | Not yet spoken: cancelled. Already speaking: Path A can cut the audio; Path B has no documented interrupt (tested on day 1). Words already heard can't be unsaid, so the user sends a correction |
 | Network drops or the call ends | "Nothing will be sent"; pending drafts are wiped; the next call starts clean |
 | Receptionist says "booked" | Shown as their words only. Ishara never claims a booking itself |

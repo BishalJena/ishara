@@ -54,7 +54,7 @@ Agreed on 23 October 2026. Raise any change explicitly; don't switch silently.
 | D3 | Call language | **English (India)** only. Hindi is "next" | Lowest effort |
 | D4 | Chips → sentence | **Cerebras LLM** drafts the sentence using the chips plus the live transcript, then a **validator** checks it. Fixed **templates** are the fallback | Fast, context-aware wording; templates catch meaning drift |
 | D5 | Vocabulary | **12 signs** (see §5), one sign at a time with hands down between signs. Wait and Repeat are buttons | Enough for the script; small enough to record and rehearse |
-| D6 | Where recognition runs | **On the iPhone**: MediaPipe Holistic for iOS plus SignCLIP converted to Core ML. The **Mac is the backup** | On-device is the pitch; the Mac pipeline already works |
+| D6 | Where recognition runs | **On the iPhone**: MediaPipe Holistic for iOS plus SignCLIP converted to Core ML. The **Mac is the backup** | On-device is the pitch; the Mac replay pipeline (extraction, SignCLIP embedding, reference matching) already runs, though it has no calibrated cut-off yet and abstains on everything until R2b |
 | D7 | Backend hosting | Small Python backend on **Heroku** (**Basic dyno or higher**, never Eco) | Team has credits; Eco dynos sleep and Bolna would hear silence |
 
 Already settled: native **SwiftUI** app, **SignCLIP** as the main recognizer
@@ -85,8 +85,10 @@ Bolna, Cerebras or Sarvam key.
 
 ### How Bolna is made to say exactly the approved text (Path B)
 
-This uses documented Bolna features, but **the combination has not been run yet**.
-Day 1 (task V4) proves it.
+Each step uses a documented Bolna feature, except one: **the docs do not say whether a
+graph agent can use a custom LLM** (the custom-LLM guide only shows `simple_llm_agent`;
+[ledger B23](docs/CLAIM-LEDGER.md)). That is the load-bearing assumption, so V2/V3
+check it first. **The combination has not been run yet**; day 1 (task V4) proves it.
 
 ```
 receptionist speaks ──▶ Bolna Deepgram ──▶ calls OUR /v1/chat/completions (custom LLM)
@@ -104,7 +106,16 @@ long silence while the user signs ──▶ node's repeat_after_silence_seconds 
 
 Agent settings: **"hang up on user silence" OFF**, **"user online detection" OFF**,
 a total call timeout of about 10 minutes, and an `end_call` event that moves to a static goodbye
-node that ends the call.
+node that ends the call. On the `speak` node set **"words to interrupt" to 0** so the
+receptionist talking over the approved sentence cannot cut it off (Bolna's stopwords
+"Stop / Wait / Hold on" still pause the agent). The silence repeat on the `listen` node
+sends `[silence]` in the history; the backend uses that marker to return the holding
+line instead of treating it as a transcript.
+
+**Known timing rule:** if the receptionist is mid-sentence when the `user_reply` event
+arrives, Bolna transitions to `speak` but **does not speak** ([ledger B24](docs/CLAIM-LEDGER.md)).
+The backend must therefore confirm `spoken {turn_id}` from the custom-LLM request, and
+show "not delivered, tap SEND again" when no confirmation arrives. Never resend on its own.
 
 ### Path A difference (Thursday bonus)
 
@@ -177,7 +188,7 @@ Pauses cost nothing: hands at rest means nothing happens.
 | Sign | Used in script | Public reference video |
 |---|---|---|
 | hello | ✅ | INCLUDE |
-| thankyou | ✅ | ISLRTC dictionary |
+| thankyou | ✅ | INCLUDE (clips already in the local corpus) |
 | yes | ✅ | ISLRTC dictionary (uses head movement too) |
 | no | ✅ | ISLRTC dictionary (uses head movement too) |
 | sorry | spare | ISLRTC dictionary |
@@ -233,7 +244,9 @@ picked up without earlier context.
   *Done:* `/health` is green on Heroku; tests pass locally.
 - [ ] **V2 [Build]** Custom-LLM endpoint `/v1/chat/completions` that **logs the request
   shapes** Bolna sends (conversation, routing, end-of-call, voicemail) with secrets
-  redacted, and streams an empty reply. *Done:* registered in Bolna as a custom model.
+  redacted, and streams an empty reply. *Done:* registered in Bolna as a custom model
+  **and selectable as the LLM of a graph agent** (ledger B23). If a graph agent cannot use
+  it, go straight to G1 fallback 1.
 
 ### Sat 24 Oct: day-1 Bolna test → Gate 1
 
@@ -249,6 +262,10 @@ picked up without earlier context.
   5. Sending the same `turn_id` twice speaks only once.
   6. STOP: can unspoken or in-progress speech be cancelled?
   7. An `end_call` event ends the call.
+  8. SEND while the teammate is still talking: is the text spoken, delayed or dropped
+     (ledger B24)? Does the backend see it either way?
+  9. The teammate talks over the agent and says "wait": does the approved sentence finish
+     with "words to interrupt" at 0 (ledger B25)?
 
   Record times from SEND to first audio. *Done:* results written in `docs/experiments/voice.md`.
 - [ ] **G1 Gate 1** (see §7).
@@ -268,6 +285,9 @@ picked up without earlier context.
   validator tests for invented times, a missing "no" and an over-long draft.
 - [ ] **R3 [You]** Calibration session: 5 × 12 signs plus 20 negatives.
 - [ ] **R2b [Build]** Set the "close enough" cut-off on the calibration session only, then freeze it.
+  *Done:* on the calibration clips the frozen cut-off accepts **at least 60% of attempts for
+  every sign with 0 wrong accepts and 0 accepts on the 20 negatives**. A cut-off that rejects
+  everything does not pass. Record the cut-off and the per-sign counts.
 - [ ] **A1 [Build]** Xcode project `ios/Ishara/` with the 4 screens from the board (Home, Get ready,
   Active call signing, Active call speaking) running on fake data in the simulator.
 
@@ -284,7 +304,10 @@ picked up without earlier context.
 - [ ] **P2 [Build]** MediaPipe Holistic (iOS) feeding the Swift detector and matcher, using the
   frozen cut-off and your enrollment references bundled in the app.
 - [ ] **P3 [Build]** Parity: run the same saved videos through the simulator pipeline and through the Mac.
-  *Done:* both give the same accepted label (or "?") on every calibration clip.
+  Note the Mac uses the legacy `mp.solutions.holistic` (MediaPipe 0.10.21) while iOS only has the
+  newer Holistic Landmarker task, so landmarks will differ. Compare landmarks and embeddings
+  first, and re-embed the enrollment references with the iOS extractor rather than copying
+  Mac embeddings. *Done:* both give the same accepted label (or "?") on every calibration clip.
 - [ ] **G3 Gate 3** (see §7).
 - [ ] **A2 [Build]** Wire the app to the backend: start call, chips → draft, SEND, captions,
   status, STOP, End. Uses the replay-video recognizer in the simulator.
@@ -365,5 +388,7 @@ Mutation-minded tests: every safety rule (single-use approval, no invented times
 - Calls go only to numbers in `ALLOWED_RECIPIENTS`, i.e. consenting teammates, with synthetic
   appointment details. No unexpected or third-party calls.
 - Give a cost heads-up before paid runs (Bolna is about ₹5.5/min plus telephony; Cerebras is billed by tokens).
+- Placing calls, paid inference, device installations and deployments need explicit task
+  authorization from the founder; a task listed in §6 is not authorization by itself.
 - No keys, phone numbers, account IDs or raw account responses in Git, issues or PRs.
 - Record what actually ran (counts, timings, configs) separately from what docs claim.

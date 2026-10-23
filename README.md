@@ -7,6 +7,8 @@ receptionist's reply comes back as captions.
 
 **Current phase: demo build** for the Bolna Symphony buildathon (submission
 31 October 2026). Target: about 12 signs and one rehearsed clinic-appointment call.
+Neither recognition nor the call flow has passed its validation gates yet; the
+[plan](PLAN.md#7-gates-go--no-go) lists them.
 
 ## Start here
 

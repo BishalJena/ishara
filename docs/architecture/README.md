@@ -17,3 +17,14 @@ The board has six parts, top to bottom:
 
 The plan in [PLAN.md](../../PLAN.md) is the source of truth if the board and the
 plan ever disagree. Update both together.
+
+## Where the board lags the plan (as of 23 October)
+
+The PNG and `.excalidraw` still carry three items from the pre-Option-C draft.
+Read them with the plan's wording instead until the board is re-exported:
+
+- **Gate 1 "FAIL → Path B"**: Path B is now the main path. The plan's G1 fallbacks are a
+  built-in LLM with a "repeat exactly" prompt, then Path A.
+- **"Tuned to the 2 people who recorded"**: the plan uses one signer, the person who
+  presents the demo.
+- **"Jev (cloud) 2nd opinion"**: not in the plan; there is no cloud recognizer in the demo.
