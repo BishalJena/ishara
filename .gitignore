@@ -54,3 +54,6 @@ spikes/recognition/artifacts/
 
 # Backend spike output (custom-LLM request shapes, recordings) stays local.
 backend/artifacts/
+
+# Light test venvs (e.g. spikes/recognition/.venv-light)
+.venv-*/
