@@ -84,6 +84,7 @@ def test_listen_block_parses() -> None:
         render_marker_block("listen"),
         _fill(render_marker_block("speak"), ishara_call_id="c1"),
         _fill(render_marker_block("speak"), ishara_call_id="c1", turn_id="t1"),
+        _fill(render_marker_block("speak"), ishara_call_id="c1", reply_text="Yes."),
     ],
 )
 def test_unfilled_or_missing_blocks_are_ignored(prompt: str) -> None:

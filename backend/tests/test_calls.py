@@ -56,6 +56,19 @@ def test_duplicate_contact_ids_rejected() -> None:
         parse_contacts([f"clinic={CLINIC}", f"clinic={PHARMACY}"])
 
 
+@pytest.mark.parametrize(
+    ("entry", "message"),
+    [
+        (CLINIC, "ALLOWED_RECIPIENTS entries must look like contact_id=+E164 (value not shown)"),
+        ("clinic=+91000000000a", "ALLOWED_RECIPIENTS contact 'clinic' is not E.164"),
+    ],
+)
+def test_contact_errors_tell_the_operator_what_to_fix(entry: str, message: str) -> None:
+    with pytest.raises(InvalidContacts) as error:
+        parse_contacts([entry])
+    assert str(error.value) == message
+
+
 @pytest.mark.parametrize("entry", [CLINIC, "clinic=+91000000000a"])
 def test_contact_errors_never_echo_the_number(entry: str) -> None:
     with pytest.raises(InvalidContacts) as error:
