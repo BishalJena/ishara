@@ -6,6 +6,7 @@ from detect_clips import ARTIFACTS, ROOT, calibration_window, clip_name, clips_d
 from detector import CalibrationError, Frame, Params, Segment, State
 
 REST, UP = ((0.4, 0.9), (0.6, 0.9)), ((0.45, 0.5), (0.6, 0.9))
+BOTH_UP = ((0.45, 0.5), (0.55, 0.5))
 
 
 def pose(left=0.9, right=0.9):
@@ -65,7 +66,7 @@ class ClipOutput(unittest.TestCase):
 
 class SavedClipDetection(unittest.TestCase):
     def test_calibrates_on_leading_rest_only(self):
-        clip = frames((REST, 61), (UP, 100), (REST, 30))
+        clip = frames((REST, 61), (BOTH_UP, 100), (REST, 30))  # all frames: median 0.5
         self.assertEqual(len(calibration_window(clip, Params())), 61)
         rest_y, segments, state = detect(clip, Params())
         self.assertAlmostEqual(rest_y, 0.82)
