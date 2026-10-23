@@ -1,8 +1,14 @@
 """Mac bridge turn rules, sources and client; fake transport only, no network."""
 import asyncio
+import io
 import itertools
 import json
 import unittest
+import urllib.error
+from contextlib import redirect_stderr, redirect_stdout
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 import mac_bridge as mb
 
@@ -186,13 +192,16 @@ class End(unittest.TestCase):
             self.assertIsNone(action())
         self.assertEqual(turn.chips, [])
 
-    def test_ended_call_drops_pending_resend(self):
+    def test_ended_call_drops_pending_and_awaited_resends(self):
         turn = state("hello")
         turn.on_draft("t1", "Hello.", "llm")
         turn.approve()
+        turn.quick_reply("yes")  # sent on t3
+        turn.on_not_delivered("t1")
         turn.on_ended()
-        self.assertIsNone(turn.on_not_delivered("t1"))
         self.assertIsNone(turn.undelivered)
+        self.assertIsNone(turn.approve())
+        self.assertIsNone(turn.on_not_delivered("t3"))
         self.assertIsNone(turn.approve())
         self.assertIsNone(turn.end())
 
@@ -405,6 +414,109 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(self.bridge.state.ended)
         self.assertEqual(self.lines[-1], "connection closed; nothing will be sent")
         self.assertEqual(self.transport.sent, [])
+
+
+TOKEN = "test-token-123"
+
+
+class CommandLine(unittest.TestCase):
+    def setUp(self):
+        self.posts, self.connects, self.lines = [], [], []
+        self.transport = FakeTransport()
+        self.reply = {"call_id": "c42", "state": "dialing"}
+
+    def post(self, url, body, headers):
+        self.posts.append((url, body, headers))
+        return self.reply
+
+    async def connect(self, url, headers):
+        self.connects.append((url, headers))
+        return self.transport
+
+    def main(self, *argv, after=0, env=None):
+        async def terminal():
+            while len(self.transport.sent) < after:
+                await asyncio.sleep(0)
+            yield "e"
+
+        stdout, stderr = io.StringIO(), io.StringIO()
+        try:
+            with redirect_stdout(stdout), redirect_stderr(stderr):
+                return mb.main(list(argv), {"APP_TOKEN": TOKEN} if env is None else env,
+                               self.post, self.connect, terminal, self.lines.append)
+        finally:
+            printed = "\n".join(self.lines) + stdout.getvalue() + stderr.getvalue()
+            self.assertNotIn(TOKEN, printed)
+
+    def test_start_call_needs_confirm_cost_before_any_request(self):
+        with self.assertRaises(SystemExit):
+            mb.start_call("https://b", "clinic", TOKEN, False, self.post, self.lines.append)
+        self.assertEqual(self.posts, [])
+        self.assertEqual(self.lines, [mb.COST_HEADS_UP])
+        self.assertIn("5.5/min", mb.COST_HEADS_UP)
+
+    def test_start_call_posts_contact_and_purpose_with_the_token(self):
+        call_id = mb.start_call("https://b", "clinic", TOKEN, True, self.post, self.lines.append)
+        self.assertEqual(call_id, "c42")
+        self.assertEqual(self.posts, [("https://b/calls",
+                                       {"contact_id": "clinic", "purpose": "doctor_appointment"},
+                                       {"Authorization": f"Bearer {TOKEN}"})])
+        self.assertEqual(self.lines[0], mb.COST_HEADS_UP)
+
+    def test_main_refuses_to_dial_without_confirm_cost(self):
+        with self.assertRaises(SystemExit):
+            self.main("--base-url", "https://b", "--contact", "clinic")
+        self.assertEqual((self.posts, self.connects), ([], []))
+
+    def test_main_attaches_to_an_existing_call_without_dialing(self):
+        self.assertEqual(self.main("--base-url", "https://b.example/api/", "--call-id", "c7"), 0)
+        self.assertEqual(self.posts, [])
+        self.assertEqual(self.connects, [("wss://b.example/api/calls/c7/ws",
+                                          {"Authorization": f"Bearer {TOKEN}"})])
+        self.assertEqual(self.transport.sent, [{"type": "end"}])
+        self.assertTrue(self.transport.closed)
+
+    def test_main_starts_a_confirmed_call_then_replays_into_it(self):
+        with TemporaryDirectory() as folder:
+            replay = Path(folder, "script.json")
+            replay.write_text('["hello", "?", "doctor"]')
+            self.main("--base-url", "http://127.0.0.1:8000", "--contact", "clinic",
+                      "--confirm-cost", "--replay", str(replay), after=2)
+        self.assertEqual(len(self.posts), 1)
+        self.assertEqual(self.connects[0][0], "ws://127.0.0.1:8000/calls/c42/ws")
+        turn_id = self.transport.sent[0]["turn_id"]
+        self.assertEqual(self.transport.sent, [chips(turn_id, "hello"),
+                                               chips(turn_id, "hello", "doctor"), {"type": "end"}])
+
+    def test_backend_errors_exit_nonzero_without_the_token(self):
+        def refuse(url, body, headers):
+            raise mb.BackendError("POST /calls returned HTTP 403: not on allowlist")
+
+        self.post = refuse
+        code = self.main("--base-url", "https://b", "--contact", "clinic", "--confirm-cost")
+        self.assertEqual(code, 1)
+        self.assertEqual(self.lines[-1], "! POST /calls returned HTTP 403: not on allowlist")
+        self.assertEqual(self.connects, [])
+
+    def test_missing_token_and_bad_url_fail_before_any_request(self):
+        with self.assertRaises(SystemExit):
+            self.main("--base-url", "https://b", "--call-id", "c7", env={})
+        with self.assertRaises(SystemExit):
+            self.main("--base-url", "https://b", "--call-id", "c7", env={"APP_TOKEN": ""})
+        for url in ("ftp://b", "b.example", "https://b?x=1"):
+            with self.subTest(url=url), self.assertRaises(SystemExit):
+                self.main("--base-url", url, "--call-id", "c7")
+        self.assertEqual((self.posts, self.connects), ([], []))
+
+    def test_http_error_is_reported_without_the_auth_header(self):
+        error = urllib.error.HTTPError("https://b/calls", 401, "Unauthorized", {},
+                                       io.BytesIO(b'{"detail":"invalid token"}'))
+        with patch("urllib.request.urlopen", side_effect=error) as urlopen, \
+                self.assertRaises(mb.BackendError) as caught:
+            mb.post_json("https://b/calls", {}, mb.auth_headers(TOKEN))
+        self.assertEqual(urlopen.call_args.args[0].get_header("Authorization"), f"Bearer {TOKEN}")
+        self.assertEqual(str(caught.exception),
+                         'POST /calls returned HTTP 401: {"detail":"invalid token"}')
 
 
 if __name__ == "__main__":
