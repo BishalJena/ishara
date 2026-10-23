@@ -47,7 +47,6 @@ final class LiveCallDriver: CallDriver {
     func close() {
         reconnecting?.cancel()
         reconnecting = nil
-        call?.onConnectionLost = nil
         call = nil
         let client = client
         Task { await client.disconnect() }

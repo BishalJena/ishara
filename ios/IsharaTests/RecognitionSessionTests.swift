@@ -21,6 +21,8 @@ final class RecognitionSessionTests: XCTestCase {
     func testChecklistComesFromWhatTheTrackerSees() {
         XCTAssertEqual(RecognitionSession.checks(in: Landmarks.frame(t: 0)), [.face, .bothHands, .light])
         XCTAssertEqual(RecognitionSession.checks(in: Landmarks.frame(t: 0, hands: false)), [.face, .light])
+        XCTAssertEqual(RecognitionSession.checks(in: Landmarks.frame(t: 0, rightHand: false)), [.face, .light],
+                       "one hand isn't both hands")
         XCTAssertEqual(RecognitionSession.checks(in: Landmarks.frame(t: 0, body: false)), [.face, .bothHands])
     }
 

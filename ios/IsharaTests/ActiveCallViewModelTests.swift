@@ -60,6 +60,17 @@ final class ActiveCallViewModelTests: XCTestCase {
         XCTAssertEqual(model.phase, .ended(.userEnded))
     }
 
+    func testEndingWhileACallFailsToStartStaysUserEnded() async {
+        let failing = StubCallDriver()
+        failing.startError = BackendError.httpStatus(502)
+        let model = ActiveCallViewModel(setup: .demo, driver: failing, recognition: StubRecognition())
+
+        model.end()
+        await model.start()
+
+        XCTAssertEqual(model.phase, .ended(.userEnded))
+    }
+
     func testLeaveClosesTheDriverAndStopsRecognition() {
         model.leave()
 

@@ -11,7 +11,9 @@ enum Landmarks {
     static let restY: Float = 0.9
     static let signingY: Float = 0.5
 
-    static func frame(t: Double, wristY: Float = restY, body: Bool = true, hands: Bool = true) -> LandmarkFrame {
+    static func frame(
+        t: Double, wristY: Float = restY, body: Bool = true, hands: Bool = true, rightHand: Bool = true
+    ) -> LandmarkFrame {
         var pose = (0..<LandmarkFrame.poseCount).map { _ in Landmark(x: 0.5, y: 0.5, z: 0, visibility: 0.9) }
         pose[SignCLIPLayout.Pose.leftShoulder] = Landmark(x: 0.6, y: 0.4, z: 0, visibility: body ? 0.9 : 0.1)
         pose[SignCLIPLayout.Pose.rightShoulder] = Landmark(x: 0.4, y: 0.4, z: 0, visibility: body ? 0.9 : 0.1)
@@ -23,7 +25,7 @@ enum Landmarks {
         }
         return try! LandmarkFrame(
             timestamp: t, imageSize: size, pose: pose, face: face,
-            leftHand: hands ? hand(0.6) : nil, rightHand: hands ? hand(0.4) : nil)
+            leftHand: hands ? hand(0.6) : nil, rightHand: hands && rightHand ? hand(0.4) : nil)
     }
 
     /// `seconds` of frames at 30 fps starting at `start`.
