@@ -188,6 +188,21 @@ def replay(name):
     return report
 
 
+def frozen_policy(policy_path, records, purpose):
+    """A policy is valid only for the exact enrollment/calibration data it was frozen on."""
+    if not policy_path.is_file():
+        raise ValueError(f"Calibrate on development sessions before {purpose}")
+    policy = json.loads(policy_path.read_text())
+    if policy["data_fingerprint"] != fingerprint([r for r in records if r["split"] != "test"]):
+        raise ValueError("Enrollment/calibration changed since the policy was frozen")
+    return policy
+
+
+def check_encoder(policy, encoder):
+    if policy["encoder"] != encoder.contract:
+        raise ValueError("Policy was calibrated for a different encoder contract")
+
+
 def pilot(command, name, manifest, fresh):
     records = data.load_dataset(manifest)
     ready = data.readiness(records, final=command == "evaluate")
@@ -197,14 +212,10 @@ def pilot(command, name, manifest, fresh):
     development = [r for r in records if r["split"] != "test"]
     policy_path = EVIDENCE / f"policy-{name}.json"
     if command == "evaluate":
-        if not policy_path.is_file():
-            raise ValueError("Calibrate on development sessions before evaluating test")
-        saved_policy = json.loads(policy_path.read_text())
-        if saved_policy["data_fingerprint"] != fingerprint(development):
-            raise ValueError("Enrollment/calibration changed since the policy was frozen")
+        saved_policy = frozen_policy(policy_path, records, "evaluating test")
     encoder = Encoder(name)
-    if command == "evaluate" and saved_policy["encoder"] != encoder.contract:
-        raise ValueError("Policy was calibrated for a different encoder contract")
+    if command == "evaluate":
+        check_encoder(saved_policy, encoder)
     split = "calibration" if command == "calibrate" else "test"
     embedded = embed_records(encoder, [r for r in records if r["split"] in ("enrollment", split)], fresh)
     references = [r for r in embedded if r["split"] == "enrollment"]
