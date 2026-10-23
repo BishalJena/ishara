@@ -209,11 +209,15 @@ public final class TurnStore {
         goSilent()
     }
 
-    /// Applies every event, then treats the end of the stream as a lost connection.
+    /// Applies every event, then treats the end of the stream as a lost connection. If the
+    /// calling task is cancelled (the app is replacing the connection on purpose), it stops
+    /// without reporting a disconnect.
     public func consume(_ events: AsyncStream<ServerMessage>) async {
         for await message in events {
+            guard !Task.isCancelled else { return }
             receive(message)
         }
+        guard !Task.isCancelled else { return }
         connectionLost()
     }
 
