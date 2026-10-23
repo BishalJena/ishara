@@ -102,6 +102,19 @@ class RetrievalContracts(unittest.TestCase):
         decision = data.decision(result, {}, {"similarity": 0.8, "margin": 0.1})
         self.assertEqual(decision["status"], "abstain")
 
+    def test_tracking_quality_boundaries_come_from_the_shared_constant(self):
+        result = {"ranking": [{"concept": "hello", "similarity": 1.0}], "margin": 1.0}
+        policy = {"similarity": 0.8, "margin": 0.1}
+        self.assertEqual(data.QUALITY, {"min_pose_fraction": 0.6, "min_hand_fraction": 0.2})
+        for quality, status in (({"pose_fraction": 0.6, "hand_fraction": 0.2}, "candidate"),
+                                ({"pose_fraction": 0.59, "hand_fraction": 1}, "abstain"),
+                                ({"pose_fraction": 1, "hand_fraction": 0.19}, "abstain")):
+            with self.subTest(quality=quality):
+                self.assertEqual(data.decision(result, quality, policy)["status"], status)
+        with patch.dict(data.QUALITY, min_pose_fraction=0.7):
+            self.assertEqual(data.decision(result, {"pose_fraction": 0.65, "hand_fraction": 1},
+                                           policy)["status"], "abstain")
+
     def test_nonfinite_thresholds_and_quality_cannot_accept(self):
         result = {"ranking": [{"concept": "hello", "similarity": 1.0}], "margin": 1.0}
         with self.assertRaises(ValueError):

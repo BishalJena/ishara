@@ -16,6 +16,8 @@ VOCABULARY = ("hello", "thankyou", "yes", "no", "sorry", "doctor",
               "today", "tomorrow", "morning", "afternoon", "evening", "time")
 SPLITS = ("enrollment", "calibration", "test")
 NEGATIVES = ("idle", "transition", "incomplete", "unsupported")
+# Shared with the iPhone through the exported bundle; change both sides together.
+QUALITY = {"min_pose_fraction": 0.6, "min_hand_fraction": 0.2}
 
 
 def sha256(path):
@@ -166,7 +168,8 @@ def decision(result, quality, policy=None):
     if any(v is None or not np.isfinite(v) for v in measurements):
         return {"status": "abstain", "concept": None, "reason": "invalid evidence"}
     if (not top or top[0]["concept"] not in VOCABULARY
-            or quality.get("pose_fraction", 0) < 0.6 or quality.get("hand_fraction", 0) < 0.2
+            or quality.get("pose_fraction", 0) < QUALITY["min_pose_fraction"]
+            or quality.get("hand_fraction", 0) < QUALITY["min_hand_fraction"]
             or top[0]["similarity"] < policy["similarity"] or result["margin"] < policy["margin"]):
         return {"status": "abstain", "concept": None, "reason": "insufficient evidence"}
     return {"status": "candidate", "concept": top[0]["concept"], "reason": None}
