@@ -52,7 +52,7 @@ Agreed on 23 October 2026. Raise any change explicitly; don't switch silently.
 | D1 | Who carries the call | **Option C.** Build **Path B** first: Bolna places the call through its default number. **Path A** (user's own number + Apple call-audio injection) is a Thursday bonus | B is testable before a device is available, gives the app real captions and uses Bolna centrally. A keeps the native-call story if it works |
 | D2 | Voice (TTS) | **Sarvam Bulbul** (v4 Flash, English-India voice). Cartesia Sonic is the backup | Sponsor, inside Bolna's flat rate, Indian voice |
 | D3 | Call language | **English (India)** only. Hindi is "next" | Lowest effort |
-| D4 | Chips → sentence | **Cerebras LLM** drafts the sentence using the chips plus the live transcript, then a **validator** checks it. Fixed **templates** are the fallback | Fast, context-aware wording; templates catch meaning drift |
+| D4 | Chips → sentence | **Groq LLM** (OpenAI-compatible API, model `openai/gpt-oss-120b`) drafts the sentence using the chips plus the live transcript, then a **validator** checks it. Fixed **templates** are the fallback. Replaced Cerebras on 23 Oct | Fast, context-aware wording; templates catch meaning drift. Cerebras is not free; Groq is billed per token at a low rate (§10) |
 | D5 | Vocabulary | **12 signs** (see §5), one sign at a time with hands down between signs. Wait and Repeat are buttons | Enough for the script; small enough to record and rehearse |
 | D6 | Where recognition runs | **On the iPhone**: MediaPipe Holistic for iOS plus SignCLIP converted to Core ML. The **Mac is the backup** | On-device is the pitch; the Mac replay pipeline (extraction, SignCLIP embedding, reference matching) already runs, though it has no calibrated cut-off yet and abstains on everything until R2b |
 | D7 | Backend hosting | Small Python backend on **Heroku** (**Basic dyno or higher**, never Eco) | Team has credits; Eco dynos sleep and Bolna would hear silence |
@@ -72,7 +72,7 @@ is part of it; Bolna is not required by the rules. The team chose Bolna anyway (
 ```
 ┌────────────── iPhone (SwiftUI app) ──────────────┐     ┌──── Heroku backend (Python) ────┐     ┌──── Bolna cloud ────┐
 │ camera → MediaPipe Holistic → start/stop detector │     │ • call + turn state            │     │ graph agent          │
-│ → SignCLIP (Core ML) → match vs your examples     │ WSS │ • composer: Cerebras + checks  │HTTPS│ Deepgram (hears)     │
+│ → SignCLIP (Core ML) → match vs your examples     │ WSS │ • composer: Groq + checks      │HTTPS│ Deepgram (hears)     │
 │ → chips → draft (from backend) → SEND             │◀───▶│   + template fallback          │◀───▶│ Sarvam (speaks)      │
 │ captions · call status · STOP / End               │     │ • custom-LLM endpoint for Bolna│     │ Plivo (phone line)   │
 └───────────────────────────────────────────────────┘     │ • Bolna API client (calls,     │     └─────────┬────────────┘
@@ -81,7 +81,7 @@ is part of it; Bolna is not required by the rules. The team chose Bolna anyway (
 ```
 
 **API keys live only on the backend.** The phone holds a demo app token, never a
-Bolna, Cerebras or Sarvam key.
+Bolna, Groq or Sarvam key.
 
 ### How Bolna is made to say exactly the approved text (Path B)
 
@@ -170,10 +170,12 @@ Captions (the app can't read them), so the composer gets chips only and no trans
    for about 0.4 s → end the clip → SignCLIP → match. If it's close enough, a chip appears;
    if not, a **[?]** chip appears and is never spoken. The target is about 0.5 s from the hands
    dropping to the chip appearing.
-2. **Draft (automatic).** Every chip change sends `chips` to the backend. Cerebras
+2. **Draft (automatic).** Every chip change sends `chips` to the backend. Groq
    drafts a sentence from the chips, the last receptionist caption and the call purpose.
    The **validator** rejects drafts that miss a chip's meaning, add a day, time, number
    or name that neither the user signed nor the receptionist said, or run past 25 words.
+   Booking words ("booked", "confirmed") pass only when the receptionist's caption said
+   them, so Ishara never claims a booking on its own.
    A rejected draft, or no reply within 1.5 s, falls back to the template sentence.
 3. **Message (the user decides).** The user taps **SEND**. The app never guesses that
    the message is finished. An approval is single use, tied to its `turn_id`, and
@@ -229,8 +231,8 @@ picked up without earlier context.
 ### Fri 23 Oct: set up
 
 - [ ] **H1 [You]** Create or confirm accounts and put the keys in the local `.env` (never in Git):
-  Bolna API key with credits, Cerebras API key ($5 trial needs a payment card),
-  Heroku app with a **Basic** dyno, and an Apple developer team in Xcode.
+  Bolna API key with credits, Groq API key, Heroku app with a **Basic** dyno, and an
+  Apple developer team in Xcode.
   *Done:* the backend's config check (V1) reports every key present.
 - [ ] **H2 [You]** Give the consenting receptionist-teammate's number for `ALLOWED_RECIPIENTS`
   (it goes only in Heroku config / `.env`, never in the repo).
@@ -280,7 +282,7 @@ picked up without earlier context.
 
 ### Sun 25 Oct: composer, calibration
 
-- [ ] **V5 [Build]** Composer: templates for the 12 signs plus purpose, a Cerebras prompt, the validator,
+- [ ] **V5 [Build]** Composer: templates for the 12 signs plus purpose, a Groq prompt, the validator,
   a 1.5 s timeout and the fallback. *Done:* a fixture test for every script turn (§1), and
   validator tests for invented times, a missing "no" and an over-long draft.
 - [ ] **R3 [You]** Calibration session: 5 × 12 signs plus 20 negatives.
@@ -387,7 +389,9 @@ Mutation-minded tests: every safety rule (single-use approval, no invented times
 
 - Calls go only to numbers in `ALLOWED_RECIPIENTS`, i.e. consenting teammates, with synthetic
   appointment details. No unexpected or third-party calls.
-- Give a cost heads-up before paid runs (Bolna is about ₹5.5/min plus telephony; Cerebras is billed by tokens).
+- Give a cost heads-up before paid runs (Bolna is about ₹5.5/min plus telephony; Groq
+  `openai/gpt-oss-120b` is billed by tokens, about $0.15 per million input and $0.60 per
+  million output tokens, so one draft costs well under $0.001).
 - Placing calls, paid inference, device installations and deployments need explicit task
   authorization from the founder; a task listed in §6 is not authorization by itself.
 - No keys, phone numbers, account IDs or raw account responses in Git, issues or PRs.
