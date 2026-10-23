@@ -11,7 +11,8 @@ let package = Package(
         .target(name: "RecognitionCore"),
         .testTarget(
             name: "RecognitionCoreTests",
-            dependencies: ["RecognitionCore"]
+            dependencies: ["RecognitionCore"],
+            resources: [.copy("Fixtures")]
         ),
     ]
 )
