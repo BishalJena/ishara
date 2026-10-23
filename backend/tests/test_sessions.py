@@ -76,6 +76,13 @@ def test_approval_before_live_rejected_without_opening_turn(line: CallState) -> 
     assert "t1" not in session.seen_turn_ids
 
 
+def test_approval_without_run_id_rejected() -> None:
+    session = CallSession(call_id="c1", purpose="doctor_appointment")
+    session.hear_caption("Hello?")
+    rejected(Rejection.CALL_NOT_LIVE, lambda: session.approve("t1", TEXT))
+    assert session.in_flight is None
+
+
 @pytest.mark.parametrize("line", [CallState.ENDED, CallState.ERROR])
 def test_finished_call_rejects_chips_and_approval(line: CallState) -> None:
     session = live_session()

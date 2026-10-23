@@ -127,7 +127,7 @@ class CallSession:
     def approve(self, turn_id: str, text: str) -> Turn:
         if self.finished:
             raise TurnRejected(Rejection.CALL_ENDED)
-        if self.line not in _LIVE:
+        if self.line not in _LIVE or self.run_id is None:
             raise TurnRejected(Rejection.CALL_NOT_LIVE)
         turn = self._existing_turn(turn_id)
         if turn is not None and turn.phase is not TurnPhase.OPEN:
