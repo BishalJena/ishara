@@ -51,3 +51,6 @@ spikes/call_flow/artifacts/
 
 # Recognition validation clips, weights and generated evidence
 spikes/recognition/artifacts/
+
+# Light test venvs (e.g. spikes/recognition/.venv-light)
+.venv-*/
