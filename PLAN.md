@@ -191,7 +191,10 @@ Pauses cost nothing: hands at rest means nothing happens.
 
 Reference videos are for **learning and checking** each sign. Recognition matches
 against **your own recordings**. Dataset links: [research links](docs/research/links.md)
-(INCLUDE, bridgeconn and silentone0725 ISLRTC dictionaries).
+(INCLUDE, bridgeconn and silentone0725 ISLRTC dictionaries). ISLRTC media allows
+research, teaching and ISL technology use with acknowledgement and no resale
+([ledger R15](docs/CLAIM-LEDGER.md)): we watch it to learn the signs and don't
+redistribute it. Credit ISLRTC and INCLUDE in the submission.
 
 **Recording budget** (same signer who presents the demo, face and both hands in frame):
 
