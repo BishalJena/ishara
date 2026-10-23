@@ -648,6 +648,31 @@ final class TurnStoreTests: XCTestCase {
         XCTAssertEqual(store.notice, TurnStore.disconnectedNotice)
     }
 
+    func testCancelledConsumeIgnoresTheOldStreamAndReportsNoDisconnect() async {
+        let (events, continuation) = AsyncStream<ServerMessage>.makeStream()
+        continuation.yield(.status(.speaking))
+        continuation.finish()
+        let listener = Task { await store.consume(events) }
+
+        listener.cancel()
+        await listener.value
+
+        XCTAssertEqual(store.state, .inCall)
+        XCTAssertNil(store.notice)
+    }
+
+    func testCancelledConsumeOfAFinishedStreamReportsNoDisconnect() async {
+        let (events, continuation) = AsyncStream<ServerMessage>.makeStream()
+        continuation.finish()
+        let listener = Task { await store.consume(events) }
+
+        listener.cancel()
+        await listener.value
+
+        XCTAssertEqual(store.state, .inCall)
+        XCTAssertNil(store.notice)
+    }
+
     func testConsumeAfterBackendEndStaysEnded() async {
         let (events, continuation) = AsyncStream<ServerMessage>.makeStream()
         continuation.yield(.status(.ended))
