@@ -10,5 +10,10 @@ let package = Package(
     ],
     targets: [
         .target(name: "SignPipeline"),
+        .testTarget(
+            name: "SignPipelineTests",
+            dependencies: ["SignPipeline"],
+            resources: [.copy("Resources")]
+        ),
     ]
 )
