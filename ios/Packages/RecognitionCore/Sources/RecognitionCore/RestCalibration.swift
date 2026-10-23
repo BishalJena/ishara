@@ -14,7 +14,7 @@ extension SignDetector {
         params: DetectorParams = DetectorParams()
     ) throws(CalibrationError) -> Double {
         guard let first = frames.first, let last = frames.last,
-              last.t - first.t >= params.calibrationS - DetectorParams.timeTolerance
+              last.t - first.t >= params.calibrationS
         else { throw .tooShort }
 
         let bodyFrames = frames.count { $0.body }

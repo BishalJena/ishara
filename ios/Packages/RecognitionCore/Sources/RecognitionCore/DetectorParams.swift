@@ -15,9 +15,9 @@ public struct DetectorParams: Sendable, Equatable {
     public var maxSignS = 4.0
     public var lostBodyS = 0.50
 
-    /// Timestamps are sums of frame intervals, so a duration that should equal a
-    /// threshold can land a rounding error short of it. Values within this
-    /// tolerance count as equal to the threshold.
+    /// "Continuously for at least X" checks accept a run this much shorter than X,
+    /// so a run whose frame times sum to X with rounding error still counts.
+    /// Length limits and calibration coverage compare exactly, as in the shared spec.
     public static let timeTolerance = 1e-9
 
     public init() {}

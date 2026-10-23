@@ -115,10 +115,10 @@ public struct SignDetector: Sendable {
         case .signing(let start):
             if restRun.hasLasted(params.endRestS, at: t), let end = restRun.start {
                 state = .watching
-                let tooShort = end - start < params.minSignS - DetectorParams.timeTolerance
+                let tooShort = end - start < params.minSignS
                 return Segment(start: start, end: end, reason: tooShort ? .tooShort : nil)
             }
-            if t - start > params.maxSignS + DetectorParams.timeTolerance {
+            if t - start > params.maxSignS {
                 state = .cooldown
                 return Segment(start: start, end: t, reason: .tooLong)
             }
