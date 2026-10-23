@@ -22,6 +22,8 @@ Use the [handoff](../HANDOFF.md), [active plan](../../PLAN.md) and
   research corrections and recommendations.
 - [Active plan, 20–22 October](2026-10-20-active-plan.md): the recognition pilot,
   Bolna speech and device tracks before the 23 October demo build decisions.
+- [Workflow, 20–22 October](2026-10-20-workflow.md): the own-number-call flow and
+  Eraser diagram sources before Option C was chosen.
 
 Dates identify the original research or snapshot, not a new validation event.
 Later updates retained inside a snapshot are still historical. Numerical results
