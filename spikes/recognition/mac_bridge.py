@@ -6,9 +6,13 @@ only path to an `approve` message is an explicit SEND or quick reply.
 """
 from __future__ import annotations
 
+import asyncio
+import json
 import uuid
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 from dataclasses import dataclass, field
+from enum import Enum
+from typing import Protocol
 
 SIGNS = ("hello", "thankyou", "yes", "no", "sorry", "doctor",
          "today", "tomorrow", "morning", "afternoon", "evening", "time")
@@ -145,3 +149,89 @@ class TurnState:
 
     def _new_turn(self) -> None:
         self.turn_id, self.chips, self.draft = self.new_id(), [], None
+
+
+# ---- recognition sources ----
+
+
+class RecognitionSource(Protocol):
+    """One `Result` per finished sign segment; the stream ends when the source is done.
+
+    A live recognizer (detector segments -> SignCLIP -> frozen cut-off) is just another
+    source: yield the matched sign, or None when no reference is close enough.
+    """
+
+    def results(self) -> AsyncIterator[Result]: ...
+
+
+class _End(Enum):
+    DONE = 0  # sentinel that ends a stream
+
+
+def parse_result(token: str) -> Result:
+    token = token.strip().lower()
+    if token == "?":
+        return None
+    if token not in SIGNS:
+        raise ValueError(f"unknown sign {token!r}; use one of {', '.join(SIGNS)} or ?")
+    return token
+
+
+class ManualSource:
+    """Signs typed in the terminal; the terminal loop feeds each parsed token."""
+
+    def __init__(self) -> None:
+        self._queue: asyncio.Queue[Result | _End] = asyncio.Queue()
+
+    def feed(self, result: Result) -> None:
+        self._queue.put_nowait(result)
+
+    def close(self) -> None:
+        self._queue.put_nowait(_End.DONE)
+
+    async def results(self) -> AsyncIterator[Result]:
+        while (item := await self._queue.get()) is not _End.DONE:
+            yield item
+
+
+@dataclass(frozen=True)
+class ReplaySource:
+    """Scripted results for rehearsals: each step waits `delay` seconds, then yields."""
+
+    steps: tuple[tuple[float, Result], ...]
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep
+
+    @classmethod
+    def from_json(cls, text: str,
+                  sleep: Callable[[float], Awaitable[None]] = asyncio.sleep) -> ReplaySource:
+        """`["hello", "?", null, {"sign": "doctor", "delay": 1.5}]`; "?" and null are unsure."""
+        steps = []
+        for item in json.loads(text):
+            if isinstance(item, dict):
+                if set(item) - {"sign", "delay"} or "sign" not in item:
+                    raise ValueError(f"replay step needs 'sign' and optional 'delay': {item}")
+                delay, sign = float(item.get("delay", 0)), item["sign"]
+                if delay < 0:
+                    raise ValueError(f"negative delay in {item}")
+            else:
+                delay, sign = 0.0, item
+            steps.append((delay, None if sign is None else parse_result(sign)))
+        return cls(tuple(steps), sleep)
+
+    async def results(self) -> AsyncIterator[Result]:
+        for delay, result in self.steps:
+            if delay:
+                await self.sleep(delay)
+            yield result
+
+
+class BlockingSource:
+    """Runs a blocking iterator (webcam loop, model inference) off the event loop."""
+
+    def __init__(self, make_iterator: Callable[[], Iterator[Result]]) -> None:
+        self._make_iterator = make_iterator
+
+    async def results(self) -> AsyncIterator[Result]:
+        iterator = await asyncio.to_thread(self._make_iterator)
+        while (item := await asyncio.to_thread(next, iterator, _End.DONE)) is not _End.DONE:
+            yield item
