@@ -1,39 +1,9 @@
+import CallSession
 import Foundation
 
-/// Identifies one reply turn. Approvals and drafts are tied to it so an old
-/// draft or a repeated SEND can never be spoken for a newer turn.
-typealias TurnID = Int
-
-/// Call states the backend reports (`status {state}`, PLAN §3).
-enum CallStatus: String, Equatable, Sendable {
-    case dialing, ringing, inCall = "in_call", speaking, ended, error
-}
-
-/// Who wrote a draft. Shown as a badge so the user knows how it was made.
-enum DraftSource: String, Equatable, Sendable {
-    case llm, template, quickReply = "quick_reply"
-
-    var badge: String {
-        switch self {
-        case .llm: "LLM"
-        case .template: "Template"
-        case .quickReply: "Quick reply"
-        }
-    }
-}
-
-struct Draft: Equatable, Sendable {
-    let text: String
-    let source: DraftSource
-}
-
-/// One recognition outcome from the on-device sign pipeline.
-enum RecognitionResult: Equatable, Sendable {
-    /// A sign matched one of the user's recorded examples closely enough.
-    case sign(String)
-    /// Something was signed but nothing matched well enough. Never spoken.
-    case unsure
-}
+// Turn state (chips, drafts, turn ids, captions, quick replies) comes from CallSession's
+// TurnStore, the single source of truth for the SEND safety rules. This file only adds
+// what the screens need on top.
 
 /// What the camera pill shows.
 enum CameraState: Equatable, Sendable {
@@ -45,67 +15,48 @@ enum CameraState: Equatable, Sendable {
     case cantSee
 }
 
-struct Chip: Identifiable, Equatable, Sendable {
-    enum Kind: Equatable, Sendable {
-        case recognised(String)
-        case unsure
+/// The badge on the draft card, saying where the sentence came from.
+enum DraftBadge: Equatable, Sendable {
+    case llm, template, quickReply
+    /// The last reply wasn't spoken; SEND offers it again on a new turn.
+    case notDelivered
+
+    init(_ origin: Draft.Origin) {
+        switch origin {
+        case .llm: self = .llm
+        case .template: self = .template
+        case .quickReply: self = .quickReply
+        }
     }
 
-    let id: UUID
-    let kind: Kind
-
-    init(id: UUID = UUID(), kind: Kind) {
-        self.id = id
-        self.kind = kind
-    }
-
-    /// The sign's word, or nil for an unsure chip, which is never sent.
-    var word: String? {
-        if case .recognised(let word) = kind { word } else { nil }
+    var title: String {
+        switch self {
+        case .llm: "LLM"
+        case .template: "Template"
+        case .quickReply: "Quick reply"
+        case .notDelivered: "Not delivered"
+        }
     }
 }
 
-struct CaptionEntry: Identifiable, Equatable, Sendable {
-    enum Speaker: Equatable, Sendable {
-        case receptionist
-        /// A reply the user approved and the call confirmed as spoken.
-        case user
-    }
-
-    let id: UUID
-    let speaker: Speaker
+/// The sentence the draft card shows and SEND would speak.
+struct DraftDisplay: Equatable, Sendable {
     let text: String
-    let at: Date
-
-    init(id: UUID = UUID(), speaker: Speaker, text: String, at: Date) {
-        self.id = id
-        self.speaker = speaker
-        self.text = text
-        self.at = at
-    }
+    let badge: DraftBadge
 }
 
-/// Full sentences the quick-reply buttons put into the draft. SEND is still needed.
-enum QuickReply: String, CaseIterable, Identifiable, Sendable {
-    case yes, no, wait, repeatThat
+extension Chip {
+    /// Text on the chip: the sign's word, or "?" for an unsure sign.
+    var label: String { sign?.rawValue ?? "?" }
+}
 
-    var id: String { rawValue }
-
+extension QuickReply {
     var label: String {
         switch self {
         case .yes: "Yes"
         case .no: "No"
         case .wait: "Wait"
-        case .repeatThat: "Repeat"
-        }
-    }
-
-    var sentence: String {
-        switch self {
-        case .yes: "Yes."
-        case .no: "No."
-        case .wait: "Please wait a moment, I'm signing my reply."
-        case .repeatThat: "Sorry, could you please repeat that?"
+        case .repeat: "Repeat"
         }
     }
 }

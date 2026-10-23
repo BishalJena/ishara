@@ -9,6 +9,18 @@ options:
   createIntermediateGroups: true
   generateEmptyDirectories: false
 
+# Local Swift packages. SignPipelineMediaPipe pulls MediaPipe (pinned by revision);
+# the others have no dependencies.
+packages:
+  CallSession:
+    path: Packages/CallSession
+  RecognitionCore:
+    path: Packages/RecognitionCore
+  SignPipeline:
+    path: Packages/SignPipeline
+  SignPipelineMediaPipe:
+    path: Packages/SignPipelineMediaPipe
+
 settings:
   base:
     SWIFT_VERSION: "6.0"
@@ -26,6 +38,11 @@ targets:
     platform: iOS
     sources:
       - path: Ishara
+    dependencies:
+      - package: CallSession
+      - package: RecognitionCore
+      - package: SignPipeline
+      - package: SignPipelineMediaPipe
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.ishara.demo
@@ -48,6 +65,13 @@ targets:
       - path: IsharaTests
     dependencies:
       - target: Ishara
+      # The tests import these modules; the host app already links them.
+      - package: CallSession
+        link: false
+      - package: RecognitionCore
+        link: false
+      - package: SignPipeline
+        link: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.ishara.demo.tests

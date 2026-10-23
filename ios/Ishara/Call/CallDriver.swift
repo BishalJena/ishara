@@ -1,41 +1,16 @@
+import CallSession
 import Foundation
 
-/// Everything that can happen to an active call, from the backend and from the
-/// on-device sign pipeline. Mirrors the backend → app WebSocket messages in PLAN §3.
-enum CallEvent: Equatable, Sendable {
-    // Backend
-    case status(CallStatus)
-    case caption(text: String, at: Date)
-    case draft(turnID: TurnID, text: String, source: DraftSource)
-    case spoken(turnID: TurnID)
-    case notDelivered(turnID: TurnID)
-    case error(message: String)
-
-    // On-device recognition
-    case recognition(RecognitionResult)
-    case camera(CameraState)
-}
-
-/// The view model's only way to reach the call. `FakeCallDriver` plays the demo
-/// script; a later step plugs in the backend WebSocket client and the sign pipeline.
+/// Places a call and hands back the `TurnStore` that holds its state and enforces the
+/// SEND safety rules. Everything after that (chips, SEND, STOP, End and backend events)
+/// goes through the store, so the real backend and the fake demo call share one set of
+/// rules.
 @MainActor
 protocol CallDriver: AnyObject {
-    /// Events for the current call. Finishes when the call is over.
-    var events: AsyncStream<CallEvent> { get }
+    /// Asks for the call (`POST /calls` on the real backend). Throws when it can't be
+    /// placed, for example a bad app token, a contact not on the allowlist or no network.
+    func start(_ setup: CallSetup) async throws -> TurnStore
 
-    /// Ask the backend to place the call (`POST /calls`).
-    func start(_ setup: CallSetup)
-
-    /// The recognised chips changed; recompose the draft (`chips {turn_id, chips[]}`).
-    /// Unsure chips are never included.
-    func updateChips(turnID: TurnID, words: [String])
-
-    /// The user tapped SEND with exactly this text (`approve {turn_id, text}`). Single use.
-    func approve(turnID: TurnID, text: String)
-
-    /// Cancel output that has not been spoken yet (`stop`).
-    func stop()
-
-    /// End the call (`end`).
-    func end()
+    /// Lets go of the connection once the call screen goes away. Sends nothing.
+    func close()
 }

@@ -1,10 +1,13 @@
 import SwiftUI
 
 /// Screen 2: framing checklist and 2 s hands-at-rest calibration, then Start call.
+/// Recognition drives both: from real frames, or on timers when it replays fixed results.
 struct GetReadyView: View {
-    @State private var model = GetReadyModel()
+    let recognition: any RecognitionController
     let onStart: () -> Void
     let onBack: () -> Void
+
+    private var model: GetReadyModel { recognition.getReady }
 
     var body: some View {
         NavigationStack {
@@ -18,6 +21,17 @@ struct GetReadyView: View {
                         message: "Camera preview\nstick-figure overlay drawn on your body",
                         minHeight: 240
                     )
+                    .overlay(alignment: .bottomTrailing) {
+                        ReplayMenu(recognition: recognition).padding(10)
+                    }
+
+                    if let failure = recognition.failure {
+                        Label(failure, systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                    } else if let notice = recognition.notice {
+                        Label(notice, systemImage: "info.circle")
+                            .foregroundStyle(.secondary)
+                    }
 
                     ChecklistCard(passed: model.passedChecks)
                     CalibrationCard(progress: model.calibrationProgress, isActive: model.allChecksPassed)
@@ -39,7 +53,7 @@ struct GetReadyView: View {
                 .padding()
                 .background(.bar)
             }
-            .task { await model.runSimulatedChecks() }
+            .onAppear { recognition.start() }
         }
     }
 }
@@ -95,5 +109,5 @@ private struct CalibrationCard: View {
 }
 
 #Preview {
-    GetReadyView(onStart: {}, onBack: {})
+    GetReadyView(recognition: ScriptedRecognitionController(), onStart: {}, onBack: {})
 }

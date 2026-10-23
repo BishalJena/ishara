@@ -1,3 +1,4 @@
+import CallSession
 import SwiftUI
 
 /// Yes / No / Wait / Repeat. Each puts a full sentence in the draft; SEND is still needed.
@@ -12,12 +13,12 @@ struct QuickReplyBar: View {
     }
 
     private var buttons: some View {
-        ForEach(QuickReply.allCases) { reply in
+        ForEach(QuickReply.allCases, id: \.self) { reply in
             Button(reply.label) { onChoose(reply) }
                 .buttonStyle(.bordered)
                 .controlSize(.large)
                 .frame(maxWidth: .infinity)
-                .accessibilityHint("Puts \u{201C}\(reply.sentence)\u{201D} in the draft")
+                .accessibilityHint("Puts \u{201C}\(reply.text)\u{201D} in the draft")
         }
     }
 }

@@ -1,12 +1,23 @@
+import CallSession
 import SwiftUI
 
 /// Screen 1: who to call, why, saved details and voice, then CALL.
 struct HomeView: View {
     @State private var setup: CallSetup
+    let modeDescription: String
+    /// Why CALL can't work right now (for example no backend configured).
+    let setupProblem: String?
     let onCall: (CallSetup) -> Void
 
-    init(setup: CallSetup = .demo, onCall: @escaping (CallSetup) -> Void) {
+    init(
+        setup: CallSetup = .demo,
+        modeDescription: String,
+        setupProblem: String? = nil,
+        onCall: @escaping (CallSetup) -> Void
+    ) {
         _setup = State(initialValue: setup)
+        self.modeDescription = modeDescription
+        self.setupProblem = setupProblem
         self.onCall = onCall
     }
 
@@ -29,7 +40,7 @@ struct HomeView: View {
 
                 Section("Purpose") {
                     Picker("Purpose", selection: $setup.purpose) {
-                        ForEach(CallPurpose.allCases) { Text($0.title).tag($0) }
+                        ForEach(CallPurpose.allCases, id: \.self) { Text($0.title).tag($0) }
                     }
                 }
 
@@ -54,6 +65,16 @@ struct HomeView: View {
             .navigationTitle("Ishara")
             .safeAreaInset(edge: .bottom) {
                 VStack(spacing: 10) {
+                    if let setupProblem {
+                        Label(setupProblem, systemImage: "exclamationmark.triangle.fill")
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    Text(modeDescription)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     DisclosureNote()
                     Button {
                         onCall(setup)
@@ -61,7 +82,7 @@ struct HomeView: View {
                         Label("CALL", systemImage: "phone.fill")
                     }
                     .buttonStyle(.bigAction(.green))
-                    .disabled(setup.details.name.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(setup.details.name.trimmingCharacters(in: .whitespaces).isEmpty || setupProblem != nil)
                     .accessibilityLabel("Call \(setup.contact.name)")
                 }
                 .padding()
@@ -86,5 +107,5 @@ private struct DisclosureNote: View {
 }
 
 #Preview {
-    HomeView { _ in }
+    HomeView(modeDescription: "Demo mode: a scripted call on this phone. Nothing is dialled.") { _ in }
 }

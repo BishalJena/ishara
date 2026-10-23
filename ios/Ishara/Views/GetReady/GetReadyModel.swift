@@ -4,8 +4,8 @@ import Observation
 /// Framing checklist plus the 2 s "hands at rest" calibration that teaches the
 /// start/stop detector what rest looks like (PLAN §4).
 ///
-/// The simulator has no camera, so `runSimulatedChecks()` ticks the checklist on
-/// timers. The camera-based check replaces it when the sign pipeline lands (P2).
+/// The recognition pipeline drives it from real frames (`pass`, `recordCalibration`);
+/// `runSimulatedChecks()` ticks it on timers when recognition replays fixed results.
 @MainActor
 @Observable
 final class GetReadyModel {
@@ -41,8 +41,18 @@ final class GetReadyModel {
     }
 
     func advanceCalibration(by seconds: Double) {
+        recordCalibration(seconds: secondsAtRest + seconds)
+    }
+
+    /// Seconds of hands-at-rest recording collected so far.
+    func recordCalibration(seconds: Double) {
         guard allChecksPassed else { return }
-        secondsAtRest = min(Self.calibrationSeconds, secondsAtRest + seconds)
+        secondsAtRest = min(Self.calibrationSeconds, max(0, seconds))
+    }
+
+    /// The recording couldn't be used (for example the user left the frame); start over.
+    func restartCalibration() {
+        secondsAtRest = 0
     }
 
     func runSimulatedChecks(timeScale: Double = 1) async {

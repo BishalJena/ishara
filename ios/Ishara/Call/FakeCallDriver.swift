@@ -1,9 +1,12 @@
+import CallSession
 import Foundation
 
-/// Plays the PLAN §1 clinic call on timers so the whole demo can be clicked
-/// through in the simulator without a backend, a camera or a real call.
+/// Plays the PLAN §1 clinic call on timers so the whole demo can be clicked through in
+/// the simulator without a backend or a real call. It stands in for the backend: it
+/// answers the store's messages (chips, approve, stop, end) with the messages the
+/// backend would send, so the real `TurnStore` rules apply unchanged.
 @MainActor
-final class FakeCallDriver: CallDriver {
+final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     struct Options: Sendable {
         /// Multiply every delay; below 1 runs the script faster.
         var timeScale: Double = 1
@@ -12,11 +15,11 @@ final class FakeCallDriver: CallDriver {
         var undeliveredStages: Set<Int> = []
     }
 
-    let events: AsyncStream<CallEvent>
-
-    private let continuation: AsyncStream<CallEvent>.Continuation
     private let options: Options
     private let stages: [DemoScript.Stage]
+    /// Plays each stage's signs; nil when real recognition runs alongside the fake call.
+    private let recognition: ScriptedRecognitionController?
+    private weak var store: TurnStore?
     private var nextStage = 0
     private var approvedTurns: Set<TurnID> = []
     private var failedStages: Set<Int> = []
@@ -25,36 +28,65 @@ final class FakeCallDriver: CallDriver {
     private var tasks: [Task<Void, Never>] = []
     private var isOver = false
 
-    init(options: Options = Options(), stages: [DemoScript.Stage] = DemoScript.stages) {
-        (events, continuation) = AsyncStream.makeStream(of: CallEvent.self)
+    init(
+        options: Options = Options(),
+        stages: [DemoScript.Stage] = DemoScript.stages,
+        recognition: ScriptedRecognitionController? = nil
+    ) {
         self.options = options
         self.stages = stages
+        self.recognition = recognition
     }
 
     // MARK: CallDriver
 
-    func start(_ setup: CallSetup) {
-        schedule(after: 0) { $0.emit(.status(.dialing)) }
-        schedule(after: 1) { $0.emit(.status(.ringing)) }
+    func start(_ setup: CallSetup) async throws -> TurnStore {
+        let store = TurnStore(sink: self, initialState: .dialing)
+        self.store = store
+        schedule(after: 1) { $0.deliver(.status(.ringing)) }
         schedule(after: 2.5) { driver in
-            driver.emit(.status(.inCall))
-            driver.emit(.camera(.watching))
+            driver.deliver(.status(.inCall))
             driver.playNextStage()
         }
+        return store
     }
 
-    func updateChips(turnID: TurnID, words: [String]) {
-        guard !words.isEmpty else { return }
-        let draft = DemoScript.draft(for: words)
-        schedule(after: 0.5) {
-            $0.emit(.draft(turnID: turnID, text: draft.text, source: draft.source))
+    func close() {
+        finish()
+    }
+
+    // MARK: OutgoingMessageSink (what the backend would receive)
+
+    func send(_ message: AppMessage) {
+        guard !isOver else { return }
+        switch message {
+        case let .chips(turnID, signs):
+            let draft = DemoScript.draft(for: signs)
+            schedule(after: 0.5) {
+                $0.deliver(.draft(turnID: turnID, text: draft.text, source: draft.source))
+            }
+        case let .approve(turnID, text):
+            approve(turnID: turnID, text: text)
+        case .stop:
+            guard let turnID = speakingTurn else { return }
+            speakingTask?.cancel()
+            speakingTask = schedule(after: 0.3) { $0.finishSpeaking(turnID: turnID, delivered: false) }
+        case .end:
+            // The store has already ended itself; the backend would only confirm it.
+            finish()
         }
     }
 
-    func approve(turnID: TurnID, text: String) {
-        guard !isOver, speakingTurn == nil, approvedTurns.insert(turnID).inserted else { return }
+    func discardPending() {}
+
+    // MARK: Script
+
+    private func approve(turnID: TurnID, text: String) {
+        // Single use per turn id, like the backend.
+        guard speakingTurn == nil, approvedTurns.insert(turnID).inserted else { return }
         speakingTurn = turnID
-        emit(.status(.speaking))
+        // Replies arrive later, never inside the store's own SEND.
+        schedule(after: 0) { $0.deliver(.status(.speaking)) }
         let stage = nextStage - 1
         let shouldFail = options.undeliveredStages.contains(stage) && failedStages.insert(stage).inserted
         let duration = max(1.5, Double(text.count) * 0.06)
@@ -63,32 +95,11 @@ final class FakeCallDriver: CallDriver {
         }
     }
 
-    func stop() {
-        guard let turnID = speakingTurn else { return }
-        speakingTask?.cancel()
-        finishSpeaking(turnID: turnID, delivered: false)
-    }
-
-    func end() {
-        guard !isOver else { return }
-        emit(.status(.ended))
-        isOver = true
-        tasks.forEach { $0.cancel() }
-        tasks.removeAll()
-        continuation.finish()
-    }
-
-    // MARK: Script
-
     private func finishSpeaking(turnID: TurnID, delivered: Bool) {
         speakingTurn = nil
         speakingTask = nil
-        if delivered {
-            emit(.spoken(turnID: turnID))
-        } else {
-            emit(.notDelivered(turnID: turnID))
-        }
-        emit(.status(.inCall))
+        deliver(delivered ? .spoken(turnID: turnID) : .notDelivered(turnID: turnID, reason: "no_confirmation"))
+        deliver(.status(.inCall))
         if delivered {
             schedule(after: 2) { $0.playNextStage() }
         }
@@ -101,29 +112,31 @@ final class FakeCallDriver: CallDriver {
 
         var at = 0.0
         if let caption = stage.caption {
-            schedule(after: at) { $0.emit(.caption(text: caption, at: .now)) }
+            schedule(after: at) { $0.deliver(.caption(text: caption, at: Date().timeIntervalSince1970)) }
             at += 2.5
         }
+        guard let recognition else { return }
         if stage.losesFraming {
-            schedule(after: at) { $0.emit(.camera(.cantSee)) }
+            schedule(after: at) { _ in recognition.emit(.camera(.cantSee)) }
             at += 1.5
-            schedule(after: at) { $0.emit(.camera(.watching)) }
+            schedule(after: at) { _ in recognition.emit(.camera(.watching)) }
             at += 1
         }
         for sign in stage.signs {
-            schedule(after: at) { $0.emit(.camera(.signing)) }
-            at += 1.2
-            schedule(after: at) { driver in
-                driver.emit(.recognition(sign))
-                driver.emit(.camera(.watching))
-            }
-            at += 1
+            schedule(after: at) { _ in recognition.sign(sign) }
+            at += 2.2
         }
     }
 
-    private func emit(_ event: CallEvent) {
+    private func deliver(_ message: ServerMessage) {
         guard !isOver else { return }
-        continuation.yield(event)
+        store?.receive(message)
+    }
+
+    private func finish() {
+        isOver = true
+        tasks.forEach { $0.cancel() }
+        tasks.removeAll()
     }
 
     @discardableResult

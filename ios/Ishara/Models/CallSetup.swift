@@ -1,3 +1,4 @@
+import CallSession
 import Foundation
 
 /// Someone the user can ask Ishara to call. The phone number lives only on the
@@ -7,14 +8,10 @@ struct Contact: Identifiable, Hashable, Sendable {
     let name: String
 }
 
-enum CallPurpose: String, CaseIterable, Identifiable, Sendable {
-    case doctorsAppointment = "doctors_appointment"
-
-    var id: String { rawValue }
-
+extension CallPurpose {
     var title: String {
         switch self {
-        case .doctorsAppointment: "Doctor's appointment"
+        case .doctorAppointment: "Doctor's appointment"
         }
     }
 }
@@ -53,7 +50,7 @@ struct CallSetup: Equatable, Sendable {
 }
 
 extension Contact {
-    static let cityClinic = Contact(id: "city-clinic", name: "City Clinic")
+    static let cityClinic = Contact(id: "clinic", name: "City Clinic")
     static let mehtaOffice = Contact(id: "mehta-office", name: "Dr. Mehta's office")
 
     /// Synthetic demo contacts. Real numbers stay in the backend allowlist.
@@ -64,7 +61,7 @@ extension CallSetup {
     /// Synthetic details for the rehearsed clinic call (PLAN §1).
     static let demo = CallSetup(
         contact: .cityClinic,
-        purpose: .doctorsAppointment,
+        purpose: .doctorAppointment,
         details: SavedDetails(name: "Riya", preferredTime: .mornings),
         voice: .indianEnglish
     )

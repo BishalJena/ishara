@@ -1,58 +1,64 @@
 #if DEBUG
+import CallSession
 import Foundation
 
-/// A driver that never emits anything, so a fixture's state stays put.
+/// Swallows outgoing messages so a fixture's state stays put.
 @MainActor
-final class StillCallDriver: CallDriver {
-    let events: AsyncStream<CallEvent>
+private final class SilentSink: OutgoingMessageSink {
+    func send(_ message: AppMessage) {}
+    func discardPending() {}
+}
 
-    init() {
-        events = AsyncStream { _ in }
-    }
+/// Hands the view model a store that was prepared in advance.
+@MainActor
+final class FixtureCallDriver: CallDriver {
+    let store = TurnStore(sink: SilentSink(), initialState: .dialing)
 
-    func start(_ setup: CallSetup) {}
-    func updateChips(turnID: TurnID, words: [String]) {}
-    func approve(turnID: TurnID, text: String) {}
-    func stop() {}
-    func end() {}
+    func start(_ setup: CallSetup) async throws -> TurnStore { store }
+    func close() {}
 }
 
 extension DemoFixture {
-    /// Builds the call screen state by replaying PLAN §1 events into a view model.
+    /// Builds the call screen state by replaying PLAN §1 messages into a real TurnStore.
     @MainActor
     func makeActiveCall() -> ActiveCallViewModel? {
         guard self != .home, self != .getReady else { return nil }
-        let model = ActiveCallViewModel(setup: .demo, driver: StillCallDriver())
+        let driver = FixtureCallDriver()
+        let store = driver.store
+        let model = ActiveCallViewModel(setup: .demo, driver: driver, recognition: ScriptedRecognitionController())
+        model.attach(store)
 
-        model.handle(.status(.inCall))
-        model.handle(.recognition(.sign("hello")))
-        model.handle(.draft(turnID: 1, text: "Hello, I'd like a doctor's appointment tomorrow.", source: .llm))
-        model.send()
-        model.handle(.spoken(turnID: 1))
-        model.handle(.caption(text: "We have 4 pm tomorrow. Does that work?", at: .now))
+        store.receive(.status(.inCall))
+        store.add(.recognised(.hello))
+        store.receive(.draft(turnID: store.currentTurnID, text: "Hello, I'd like a doctor's appointment tomorrow.", source: .llm))
+        let firstTurn = store.currentTurnID
+        store.send()
+        store.receive(.spoken(turnID: firstTurn))
+        store.receive(.caption(text: "We have 4 pm tomorrow. Does that work?", at: Date().timeIntervalSince1970))
 
-        ["no", "afternoon", "morning"].forEach { model.handle(.recognition(.sign($0))) }
-        model.handle(.recognition(.unsure))
-        model.handle(.draft(turnID: 2, text: "No. In the afternoon, please. In the morning, please.", source: .template))
+        [Sign.no, .afternoon, .morning].forEach { store.add(.recognised($0)) }
+        store.add(.unsure())
+        store.receive(.draft(turnID: store.currentTurnID, text: "No. In the afternoon, please. In the morning, please.", source: .template))
         model.handle(.camera(.signing))
         if self == .signing { return model }
 
-        if let wrong = model.chips.first(where: { $0.word == "afternoon" }) {
-            model.removeChip(wrong)
+        if let wrong = store.chips.first(where: { $0.sign == .afternoon }) {
+            store.remove(wrong)
         }
-        model.handle(.draft(turnID: 2, text: "No, sorry, 4 pm doesn't work. Is there anything tomorrow morning?", source: .llm))
+        store.receive(.draft(turnID: store.currentTurnID, text: "No, sorry, 4 pm doesn't work. Is there anything tomorrow morning?", source: .llm))
         model.handle(.camera(.watching))
-        model.send()
+        let secondTurn = store.currentTurnID
+        store.send()
 
         switch self {
         case .delivered:
-            model.handle(.spoken(turnID: 2))
+            store.receive(.spoken(turnID: secondTurn))
         case .notDelivered:
-            model.handle(.notDelivered(turnID: 2))
+            store.receive(.notDelivered(turnID: secondTurn, reason: "no_confirmation"))
         case .ended:
             model.end()
         case .connectionLost:
-            model.handle(.error(message: "Connection lost"))
+            store.connectionLost()
         default:
             break
         }

@@ -41,7 +41,7 @@ struct DeliveryBanner: View {
 
 #Preview {
     VStack {
-        DeliveryBanner(delivery: .delivered(text: "Hello."))
+        DeliveryBanner(delivery: .delivered)
         DeliveryBanner(delivery: .notDelivered(text: "No, sorry. Is tomorrow morning possible?"))
     }
     .padding()

@@ -11,25 +11,35 @@
 		075052019F52310F95B92698 /* QuickReplyBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E33B72E0774F40615731CD8A /* QuickReplyBar.swift */; };
 		08AF537C8F2C3A4A769D8F01 /* CallModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 982A950789AC5BBB3D7DF110 /* CallModels.swift */; };
 		0C487F915F586CE0AF0A4D8A /* FakeCallDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBBEF1F2F01D8A80C53914BA /* FakeCallDriver.swift */; };
+		0E0BB731A6ACDAD70E1FEDF6 /* FakeCallTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35EE130EB6A71973EB58929A /* FakeCallTests.swift */; };
+		0F1E019BB68805FE7DEC880C /* CallTestDoubles.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9866A40D1A0909A38898CEC /* CallTestDoubles.swift */; };
 		1C8762A6CA075EBF176A27A3 /* CallStatusBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32623642172F907AC73BE51E /* CallStatusBar.swift */; };
 		1E8A521475650C58D7821232 /* ActiveCallViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D861A941BD04449A68ABDC3A /* ActiveCallViewModel.swift */; };
 		2069027A8EF73CEC60DE6587 /* DraftCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36D8E6BB02BA49CC4B2610BC /* DraftCard.swift */; };
 		23EA232069EFD3A7A07C0AA6 /* ActiveCallViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 406BB5B7E42C7ABB32422014 /* ActiveCallViewModelTests.swift */; };
+		28A130A60A7795A2344A6059 /* RecognitionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8158DA80B3EE0EEBC01F8C93 /* RecognitionController.swift */; };
 		2C07594C513658DAE7C6264E /* BigActionButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 427FDD4AA6696984B9946B5F /* BigActionButtonStyle.swift */; };
+		36BC232A9FB9A3566DE51144 /* RecognitionCore in Frameworks */ = {isa = PBXBuildFile; productRef = B41FE5D1B2F901C84EE4E0DE /* RecognitionCore */; };
 		42F4E4EAF13E68FB55B017F5 /* ActiveCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AEDF6404417D0C8EBD70DBE /* ActiveCallView.swift */; };
 		43428248E71246D269433D05 /* DeliveryBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40429483BB163E69559DAB0 /* DeliveryBanner.swift */; };
 		4B279E4948BE90A1449386CF /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9C4C66DDBC347DAEAAF68CB /* AppRootView.swift */; };
 		4B605F0D6660C37B8531AF40 /* GetReadyModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46B0F9D990D5ED01BCB7F089 /* GetReadyModel.swift */; };
 		5C8AF2A3140FDFE9BB77C743 /* IsharaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB52AD1F79B3B09A39BA112C /* IsharaApp.swift */; };
 		6D76E4509D2B95E26ED6527F /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31EACB5BD18A00F6EEC03AE4 /* FlowLayout.swift */; };
+		73F35D203360384E1DCD468D /* AppServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B5070EEEC13CBD69C47887 /* AppServices.swift */; };
 		7926315C67B10399DF9C99A5 /* DemoScriptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DECB91C17E6E316E96B18B5 /* DemoScriptTests.swift */; };
+		7AAD4C9AF1A3515DCAB1C316 /* SignPipelineMediaPipe in Frameworks */ = {isa = PBXBuildFile; productRef = F186A1205C5ABE0A9CAE4DF0 /* SignPipelineMediaPipe */; };
 		86F74599AECF0F5B3148CA2C /* CallDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D587321982D2C8966B818CB /* CallDriver.swift */; };
 		8FEECA7FCB6CFA3FE1C11016 /* DemoFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A5F2D3D352E5A63CA4FBA2 /* DemoFixtures.swift */; };
 		9D6682A296467F3BCCB8AA3C /* CameraPill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18BC726EEC7D4595922C1F4E /* CameraPill.swift */; };
+		A4F80F09FF64324DB5FA0D84 /* CallSession in Frameworks */ = {isa = PBXBuildFile; productRef = B1B74D052F37AAB196740C9F /* CallSession */; };
 		A5895271DCE0D4DAB5E146D6 /* GetReadyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0999AF53DBD218CC48B0486E /* GetReadyView.swift */; };
 		A9597A116CBBB26CD42893B4 /* SpeakingPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 133F96F3FF85D9B1179035F0 /* SpeakingPanel.swift */; };
 		AA82BD947F2CB8BAEF45E1AE /* GetReadyModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43ACB58918DFC4EB74D11E1E /* GetReadyModelTests.swift */; };
 		B175077471A14CDF4D03785B /* SigningPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB6B8D11DDB84728431AB21 /* SigningPanel.swift */; };
+		B3F1EE6C119A28B0E630198F /* AppServicesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03724EE20F84C835CC3C1142 /* AppServicesTests.swift */; };
+		B9EE54C1A903D77D8CC031A0 /* SignPipeline in Frameworks */ = {isa = PBXBuildFile; productRef = E9A1F023F4B9BF78D9BFA4DF /* SignPipeline */; };
+		C1340906FBE5402A8197CB25 /* ReplayMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = C75094643E4319B9D9FE9EAA /* ReplayMenu.swift */; };
 		C1DC8469BF46E3EE3317FC51 /* CallSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 146D51FA7E56F8FA3642AB84 /* CallSetup.swift */; };
 		C8BE7D9D8F93AD5C2C7C8B0D /* CaptionHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DF542231456A17BD024C2D4 /* CaptionHistory.swift */; };
 		CFF3393E0AB53DF443FF6B4B /* ChipRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF9D95F47AC58D27C65B272 /* ChipRow.swift */; };
@@ -37,8 +47,8 @@
 		DE15D8A832F7382DA4EB5304 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3E9FFF5CA12A20DD8DB7A11D /* Assets.xcassets */; };
 		E6DE1D86332577CE9453EBBC /* DemoScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = 658229E17E52DE2B38E8125B /* DemoScript.swift */; };
 		EE50BD11AE242AFC37DB82C5 /* CallEndedPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37E3DFD4B04E861E03A810F8 /* CallEndedPanel.swift */; };
-		F0DE36941D51D965C30C2BBE /* RecordingCallDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C80B6400719F71398030B128 /* RecordingCallDriver.swift */; };
 		F30F8CF2E0207D4A92DCAB04 /* DemoLaunchOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFCB4C66A1B64CB25D1DE963 /* DemoLaunchOptions.swift */; };
+		F66DA64D0768333299E008CD /* ScriptedRecognitionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B0B239718EAD7B747B9309 /* ScriptedRecognitionController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -52,13 +62,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		00B0B239718EAD7B747B9309 /* ScriptedRecognitionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptedRecognitionController.swift; sourceTree = "<group>"; };
+		03724EE20F84C835CC3C1142 /* AppServicesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppServicesTests.swift; sourceTree = "<group>"; };
 		0999AF53DBD218CC48B0486E /* GetReadyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetReadyView.swift; sourceTree = "<group>"; };
 		0DF542231456A17BD024C2D4 /* CaptionHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptionHistory.swift; sourceTree = "<group>"; };
 		133F96F3FF85D9B1179035F0 /* SpeakingPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakingPanel.swift; sourceTree = "<group>"; };
 		146D51FA7E56F8FA3642AB84 /* CallSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallSetup.swift; sourceTree = "<group>"; };
 		18BC726EEC7D4595922C1F4E /* CameraPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPill.swift; sourceTree = "<group>"; };
+		1BB537B13C028693D3822C25 /* SignPipeline */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SignPipeline; path = Packages/SignPipeline; sourceTree = SOURCE_ROOT; };
 		31EACB5BD18A00F6EEC03AE4 /* FlowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowLayout.swift; sourceTree = "<group>"; };
 		32623642172F907AC73BE51E /* CallStatusBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallStatusBar.swift; sourceTree = "<group>"; };
+		35EE130EB6A71973EB58929A /* FakeCallTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeCallTests.swift; sourceTree = "<group>"; };
 		36D8E6BB02BA49CC4B2610BC /* DraftCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraftCard.swift; sourceTree = "<group>"; };
 		37E3DFD4B04E861E03A810F8 /* CallEndedPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallEndedPanel.swift; sourceTree = "<group>"; };
 		3E9FFF5CA12A20DD8DB7A11D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -70,14 +84,20 @@
 		5CB6B8D11DDB84728431AB21 /* SigningPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SigningPanel.swift; sourceTree = "<group>"; };
 		658229E17E52DE2B38E8125B /* DemoScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoScript.swift; sourceTree = "<group>"; };
 		6AEDF6404417D0C8EBD70DBE /* ActiveCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveCallView.swift; sourceTree = "<group>"; };
+		72CBBE8F44BD346E38846F50 /* CallSession */ = {isa = PBXFileReference; lastKnownFileType = folder; name = CallSession; path = Packages/CallSession; sourceTree = SOURCE_ROOT; };
+		77B3A0415C571FAC8D58D3A5 /* RecognitionCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RecognitionCore; path = Packages/RecognitionCore; sourceTree = SOURCE_ROOT; };
+		8158DA80B3EE0EEBC01F8C93 /* RecognitionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecognitionController.swift; sourceTree = "<group>"; };
 		89A5F2D3D352E5A63CA4FBA2 /* DemoFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoFixtures.swift; sourceTree = "<group>"; };
 		927E13F46178F3C79C55469A /* Ishara.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Ishara.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9618B5BB3CCA97B1BEFC27E9 /* IsharaTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IsharaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		982A950789AC5BBB3D7DF110 /* CallModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallModels.swift; sourceTree = "<group>"; };
 		9DECB91C17E6E316E96B18B5 /* DemoScriptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoScriptTests.swift; sourceTree = "<group>"; };
+		A7B5070EEEC13CBD69C47887 /* AppServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppServices.swift; sourceTree = "<group>"; };
+		A9866A40D1A0909A38898CEC /* CallTestDoubles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallTestDoubles.swift; sourceTree = "<group>"; };
 		B40429483BB163E69559DAB0 /* DeliveryBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeliveryBanner.swift; sourceTree = "<group>"; };
-		C80B6400719F71398030B128 /* RecordingCallDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingCallDriver.swift; sourceTree = "<group>"; };
+		C75094643E4319B9D9FE9EAA /* ReplayMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplayMenu.swift; sourceTree = "<group>"; };
 		CB52AD1F79B3B09A39BA112C /* IsharaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IsharaApp.swift; sourceTree = "<group>"; };
+		CC24A59049F2F9164F1B03CF /* SignPipelineMediaPipe */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SignPipelineMediaPipe; path = Packages/SignPipelineMediaPipe; sourceTree = SOURCE_ROOT; };
 		D861A941BD04449A68ABDC3A /* ActiveCallViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveCallViewModel.swift; sourceTree = "<group>"; };
 		D9C4C66DDBC347DAEAAF68CB /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
 		DBBEF1F2F01D8A80C53914BA /* FakeCallDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeCallDriver.swift; sourceTree = "<group>"; };
@@ -87,6 +107,20 @@
 		F122F57D5868D990A7D8607F /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		FFCB4C66A1B64CB25D1DE963 /* DemoLaunchOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoLaunchOptions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A28DCAEA1517DC3649060F98 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A4F80F09FF64324DB5FA0D84 /* CallSession in Frameworks */,
+				36BC232A9FB9A3566DE51144 /* RecognitionCore in Frameworks */,
+				B9EE54C1A903D77D8CC031A0 /* SignPipeline in Frameworks */,
+				7AAD4C9AF1A3515DCAB1C316 /* SignPipelineMediaPipe in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		009748C5E78E9728E727FDEB /* Call */ = {
@@ -100,12 +134,21 @@
 			path = Call;
 			sourceTree = "<group>";
 		};
+		06678633061B3D89FDE6E92B /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				A9866A40D1A0909A38898CEC /* CallTestDoubles.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
 		2CC81D0843D5C73B72441706 /* Ishara */ = {
 			isa = PBXGroup;
 			children = (
 				F41CDDB3A6609B47FC931088 /* App */,
 				009748C5E78E9728E727FDEB /* Call */,
 				4379C070DF72064C662E0967 /* Models */,
+				F6E8890C77561E7758FAB3DD /* Recognition */,
 				544A05F639619AFDFA368F51 /* Resources */,
 				704F91B4F9B19F1D99BD65AA /* Views */,
 			);
@@ -150,6 +193,7 @@
 				36D8E6BB02BA49CC4B2610BC /* DraftCard.swift */,
 				31EACB5BD18A00F6EEC03AE4 /* FlowLayout.swift */,
 				E33B72E0774F40615731CD8A /* QuickReplyBar.swift */,
+				C75094643E4319B9D9FE9EAA /* ReplayMenu.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -170,17 +214,31 @@
 			children = (
 				2CC81D0843D5C73B72441706 /* Ishara */,
 				894B1BD5A500EE23813C6A61 /* IsharaTests */,
+				832D859FA5B9D144A946FC57 /* Packages */,
 				2FAF1AEF582F7D60E94D877A /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		832D859FA5B9D144A946FC57 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				72CBBE8F44BD346E38846F50 /* CallSession */,
+				77B3A0415C571FAC8D58D3A5 /* RecognitionCore */,
+				1BB537B13C028693D3822C25 /* SignPipeline */,
+				CC24A59049F2F9164F1B03CF /* SignPipelineMediaPipe */,
+			);
+			path = Packages;
 			sourceTree = "<group>";
 		};
 		894B1BD5A500EE23813C6A61 /* IsharaTests */ = {
 			isa = PBXGroup;
 			children = (
 				406BB5B7E42C7ABB32422014 /* ActiveCallViewModelTests.swift */,
+				03724EE20F84C835CC3C1142 /* AppServicesTests.swift */,
 				9DECB91C17E6E316E96B18B5 /* DemoScriptTests.swift */,
+				35EE130EB6A71973EB58929A /* FakeCallTests.swift */,
 				43ACB58918DFC4EB74D11E1E /* GetReadyModelTests.swift */,
-				C80B6400719F71398030B128 /* RecordingCallDriver.swift */,
+				06678633061B3D89FDE6E92B /* Support */,
 			);
 			path = IsharaTests;
 			sourceTree = "<group>";
@@ -218,11 +276,21 @@
 			isa = PBXGroup;
 			children = (
 				D9C4C66DDBC347DAEAAF68CB /* AppRootView.swift */,
+				A7B5070EEEC13CBD69C47887 /* AppServices.swift */,
 				89A5F2D3D352E5A63CA4FBA2 /* DemoFixtures.swift */,
 				FFCB4C66A1B64CB25D1DE963 /* DemoLaunchOptions.swift */,
 				CB52AD1F79B3B09A39BA112C /* IsharaApp.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		F6E8890C77561E7758FAB3DD /* Recognition */ = {
+			isa = PBXGroup;
+			children = (
+				8158DA80B3EE0EEBC01F8C93 /* RecognitionController.swift */,
+				00B0B239718EAD7B747B9309 /* ScriptedRecognitionController.swift */,
+			);
+			path = Recognition;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -234,6 +302,7 @@
 			buildPhases = (
 				BD5BE47ADF24D88589A1CC7D /* Sources */,
 				F59686531CDA1008E9D96617 /* Resources */,
+				A28DCAEA1517DC3649060F98 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -241,6 +310,10 @@
 			);
 			name = Ishara;
 			packageProductDependencies = (
+				B1B74D052F37AAB196740C9F /* CallSession */,
+				B41FE5D1B2F901C84EE4E0DE /* RecognitionCore */,
+				E9A1F023F4B9BF78D9BFA4DF /* SignPipeline */,
+				F186A1205C5ABE0A9CAE4DF0 /* SignPipelineMediaPipe */,
 			);
 			productName = Ishara;
 			productReference = 927E13F46178F3C79C55469A /* Ishara.app */;
@@ -256,6 +329,9 @@
 			);
 			dependencies = (
 				264BB198890DD35F395A5A69 /* PBXTargetDependency */,
+				BF8921BFD98D75F37B982C09 /* PBXTargetDependency */,
+				7CF04723B07381FB3529A877 /* PBXTargetDependency */,
+				ACA055A004290D6378457E19 /* PBXTargetDependency */,
 			);
 			name = IsharaTests;
 			packageProductDependencies = (
@@ -292,6 +368,12 @@
 			);
 			mainGroup = 82D6AFA516A4B4491CD8A90F;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7D4729856DDB128345671B03 /* XCLocalSwiftPackageReference "Packages/CallSession" */,
+				2AD82BE65DE751DE22E4826A /* XCLocalSwiftPackageReference "Packages/RecognitionCore" */,
+				47FEFB3947C2ACF165FEDC0D /* XCLocalSwiftPackageReference "Packages/SignPipeline" */,
+				87F22023F776C9E5522B3CC1 /* XCLocalSwiftPackageReference "Packages/SignPipelineMediaPipe" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2FAF1AEF582F7D60E94D877A /* Products */;
 			projectDirPath = "";
@@ -322,6 +404,7 @@
 				42F4E4EAF13E68FB55B017F5 /* ActiveCallView.swift in Sources */,
 				1E8A521475650C58D7821232 /* ActiveCallViewModel.swift in Sources */,
 				4B279E4948BE90A1449386CF /* AppRootView.swift in Sources */,
+				73F35D203360384E1DCD468D /* AppServices.swift in Sources */,
 				2C07594C513658DAE7C6264E /* BigActionButtonStyle.swift in Sources */,
 				86F74599AECF0F5B3148CA2C /* CallDriver.swift in Sources */,
 				EE50BD11AE242AFC37DB82C5 /* CallEndedPanel.swift in Sources */,
@@ -344,6 +427,9 @@
 				04A298A8991E9D21BAA5AABD /* HomeView.swift in Sources */,
 				5C8AF2A3140FDFE9BB77C743 /* IsharaApp.swift in Sources */,
 				075052019F52310F95B92698 /* QuickReplyBar.swift in Sources */,
+				28A130A60A7795A2344A6059 /* RecognitionController.swift in Sources */,
+				C1340906FBE5402A8197CB25 /* ReplayMenu.swift in Sources */,
+				F66DA64D0768333299E008CD /* ScriptedRecognitionController.swift in Sources */,
 				B175077471A14CDF4D03785B /* SigningPanel.swift in Sources */,
 				A9597A116CBBB26CD42893B4 /* SpeakingPanel.swift in Sources */,
 			);
@@ -354,9 +440,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				23EA232069EFD3A7A07C0AA6 /* ActiveCallViewModelTests.swift in Sources */,
+				B3F1EE6C119A28B0E630198F /* AppServicesTests.swift in Sources */,
+				0F1E019BB68805FE7DEC880C /* CallTestDoubles.swift in Sources */,
 				7926315C67B10399DF9C99A5 /* DemoScriptTests.swift in Sources */,
+				0E0BB731A6ACDAD70E1FEDF6 /* FakeCallTests.swift in Sources */,
 				AA82BD947F2CB8BAEF45E1AE /* GetReadyModelTests.swift in Sources */,
-				F0DE36941D51D965C30C2BBE /* RecordingCallDriver.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -367,6 +455,18 @@
 			isa = PBXTargetDependency;
 			target = 60A8BC7639833EECC580072B /* Ishara */;
 			targetProxy = D5E3ADF0B701B5F5528FE305 /* PBXContainerItemProxy */;
+		};
+		7CF04723B07381FB3529A877 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = "TEMP_ADB7BE77-97B8-447F-8E2A-CCD0CCC7C62F" /* RecognitionCore */;
+		};
+		ACA055A004290D6378457E19 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = "TEMP_97C4C708-F707-4B71-A38C-216952AF51D5" /* SignPipeline */;
+		};
+		BF8921BFD98D75F37B982C09 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = "TEMP_1585DAEC-3BED-4DDB-A835-F8AC88F85EF2" /* CallSession */;
 		};
 /* End PBXTargetDependency section */
 
@@ -613,6 +713,56 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		2AD82BE65DE751DE22E4826A /* XCLocalSwiftPackageReference "Packages/RecognitionCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/RecognitionCore;
+		};
+		47FEFB3947C2ACF165FEDC0D /* XCLocalSwiftPackageReference "Packages/SignPipeline" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/SignPipeline;
+		};
+		7D4729856DDB128345671B03 /* XCLocalSwiftPackageReference "Packages/CallSession" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/CallSession;
+		};
+		87F22023F776C9E5522B3CC1 /* XCLocalSwiftPackageReference "Packages/SignPipelineMediaPipe" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/SignPipelineMediaPipe;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B1B74D052F37AAB196740C9F /* CallSession */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CallSession;
+		};
+		B41FE5D1B2F901C84EE4E0DE /* RecognitionCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RecognitionCore;
+		};
+		E9A1F023F4B9BF78D9BFA4DF /* SignPipeline */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SignPipeline;
+		};
+		F186A1205C5ABE0A9CAE4DF0 /* SignPipelineMediaPipe */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SignPipelineMediaPipe;
+		};
+		"TEMP_1585DAEC-3BED-4DDB-A835-F8AC88F85EF2" /* CallSession */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CallSession;
+		};
+		"TEMP_97C4C708-F707-4B71-A38C-216952AF51D5" /* SignPipeline */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SignPipeline;
+		};
+		"TEMP_ADB7BE77-97B8-447F-8E2A-CCD0CCC7C62F" /* RecognitionCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RecognitionCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 69CB4509D4D07EFB497498E1 /* Project object */;
 }

@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The sentence that SEND would speak, with a badge saying who wrote it.
 struct DraftCard: View {
-    let draft: Draft?
+    let draft: DraftDisplay?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -12,7 +12,7 @@ struct DraftCard: View {
                     .foregroundStyle(.secondary)
                 Spacer()
                 if let draft {
-                    SourceBadge(source: draft.source)
+                    SourceBadge(badge: draft.badge)
                 }
             }
             if let draft {
@@ -34,15 +34,15 @@ struct DraftCard: View {
 
     private var accessibilityLabel: String {
         guard let draft else { return "No draft yet" }
-        return "Draft from \(draft.source.badge): \(draft.text)"
+        return "Draft from \(draft.badge.title): \(draft.text)"
     }
 }
 
 struct SourceBadge: View {
-    let source: DraftSource
+    let badge: DraftBadge
 
     var body: some View {
-        Text(source.badge)
+        Text(badge.title)
             .font(.caption.weight(.bold))
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
@@ -51,18 +51,19 @@ struct SourceBadge: View {
     }
 
     private var color: Color {
-        switch source {
+        switch badge {
         case .llm: .purple
         case .template: .blue
         case .quickReply: .teal
+        case .notDelivered: .orange
         }
     }
 }
 
 #Preview {
     VStack {
-        DraftCard(draft: Draft(text: "No, sorry, 4 pm doesn't work. Is there anything tomorrow morning?", source: .llm))
-        DraftCard(draft: Draft(text: "No. In the morning, please.", source: .template))
+        DraftCard(draft: DraftDisplay(text: "No, sorry, 4 pm doesn't work. Is there anything tomorrow morning?", badge: .llm))
+        DraftCard(draft: DraftDisplay(text: "No. In the morning, please.", badge: .template))
         DraftCard(draft: nil)
     }
     .padding()

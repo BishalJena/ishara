@@ -4,44 +4,58 @@ import SwiftUI
 struct AppRootView: View {
     enum Route {
         case home
-        case getReady
+        case getReady(any RecognitionController)
         case activeCall(ActiveCallViewModel)
     }
 
     @State private var route: Route
     @State private var setup: CallSetup = .demo
-    private let options: DemoLaunchOptions
+    private let services: AppServices
 
-    init(options: DemoLaunchOptions) {
-        self.options = options
-        _route = State(initialValue: Self.initialRoute(for: options))
+    init(services: AppServices) {
+        self.services = services
+        _route = State(initialValue: Self.initialRoute(for: services))
     }
 
     var body: some View {
         Group {
             switch route {
             case .home:
-                HomeView(setup: setup) { chosen in
+                HomeView(
+                    setup: setup,
+                    modeDescription: services.modeDescription,
+                    setupProblem: services.setupProblem
+                ) { chosen in
                     setup = chosen
-                    route = .getReady
+                    route = .getReady(services.makeRecognition())
                 }
-            case .getReady:
-                GetReadyView(onStart: startCall, onBack: { route = .home })
+            case .getReady(let recognition):
+                GetReadyView(
+                    recognition: recognition,
+                    onStart: { startCall(recognition: recognition) },
+                    onBack: {
+                        recognition.stop()
+                        route = .home
+                    }
+                )
             case .activeCall(let model):
-                ActiveCallView(model: model, onLeave: { route = .home })
+                ActiveCallView(model: model, onLeave: {
+                    model.leave()
+                    route = .home
+                })
             }
         }
     }
 
-    private func startCall() {
-        let driver = FakeCallDriver(options: options.fakeDriverOptions)
-        route = .activeCall(ActiveCallViewModel(setup: setup, driver: driver))
+    private func startCall(recognition: any RecognitionController) {
+        let driver = services.makeDriver(recognition: recognition)
+        route = .activeCall(ActiveCallViewModel(setup: setup, driver: driver, recognition: recognition))
     }
 
-    private static func initialRoute(for options: DemoLaunchOptions) -> Route {
+    private static func initialRoute(for services: AppServices) -> Route {
         #if DEBUG
-        if let fixture = options.fixture {
-            if fixture == .getReady { return .getReady }
+        if let fixture = services.options.fixture {
+            if fixture == .getReady { return .getReady(ScriptedRecognitionController()) }
             if let model = fixture.makeActiveCall() { return .activeCall(model) }
         }
         #endif

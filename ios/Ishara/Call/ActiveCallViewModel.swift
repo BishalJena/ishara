@@ -1,18 +1,22 @@
+import CallSession
 import Foundation
 import Observation
 
-/// State and rules for the Active call screens.
+/// What the Active call screens show, and the buttons they offer.
 ///
-/// Safety rules it enforces (PLAN §3 and §4):
-/// - nothing is approved unless the user taps SEND;
-/// - an approval is single use and tied to its turn; SEND wipes chips and draft;
-/// - unsure chips, stale drafts, failed deliveries and ended calls never send anything.
+/// The SEND safety rules live in `TurnStore` (CallSession), the single source of truth
+/// for a call; this class only maps the store and recognition onto the screens:
+/// - recognised signs become chips, unsure ones [?] chips (the store never sends those);
+/// - SEND approves the shown draft once, or re-offers a not-delivered reply on a new turn;
+/// - STOP, Clear, quick replies and End go straight to the store.
 @MainActor
 @Observable
 final class ActiveCallViewModel {
     enum Phase: Equatable {
-        case connecting(CallStatus)
+        case connecting(CallState)
         case live
+        /// The connection dropped; nothing will be sent. It may come back.
+        case interrupted(String)
         case ended(EndReason)
     }
 
@@ -24,207 +28,174 @@ final class ActiveCallViewModel {
 
     enum Delivery: Equatable {
         case idle
-        case speaking(turnID: TurnID, draft: Draft)
-        case delivered(text: String)
+        case speaking(text: String)
+        case delivered
         case notDelivered(text: String)
     }
 
+    static let connectionLostTitle = "Connection lost"
+
     let setup: CallSetup
-
-    private(set) var phase: Phase = .connecting(.dialing)
-    private(set) var connectedAt: Date?
-    private(set) var captions: [CaptionEntry] = []
+    let recognition: any RecognitionController
+    private(set) var store: TurnStore?
     private(set) var cameraState: CameraState = .watching
-    private(set) var chips: [Chip] = []
-    private(set) var draft: Draft?
-    private(set) var delivery: Delivery = .idle
-    private(set) var isStopRequested = false
-    private(set) var currentTurnID: TurnID = 1
+    private(set) var startFailure: String?
+    private var userEnded = false
 
-    /// False after a quick reply so a late composer draft can't overwrite the
-    /// sentence the user picked. A chip change turns it back on.
-    private var acceptsComposerDrafts = true
+    @ObservationIgnored private let driver: any CallDriver
 
-    private let driver: CallDriver
-
-    init(setup: CallSetup, driver: CallDriver) {
+    init(setup: CallSetup, driver: any CallDriver, recognition: any RecognitionController) {
         self.setup = setup
         self.driver = driver
+        self.recognition = recognition
     }
 
     // MARK: Derived state
 
+    var phase: Phase {
+        if let startFailure { return .ended(.failed(startFailure)) }
+        guard let store else { return userEnded ? .ended(.userEnded) : .connecting(.dialing) }
+        switch store.state {
+        case .dialing, .ringing: return .connecting(store.state)
+        case .inCall, .speaking: return .live
+        case .error: return .interrupted(store.notice ?? TurnStore.disconnectedNotice)
+        case .ended: return .ended(userEnded ? .userEnded : .remoteEnded)
+        }
+    }
+
     var isEnded: Bool {
         if case .ended = phase { true } else { false }
+    }
+
+    var connectedAt: Date? { store?.connectedAt }
+    var captions: [Caption] { store?.captions ?? [] }
+    var chips: [Chip] { store?.chips ?? [] }
+    var isStopRequested: Bool { store?.isStopRequested ?? false }
+
+    var delivery: Delivery {
+        switch store?.sending ?? .idle {
+        case .idle: .idle
+        case .speaking(_, let text): .speaking(text: text)
+        case .delivered: .delivered
+        case .notDelivered(let text): .notDelivered(text: text)
+        }
     }
 
     var isSpeaking: Bool {
         if case .speaking = delivery { true } else { false }
     }
 
-    var canSend: Bool {
-        guard phase == .live, !isSpeaking, let draft else { return false }
-        return !draft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    /// The not-delivered sentence SEND would offer again: only while the user hasn't
+    /// started a new reply, so SEND never resends old text over new chips.
+    var retryText: String? {
+        guard let store, store.canResend, store.chips.isEmpty, store.draft == nil,
+              case .notDelivered(let text) = store.sending
+        else { return nil }
+        return text
     }
 
-    /// Chips can change while a reply is being spoken: the camera keeps
-    /// watching so the user can sign the next thing.
-    var canEditChips: Bool { !isEnded }
+    var draft: DraftDisplay? {
+        if let draft = store?.draft { return DraftDisplay(text: draft.text, badge: DraftBadge(draft.origin)) }
+        return retryText.map { DraftDisplay(text: $0, badge: .notDelivered) }
+    }
 
-    var canUseQuickReplies: Bool { !isEnded && !isSpeaking }
+    var canSend: Bool {
+        guard let store else { return false }
+        return store.canSend || retryText != nil
+    }
 
-    private var recognisedWords: [String] { chips.compactMap(\.word) }
+    /// The delivery result shows until the user starts the next reply.
+    var showsDeliveryResult: Bool { chips.isEmpty && store?.draft == nil }
+
+    var canUseQuickReplies: Bool { phase == .live && !isSpeaking }
 
     // MARK: Lifecycle
 
-    /// Starts the call and handles events until the call's stream finishes or
-    /// the calling task is cancelled (for example when the screen goes away).
+    /// Places the call, then turns recognition results into chips until the screen goes
+    /// away (the calling task is cancelled).
     func run() async {
-        driver.start(setup)
-        for await event in driver.events {
-            handle(event)
+        // Subscribe before placing the call so no recognition event falls in between.
+        let events = recognition.signingEvents()
+        await withDiscardingTaskGroup { group in
+            group.addTask {
+                for await event in events { await self.handle(event) }
+            }
+            await self.start()
         }
     }
 
-    func handle(_ event: CallEvent) {
+    func start() async {
+        guard store == nil, startFailure == nil else { return }
+        do {
+            attach(try await driver.start(setup))
+        } catch {
+            if !userEnded { startFailure = Self.describe(error) }
+        }
+    }
+
+    /// Shows this store's call. If the user already tapped End while it was being placed,
+    /// the call is ended straight away.
+    func attach(_ store: TurnStore) {
+        self.store = store
+        if userEnded { store.end() }
+    }
+
+    func handle(_ event: RecognitionEvent) {
         guard !isEnded else { return }
         switch event {
-        case .status(let status):
-            apply(status)
-        case .caption(let text, let at):
-            captions.append(CaptionEntry(speaker: .receptionist, text: text, at: at))
-        case .draft(let turnID, let text, let source):
-            acceptDraft(turnID: turnID, text: text, source: source)
-        case .spoken(let turnID):
-            confirmSpoken(turnID: turnID)
-        case .notDelivered(let turnID):
-            markNotDelivered(turnID: turnID)
-        case .error(let message):
-            endCall(.failed(message))
-        case .recognition(let result):
-            addChip(for: result)
         case .camera(let state):
             cameraState = state
+        case .result(.sign(let sign)):
+            store?.add(.recognised(sign))
+        case .result(.unsure):
+            store?.add(.unsure())
         }
+    }
+
+    /// Called when the user leaves the screen. Nothing is sent.
+    func leave() {
+        driver.close()
+        recognition.stop()
     }
 
     // MARK: User actions
 
-    func removeChip(_ chip: Chip) {
-        guard canEditChips, let index = chips.firstIndex(where: { $0.id == chip.id }) else { return }
-        chips.remove(at: index)
-        if chip.word != nil {
-            requestRecompose()
-        }
-    }
+    func removeChip(_ chip: Chip) { store?.remove(chip) }
 
-    func clear() {
-        guard canEditChips, !chips.isEmpty || draft != nil else { return }
-        let hadWords = !recognisedWords.isEmpty
-        chips.removeAll()
-        draft = nil
-        if hadWords {
-            driver.updateChips(turnID: currentTurnID, words: [])
-        }
-    }
+    func clear() { store?.clear() }
 
     func choose(_ reply: QuickReply) {
         guard canUseQuickReplies else { return }
-        delivery = .idle
-        acceptsComposerDrafts = false
-        draft = Draft(text: reply.sentence, source: .quickReply)
+        store?.useQuickReply(reply)
     }
 
     func send() {
-        guard canSend, let draft else { return }
-        let turnID = currentTurnID
-        driver.approve(turnID: turnID, text: draft.text)
-        delivery = .speaking(turnID: turnID, draft: draft)
-        isStopRequested = false
-        chips.removeAll()
-        self.draft = nil
-        currentTurnID += 1
-        acceptsComposerDrafts = true
+        guard let store else { return }
+        if store.canSend {
+            store.send()
+        } else if retryText != nil {
+            store.resend()
+        }
     }
 
-    func stop() {
-        guard isSpeaking, !isStopRequested, !isEnded else { return }
-        isStopRequested = true
-        driver.stop()
-    }
+    func stop() { store?.stop() }
 
     func end() {
         guard !isEnded else { return }
-        driver.end()
-        endCall(.userEnded)
-    }
-
-    // MARK: Event handling
-
-    private func apply(_ status: CallStatus) {
-        switch status {
-        case .dialing, .ringing:
-            phase = .connecting(status)
-        case .inCall, .speaking:
-            if connectedAt == nil { connectedAt = .now }
-            phase = .live
-        case .ended:
-            endCall(.remoteEnded)
-        case .error:
-            endCall(.failed("The call ran into a problem."))
-        }
-    }
-
-    private func acceptDraft(turnID: TurnID, text: String, source: DraftSource) {
-        guard turnID == currentTurnID, acceptsComposerDrafts, !recognisedWords.isEmpty else { return }
-        draft = Draft(text: text, source: source)
-    }
-
-    private func confirmSpoken(turnID: TurnID) {
-        guard case .speaking(let speakingTurn, let draft) = delivery, speakingTurn == turnID else { return }
-        captions.append(CaptionEntry(speaker: .user, text: draft.text, at: .now))
-        delivery = .delivered(text: draft.text)
-        isStopRequested = false
-    }
-
-    /// Offers the same sentence again under the current turn. Never resends by itself.
-    private func markNotDelivered(turnID: TurnID) {
-        guard case .speaking(let speakingTurn, let failed) = delivery, speakingTurn == turnID else { return }
-        delivery = .notDelivered(text: failed.text)
-        isStopRequested = false
-        if draft == nil {
-            draft = failed
-            acceptsComposerDrafts = false
-        }
-    }
-
-    private func addChip(for result: RecognitionResult) {
-        guard canEditChips else { return }
-        if !isSpeaking { delivery = .idle }
-        switch result {
-        case .sign(let word):
-            chips.append(Chip(kind: .recognised(word)))
-            requestRecompose()
-        case .unsure:
-            chips.append(Chip(kind: .unsure))
-        }
-    }
-
-    private func requestRecompose() {
-        acceptsComposerDrafts = true
-        let words = recognisedWords
-        if words.isEmpty {
-            draft = nil
-        }
-        driver.updateChips(turnID: currentTurnID, words: words)
-    }
-
-    private func endCall(_ reason: EndReason) {
-        phase = .ended(reason)
-        chips.removeAll()
-        draft = nil
-        delivery = .idle
-        isStopRequested = false
+        userEnded = true
+        store?.end()
         cameraState = .watching
+    }
+
+    // MARK: Private
+
+    private static func describe(_ error: Error) -> String {
+        switch error as? BackendError {
+        case .httpStatus(401)?: "The app token was refused. Check the app configuration."
+        case .httpStatus(403)?: "This contact isn't on the backend's allowed list."
+        case .httpStatus(let code)?: "The backend couldn't start the call (HTTP \(code))."
+        case .notHTTPResponse?: "The backend couldn't be reached."
+        case nil: "The call couldn't start: \(error.localizedDescription)"
+        }
     }
 }

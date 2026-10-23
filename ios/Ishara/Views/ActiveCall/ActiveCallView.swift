@@ -39,8 +39,10 @@ struct ActiveCallView: View {
     private var content: some View {
         if case .ended(let reason) = model.phase {
             CallEndedPanel(reason: reason)
-        } else if case .speaking(_, let draft) = model.delivery {
-            SpeakingPanel(text: draft.text, cameraState: model.cameraState,
+        } else if case .interrupted(let notice) = model.phase {
+            ConnectionLostPanel(notice: notice)
+        } else if case .speaking(let text) = model.delivery {
+            SpeakingPanel(text: text, cameraState: model.cameraState,
                           isStopRequested: model.isStopRequested)
         } else {
             SigningPanel(model: model)
@@ -69,7 +71,7 @@ private struct CallActionBar: View {
                 Button("Clear", action: model.clear)
                     .buttonStyle(.bigAction(Color.gray.opacity(0.3), foreground: .primary))
                     .frame(maxWidth: 120)
-                    .disabled(model.chips.isEmpty && model.draft == nil)
+                    .disabled(model.chips.isEmpty && model.store?.draft == nil)
                 Button(action: model.send) {
                     Label("SEND", systemImage: "paperplane.fill")
                 }

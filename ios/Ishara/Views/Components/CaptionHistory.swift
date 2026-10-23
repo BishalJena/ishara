@@ -1,8 +1,9 @@
+import CallSession
 import SwiftUI
 
 /// The receptionist's words and the user's delivered replies, newest at the bottom.
 struct CaptionHistory: View {
-    let captions: [CaptionEntry]
+    let captions: [Caption]
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -13,17 +14,18 @@ struct CaptionHistory: View {
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
-                    ForEach(captions) { entry in
+                    // Captions are only appended (or all wiped), so the position is a stable id.
+                    ForEach(Array(captions.enumerated()), id: \.offset) { index, entry in
                         CaptionRow(entry: entry)
-                            .id(entry.id)
+                            .id(index)
                     }
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .onChange(of: captions.last?.id) { _, lastID in
-                guard let lastID else { return }
-                withAnimation { proxy.scrollTo(lastID, anchor: .bottom) }
+            .onChange(of: captions.count) { _, count in
+                guard count > 0 else { return }
+                withAnimation { proxy.scrollTo(count - 1, anchor: .bottom) }
             }
         }
         .background(Color.teal.opacity(0.15), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -32,7 +34,7 @@ struct CaptionHistory: View {
 }
 
 private struct CaptionRow: View {
-    let entry: CaptionEntry
+    let entry: Caption
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -50,8 +52,8 @@ private struct CaptionRow: View {
 
 #Preview {
     CaptionHistory(captions: [
-        CaptionEntry(speaker: .user, text: "Hello, I'd like a doctor's appointment tomorrow.", at: .now),
-        CaptionEntry(speaker: .receptionist, text: "We have 4 pm tomorrow. Does that work?", at: .now),
+        Caption(text: "Hello, I'd like a doctor's appointment tomorrow.", at: .now, speaker: .user),
+        Caption(text: "We have 4 pm tomorrow. Does that work?", at: .now),
     ])
     .frame(height: 160)
     .padding()

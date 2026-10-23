@@ -36,8 +36,33 @@ struct CallEndedPanel: View {
     }
 }
 
+/// The socket dropped mid-call. Nothing is sent while it's down; the app reconnects.
+struct ConnectionLostPanel: View {
+    let notice: String
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "wifi.exclamationmark")
+                .font(.system(size: 48))
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            Text(ActiveCallViewModel.connectionLostTitle)
+                .font(.title2.bold())
+            Text("\(notice). Chips and draft were wiped. Reconnecting… You can still End the call.")
+                .font(.body)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity)
+        .background(.background.secondary, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .accessibilityElement(children: .combine)
+    }
+}
+
 #Preview {
     VStack {
+        ConnectionLostPanel(notice: "Nothing will be sent")
         CallEndedPanel(reason: .userEnded)
         CallEndedPanel(reason: .failed("Connection lost"))
     }

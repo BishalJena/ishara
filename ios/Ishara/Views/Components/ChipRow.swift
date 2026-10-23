@@ -1,3 +1,4 @@
+import CallSession
 import SwiftUI
 
 /// Recognised signs (green, ✕ removes) and unsure ones (red [?], never sent).
@@ -29,7 +30,7 @@ struct ChipView: View {
     var body: some View {
         Button(action: onRemove) {
             HStack(spacing: 6) {
-                Text(chip.word ?? "?")
+                Text(chip.label)
                     .font(.body.weight(.semibold))
                 Image(systemName: "xmark")
                     .font(.caption.weight(.bold))
@@ -37,8 +38,8 @@ struct ChipView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .foregroundStyle(chip.word == nil ? .white : .black)
-            .background(chip.word == nil ? Color.red : Color.green.opacity(0.75), in: Capsule())
+            .foregroundStyle(chip.sign == nil ? .white : .black)
+            .background(chip.sign == nil ? Color.red : Color.green.opacity(0.75), in: Capsule())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(accessibilityLabel)
@@ -46,8 +47,8 @@ struct ChipView: View {
     }
 
     private var accessibilityLabel: String {
-        if let word = chip.word {
-            "Recognised sign: \(word)"
+        if let sign = chip.sign {
+            "Recognised sign: \(sign.rawValue)"
         } else {
             "Unsure sign. It will not be sent. Try again."
         }
@@ -56,10 +57,10 @@ struct ChipView: View {
 
 #Preview {
     ChipRow(chips: [
-        Chip(kind: .recognised("no")),
-        Chip(kind: .recognised("afternoon")),
-        Chip(kind: .recognised("morning")),
-        Chip(kind: .unsure),
+        .recognised(.no),
+        .recognised(.afternoon),
+        .recognised(.morning),
+        .unsure(),
     ], onRemove: { _ in })
     .padding()
 }
