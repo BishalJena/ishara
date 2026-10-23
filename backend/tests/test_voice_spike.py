@@ -63,7 +63,7 @@ async def test_run_appends_a_redacted_section_after_the_call_ends(tmp_path: Path
     record = tmp_path / "voice.md"
     record.write_text(TEMPLATE, encoding="utf-8")
     sockets = FakeSockets(FakeBackend().respond)
-    observer = ScriptedObserver(["y", "teammate on +91 98765 43210 heard it", "y", "call-secret-1"])
+    observer = ScriptedObserver(["y", "teammate on +91 00000 12345 heard it", "y", "call-secret-1"])
     args = voice_spike.build_parser().parse_args(
         ["--contact", "clinic", "--checks", "5,2", "--results", str(record)]
     )
@@ -90,7 +90,7 @@ async def test_run_appends_a_redacted_section_after_the_call_ends(tmp_path: Path
         "| check 5",
     ]
     assert "call-secret-1" not in text
-    assert "98765" not in text
+    assert "12345" not in text
     assert not re.search(r"[0-9a-f]{32}", text)
     assert "heard it" in section
 

@@ -21,7 +21,7 @@ TURN_ID = "0123456789abcdef0123456789abcdef"
 
 @pytest.mark.parametrize(
     "number",
-    ["+919876543210", "+91 98765 43210", "98765-43210", "(022) 2345 6789", "1234567"],
+    ["+910000000002", "+91 00000 12345", "00000-12345", "(000) 0000 1234", "1234567"],
 )
 def test_phone_like_digit_runs_are_removed(number: str) -> None:
     redacted = redact(f"teammate on {number} said hi", ())
@@ -58,7 +58,7 @@ def test_section_has_date_rows_and_timings_but_no_ids() -> None:
         STARTED,
         [
             _result(
-                "heard it | word for word\non +91 98765 43210",
+                "heard it | word for word\non +91 00000 12345",
                 (("SEND → spoken", "1.42 s"), ("outcome", "spoken")),
             ),
             CheckResult(7, "end_call ends the call", "skipped", (), ""),
@@ -75,7 +75,7 @@ def test_section_has_date_rows_and_timings_but_no_ids() -> None:
     assert "| 7 | end_call ends the call | skipped | — | — |" in lines
     assert "| check 2 | — | 1.42 | spoken |" in lines
     assert TURN_ID not in section
-    assert "98765" not in section
+    assert "12345" not in section
 
 
 def test_section_scrubs_call_id_from_notes() -> None:
