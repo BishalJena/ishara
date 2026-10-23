@@ -108,6 +108,10 @@ class AppSession:
         timing = self._timings.get(turn_id)
         return timing.label if timing else "unknown turn"
 
+    def timing_for(self, turn_id: str) -> TurnTiming:
+        """Timing of a turn that sent chips or an approval. KeyError for any other id."""
+        return self._timings[turn_id]
+
     def _current_timing(self) -> TurnTiming:
         timing = self._timings.get(self._turn_id)
         if timing is None:

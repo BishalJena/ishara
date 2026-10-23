@@ -331,3 +331,11 @@ async def test_hang_up_after_end_waits_without_sending_end_again() -> None:
         transport.push(StatusMessage(state=CallState.ENDED))
         assert await waiting is True
     assert transport.sent == [EndMessage()]
+
+
+async def test_timing_for_returns_the_turn_record_or_raises() -> None:
+    session = _session(FakeTransport())
+    approved = await session.say("Yes.", label="check 2")
+    assert session.timing_for(approved) is session.turns[0]
+    with pytest.raises(KeyError):
+        session.timing_for(session.turn_id)
