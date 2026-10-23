@@ -259,6 +259,11 @@ def pilot(command, name, manifest, fresh):
     return 0 if report["passed"] else 2
 
 
+def encoder_id(contract):
+    """The encoder contract as one comparable string (sorted keys, no spaces)."""
+    return json.dumps(contract, sort_keys=True, separators=(",", ":"))
+
+
 def bundle(contract, thresholds, references):
     """iPhone matcher input; the field layout is shared with the Swift side."""
     dims = {len(r["embedding"]) for r in references}
@@ -266,7 +271,7 @@ def bundle(contract, thresholds, references):
         raise ValueError("Enrollment embeddings must all have one dimension")
     if {r["label"] for r in references} != set(data.VOCABULARY):
         raise ValueError("The bundle needs enrollment references for every sign")
-    return {"version": 1, "encoder": json.dumps(contract, sort_keys=True, separators=(",", ":")),
+    return {"version": 1, "encoder": encoder_id(contract),
             "embedding_dim": dims.pop(),
             "thresholds": {"similarity": float(thresholds["similarity"]),
                            "margin": float(thresholds["margin"])},
