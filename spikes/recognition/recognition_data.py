@@ -16,6 +16,7 @@ VOCABULARY = ("hello", "thankyou", "yes", "no", "sorry", "doctor",
               "today", "tomorrow", "morning", "afternoon", "evening", "time")
 SPLITS = ("enrollment", "calibration", "test")
 NEGATIVES = ("idle", "transition", "incomplete", "unsupported")
+NEGATIVE_MINIMUM = {"calibration": 20, "test": 50}
 # Shared with the iPhone through the exported bundle; change both sides together.
 QUALITY = {"min_pose_fraction": 0.6, "min_hand_fraction": 0.2}
 
@@ -112,7 +113,7 @@ def readiness(records, final=False):
         for label in VOCABULARY:
             if counts[split].get(label, 0) < minimum:
                 issues.append(f"{split}: need {minimum} verified examples of {label}")
-        negative_minimum = {"calibration": 20, "test": 50}.get(split, 0)
+        negative_minimum = NEGATIVE_MINIMUM.get(split, 0)
         if counts[split].get("negative", 0) < negative_minimum:
             issues.append(f"{split}: need {negative_minimum} negative clips")
         if negative_minimum:
