@@ -82,7 +82,7 @@
           "transcriber": {
             "provider": "deepgram",
             "model": "nova-3",
-            "language": "en-IN",
+            "language": "en",
             "stream": true,
             "encoding": "linear16"
           },

@@ -157,12 +157,12 @@ def test_voice_is_sarvam_bulbul_v4_flash_english(payload) -> None:
     assert synth["provider_config"]["voice_id"].split("_")[1] == "en"
 
 
-def test_transcriber_is_deepgram_nova3_indian_english(payload) -> None:
+def test_transcriber_is_deepgram_nova3_english(payload) -> None:
     transcriber = _task(payload)["tools_config"]["transcriber"]
     assert (transcriber["provider"], transcriber["model"], transcriber["language"]) == (
         "deepgram",
         "nova-3",
-        "en-IN",
+        "en",
     )
 
 

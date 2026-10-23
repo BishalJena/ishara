@@ -108,7 +108,7 @@ Nothing here has been run against the live API yet.
 | v4 Flash voice ids are `<persona>_<lang>_<use case>`; 62 English (India) voices. The only English id named in the docs is `simran_en_sales` | Documented | [Sarvam voice](https://www.bolna.ai/docs/sarvam-voice.md) |
 | Its display name `Simran (Sales)` | Inferred from the `aparna_hi_customer` → `Aparna (Customer)` example. Check with `GET /me/voices` before `create` | same |
 | Deepgram: `provider: "deepgram"`, `model: "nova-3"` | Documented | [Deepgram](https://www.bolna.ai/docs/deepgram-transcriber.md) |
-| Transcriber `language: "en-IN"` | **Unverified**: the create API says ISO 639-1 codes, validated with the model (400 otherwise), while the [Indian servers](https://www.bolna.ai/docs/enterprise/indian-server-configuration.md) page lists `en-IN` for Deepgram. If create returns 400, switch `TRANSCRIBER_LANGUAGE` to `"en"` | [create](https://www.bolna.ai/docs/api-reference/agent/v2/create.md) |
+| Transcriber `language: "en"` | **Executed 23 Oct**: create with `en-IN` returned 400 "Provided language: en-IN is not available for the model: nova-3", so the agent uses `"en"` (the [Indian servers](https://www.bolna.ai/docs/enterprise/indian-server-configuration.md) page lists `en-IN`, but the hosted API rejects it) | [create](https://www.bolna.ai/docs/api-reference/agent/v2/create.md) |
 | Telephony `input`/`output`: `{provider: "plivo", format: "wav"}` | Documented field; whether the account's default number is on Plivo is **Unverified** | [create](https://www.bolna.ai/docs/api-reference/agent/v2/create.md) |
 
 ### Calls and webhooks

@@ -38,7 +38,8 @@ CALL_TIMEOUT_S = 600
 # it can never fire before the call ends anyway.
 HANGUP_AFTER_SILENCE_S = CALL_TIMEOUT_S
 
-TRANSCRIBER_LANGUAGE = "en-IN"
+# Bolna rejects "en-IN" for nova-3 (HTTP 400 on create, 23 Oct); plain "en" is accepted.
+TRANSCRIBER_LANGUAGE = "en"
 SARVAM_VOICE = "Simran (Sales)"
 SARVAM_VOICE_ID = "simran_en_sales"
 SARVAM_MODEL = "bulbul:v4-flash"
