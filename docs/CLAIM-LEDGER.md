@@ -2,11 +2,12 @@
 
 This is the dated **source claim ledger**. Executed ML results, timing and semantic
 regressions are consolidated in the [experiment record](experiments/recognition.md).
-Use the [handoff](HANDOFF.md) and [active plan](../PLAN.md) for current direction:
-the later mandatory-Bolna requirement and explicitly labeled pivot permission
-supersede earlier product assumptions below.
+Use the [handoff](HANDOFF.md) and [active plan](../PLAN.md) for current direction.
+On **23 October 2026** the team chose Option C (a disclosed Bolna-placed call first,
+the own-number call as a bonus); rows below that assumed the own-number call was the
+only acceptable path are marked as superseded.
 
-Evidence checked **18 October 2026**. The latest user requirement controls product scope: ordinary cellular Phone call from the user's own number, mediated in place. Earlier service-originated proposals are superseded. All actual account observations are redacted below; no keys, account identifiers, telephone values or raw responses are recorded.
+Evidence originally checked **18 October 2026**; rows marked *(23 Oct)* were checked on 23 October. All actual account observations are redacted below; no keys, account identifiers, telephone values or raw responses are recorded.
 
 ## Status legend
 
@@ -22,7 +23,7 @@ Evidence checked **18 October 2026**. The latest user requirement controls produ
 
 | ID | Claim | Status | Exact source and evidence limits |
 |---|---|---|---|
-| W01 | The call must remain the user's ordinary own-number cellular Phone call; service-originated/callback/second-call designs do not satisfy it. | VERIFIED — user requirement | Latest explicit user clarification in this thread, not an external platform fact. Earlier briefs/updates do not override it. |
+| W01 | The call must remain the user's ordinary own-number cellular Phone call; service-originated/callback/second-call designs do not satisfy it. | CONTRADICTED — superseded by user decision *(23 Oct)* | Was the user's requirement on 18 Oct. On 23 Oct the user chose Option C: a disclosed Bolna-placed call (Path B) first, own-number call (Path A) as a bonus. See [PLAN.md](../PLAN.md#2-decisions). |
 | W02 | Target device is iPhone 17; installed iOS is unknown. | VERIFIED — user report / UNVERIFIED OS | User reply in this thread. [Hardware specifications](https://www.apple.com/iphone-17/specs/) establish camera hardware, not installed software or recognition performance. |
 | A01 | Apple supports synthesized app speech entering existing calls on iOS 18.2+ with settings and permission. | DOCS-ONLY | [AAC sample](https://developer.apple.com/documentation/avfaudio/adding-synthesized-speech-to-calls); device-wide Add Audio in Calls, app permission/usage description, availability handling; Phone/FaceTime/compatible voice-processing VoIP. No execution. |
 | A02 | Injection mixes app speech with microphone input; native call mute also mutes injection. | DOCS-ONLY | [Microphone injection mode](https://developer.apple.com/documentation/avfaudio/avaudiosession/microphoneinjectionmode). No route or mute experiment. |
@@ -38,6 +39,7 @@ Evidence checked **18 October 2026**. The latest user requirement controls produ
 | A12 | Phone translated captions are available above foreground Ishara. | UNVERIFIED | [Phone guide](https://support.apple.com/guide/iphone/see-translations-during-phone-calls-ly3pl0v38sek/ios) describes Phone UI and manual controls, not floating translated-text delivery over another app. |
 | A13 | Phone Live Translation eligibility follows from iPhone 17 alone. | CONTRADICTED | [Apple Intelligence requirements](https://support.apple.com/en-us/121115): software, language/assets, region/account and enablement still apply. No device check performed. |
 | A14 | A Live Activity independently runs the signing camera/inference. | CONTRADICTED — interface scope | [ActivityKit](https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities): state/UI surface with no own network/location access, 4 KB combined data. Return/status candidate only. |
+| A15 | Apple's call injection carries any app audio (e.g. a TTS clip played with AVAudioPlayer), not only AVSpeechSynthesizer output. | DOCS-ONLY *(23 Oct)* | [AAC sample](https://developer.apple.com/documentation/avfaudio/adding-synthesized-speech-to-calls): setting text "Any audio from apps, along with microphone input, will be audible during a call"; "the system plays the app's audio locally and adds it to the microphone's input stream." Not run on a device. |
 | A15 | All background camera access is impossible on iPhone. | CONTRADICTED — overbroad | [Camera multitasking](https://developer.apple.com/documentation/avfoundation/avcapturesession/ismultitaskingcameraaccesssupported), [video-call PiP](https://developer.apple.com/documentation/avkit/avpictureinpicturevideocallviewcontroller). Conditional mechanisms exist; sidecar eligibility/approval is not established. |
 | A16 | A non-VoIP sidecar can declare VoIP background mode just to retain camera execution. | CONTRADICTED — inappropriate assumption | [DTS](https://developer.apple.com/forums/thread/791671), [review guidelines](https://developer.apple.com/app-store/review/guidelines/). Do not infer review approval from API availability. |
 | A17 | Foreground camera-only capture, AAC and system captions work together on this iPhone. | UNVERIFIED — engineering hypothesis | [AAC sample](https://developer.apple.com/documentation/avfaudio/adding-synthesized-speech-to-calls), [caption guide](https://support.apple.com/guide/iphone/get-live-captions-of-spoken-audio-iphe0990f7bb/ios), [capture interruptions](https://developer.apple.com/documentation/avfoundation/avcapturesession/interruptionreason/videodevicenotavailableinbackground). Combined device experiment not executed. |
@@ -65,6 +67,7 @@ Evidence checked **18 October 2026**. The latest user requirement controls produ
 | R13 | Generic zero-shot visual models are already established ISL recognizers. | CONTRADICTED — overclaim | [Specialist study](https://openaccess.thecvf.com/content/CVPR2026W/MSLR/papers/Varanasi_Isolated_Sign_Language_Recognition_via_MediaPipe_Landmarks_A_Case_Study_CVPRW_2026_paper.pdf): tested zero-shot VLMs near zero; fine-tuned LLaVA-NeXT 32.24%. Those comparisons do not test Jev. |
 | R14 | MediaPipe hand landmarks are sign-language labels. | CONTRADICTED | [iOS guide](https://developers.google.com/edge/mediapipe/solutions/vision/hand_landmarker/ios), [model description](https://developers.google.com/edge/mediapipe/solutions/vision/gesture_recognizer/index). Geometry/gesture outputs require separate temporal/language modeling; default max hands is one. |
 | R15 | ISLRTC dictionary media has blanket commercial reuse permission. | CONTRADICTED | [FAQ Q23](https://islrtc.nic.in/faq/) allows research/teaching/ISL technology development with no resale/profiteering and acknowledgment. Regional variation and non-one-to-one English mappings matter. Host identity is not a license for unrelated clips. |
+| R16 | Public INCLUDE videos exist for all 12 demo signs. | CONTRADICTED — partial *(23 Oct)* | [INCLUDE label map](https://raw.githubusercontent.com/AI4Bharat/INCLUDE/master/label_maps/label_map_include.json) (263 labels) covers hello, doctor, hospital, today, tomorrow, morning, afternoon, evening, time, good and weekdays; not yes, no, thank you, sorry, please, wait, name or appointment. Use ISLRTC dictionary media for learning those (see R15 terms). |
 | M01 | Jev is text-only. | CONTRADICTED — stale indexed description | [Live image guide](https://docs.typesafe.ai/images) supersedes [indexed model page](https://github.com/typesafe-docs/typesafeai/blob/main/docs/12-models.md) returned via Context7. Images need experimental header and assets; PNG/JPEG frame history is not native video streaming. |
 | M02 | Jev 1.13/1.14 support images; latest/preview aliases map to 1.13/1.14 as checked. | DOCS-ONLY / VERIFIED mapping | [Images](https://docs.typesafe.ai/images), [models](https://docs.typesafe.ai/models). Box requires 1.14. Pin actual version; no inference/ISL test was made. |
 | M03 | Jev confidence is a measured probability of correct ISL recognition. | CONTRADICTED | [Confidence](https://docs.typesafe.ai/confidence): Choice transformation of largest option probability relative to uniform. Domain thresholds/calibration need experiments. |
@@ -98,8 +101,15 @@ Evidence checked **18 October 2026**. The latest user requirement controls produ
 | B15 | Agent default timers allow arbitrary signing pauses without inspection. | CONTRADICTED — defaults differ | [V2 schema](https://www.bolna.ai/docs/api-reference/agent/v2/get.md): hangup silence10s, total90s, online check true/10s; [engine guide](https://www.bolna.ai/docs/agent-setup/engine-tab.md). Actual saved config/maxima/keepalive behavior untested; only relevant if a non-PSTN agent session is selected. |
 | B16 | Free LLM/static caching makes a Bolna call free. | CONTRADICTED | [Cost overview](https://www.bolna.ai/docs/get-started/what-it-costs.md), [pricing](https://www.bolna.ai/docs/pricing/call-pricing.md). Voice, telephony, platform/provider charges differ; no reliable all-in quote for account. No billable action executed. |
 | B17 | Bolna session content can involve stored transcripts/recordings and US processing. | DOCS-ONLY | [Security](https://www.bolna.ai/docs/concepts/security.md). India residency is separate setup; webhook source-IP verification documented, HMAC not established. No actual session content processed. |
+| B18 | A graph agent can be driven to speak by an external event during a live call, with event properties substituted into the node prompt. | DOCS-ONLY *(23 Oct)* | [Event injection](https://www.bolna.ai/docs/graph-agent/event-injection.md): `POST /v1/call/{run_id}/events`, properties merge into `context_data` and `{{variable}}` prompts; ~800 ms to speech on an LLM node (vendor figure). Combining this with a custom LLM that echoes the approved text verbatim is untested (plan task V4). |
+| B19 | Bolna exposes a documented way to interrupt an utterance that is already playing. | UNVERIFIED — not found *(23 Oct)* | Event docs state events never interrupt active speech; the stop-call API covers queued/scheduled calls only ([stop call](https://www.bolna.ai/docs/api-reference/calls/stop_call.md)). STOP in Path B may only cancel unspoken replies. |
+| B20 | Outbound test calls need a purchased, KYC-verified Indian number. | CONTRADICTED *(23 Oct)* | [Make call](https://www.bolna.ai/docs/api-reference/calls/make.md) / [API quickstart](https://www.bolna.ai/docs/quickstarts/api.md): omit `from_phone_number` to use the account default number. [Buying numbers](https://www.bolna.ai/docs/buying-phone-numbers.md): purchasing an Indian number needs KYC. |
+| B21 | Sarvam, ElevenLabs, Cartesia voices and Deepgram nova ASR are inside Bolna's flat per-minute rate. | DOCS-ONLY *(23 Oct)* | [Preferred models](https://www.bolna.ai/docs/pricing/preferred-models.md): $0.06/min (₹5.52) flat rate including Sarvam bulbul v2/v3/v4-flash, ElevenLabs flash/turbo, Cartesia sonic, Deepgram nova-2/3; Kalpa/Smallest not listed. Telephony and platform fees extra. Snapshot; dashboard list governs. |
+| B22 | Default silence settings suit a callee who waits while the user signs. | CONTRADICTED *(23 Oct)* | [Engine tab](https://www.bolna.ai/docs/agent-setup/engine-tab.md): hangup on user silence and user-online detection would fire while the receptionist waits; turn both off. [Static nodes](https://www.bolna.ai/docs/graph-agent/static-nodes.md): `repeat_after_silence_seconds` can play a holding line instead. |
 | H01 | Submission is 31 Oct2026; ideas with a voice component qualify. | VERIFIED — official page | [Buildathon](https://www.bolna.ai/symphony/buildathon/): shortlist Nov3, interviews Nov5–7, results Nov8, finale Nov20 Bengaluru; top3 travel/top10 tickets. Not independent organizer confirmation beyond retrieved page. |
-| H02 | Mandatory Bolna integration, exact timezone/assets/rubric are established. | UNVERIFIED — not on retrieved page | [Official page](https://www.bolna.ai/symphony/buildathon/). Ask organizer/inspect actual submission rules before freezing integration or schedule. |
+| H02 | Bolna integration is mandatory under the buildathon rules. | CONTRADICTED *(23 Oct)* | [Official page](https://www.bolna.ai/symphony/buildathon/): "Build whatever you like, as long as voice is part of it." Sponsors listed: Plivo, Exotel, Sarvam, Cartesia, Deepgram, Kalpa Labs. The team chose Bolna anyway. Exact deadline time/timezone, assets and rubric remain unestablished. |
+| H03 | Heroku Eco dynos stay awake for a live custom-LLM endpoint. | CONTRADICTED *(23 Oct)* | [Heroku app sleeping](https://www.heroku.com/blog/app_sleeping_on_heroku/): Eco web dynos sleep after 30 min without traffic. [Request timeout](https://devcenter.heroku.com/articles/request-timeout): 30 s to respond; [WebSockets](https://devcenter.heroku.com/articles/websockets): idle connections need pings. Use Basic+ dynos. |
+| H04 | Cerebras inference is free without setup. | CONTRADICTED — qualified *(23 Oct)* | [Change log](https://inference-docs.cerebras.ai/support/change-log): new accounts get $5 credit after adding a verified payment method; free tier has lower limits ([rate limits](https://inference-docs.cerebras.ai/support/rate-limits)). [Models](https://inference-docs.cerebras.ai/models/overview): `gpt-oss-120b` ~3000 tok/s, `qwen-3.8-27b` ~1850 tok/s (vendor figures). |
 
 ## Complete checked-source inventory
 
@@ -210,6 +220,39 @@ The inventory below retains every external URL linked in the three topic notes a
 | S099 | [W3C](https://www.w3.org/WAI/media/av/sign-languages/) | CLAIM-LEDGER.md, Ishara feasibility research.md, ios-and-workflow.md |
 | S100 | [Machine-readable data terms](https://zenodo.org/api/records/4010759) | CLAIM-LEDGER.md, recognition-and-models.md |
 | S101 | [archive](https://zenodo.org/records/4010759) | CLAIM-LEDGER.md, Ishara feasibility research.md, recognition-and-models.md |
+
+### 23 October additions
+
+Sources checked for the demo build decisions. Not renumbered into the S-series above.
+
+| Exact checked URL | Used for |
+|---|---|
+| [Bolna docs index](https://www.bolna.ai/docs/llms.txt) | Page discovery |
+| [Bolna custom LLM](https://www.bolna.ai/docs/customizations/using-custom-llm.md) | B08, Path B design |
+| [Bolna event injection](https://www.bolna.ai/docs/graph-agent/event-injection.md) | B18, B19 |
+| [Bolna static nodes & silence repeat](https://www.bolna.ai/docs/graph-agent/static-nodes.md) | B22 |
+| [Bolna engine tab](https://www.bolna.ai/docs/agent-setup/engine-tab.md) | B22 |
+| [Bolna hangup methods](https://www.bolna.ai/docs/outbound/hangup-calls.md) | B22 |
+| [Bolna choosing TTS](https://www.bolna.ai/docs/concepts/choosing-text-to-speech.md) | D2 voice choice |
+| [Bolna preferred models](https://www.bolna.ai/docs/pricing/preferred-models.md) | B21 |
+| [Bolna what it costs](https://www.bolna.ai/docs/get-started/what-it-costs.md) | B21 |
+| [Bolna Sarvam voice](https://www.bolna.ai/docs/sarvam-voice.md) | D2 |
+| [Bolna Kalpa voice](https://www.bolna.ai/docs/kalpa.md) | D2 |
+| [Bolna choosing telephony](https://www.bolna.ai/docs/concepts/choosing-telephony.md) | B20 |
+| [Bolna buying numbers](https://www.bolna.ai/docs/buying-phone-numbers.md) | B20 |
+| [Bolna API quickstart](https://www.bolna.ai/docs/quickstarts/api.md) | B20 |
+| [Bolna make call API](https://www.bolna.ai/docs/api-reference/calls/make.md) | B20 |
+| [Bolna stop call API](https://www.bolna.ai/docs/api-reference/calls/stop_call.md) | B19 |
+| [Buildathon page](https://www.bolna.ai/symphony/buildathon) | H02 |
+| [Apple AAC sample (.md)](https://developer.apple.com/documentation/avfaudio/adding-synthesized-speech-to-calls.md) | A15 |
+| [MediaPipe Holistic Landmarker for iOS](https://developers.google.com/edge/mediapipe/solutions/vision/holistic_landmarker/ios) | D6 on-device recognition |
+| [Cerebras rate limits](https://inference-docs.cerebras.ai/support/rate-limits) | H04 |
+| [Cerebras models](https://inference-docs.cerebras.ai/models/overview) | H04 |
+| [Cerebras change log](https://inference-docs.cerebras.ai/support/change-log) | H04 |
+| [Heroku app sleeping](https://www.heroku.com/blog/app_sleeping_on_heroku/) | H03 |
+| [Heroku request timeout](https://devcenter.heroku.com/articles/request-timeout) | H03 |
+| [Heroku WebSockets](https://devcenter.heroku.com/articles/websockets) | H03 |
+| [INCLUDE label map](https://raw.githubusercontent.com/AI4Bharat/INCLUDE/master/label_maps/label_map_include.json) | R16 |
 
 ## Retrieval limits and conflicts
 
