@@ -54,7 +54,7 @@ Agreed on 23 October 2026. Raise any change explicitly; don't switch silently.
 | D3 | Call language | **English (India)** only. Hindi is "next" | Lowest effort |
 | D4 | Chips → sentence | **Groq LLM** (OpenAI-compatible API, model `openai/gpt-oss-120b`) drafts the sentence using the chips plus the live transcript, then a **validator** checks it. Fixed **templates** are the fallback. Replaced Cerebras on 23 Oct | Fast, context-aware wording; templates catch meaning drift. Cerebras is not free; Groq is billed per token at a low rate (§10) |
 | D5 | Vocabulary | **12 signs** (see §5), one sign at a time with hands down between signs. Wait and Repeat are buttons | Enough for the script; small enough to record and rehearse |
-| D6 | Where recognition runs | **On the iPhone**: MediaPipe Holistic for iOS plus SignCLIP converted to Core ML. The **Mac is the backup** | On-device is the pitch; the Mac replay pipeline (extraction, SignCLIP embedding, reference matching) already runs, though it has no calibrated cut-off yet and abstains on everything until R2b |
+| D6 | Where recognition runs | **On the iPhone**: MediaPipe Holistic for iOS (official SwiftPM package, MediaPipeTasksVision 1.1.1) plus SignCLIP converted to Core ML (FP16, run with compute units `.cpuAndGPU`; see P1). The **Mac is the backup** | On-device is the pitch; the Mac replay pipeline (extraction, SignCLIP embedding, reference matching) already runs, though it has no calibrated cut-off yet and abstains on everything until R2b |
 | D7 | Backend hosting | Small Python backend on **Heroku**, **EU** region, **Basic dyno or higher** (never Eco). Deployed by pushing `backend/` with `git subtree` (`backend/HEROKU.md`) | Team has credits; Eco dynos sleep and Bolna would hear silence. EU is closer to India than the default US region (latency not measured) |
 
 Already settled: native **SwiftUI** app, **SignCLIP** as the main recognizer
@@ -316,6 +316,10 @@ picked up without earlier context.
 - [ ] **P1 [Build]** Convert the SignCLIP video encoder to Core ML (`ml/coreml/`), FP16, with
   padding to ≤256 frames. *Done:* the `.mlpackage` gives the same embeddings as PyTorch (cosine ≥ 0.999)
   on the saved clips.
+  *Measured on a Mac (M4 Pro), 47 public INCLUDE clips:* with compute units `.cpuAndGPU` all
+  47 pass (p50 about 11 ms). With the Neural Engine allowed (the default `.all`) the
+  embeddings are wrong (min cosine 0.63, 0/47 pass), so the app must set `.cpuAndGPU`.
+  Re-check on the iPhone in P3.
 
 ### Sun 25 Oct: composer, calibration
 
@@ -344,9 +348,12 @@ picked up without earlier context.
   frozen cut-off and your enrollment references bundled in the app.
 - [ ] **P3 [Build]** Parity: run the same saved videos through the simulator pipeline and through the Mac.
   Note the Mac uses the legacy `mp.solutions.holistic` (MediaPipe 0.10.21) while iOS only has the
-  newer Holistic Landmarker task, so landmarks will differ. Compare landmarks and embeddings
-  first, and re-embed the enrollment references with the iOS extractor rather than copying
-  Mac embeddings. *Done:* both give the same accepted label (or "?") on every calibration clip.
+  newer Holistic Landmarker task, so landmarks will differ. The iOS task's pose model is
+  lite-sized while the Mac uses full complexity 1, and its face model is Face Mesh V2.
+  Compare landmarks and embeddings first, and re-embed the enrollment references with the
+  iOS extractor rather than copying Mac embeddings. Also re-check the Core ML embeddings on
+  the iPhone with `.cpuAndGPU` (the Neural Engine failed on the Mac, P1).
+  *Done:* both give the same accepted label (or "?") on every calibration clip.
 - [ ] **G3 Gate 3** (see §7).
 - [ ] **A2 [Build]** Wire the app to the backend: start call, chips → draft, SEND, captions,
   status, STOP, End. Uses the replay-video recognizer in the simulator.
