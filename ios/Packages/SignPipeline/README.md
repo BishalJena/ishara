@@ -18,7 +18,7 @@ VideoFileFrameSource┘   (pixels+time)   (MediaPipe Holistic)            └─
 | Target | Contents | Platforms |
 |---|---|---|
 | `SignPipeline` | Landmark types, `FeatureBuilder`, `ClipBuffer`, `EncoderInput`, `SignEncoder`, `CoreMLEmbeddingModel`, frame sources, `LandmarkProvider` | iOS 17, macOS 14 |
-| `SignPipelineMediaPipe` | `HolisticLandmarkProvider` (MediaPipe Holistic Landmarker, video mode) | iOS only (compiles empty on macOS) |
+| `SignPipelineMediaPipe` (separate package, [`../SignPipelineMediaPipe`](../SignPipelineMediaPipe/README.md)) | `HolisticLandmarkProvider` (MediaPipe Holistic Landmarker, video mode) | iOS only (compiles empty on macOS) |
 
 ## Using it
 
@@ -34,7 +34,7 @@ for try await frame in VideoFileFrameSource(url: clipURL, pacing: .realTime).fra
 let embedding = try encoder.embed(clip)                  // raw; L2-normalize in matching
 ```
 
-- Get the model with `Scripts/download_holistic_model.sh <dir>` and add it to the app bundle.
+- Get the model with `../SignPipelineMediaPipe/Scripts/download_holistic_model.sh <dir>` and add it to the app bundle.
 - `CameraFrameSource` needs camera permission (`NSCameraUsageDescription`) granted before `frames()`.
 - Embeddings are **not** normalized here; clips over 256 frames or under 4 frames are rejected, never truncated.
 
@@ -52,8 +52,8 @@ the pinned SignCLIP/pose-format versions change (instructions in the script head
 /tmp/signpipeline-fixture/bin/python Scripts/make_feature_fixture.py
 ```
 
-The first build clones the MediaPipe repository (~600 MB) and downloads its
-binaries (~98 MB); later builds use SwiftPM's cache.
+This package has no dependencies, so it builds and tests on macOS without
+MediaPipe. Only `SignPipelineMediaPipe` pulls MediaPipe in.
 
 ## SignCLIP features: what is ported and why
 
@@ -136,7 +136,7 @@ convention. Three separate graphs cost more per frame **[hyp]**.
   TaskGraphs 91.4 MB, Common 4.9 MB, Vision 0.5 MB, Text/Audio/Retrieval/Decision < 0.5 MB each (zip sizes).
   Slices: `ios-arm64` and `ios-arm64-simulator` only (no macOS, no Intel simulator).
 - **[obs]** The manifest uses `.unsafeFlags(["-Xlinker", "-all_load"])`, so dependents must pin
-  it by branch or revision (this package pins the revision). `MediaPipeTasksCommon` links every task
+  it by branch or revision (`SignPipelineMediaPipe` pins the revision). `MediaPipeTasksCommon` links every task
   binary, so the app carries all of them; size impact not measured.
 - **[obs]** CocoaPods `MediaPipeTasksVision` is still published but trails SPM: latest pod 1.0.0
   (28 Jul 2026) vs SPM 1.1.1. No Podfile is proposed.
