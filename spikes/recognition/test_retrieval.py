@@ -2,6 +2,7 @@
 import unittest
 from contextlib import redirect_stderr
 from io import StringIO
+from itertools import count
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -10,7 +11,7 @@ from unittest.mock import patch
 import numpy as np
 
 import recognition_data as data
-from retrieval import calibrate_policy, score
+from retrieval import calibrate_policy, rank_records, score
 
 
 def record(ident="a", split="enrollment"):
@@ -33,6 +34,34 @@ def development_rows():
             for label in DEMO_SIGNS for _ in range(count)]
     return rows + [{"split": "calibration", "label": None, "signer_id": "demo",
                     "negative_kind": data.NEGATIVES[i % 4], "verified": True} for i in range(20)]
+
+
+DIM = len(DEMO_SIGNS) + 1  # the last axis belongs to no reference
+REFERENCES = [{"id": f"ref-{label}", "sha256": f"ref-{label}", "source_id": f"ref-{label}",
+               "label": label, "embedding": np.eye(DIM)[i]} for i, label in enumerate(DEMO_SIGNS)]
+_query_ids = count()
+
+
+def toward(label, similarity):
+    """Unit embedding with cosine `similarity` to one reference and 0 to all others."""
+    return (similarity * np.eye(DIM)[DEMO_SIGNS.index(label)]
+            + np.sqrt(1 - similarity ** 2) * np.eye(DIM)[-1])
+
+
+def attempt(label, similarity, looks_like=None):
+    ident = f"q{next(_query_ids)}"
+    return {"id": ident, "sha256": ident, "source_id": ident, "label": label,
+            "quality": {"pose_fraction": 1, "hand_fraction": 1},
+            "embedding": toward(looks_like or label, similarity)}
+
+
+def calibration_rows(signs=None, extra=(), negatives=20):
+    """5 clear attempts per sign and faint negatives, ranked against synthetic references."""
+    signs = signs or {}
+    queries = [a for label in DEMO_SIGNS
+               for a in signs.get(label, [attempt(label, 0.95) for _ in range(5)])]
+    queries += [attempt(None, 0.3, "hello") for _ in range(negatives)] + list(extra)
+    return rank_records(queries, REFERENCES)
 
 
 class DatasetContracts(unittest.TestCase):
@@ -79,6 +108,9 @@ class DatasetContracts(unittest.TestCase):
                     self.assertFalse(result["ready"])
                     self.assertEqual(result["issues"],
                                      [f"{split}: need {minimum} verified examples of {label}"])
+        rows = development_rows()
+        rows.remove(next(r for r in rows if r["label"] is None))
+        self.assertEqual(data.readiness(rows)["issues"], ["calibration: need 20 negative clips"])
 
 
 class RetrievalContracts(unittest.TestCase):
@@ -129,24 +161,6 @@ class RetrievalContracts(unittest.TestCase):
             with self.subTest(vector=vector), self.assertRaises(ValueError):
                 data.unit(vector)
 
-    def test_all_reject_is_not_successful_calibration(self):
-        rows = [{"label": label, "quality": {"pose_fraction": 1, "hand_fraction": 1},
-                 "ranking": [{"concept": "hello", "similarity": 0.99}], "margin": 0.2}
-                for label in data.VOCABULARY]
-        with self.assertRaisesRegex(ValueError, "60%"):
-            calibrate_policy(rows)
-
-    def test_calibration_retains_each_concept_and_rejects_negatives(self):
-        rows = [{"label": label, "quality": {"pose_fraction": 1, "hand_fraction": 1},
-                 "ranking": [{"concept": label, "similarity": 0.9}], "margin": 0.2}
-                for label in data.VOCABULARY]
-        rows.append({"label": None, "quality": {"pose_fraction": 1, "hand_fraction": 1},
-                     "ranking": [{"concept": "hello", "similarity": 0.8}], "margin": 0.2})
-        policy, result = calibrate_policy(rows)
-        self.assertGreater(policy["similarity"], 0.8)
-        self.assertEqual(result["negative_false_accepts"], 0)
-        self.assertTrue(all(c["correct_accepted"] == 1 for c in result["per_concept"].values()))
-
     def test_wrong_supported_accept_and_negative_accept_are_distinct(self):
         base = {"quality": {"pose_fraction": 1, "hand_fraction": 1},
                 "ranking": [{"concept": "hello", "similarity": 0.99}], "margin": 0.2}
@@ -155,6 +169,71 @@ class RetrievalContracts(unittest.TestCase):
         self.assertEqual(result["per_concept"]["doctor"]["wrong_accepted"], 1)
         self.assertEqual(result["negative_false_accepts"], 1)
         self.assertEqual(result["per_concept"]["doctor"]["correct_accepted"], 0)
+
+
+class CalibrationContracts(unittest.TestCase):
+    """PLAN R2b: >=60% per sign, 0 wrong accepts, 0 negative accepts, never reject-all."""
+
+    def test_clean_session_accepts_every_attempt_and_no_negative(self):
+        policy, result = calibrate_policy(calibration_rows())
+        self.assertGreater(max(policy["similarity"], policy["margin"]), 0.3)
+        for label, counts in result["per_concept"].items():
+            with self.subTest(label=label):
+                self.assertEqual((counts["correct_accepted"], counts["total"]), (5, 5))
+        self.assertEqual((result["negative_false_accepts"], result["negative_count"]), (0, 20))
+
+    def test_sixty_percent_per_sign_is_the_exact_boundary(self):
+        # A negative at 0.8 forces the cut-off above 0.8, so only the 0.9 attempts survive.
+        for total, kept in ((5, 3), (20, 12)):
+            for strong, passes in ((kept, True), (kept - 1, False)):
+                time = ([attempt("time", 0.9) for _ in range(strong)]
+                        + [attempt("time", 0.7) for _ in range(total - strong)])
+                rows = calibration_rows({"time": time}, [attempt(None, 0.8, "hello")])
+                with self.subTest(total=total, strong=strong):
+                    if passes:
+                        _, result = calibrate_policy(rows)
+                        counts = result["per_concept"]["time"]
+                        self.assertEqual((counts["correct_accepted"], counts["total"]), (kept, total))
+                        self.assertEqual(result["negative_false_accepts"], 0)
+                    else:
+                        with self.assertRaisesRegex(ValueError, "60%"):
+                            calibrate_policy(rows)
+
+    def test_one_wrong_accept_disqualifies_a_threshold(self):
+        yes = [attempt("yes", 0.9) for _ in range(4)] + [attempt("yes", 0.8)]
+        confused = attempt("yes", 0.85, looks_like="no")
+        _, clean = calibrate_policy(calibration_rows({"yes": yes}))
+        self.assertEqual(clean["per_concept"]["yes"]["correct_accepted"], 5)
+        rows = calibration_rows({"yes": yes + [confused]})
+        loose = score(rows, {"similarity": 0.8, "margin": 0.0})
+        self.assertEqual(loose["per_concept"]["yes"]["wrong_accepted"], 1)
+        _, result = calibrate_policy(rows)
+        self.assertEqual(sum(c["wrong_accepted"] for c in result["per_concept"].values()), 0)
+        self.assertEqual(result["per_concept"]["yes"]["correct_accepted"], 4)
+
+    def test_one_negative_accept_disqualifies_a_threshold(self):
+        yes = [attempt("yes", 0.9) for _ in range(4)] + [attempt("yes", 0.8)]
+        rows = calibration_rows({"yes": yes}, [attempt(None, 0.85, "hello")])
+        self.assertEqual(score(rows, {"similarity": 0.8, "margin": 0.0})["negative_false_accepts"], 1)
+        _, result = calibrate_policy(rows)
+        self.assertEqual(result["negative_false_accepts"], 0)
+        self.assertEqual(result["per_concept"]["yes"]["correct_accepted"], 4)
+
+    def test_reject_all_is_not_successful_calibration(self):
+        # Every sign looks like hello, so only a reject-everything cut-off has 0 wrong accepts.
+        signs = {label: [attempt(label, 0.99, "hello") for _ in range(5)] for label in DEMO_SIGNS}
+        with self.assertRaisesRegex(ValueError, "60%"):
+            calibrate_policy(calibration_rows(signs))
+
+    def test_missing_negatives_block_calibration(self):
+        for negatives in (0, 19):
+            with self.subTest(negatives=negatives), self.assertRaisesRegex(
+                    ValueError, f"needs 20 negative clips; found {negatives}"):
+                calibrate_policy(calibration_rows(negatives=negatives))
+
+    def test_every_sign_needs_calibration_attempts(self):
+        with self.assertRaisesRegex(ValueError, "missing evening$"):
+            calibrate_policy(calibration_rows({"evening": []}))
 
 
 class CaptureContracts(unittest.TestCase):

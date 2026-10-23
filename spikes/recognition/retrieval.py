@@ -99,6 +99,13 @@ def fingerprint(records):
 def calibrate_policy(rows):
     if any(r.get("error") for r in rows):
         raise ValueError("Resolve extraction errors before calibrating a policy")
+    # Without attempts for a sign or enough negatives, "0 wrong accepts" is vacuous.
+    missing = [label for label in data.VOCABULARY if not any(r["label"] == label for r in rows)]
+    if missing:
+        raise ValueError("Calibration needs attempts for every sign; missing " + ", ".join(missing))
+    negatives, needed = sum(r["label"] is None for r in rows), data.NEGATIVE_MINIMUM["calibration"]
+    if negatives < needed:
+        raise ValueError(f"Calibration needs {needed} negative clips; found {negatives}")
     thresholds = sorted({-1.0, *(r["ranking"][0]["similarity"] + 1e-7
                                for r in rows if r["ranking"])})
     margins = sorted({0.0, *(r["margin"] + 1e-7 for r in rows if r["margin"] is not None)})
@@ -110,7 +117,7 @@ def calibrate_policy(rows):
             classes = summary["per_concept"].values()
             wrong = sum(c["wrong_accepted"] for c in classes) + summary["negative_false_accepts"]
             correct = sum(c["correct_accepted"] for c in classes)
-            covered = all(c["total"] and c["correct_accepted"] >= 0.6 * c["total"] for c in classes)
+            covered = all(c["correct_accepted"] >= 0.6 * c["total"] for c in classes)
             if wrong == 0 and covered and correct > best_correct:
                 best, best_correct = candidate, correct
     # Reject-all policies cannot qualify as successful calibration.
