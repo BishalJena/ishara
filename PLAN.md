@@ -127,15 +127,21 @@ Captions (the app can't read them), so the composer gets chips only and no trans
 
 ### Components and repo layout (new code)
 
+"PR #N" means the code is in an open pull request (23 Oct), not yet on `main`.
+
 | Component | Tech | Repo path | Status |
 |---|---|---|---|
-| iOS app | SwiftUI, AVFoundation, MediaPipeTasksVision, Core ML | `ios/Ishara/` | new |
-| Recognition core (on device) | Swift detector + matcher; SignCLIP `.mlpackage` | `ios/Ishara/Recognition/` | new |
-| Core ML conversion + parity | Python, coremltools | `ml/coreml/` | new |
-| Mac recognition (backup) | existing Python (MediaPipe 0.10.21, SignCLIP) | `spikes/recognition/` | exists; extend vocabulary |
-| Backend | Python 3.11, FastAPI, httpx, pytest | `backend/` | new |
-| Bolna agent config | graph agent JSON | `backend/bolna/agent.json` | new |
-| Composer | Cerebras client + validator + templates | `backend/app/composer.py` | new (templates ported from `spikes/recognition/sentence.py`) |
+| iOS app (4 screens) | SwiftUI, XcodeGen spec `ios/project.yml` | `ios/Ishara/` | PR #22 (draft; fake data, not yet built in Xcode) |
+| Recognition core (on device) | Swift detector + matcher, reads the Mac's recognition bundle | `ios/Packages/RecognitionCore/` | PR #23 (draft) |
+| Sign pipeline (on device) | MediaPipeTasksVision 1.1.1 via SwiftPM (Holistic Landmarker), SignCLIP features, Core ML encoder wrapper | `ios/Packages/SignPipeline/` | PR #18 (draft) |
+| Call session (app side) | Swift wire messages, WebSocket client, turn store | `ios/Packages/CallSession/` | PR #20 (draft) |
+| Core ML conversion + parity | Python, coremltools | `ml/coreml/` | PR #21 |
+| Mac recognition (backup) | existing Python (MediaPipe 0.10.21, SignCLIP) | `spikes/recognition/` | exists; 12 signs and R2b report (PR #12), detector (PR #11), Mac bridge to the backend (PR #9) |
+| Backend | Python 3.11, FastAPI, httpx, uv, pytest | `backend/` | PR #6 (foundation) plus #7, #13, #16, #17 |
+| Bolna agent config | graph agent builder + JSON, Bolna client, deploy CLI | `backend/app/bolna_agent.py`, `backend/bolna/agent.json` | PR #14 |
+| Composer | Groq client + validator + templates | `backend/app/composer.py`, `groq_client.py`, `validator.py`, `templates.py` | PR #10 |
+| Fake Bolna + E2E script tests | Python, pytest | `backend/fakes/`, `backend/tests/e2e/` | PR #8 |
+| CI, verification, Heroku deploy | GitHub Actions, shell | `.github/workflows/ci.yml`, `scripts/verify.sh`, `backend/HEROKU.md` | PR #15 |
 | Device harness (AAC test) | Apple sample, adapted | `spikes/call_flow/ios/` | exists |
 
 ### Interfaces (contracts to build against)
