@@ -7,6 +7,10 @@ public final class LiveCall {
     public let callID: String
     public let store: TurnStore
 
+    /// Runs when the call socket closes on its own (not when `connect()` replaces it or the
+    /// call has ended). The store has already gone silent; the owner may `connect()` again.
+    public var onConnectionLost: (() -> Void)?
+
     private let client: BackendClient
     private var listener: Task<Void, Never>?
 
@@ -38,6 +42,10 @@ public final class LiveCall {
         listener?.cancel()
         await client.connect(callID: callID)
         let events = await client.events
-        listener = Task { [store] in await store.consume(events) }
+        listener = Task { [weak self, store] in
+            await store.consume(events)
+            guard !Task.isCancelled, store.state == .error else { return }
+            self?.onConnectionLost?()
+        }
     }
 }

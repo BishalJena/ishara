@@ -70,6 +70,41 @@ final class LiveCallTests: XCTestCase {
         XCTAssertEqual(store.notice, TurnStore.disconnectedNotice)
     }
 
+    func testDroppedSocketIsReportedToTheOwner() async throws {
+        let call = try await startCall()
+        var reports = 0
+        call.onConnectionLost = { reports += 1 }
+
+        await transport.drop()
+
+        let reported = await eventually { @MainActor in reports == 1 }
+        XCTAssertTrue(reported)
+    }
+
+    func testEndedCallClosingItsSocketIsNotReported() async throws {
+        let call = try await startCall()
+        var reports = 0
+        call.onConnectionLost = { reports += 1 }
+        await transport.push(#"{"type":"status","state":"ended"}"#)
+        _ = await eventually { @MainActor in call.store.state == .ended }
+
+        await transport.drop()
+        try? await Task.sleep(for: .milliseconds(50))
+
+        XCTAssertEqual(reports, 0)
+    }
+
+    func testReplacingTheSocketIsNotReported() async throws {
+        let call = try await startCall()
+        var reports = 0
+        call.onConnectionLost = { reports += 1 }
+
+        await call.connect()
+        try? await Task.sleep(for: .milliseconds(50))
+
+        XCTAssertEqual(reports, 0)
+    }
+
     func testFailedSendSilencesTheStore() async throws {
         let call = try await startCall()
         let store = call.store
