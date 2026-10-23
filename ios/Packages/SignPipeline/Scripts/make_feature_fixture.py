@@ -26,6 +26,7 @@ import json
 import urllib.request
 from pathlib import Path
 from types import SimpleNamespace
+from typing import ClassVar
 
 import numpy as np
 import torch
@@ -53,7 +54,8 @@ def upstream_preprocessing(source: bytes) -> dict:
     if {defined_name(node) for node in nodes} != UPSTREAM_NAMES:
         raise RuntimeError("Pinned demo_sign.py lacks an expected preprocessing definition")
     namespace = {"np": np, "torch": torch}
-    exec(compile(ast.Module(body=nodes, type_ignores=[]), "demo_sign.py", "exec"), namespace)
+    # Runs only the four definitions above from the checksum-pinned upstream file.
+    exec(compile(ast.Module(body=nodes, type_ignores=[]), "demo_sign.py", "exec"), namespace)  # noqa: S102
     if namespace["FACEMESH_CONTOURS_POINTS"] != holistic.FACEMESH_CONTOURS_POINTS:
         raise RuntimeError("Upstream face contour list differs from MediaPipe 0.10.21")
     return namespace
@@ -62,7 +64,7 @@ def upstream_preprocessing(source: bytes) -> dict:
 class ScriptedHolistic:
     """Stands in for mp.solutions.holistic.Holistic and replays synthetic results."""
 
-    script: list = []
+    script: ClassVar[list] = []
 
     def __init__(self, **config):
         if config.get("model_complexity") != 1:
