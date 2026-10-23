@@ -1,0 +1,264 @@
+import Foundation
+import Observation
+
+/// One chip on the signing screen. Only recognised chips are ever sent; unsure `?` chips
+/// are shown so the user knows to sign again.
+public struct Chip: Identifiable, Equatable, Sendable {
+    public enum Kind: Equatable, Sendable {
+        case recognised(Sign)
+        case unsure
+    }
+
+    public let id: UUID
+    public let kind: Kind
+
+    public init(id: UUID = UUID(), kind: Kind) {
+        self.id = id
+        self.kind = kind
+    }
+
+    public static func recognised(_ sign: Sign) -> Chip { Chip(kind: .recognised(sign)) }
+    public static func unsure() -> Chip { Chip(kind: .unsure) }
+
+    var sign: Sign? {
+        if case let .recognised(sign) = kind { return sign }
+        return nil
+    }
+}
+
+/// A receptionist caption.
+public struct Caption: Equatable, Sendable {
+    public let text: String
+    public let at: Date
+}
+
+/// The sentence SEND would speak.
+public struct Draft: Equatable, Sendable {
+    public enum Origin: Equatable, Sendable {
+        case llm
+        case template
+        case quickReply
+    }
+
+    public let text: String
+    public let origin: Origin
+}
+
+/// Full polite sentences for questions no sign covers. SEND is still required.
+public enum QuickReply: CaseIterable, Sendable {
+    case yes
+    case no
+    case wait
+    case `repeat`
+
+    public var text: String {
+        switch self {
+        case .yes: "Yes."
+        case .no: "No."
+        case .wait: "Please wait a moment, I'm signing my reply."
+        case .repeat: "Sorry, could you please repeat that?"
+        }
+    }
+}
+
+/// What happened to the last approved sentence.
+public enum SendingPhase: Equatable, Sendable {
+    case idle
+    case speaking(turnID: TurnID, text: String)
+    case delivered
+    /// No confirmation arrived; the user may re-SEND `text`. Never resent automatically.
+    case notDelivered(text: String)
+}
+
+public struct ServerError: Equatable, Sendable {
+    public let code: String
+    public let message: String
+}
+
+/// The single source of truth for one call on the app side.
+///
+/// Safety rules (PLAN.md §4, docs/WORKFLOW.md): nothing is spoken unless the user taps SEND,
+/// an approval is used once and tied to its turn, unsure chips and stale drafts never reach
+/// the call, and after End or a disconnect nothing is sent on the user's behalf.
+@MainActor
+@Observable
+public final class TurnStore {
+    public static let disconnectedNotice = "Nothing will be sent"
+
+    public private(set) var state: CallState
+    public private(set) var captions: [Caption] = []
+    public private(set) var currentTurnID: TurnID
+    public private(set) var chips: [Chip] = []
+    public private(set) var draft: Draft?
+    public private(set) var sending: SendingPhase = .idle
+    /// Shown to the user when the call can no longer carry messages.
+    public private(set) var notice: String?
+    public private(set) var lastError: ServerError?
+
+    private let sink: any OutgoingMessageSink
+    private let makeTurnID: () -> TurnID
+
+    public init(
+        sink: any OutgoingMessageSink,
+        initialState: CallState = .dialing,
+        makeTurnID: @escaping () -> TurnID = TurnID.random
+    ) {
+        self.sink = sink
+        self.state = initialState
+        self.makeTurnID = makeTurnID
+        self.currentTurnID = makeTurnID()
+    }
+
+    /// The signs a `chips` message would carry, in order.
+    public var recognisedSigns: [Sign] { chips.compactMap(\.sign) }
+
+    /// True when SEND would approve the shown draft.
+    public var canSend: Bool {
+        guard isLive, let draft else { return false }
+        return Self.isSendable(draft.text)
+    }
+
+    // MARK: User actions
+
+    /// Adds a chip. Returns false when the call is over or a recognised chip would exceed
+    /// the backend's limit of `ProtocolLimits.maxChips`.
+    @discardableResult
+    public func add(_ chip: Chip) -> Bool {
+        guard acceptsInput else { return false }
+        if chip.sign != nil, recognisedSigns.count >= ProtocolLimits.maxChips { return false }
+        chips.append(chip)
+        if chip.sign != nil { recognisedChipsChanged() }
+        return true
+    }
+
+    public func remove(_ chip: Chip) {
+        guard acceptsInput, let index = chips.firstIndex(where: { $0.id == chip.id }) else { return }
+        let removed = chips.remove(at: index)
+        if removed.sign != nil { recognisedChipsChanged() }
+    }
+
+    /// Puts a quick-reply sentence in the draft on a fresh turn. Nothing is sent until SEND.
+    public func useQuickReply(_ reply: QuickReply) {
+        guard acceptsInput else { return }
+        beginNewTurn()
+        draft = Draft(text: reply.text, origin: .quickReply)
+    }
+
+    /// Approves exactly the shown draft, once. A new turn then begins with no chips or draft.
+    public func send() {
+        guard canSend, let draft else { return }
+        approve(draft.text, turnID: currentTurnID)
+    }
+
+    /// After "not delivered", approves the same text again on a new turn id.
+    public func resend() {
+        guard isLive, case let .notDelivered(text) = sending else { return }
+        approve(text, turnID: makeTurnID())
+    }
+
+    /// Asks the backend to cancel unspoken output.
+    public func stop() {
+        guard acceptsInput else { return }
+        sink.send(.stop)
+    }
+
+    /// Ends the call. Anything still queued is dropped first so nothing speaks after End.
+    public func end() {
+        guard state != .ended else { return }
+        sink.discardPending()
+        sink.send(.end)
+        finish()
+    }
+
+    // MARK: Backend events
+
+    public func receive(_ message: ServerMessage) {
+        guard state != .ended else { return }
+        switch message {
+        case .status(.ended):
+            sink.discardPending()
+            finish()
+        case .status(.error):
+            goSilent()
+        case let .status(newState):
+            state = newState
+            notice = nil
+        case let .caption(text, at):
+            captions.append(Caption(text: text, at: Date(timeIntervalSince1970: at)))
+        case let .draft(turnID, text, source):
+            // A draft for an older turn, or for chips the user has since removed, is stale.
+            guard turnID == currentTurnID, !recognisedSigns.isEmpty else { return }
+            draft = Draft(text: text, origin: source == .llm ? .llm : .template)
+        case let .spoken(turnID):
+            if case .speaking(turnID, _) = sending { sending = .delivered }
+        case let .notDelivered(turnID, _):
+            if case let .speaking(speakingTurn, text) = sending, speakingTurn == turnID {
+                sending = .notDelivered(text: text)
+            }
+        case let .error(code, message):
+            lastError = ServerError(code: code, message: message)
+        case .unknown:
+            break
+        }
+    }
+
+    /// The socket closed. Nothing pending is sent, drafts are wiped and nothing is resent
+    /// when a new connection arrives.
+    public func connectionLost() {
+        guard state != .ended else { return }
+        goSilent()
+    }
+
+    /// Applies every event, then treats the end of the stream as a lost connection.
+    public func consume(_ events: AsyncStream<ServerMessage>) async {
+        for await message in events {
+            receive(message)
+        }
+        connectionLost()
+    }
+
+    // MARK: Private
+
+    private var acceptsInput: Bool { state != .ended && state != .error }
+    private var isLive: Bool { state == .inCall || state == .speaking }
+
+    private static func isSendable(_ text: String) -> Bool {
+        (1...ProtocolLimits.maxSpokenCharacters).contains(text.unicodeScalars.count)
+    }
+
+    private func recognisedChipsChanged() {
+        // The shown draft described the old chips; wait for the backend's new one.
+        draft = nil
+        let signs = recognisedSigns
+        guard !signs.isEmpty else { return }
+        sink.send(.chips(turnID: currentTurnID, chips: signs))
+    }
+
+    private func approve(_ text: String, turnID: TurnID) {
+        sink.send(.approve(turnID: turnID, text: text))
+        sending = .speaking(turnID: turnID, text: text)
+        beginNewTurn()
+    }
+
+    private func beginNewTurn() {
+        currentTurnID = makeTurnID()
+        chips = []
+        draft = nil
+    }
+
+    private func goSilent() {
+        sink.discardPending()
+        state = .error
+        notice = Self.disconnectedNotice
+        sending = .idle
+        beginNewTurn()
+    }
+
+    private func finish() {
+        state = .ended
+        captions = []
+        sending = .idle
+        notice = nil
+        beginNewTurn()
+    }
+}
