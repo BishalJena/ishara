@@ -82,7 +82,7 @@ class TurnState:
         return self._chips_message(before)
 
     def remove_last(self) -> Message | None:
-        if self.ended or not self.chips:
+        if not self.chips:
             return None
         before = self.sendable
         self.chips.pop()
@@ -94,15 +94,16 @@ class TurnState:
             self._new_turn()
 
     def on_draft(self, turn_id: str, text: str, source: str) -> Draft | None:
-        if self.ended or turn_id != self.turn_id or not self.sendable:
+        if turn_id != self.turn_id or not self.sendable:
             return None
         self.draft = Draft(turn_id, text, source)
         return self.draft
 
     def approve(self) -> Message | None:
-        """SEND: the current turn's draft, else the text that was not delivered. Single use."""
-        if self.ended:
-            return None
+        """SEND: the current turn's draft, else the text that was not delivered. Single use.
+
+        After the call ends there is neither: on_ended wipes both and add() is blocked.
+        """
         if self.draft is not None:  # on_draft only keeps drafts for the current turn
             text = self.draft.text
         elif self.undelivered is not None:
@@ -128,7 +129,7 @@ class TurnState:
     def on_not_delivered(self, turn_id: str) -> str | None:
         """Remember the text for a manual re-SEND; never resend here."""
         text = self.awaiting.pop(turn_id, None)
-        if text is not None and not self.ended:
+        if text is not None:
             self.undelivered = (turn_id, text)
         return text
 
