@@ -423,3 +423,45 @@ def test_shape_log_has_no_transcript_reply_or_token(
     logged = "\n".join(lines + [record.getMessage() for record in caplog.records])
     for secret in (caption, "Doctor Rao", REPLY, "4 pm doesn't", HOLDING_LINE, CUSTOM_LLM_TOKEN):
         assert secret not in logged
+
+
+@pytest.mark.parametrize(
+    ("system", "user", "outcome"),
+    [
+        ('Reply only with JSON {"hangup": "Yes" or "No"}', "Bye.", "json_no"),
+        ('Reply only with JSON {"is_voicemail": "Yes" or "No"}', "Beep.", "json_no"),
+        ("Speak in English.", "Hello?", "silent"),
+        (speak_prompt(turn_id="unknown-turn"), "Hello?", "claim_refused"),
+        (speak_prompt(), "Hello?", "reply"),
+    ],
+    ids=["hangup", "voicemail", "no marker", "refused claim", "reply"],
+)
+def test_shape_log_records_the_outcome_of_each_request(
+    client: TestClient, caplog: pytest.LogCaptureFixture, system: str, user: str, outcome: str
+) -> None:
+    # The day-1 spike reads these outcomes to learn what Bolna really sends us.
+    caplog.set_level(logging.INFO, logger="app.shape_log")
+    post(client, body(system, ("user", user)))
+    (record,) = [r for r in caplog.records if r.name == "app.shape_log"]
+    assert json.loads(record.getMessage())["outcome"] == outcome
+
+
+def test_routing_prompt_with_leading_whitespace_is_still_routing(
+    client: TestClient, ledger: FakeLedger
+) -> None:
+    # Routing prompts embed the filled speak block; misreading one as a speak request
+    # would claim (and spend) the approval on a routing decision.
+    payload = body("\n  Routing Guidelines:\nNode Objective: " + speak_prompt())
+    assert reply_text(post(client, payload)) == ""
+    assert ledger.events == []
+
+
+def test_streamed_chunks_name_the_requested_model(client: TestClient) -> None:
+    payload = {**body(speak_prompt()), "model": "ishara-relay"}
+    response = post(client, payload)
+    chunks = [
+        json.loads(line.removeprefix("data: "))
+        for line in response.text.splitlines()
+        if line.startswith("data: {")
+    ]
+    assert chunks and {chunk["model"] for chunk in chunks} == {"ishara-relay"}
