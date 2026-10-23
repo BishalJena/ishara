@@ -122,6 +122,8 @@ def test_missing_sarvam_key_is_503_without_provider_call(key: str | None) -> Non
     fake = FakeSarvam()
     response = post(make_client(fake, sarvam_api_key=key), {"turn_id": "t1", "text": "Yes."})
     assert response.status_code == 503
+    # The app tells "not configured" (fix the backend) apart from "failed" (tap again).
+    assert response.json() == {"detail": "text-to-speech not configured"}
     assert fake.requests == []
 
 
