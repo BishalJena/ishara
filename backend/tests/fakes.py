@@ -10,6 +10,8 @@ import asyncio
 from collections.abc import AsyncIterator, Callable, Collection, Sequence
 from contextlib import asynccontextmanager
 
+import httpx
+
 from app.protocol import (
     AppMessage,
     ApproveMessage,
@@ -23,6 +25,7 @@ from app.protocol import (
     NotDeliveredMessage,
     ServerMessage,
     SpokenMessage,
+    StartCallRequest,
     StatusMessage,
     StopMessage,
     app_message_adapter,
@@ -132,3 +135,26 @@ async def drain(transport: FakeTransport) -> None:
             break
     for _ in range(5):
         await asyncio.sleep(0)
+
+
+def mock_backend_client(status: int = 200, call_id: str = "call-secret-1") -> httpx.AsyncClient:
+    """httpx client whose POST /calls answers like the session layer (or refuses)."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        StartCallRequest.model_validate_json(request.content)
+        return httpx.Response(status, json={"call_id": call_id, "state": "dialing"})
+
+    return httpx.AsyncClient(base_url="http://backend", transport=httpx.MockTransport(handler))
+
+
+class FakeSockets:
+    """`open_socket` stand-in: records which call id was opened, yields one transport."""
+
+    def __init__(self, responder: Responder | None) -> None:
+        self.transport = FakeTransport(responder)
+        self.opened: list[str] = []
+
+    @asynccontextmanager
+    async def open(self, call_id: str) -> AsyncIterator[FakeTransport]:
+        self.opened.append(call_id)
+        yield self.transport
