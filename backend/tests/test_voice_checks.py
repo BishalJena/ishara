@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-
 import pytest
 
 from app.protocol import (
@@ -12,7 +10,14 @@ from app.protocol import (
     ServerMessage,
     StopMessage,
 )
-from tests.fakes import FakeBackend, FakeClock, FakeTransport, drain, running
+from tests.fakes import (
+    FakeBackend,
+    FakeClock,
+    FakeTransport,
+    ScriptedObserver,
+    drain,
+    running,
+)
 from tools.app_client import AppSession
 from tools.results import CheckResult
 from tools.voice_checks import (
@@ -22,7 +27,6 @@ from tools.voice_checks import (
     DUPLICATE_SENTENCE,
     EXACT_SENTENCE,
     CheckContext,
-    Observer,
     SpikeTiming,
     run_checks,
     run_order,
@@ -35,26 +39,6 @@ QUICK = SpikeTiming(
 
 async def _no_sleep(_: float) -> None:
     return None
-
-
-class ScriptedTester:
-    """Answers prompts in order; Enter prompts get "" and may trigger a side effect."""
-
-    def __init__(self, answers: list[str], on_enter: Callable[[str], None] | None = None) -> None:
-        self.answers = list(answers)
-        self.prompts: list[str] = []
-        self.out: list[str] = []
-        self.on_enter = on_enter or (lambda _: None)
-
-    async def ask(self, prompt: str) -> str:
-        self.prompts.append(prompt)
-        if prompt.endswith("[Enter] "):
-            self.on_enter(prompt)
-            return ""
-        return self.answers.pop(0)
-
-    def observer(self) -> Observer:
-        return Observer(ask=self.ask, out=self.out.append)
 
 
 def _by_number(results: list[CheckResult]) -> dict[int, CheckResult]:
@@ -77,7 +61,7 @@ async def test_all_nine_checks_measure_and_record_verdicts() -> None:
             transport.push(CaptionMessage(text="we have four pm tomorrow", at=0.0))
 
     answers = ["maybe", "y", ""] + ["y", "note"] * 8
-    scripted = ScriptedTester(answers, on_enter)
+    scripted = ScriptedObserver(answers, on_enter)
     ctx = CheckContext(session, scripted.observer(), QUICK, sleep=_no_sleep, clock=FakeClock())
     async with running(session, transport):
         results = await run_checks(ctx, CHECK_NUMBERS)
@@ -126,7 +110,7 @@ async def test_quiet_check_counts_events_inside_the_window_only() -> None:
         await drain(transport)
 
     transport.push(CaptionMessage(text="before the window", at=0.0))
-    scripted = ScriptedTester(["n", "it spoke"])
+    scripted = ScriptedObserver(["n", "it spoke"])
     ctx = CheckContext(session, scripted.observer(), QUICK, sleep=talk)
     async with running(session, transport):
         await drain(transport)
@@ -145,7 +129,7 @@ async def test_quiet_check_counts_events_inside_the_window_only() -> None:
 async def test_missing_caption_and_missing_spoken_are_reported() -> None:
     transport = FakeTransport()  # backend that never answers
     session = AppSession(transport)
-    scripted = ScriptedTester(["n", "", "n", ""])
+    scripted = ScriptedObserver(["n", "", "n", ""])
     ctx = CheckContext(session, scripted.observer(), QUICK, sleep=_no_sleep)
     async with running(session, transport):
         results = _by_number(await run_checks(ctx, [2, 4]))
@@ -156,7 +140,7 @@ async def test_missing_caption_and_missing_spoken_are_reported() -> None:
 async def test_not_delivered_send_is_recorded_without_resending() -> None:
     transport = FakeTransport(FakeBackend(undeliverable={0}).respond)
     session = AppSession(transport)
-    scripted = ScriptedTester(["n", "dropped"])
+    scripted = ScriptedObserver(["n", "dropped"])
     ctx = CheckContext(session, scripted.observer(), QUICK, sleep=_no_sleep)
     async with running(session, transport):
         results = await run_checks(ctx, [8])
@@ -174,7 +158,7 @@ async def test_socket_closing_mid_run_skips_the_remaining_checks() -> None:
 
     transport = FakeTransport(respond)
     session = AppSession(transport)
-    scripted = ScriptedTester(["y", ""])
+    scripted = ScriptedObserver(["y", ""])
     ctx = CheckContext(session, scripted.observer(), QUICK, sleep=_no_sleep)
     async with running(session, transport):
         results = await run_checks(ctx, [1, 2, 5, 7])

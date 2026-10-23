@@ -31,6 +31,7 @@ from app.protocol import (
     app_message_adapter,
 )
 from tools.app_client import AppSession, pump
+from tools.voice_checks import Observer
 
 Responder = Callable[[AppMessage], list[ServerMessage | None]]
 
@@ -158,3 +159,23 @@ class FakeSockets:
     async def open(self, call_id: str) -> AsyncIterator[FakeTransport]:
         self.opened.append(call_id)
         yield self.transport
+
+
+class ScriptedObserver:
+    """Answers prompts in order; Enter prompts get "" and may trigger a side effect."""
+
+    def __init__(self, answers: list[str], on_enter: Callable[[str], None] | None = None) -> None:
+        self.answers = list(answers)
+        self.prompts: list[str] = []
+        self.out: list[str] = []
+        self.on_enter = on_enter or (lambda _: None)
+
+    async def ask(self, prompt: str) -> str:
+        self.prompts.append(prompt)
+        if prompt.endswith("[Enter] "):
+            self.on_enter(prompt)
+            return ""
+        return self.answers.pop(0)
+
+    def observer(self) -> Observer:
+        return Observer(ask=self.ask, out=self.out.append)
