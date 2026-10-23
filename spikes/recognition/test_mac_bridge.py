@@ -1,5 +1,7 @@
 """Mac bridge turn rules, sources and client; fake transport only, no network."""
+import asyncio
 import itertools
+import json
 import unittest
 
 import mac_bridge as mb
@@ -8,6 +10,14 @@ import mac_bridge as mb
 def ids():
     counter = itertools.count(1)
     return lambda: f"t{next(counter)}"
+
+
+def chips(turn_id, *signs):
+    return {"type": "chips", "turn_id": turn_id, "chips": list(signs)}
+
+
+def approve(turn_id, text):
+    return {"type": "approve", "turn_id": turn_id, "text": text}
 
 
 def state(*results):
@@ -227,6 +237,174 @@ class Sources(unittest.IsolatedAsyncioTestCase):
     async def test_blocking_source_drains_the_iterator(self):
         source = mb.BlockingSource(lambda: iter(["yes", None, "thankyou"]))
         self.assertEqual(await collect(source), ["yes", None, "thankyou"])
+
+
+class FakeTransport:
+    def __init__(self):
+        self.sent, self.closed = [], False
+        self.incoming = asyncio.Queue()
+
+    async def send(self, message):
+        if self.closed:
+            raise ConnectionError("send after close")
+        self.sent.append(json.loads(message))
+
+    def push(self, **message):
+        self.incoming.put_nowait(json.dumps(message))
+
+    def hang_up(self):
+        self.incoming.put_nowait(None)
+
+    def __aiter__(self):
+        return self._messages()
+
+    async def _messages(self):
+        while (raw := await self.incoming.get()) is not None:
+            yield raw
+
+    async def close(self):
+        self.closed = True
+
+
+class BridgeTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.transport, self.lines = FakeTransport(), []
+        self.bridge = mb.Bridge(self.transport, mb.TurnState(new_id=ids()), self.lines.append)
+
+    async def signs(self, *results):
+        for result in results:
+            await self.bridge.on_result(result)
+
+    async def server(self, **message):
+        await self.bridge.on_server(json.dumps(message))
+
+    def types(self):
+        return [message["type"] for message in self.transport.sent]
+
+    async def test_signs_send_chips_without_unsure_entries(self):
+        await self.signs("hello", None, "doctor")
+        self.assertEqual(self.transport.sent, [
+            chips("t1", "hello"),
+            chips("t1", "hello", "doctor")])
+        self.assertIn("chips: [hello] [?] [doctor]", self.lines)
+
+    async def test_typed_tokens_go_through_the_manual_source(self):
+        self.assertTrue(await self.bridge.handle_line("hello ? doctor"))
+        self.assertTrue(await self.bridge.handle_line("doctor hospital"))
+        self.bridge.manual.close()
+        await self.bridge._pump_source(self.bridge.manual)
+        self.assertEqual(self.bridge.state.chips, ["hello", None, "doctor"])
+        self.assertTrue(any("unknown sign 'hospital'" in line for line in self.lines))
+
+    async def test_remove_resends_and_clear_starts_a_new_turn(self):
+        await self.signs("hello", "doctor")
+        await self.bridge.handle_line("x")
+        self.assertEqual(self.transport.sent[-1], chips("t1", "hello"))
+        await self.bridge.handle_line("c")
+        await self.signs("yes")
+        self.assertEqual(self.transport.sent[-1], chips("t2", "yes"))
+
+    async def test_chip_limit_is_reported_not_raised(self):
+        await self.signs(*["yes"] * mb.MAX_CHIPS)
+        await self.signs("no")
+        self.assertEqual(len(self.transport.sent), mb.MAX_CHIPS)
+        self.assertTrue(self.lines[-1].startswith("! at most"))
+
+    async def test_send_uses_only_the_current_draft_once(self):
+        await self.signs("hello")
+        await self.bridge.handle_line("s")
+        self.assertEqual(self.types(), ["chips"])
+        await self.server(type="draft", turn_id="t0", text="Stale.", source="llm")
+        await self.bridge.handle_line("s")
+        self.assertEqual(self.types(), ["chips"])
+        await self.server(type="draft", turn_id="t1", text="Hello.", source="template")
+        self.assertIn("draft (template): Hello.   [s = SEND]", self.lines)
+        await self.bridge.handle_line("s")
+        await self.bridge.handle_line("s")
+        self.assertEqual(self.transport.sent[1:], [approve("t1", "Hello.")])
+        self.assertIn("nothing to send yet: wait for a draft", self.lines)
+
+    async def test_quick_reply_sends_exact_text_on_a_fresh_turn(self):
+        await self.signs("hello")
+        await self.bridge.handle_line("q Wait")
+        self.assertEqual(self.transport.sent[-1],
+                         approve("t2", "Please wait a moment, I'm signing my reply."))
+        for bad in ("q", "q maybe", "q yes no"):
+            await self.bridge.handle_line(bad)
+        self.assertEqual(len(self.transport.sent), 2)
+
+    async def test_not_delivered_waits_for_a_manual_resend_on_a_new_turn(self):
+        await self.signs("hello")
+        await self.server(type="draft", turn_id="t1", text="Hello.", source="llm")
+        await self.bridge.handle_line("s")
+        await self.server(type="not_delivered", turn_id="t1", reason="no confirmation")
+        self.assertEqual(self.types(), ["chips", "approve"])
+        self.assertIn("! not delivered (no confirmation), tap SEND again (s): Hello.", self.lines)
+        await self.bridge.handle_line("s")
+        self.assertEqual(self.transport.sent[-1], approve("t2", "Hello."))
+        await self.server(type="spoken", turn_id="t2")
+        self.assertEqual(self.lines[-1], "Delivered: Hello.")
+
+    async def test_status_caption_and_error_are_shown(self):
+        await self.server(type="status", state="speaking")
+        await self.server(type="caption", text="We have 4 pm tomorrow.", at=1.0)
+        await self.server(type="error", code="stale_turn", message="old turn")
+        await self.server(type="mystery")
+        self.assertEqual(self.lines, [
+            "[status] speaking", "Speaking now...", "receptionist: We have 4 pm tomorrow.",
+            "! backend error stale_turn: old turn", "(ignored unknown message type 'mystery')"])
+        self.assertEqual(self.transport.sent, [])
+
+    async def test_end_stops_further_sends(self):
+        await self.signs("hello")
+        await self.server(type="draft", turn_id="t1", text="Hello.", source="llm")
+        self.assertFalse(await self.bridge.handle_line("e"))
+        for line in ("s", "q yes", "x", "stop", "e", "yes"):
+            await self.bridge.handle_line(line)
+        await self.signs("no")
+        self.assertEqual(self.types(), ["chips", "end"])
+
+    async def test_backend_ended_status_blocks_sends(self):
+        await self.signs("hello")
+        await self.server(type="draft", turn_id="t1", text="Hello.", source="llm")
+        await self.server(type="status", state="ended")
+        await self.bridge.handle_line("s")
+        await self.bridge.handle_line("stop")
+        self.assertEqual(self.types(), ["chips"])
+        self.assertIn("call ended; nothing will be sent", self.lines)
+
+    async def test_run_ends_when_the_user_ends_the_call(self):
+        lines = asyncio.Queue()
+
+        async def terminal():
+            while (line := await lines.get()) is not None:
+                yield line
+
+        replay = mb.ReplaySource.from_json('["hello", "?"]')
+        task = asyncio.create_task(self.bridge.run(terminal(), (replay,)))
+        await asyncio.sleep(0.01)
+        self.transport.push(type="draft", turn_id="t1", text="Hello.", source="llm")
+        await asyncio.sleep(0.01)
+        lines.put_nowait("s")
+        lines.put_nowait("e")
+        await asyncio.wait_for(task, 1)
+        self.assertEqual(self.types(), ["chips", "approve", "end"])
+        self.assertTrue(self.transport.closed)
+
+    async def test_run_stops_silently_when_the_backend_hangs_up(self):
+        never = asyncio.Event()
+
+        async def terminal():
+            await never.wait()
+            yield "s"
+
+        task = asyncio.create_task(self.bridge.run(terminal()))
+        await asyncio.sleep(0.01)
+        self.transport.hang_up()
+        await asyncio.wait_for(task, 1)
+        self.assertTrue(self.bridge.state.ended)
+        self.assertEqual(self.lines[-1], "connection closed; nothing will be sent")
+        self.assertEqual(self.transport.sent, [])
 
 
 if __name__ == "__main__":
