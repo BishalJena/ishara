@@ -1,5 +1,7 @@
 """Data leakage and abstention contracts; no model downloads or inference."""
 import unittest
+from contextlib import redirect_stderr
+from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -17,6 +19,20 @@ def record(ident="a", split="enrollment"):
             "negative_kind": None, "verified": True,
             "verification_note": "Fixture only", "provenance": "synthetic test fixture",
             "sha256": ("a" if ident == "a" else "b") * 64, "path": f"pilot/{ident}.mp4"}
+
+
+DEMO_SIGNS = ("hello", "thankyou", "yes", "no", "sorry", "doctor",
+              "today", "tomorrow", "morning", "afternoon", "evening", "time")
+
+
+def development_rows():
+    """Exactly the PLAN minimum: 3 enrollment and 5 calibration per sign, 20 negatives."""
+    rows = [{"split": split, "label": label, "negative_kind": None, "signer_id": "demo",
+             "verified": True}
+            for split, count in (("enrollment", 3), ("calibration", 5))
+            for label in DEMO_SIGNS for _ in range(count)]
+    return rows + [{"split": "calibration", "label": None, "signer_id": "demo",
+                    "negative_kind": data.NEGATIVES[i % 4], "verified": True} for i in range(20)]
 
 
 class DatasetContracts(unittest.TestCase):
@@ -43,6 +59,26 @@ class DatasetContracts(unittest.TestCase):
         result = data.readiness([], final=True)
         self.assertFalse(result["ready"])
         self.assertIn("No fresh pilot recordings", result["issues"])
+
+    def test_vocabulary_is_the_twelve_demo_signs_in_order(self):
+        self.assertEqual(data.VOCABULARY, DEMO_SIGNS)
+
+    def test_hospital_is_no_longer_a_supported_label(self):
+        with self.assertRaisesRegex(ValueError, "target concept"):
+            data.validate_records([{**record(), "label": "hospital"}], verify_files=False)
+        data.validate_records([{**record(), "label": "evening"}], verify_files=False)
+
+    def test_readiness_requires_every_one_of_the_twelve_signs(self):
+        self.assertTrue(data.readiness(development_rows())["ready"])
+        for label in DEMO_SIGNS:
+            for split, minimum in (("enrollment", 3), ("calibration", 5)):
+                rows = development_rows()
+                rows.remove(next(r for r in rows if r["split"] == split and r["label"] == label))
+                result = data.readiness(rows)
+                with self.subTest(label=label, split=split):
+                    self.assertFalse(result["ready"])
+                    self.assertEqual(result["issues"],
+                                     [f"{split}: need {minimum} verified examples of {label}"])
 
 
 class RetrievalContracts(unittest.TestCase):
@@ -109,6 +145,20 @@ class RetrievalContracts(unittest.TestCase):
 
 
 class CaptureContracts(unittest.TestCase):
+    def parse(self, concept):
+        from pilot_capture import build_parser
+
+        return build_parser().parse_args(
+            ["capture", "--signer", "demo", "--session", "s1", "--split", "enrollment",
+             "--concept", concept])
+
+    def test_capture_parser_accepts_demo_signs_and_rejects_hospital(self):
+        for concept in DEMO_SIGNS + data.NEGATIVES:
+            with self.subTest(concept=concept):
+                self.assertEqual(self.parse(concept).concept, concept)
+        with redirect_stderr(StringIO()) as stderr, self.assertRaises(SystemExit):
+            self.parse("hospital")
+        self.assertIn("invalid choice: 'hospital'", stderr.getvalue())
     def test_video_roundtrip_stays_unverified_and_does_not_change_on_bad_timestamp(self):
         import cv2
         from pilot_capture import save_take, verify
