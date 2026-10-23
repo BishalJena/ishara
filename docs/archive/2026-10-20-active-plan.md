@@ -1,9 +1,12 @@
-# Active plan
+# Active plan (archived)
+
+> Superseded on 23 October 2026 by the demo build plan in [PLAN.md](../../PLAN.md).
+> The recognition acceptance gate and pilot protocol below are still referenced by it.
 
 Updated 20 October 2026. This file owns active tasks and acceptance criteria.
-Read the [handoff](docs/HANDOFF.md) for current capability, the
-[experiment record](docs/experiments/recognition.md) for measurements, and the
-[archive](docs/archive/README.md) for completed investigations.
+Read the [handoff](../HANDOFF.md) for current capability, the
+[experiment record](../experiments/recognition.md) for measurements, and the
+[archive](README.md) for completed investigations.
 
 ## Recognition: fresh-data pilot
 
@@ -37,7 +40,7 @@ translation or sign spotting within continuous signing.
 - [ ] Connect the selected calibrated recognizer to the existing composition and
   approval boundary only after the pilot supports it.
 
-Start with the 15 enrollment clips. The [capture runbook](spikes/recognition/README.md#capture-and-review)
+Start with the 15 enrollment clips. The [capture runbook](../../spikes/recognition/README.md#capture-and-review)
 has the command and controls. Actual camera keyboard operation awaits this session.
 
 ### Recognition acceptance gate
@@ -58,10 +61,10 @@ data. Do not train merely to improve the seven old intended-hello clips.
 ## Speech: establish meaningful Bolna output
 
 This track can progress independently of recognition, using approved synthetic
-text and the [call-flow runbook](spikes/call_flow/README.md).
+text and the [call-flow runbook](../../spikes/call_flow/README.md).
 
 - [ ] Establish a usable Bolna text/audio integration. Inspect the OSS routing and
-  lifecycle issues identified in [the source study](docs/research/speech-device/bolna-paths.md);
+  lifecycle issues identified in [the source study](../research/speech-device/bolna-paths.md);
   a successful account or catalog request is not speech synthesis.
 - [ ] Produce genuine audio for exactly the approved text; record format, sample
   rate, first-audio/completion timing and provider configuration.
@@ -102,4 +105,4 @@ whether an app-owned/service-originated route is an acceptable product pivot.
 
 A small personalized pilot does not establish general ISL reliability, natural
 conversation or accessibility validation. No Deaf participant study has occurred;
-the [workflow](docs/WORKFLOW.md) keeps those limits explicit.
+the [workflow](../WORKFLOW.md) keeps those limits explicit.
