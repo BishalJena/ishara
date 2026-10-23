@@ -20,6 +20,9 @@ from app.utterances import UtteranceTracker, new_utterances
         pytest.param(["a", "Hi"], ["a", "Hi, how can I help?"], ["Hi, how can I help?"], id="stub"),
         pytest.param(["a", "b", "Hi"], ["b", "Hi there", "x"], ["Hi there", "x"], id="slide+stub"),
         pytest.param(["a", "b"], ["x", "y"], ["y"], id="unalignable: newest only"),
+        pytest.param(
+            ["a", "Hi"], ["x", "Hi there", "y"], ["y"], id="unalignable despite extension"
+        ),
         pytest.param(["a", "b"], ["x", "b"], [], id="unalignable, newest already seen"),
         pytest.param(["a", "b"], [], [], id="history emptied"),
     ],

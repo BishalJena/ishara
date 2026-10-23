@@ -29,7 +29,6 @@ def _extends_last(kept: list[str], current: list[str]) -> bool:
     return (
         len(current) > last
         and current[:last] == kept[:last]
-        and current[last] != kept[last]
         and current[last].startswith(kept[last])
     )
 
