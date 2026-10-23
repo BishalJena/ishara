@@ -117,9 +117,9 @@ def test_empty_chips_fail_fast() -> None:
 
 def test_unknown_sign_fails_fast() -> None:
     with pytest.raises(ValueError, match="unknown"):
-        compose_template(["hello", "pizza"], PURPOSE)  # type: ignore[list-item]
+        compose_template(["hello", "pizza"], PURPOSE)
 
 
 def test_unknown_purpose_fails_fast() -> None:
     with pytest.raises(KeyError):
-        compose_template(["hello"], "taxi")  # type: ignore[arg-type]
+        compose_template(["hello"], "taxi")
