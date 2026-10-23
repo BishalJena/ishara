@@ -59,6 +59,16 @@ jobs:
           "$LIGHT_PY" -m unittest -v test_retrieval
           echo "::notice::test_mini is not run in CI: it imports torch and transformers (requirements.txt)."
 
+  scripts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: shellcheck (preinstalled on ubuntu runners)
+        run: shellcheck --version && shellcheck -x scripts/*.sh backend/scripts/*.sh
+      - name: Heroku script tests (fake heroku CLI, no network)
+        run: python3 -m unittest discover -v -s backend/scripts -p 'test_*.py'
+
   # macOS minutes cost 10x on a private repo, so decide on a cheap Linux runner whether the
   # Swift job is needed at all: only when ios/** changed and at least one package exists.
   changes:
