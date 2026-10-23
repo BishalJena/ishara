@@ -20,10 +20,8 @@
 /// Like `signclip.py`, a clip without any frame whose shoulders both have
 /// visibility ≥ 0.5 is rejected rather than normalized.
 public enum FeatureBuilder {
-    public static let minimumTrackedShoulderVisibility: Float = 0.5
-
     public static func features(for frames: [LandmarkFrame]) throws -> [[Float]] {
-        guard frames.contains(where: hasTrackedShoulders) else {
+        guard frames.contains(where: \.hasTrackedShoulders) else {
             throw FeatureBuilderError.noTrackedShoulders
         }
         let clip = frames.map(assemble)
@@ -41,18 +39,6 @@ public enum FeatureBuilder {
             }
             return vector
         }
-    }
-
-    static func hasTrackedShoulders(_ frame: LandmarkFrame) -> Bool {
-        guard let pose = frame.pose else { return false }
-        return [SignCLIPLayout.Pose.leftShoulder, SignCLIPLayout.Pose.rightShoulder].allSatisfy {
-            poseConfidence(pose[$0]) >= minimumTrackedShoulderVisibility
-        }
-    }
-
-    /// A pose result without a visibility score still means the landmark was detected.
-    static func poseConfidence(_ landmark: Landmark) -> Float {
-        landmark.visibility ?? 1
     }
 
     private static func assemble(_ frame: LandmarkFrame) -> [AssembledPoint] {
@@ -76,7 +62,7 @@ public enum FeatureBuilder {
 
         let detected: (Landmark) -> Float = { _ in 1 }
         let face = frame.face.map { mesh in SignCLIPLayout.faceContourIndices.map { mesh[$0] } }
-        return points(frame.pose, count: LandmarkFrame.poseCount, confidence: poseConfidence)
+        return points(frame.pose, count: LandmarkFrame.poseCount, confidence: \.poseConfidence)
             + points(face, count: SignCLIPLayout.faceContourIndices.count, confidence: detected)
             + points(frame.leftHand, count: LandmarkFrame.handCount, confidence: detected)
             + points(frame.rightHand, count: LandmarkFrame.handCount, confidence: detected)

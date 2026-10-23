@@ -79,6 +79,24 @@ public struct LandmarkFrame: Equatable, Sendable {
     }
 }
 
+extension Landmark {
+    /// Confidence as pose-format reads a pose landmark. A pose result without a
+    /// visibility score still means the landmark was detected.
+    public var poseConfidence: Float { visibility ?? 1 }
+}
+
+extension LandmarkFrame {
+    public static let minimumTrackedShoulderVisibility: Float = 0.5
+
+    /// Both shoulders have pose confidence ≥ 0.5.
+    public var hasTrackedShoulders: Bool {
+        guard let pose else { return false }
+        return [SignCLIPLayout.Pose.leftShoulder, SignCLIPLayout.Pose.rightShoulder].allSatisfy {
+            pose[$0].poseConfidence >= Self.minimumTrackedShoulderVisibility
+        }
+    }
+}
+
 public enum BodyPart: String, Sendable {
     case pose, face, leftHand, rightHand
 }
