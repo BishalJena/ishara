@@ -681,6 +681,18 @@ def test_stop_before_claim_cancels(harness: Harness) -> None:
         assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT) is False
 
 
+def test_stop_reports_the_new_status_exactly_once(harness: Harness) -> None:
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        approve(ws, "t1")
+        harness.receive(ws)
+        ws.send_json({"type": "stop"})
+        assert harness.receive(ws) == status("in_call")
+        ws.send_json({"type": "chips", "turn_id": "t2", "chips": ["yes"]})
+        assert harness.receive(ws)["type"] == "draft", "a second status was sent for one stop"
+
+
 def test_stop_after_claim_cannot_interrupt(harness: Harness) -> None:
     call_id = harness.live_call()
     with harness.socket(call_id) as ws:
@@ -884,3 +896,39 @@ def test_number_never_in_any_response_message_or_log(
     assert len(seen) == 9
     for text in seen + [caplog.text]:
         assert "910000000" not in text
+
+
+def _warnings(caplog: pytest.LogCaptureFixture) -> list[str]:
+    return [
+        r.getMessage() for r in caplog.records if r.name == "app.calls" and r.levelname == "WARNING"
+    ]
+
+
+def test_bolna_failures_are_logged_with_call_id_and_error_kind(
+    harness: Harness, caplog: pytest.LogCaptureFixture
+) -> None:
+    # Demo-day debugging relies on these lines in the Heroku log: which call, which
+    # step, which error kind, and never the number or Bolna's response body.
+    caplog.set_level(logging.INFO)
+    call_id = harness.live_call()
+    assert f"call {call_id}: dialing contact clinic" in [r.getMessage() for r in caplog.records]
+    harness.bolna.fail_events = True
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        approve(ws, "t1")
+        for _ in range(3):  # speaking, not_delivered, in_call
+            harness.receive(ws)
+        ws.send_json({"type": "end"})
+        harness.receive(ws)
+        harness.receive(ws)
+    harness.bolna.fail_start = True
+    harness.client.post(
+        "/calls", json={"contact_id": "clinic", "purpose": "doctor_appointment"}, headers=AUTH
+    )
+    failed_call = harness.bolna.started[-1][1]["ishara_call_id"]
+
+    assert _warnings(caplog) == [
+        f"call {call_id}: user_reply failed (BolnaError)",
+        f"call {call_id}: end_call failed (BolnaError)",
+        f"call {failed_call}: Bolna start failed (BolnaError)",
+    ]
