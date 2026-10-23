@@ -427,7 +427,7 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 
 | Layer | What | When | Pass looks like |
 |---|---|---|---|
-| 1. Unit | detector boundaries, matcher cut-off, templates, validator, single-use approval, stale turns, allowlist | every commit | `pytest` (backend) and `python -m unittest` (spikes) green; XCTest for the Swift detector and matcher |
+| 1. Unit | detector boundaries, matcher cut-off, templates, validator, single-use approval, stale turns, allowlist; the full demo script against a fake Bolna | every commit | `scripts/verify.sh` green: backend `pytest`, spike `unittest`, `swift test` per `ios/Packages/*` and the app's `xcodebuild test`. CI runs the same except `test_mini` and `ml/coreml/`, which stay local |
 | 2. Recognition | separate calibration and final sessions | Sun–Mon | G2 numbers, with counts and denominators written down |
 | 3. Voice | exact text, SEND → first audio time, double SEND, STOP, Bolna down → silent | Sat–Sun | G1, plus timings recorded in `docs/experiments/voice.md` |
 | 4. Simulator | saved videos through the iOS pipeline; app flow with a real call | Tue–Wed | G3 and A3 |
@@ -436,6 +436,10 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 
 Mutation-minded tests: every safety rule (single-use approval, no invented times,
 "?" never spoken, allowlist) needs a test that **fails if the rule is removed**.
+
+Commands, files and owners for each layer and gate are in
+[docs/TESTING.md](docs/TESTING.md) (arrives with PR #8), along with what is automated vs
+manual and the mutation-testing target.
 
 ---
 
