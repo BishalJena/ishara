@@ -3,8 +3,12 @@
 No webcam, no MediaPipe and no model: the frames are detector inputs with a frame
 index as their "landmarks", so each test can check exactly which frames were matched.
 """
+import io
 import json
+import subprocess
+import sys
 import unittest
+from contextlib import redirect_stderr
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -85,7 +89,8 @@ class FakeModel:
     """Records the frames it featurized; embeds to a chosen vector after `compute_s`."""
 
     def __init__(self, vector, quality=GOOD, clock=None, compute_s=0.0, error=None):
-        self.vector, self.quality, self.clock, self.compute_s, self.error = vector, quality, clock, compute_s, error
+        self.vector, self.quality, self.error = vector, quality, error
+        self.clock, self.compute_s = clock, compute_s
         self.calls = []
 
     def featurize(self, observations):
@@ -122,7 +127,8 @@ class Matching(unittest.TestCase):
         self.assertTrue(segment.accepted)
         self.assertAlmostEqual(segment.start, 2.0 - 0.2)  # pre-roll before the raise
         self.assertAlmostEqual(segment.end, 3.0)  # first rest frame
-        expected = [i for i, f in enumerate(script.frames) if segment.start - 1e-9 <= f.t <= segment.end + 1e-9]
+        expected = [i for i, f in enumerate(script.frames)
+                    if segment.start - 1e-9 <= f.t <= segment.end + 1e-9]
         self.assertEqual(model.calls, [expected])
         self.assertAlmostEqual(results[0].similarity, 1.0)
         self.assertIn("rest line y=0.820", lines)
@@ -294,6 +300,37 @@ class BridgeBoundary(unittest.TestCase):
         lines = [ls.result_json(r) for r in results]
         self.assertEqual([mb.parse_result_line(line) for line in lines], ["evening", "evening"])
         self.assertEqual(json.loads(lines[0])["segment"], [1.8, 3.0])
+
+
+class CommandLine(unittest.TestCase):
+    def test_noise_on_stdout_cannot_corrupt_result_lines(self):
+        code = ("import os, live_source\n"
+                "results = live_source.result_stream()\n"
+                "print('python noise')\n"
+                "os.write(1, b'native noise\\n')\n"
+                "results.write('{\"sign\": null}\\n')\n")
+        done = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                              cwd=Path(__file__).parent, timeout=60, check=True)
+        self.assertEqual(done.stdout, '{"sign": null}\n')
+        self.assertEqual(done.stderr, "python noise\nnative noise\n")
+
+    def test_bad_arguments_fail_before_any_camera_or_model(self):
+        with TemporaryDirectory() as directory:
+            Path(directory, "notes.txt").write_text("not a clip")
+            for argv in (["--replay-videos", directory], ["--replay-videos", f"{directory}/missing"],
+                         ["--camera", "0", "--rest-y", "1.2"],
+                         ["--camera", "0", "--replay-videos", directory], []):
+                with self.subTest(argv=argv), redirect_stderr(io.StringIO()), \
+                        self.assertRaises(SystemExit) as raised:
+                    ls.main(argv)
+                self.assertEqual(raised.exception.code, 2)
+
+    def test_replay_lists_only_videos_in_name_order(self):
+        with TemporaryDirectory() as directory:
+            for name in ("b.MOV", "a.mp4", "c.m4v", "notes.txt", "d.avi"):
+                Path(directory, name).write_bytes(b"")
+            self.assertEqual([p.name for p in ls.videos_in(Path(directory))],
+                             ["a.mp4", "b.MOV", "c.m4v"])
 
 
 if __name__ == "__main__":

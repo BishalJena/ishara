@@ -15,8 +15,10 @@ carries one JSON line per accepted segment, and all logs go to stderr.
 """
 from __future__ import annotations
 
+import argparse
 import itertools
 import json
+import os
 import statistics
 import sys
 import time
@@ -266,3 +268,180 @@ def result_json(recognition: Recognition) -> str:
                        latency_ms=round(1000 * recognition.latency_s, 1),
                        similarity=rounded(recognition.similarity), margin=rounded(recognition.margin),
                        segment=[round(segment.start, 3), round(segment.end, 3)])
+
+
+# ---- real camera, clips and model: these need the SignCLIP venv ----
+
+VIDEO_SUFFIXES = {".mp4", ".mov", ".m4v"}
+Image = tuple[float, float, Any]  # clip time, wall time, BGR image
+
+
+@dataclass(frozen=True)
+class Landmarks:
+    """One frame in pose-format's Holistic layout, ready for signclip.holistic_pose."""
+    points: np.ndarray
+    confidence: np.ndarray
+    width: int
+    height: int
+
+
+def track(images: Iterable[Image], keep_image: bool) -> Iterator[Observation]:
+    """Legacy Holistic once per frame: detector wrists and SignCLIP landmarks from one result."""
+    import cv2
+
+    import signclip
+    from detect_clips import holistic, to_frame
+
+    with holistic() as tracker:
+        for t, wall, bgr in images:
+            result = tracker.process(cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB))
+            height, width = bgr.shape[:2]
+            points, confidence = signclip.holistic_frame(result, width, height)
+            yield Observation(wall, to_frame(t, result), Landmarks(points, confidence, width, height),
+                              bgr if keep_image else None)
+
+
+def camera_images(index: int) -> Iterator[Image]:
+    from detect_clips import open_camera
+
+    cap = open_camera(index)
+    try:
+        while True:
+            ok, bgr = cap.read()
+            now = time.monotonic()
+            if not ok:
+                raise SystemExit("Camera stopped")
+            yield now, now, bgr
+    finally:
+        cap.release()
+
+
+def video_images(path: Path, realtime: bool) -> Iterator[Image]:
+    """A saved clip, paced like a camera unless realtime is off, so latency stays comparable."""
+    from detect_clips import video_frames
+
+    start = time.monotonic()
+    for t, bgr in video_frames(path):
+        if realtime and (delay := start + t - time.monotonic()) > 0:
+            time.sleep(delay)
+        yield t, time.monotonic(), bgr
+
+
+def videos_in(directory: Path) -> list[Path]:
+    return sorted(p for p in directory.iterdir() if p.suffix.lower() in VIDEO_SUFFIXES)
+
+
+def replay_clips(paths: Sequence[Path], realtime: bool) -> Iterator[Clip]:
+    """Each clip gets a fresh tracker, as signclip.extract gives each enrollment clip."""
+    for path in paths:
+        log(f"replaying {path.name}")
+        yield track(video_images(path, realtime), keep_image=False)
+
+
+def signclip_features(observations: Sequence[Observation]) -> tuple[np.ndarray, dict[str, float]]:
+    import signclip
+
+    first, span = observations[0], observations[-1].frame.t - observations[0].frame.t
+    fps = (len(observations) - 1) / span if span > 0 else 30.0  # metadata only; features ignore it
+    pose = signclip.holistic_pose([(o.landmarks.points, o.landmarks.confidence) for o in observations],
+                                  fps, first.landmarks.width, first.landmarks.height)
+    return signclip.pose_features(pose)
+
+
+def signclip_matcher(bundle: Bundle) -> Matcher:
+    """One warm SignCLIP model, checked against the encoder the bundle was exported with."""
+    import retrieval
+    import signclip
+
+    start = time.perf_counter()
+    encoder = retrieval.Encoder("signclip")
+    if retrieval.encoder_id(encoder.contract) != bundle.encoder:
+        raise SystemExit("The bundle was exported with a different SignCLIP setup (checkpoint, source, "
+                         "torch or threads). Re-run retrieval.py export-bundle in this venv.")
+
+    def embed(features: np.ndarray) -> np.ndarray:
+        return signclip.embed(encoder.model, features)
+
+    # The first forward pass is slow; pay for it before the first sign, not during it.
+    embed(np.random.default_rng(0).normal(size=(32, 609)).astype(np.float32))
+    log(f"SignCLIP ready in {time.perf_counter() - start:.1f} s")
+    return Matcher(bundle, signclip_features, embed, signclip.MAX_FRAMES)
+
+
+def preview(mirror: bool) -> Show:
+    import cv2
+
+    from detect_clips import draw
+
+    def show(image: Any, status: str, rest_y: float | None, message: str) -> bool:
+        view = cv2.flip(image, 1) if mirror else image.copy()
+        draw(view, status, rest_y, message)
+        cv2.imshow("Ishara live recognizer", view)
+        return (cv2.waitKey(1) & 0xFF) not in (ord("q"), 27)
+
+    return show
+
+
+def close_preview() -> None:
+    import cv2
+
+    cv2.destroyAllWindows()
+
+
+def result_stream() -> Any:
+    """Keep the real stdout for result lines; everything else printed (by this file,
+    MediaPipe or torch, even from C) goes to stderr so it can't corrupt the JSON."""
+    sys.stdout.flush()
+    stream = os.fdopen(os.dup(1), "w", buffering=1)
+    os.dup2(2, 1)
+    sys.stdout = sys.stderr
+    return stream
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--camera", type=int, help="live camera index")
+    source.add_argument("--replay-videos", type=Path, metavar="DIR",
+                        help="feed every .mp4/.mov/.m4v in DIR (sorted) through the same path")
+    parser.add_argument("--bundle", type=Path, default=DEFAULT_BUNDLE,
+                        help="retrieval.py export-bundle output (default: %(default)s)")
+    parser.add_argument("--rest-y", type=float, help="skip calibration and use this rest line (0-1)")
+    parser.add_argument("--no-preview", action="store_true", help="no camera window")
+    parser.add_argument("--no-mirror", action="store_true", help="the camera window is mirrored by default")
+    parser.add_argument("--fast", action="store_true",
+                        help="replay as fast as possible; latency then no longer means live latency")
+    args = parser.parse_args(argv)
+    if args.rest_y is not None and not 0 < args.rest_y < 1:
+        parser.error("--rest-y must be between 0 and 1")
+    paths = []
+    if args.replay_videos is not None:
+        if not args.replay_videos.is_dir() or not (paths := videos_in(args.replay_videos)):
+            parser.error(f"no .mp4/.mov/.m4v clips in {args.replay_videos}")
+
+    results = result_stream()
+    bundle = load_bundle(args.bundle)
+    matcher = signclip_matcher(bundle) if bundle is not None else None
+    show = preview(not args.no_mirror) if args.camera is not None and not args.no_preview else None
+    if args.camera is not None:
+        clips: Iterable[Clip] = [track(camera_images(args.camera), keep_image=show is not None)]
+        log(f"{REST_PROMPT}, then sign one at a time. q in the window (or Ctrl-C) stops.")
+    else:
+        clips = replay_clips(paths, realtime=not args.fast)
+    live = LiveSource(clips, matcher, rest_y=args.rest_y, retry_calibration=args.camera is not None,
+                      show=show)
+    try:
+        for recognition in live:
+            results.write(result_json(recognition) + "\n")
+    except KeyboardInterrupt:
+        pass
+    finally:
+        log(live.summary())
+        if show is not None:
+            close_preview()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
