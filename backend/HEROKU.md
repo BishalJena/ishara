@@ -97,7 +97,8 @@ heroku ps --app "$APP"
   already runs uvicorn with `--ws-ping-interval 20 --ws-ping-timeout 20`, so idle app
   sockets stay open; clients should still reconnect on close.
 - **90 s pooled-connection idle timeout**: uvicorn's default keep-alive (5 s) is shorter, which
-  Heroku warns can cause occasional H13/H18 errors. Not changed here; see the PR notes.
+  Heroku warns can cause occasional H13/H18 errors, so the `Procfile` sets
+  `--timeout-keep-alive 95` (longer than the router's 90 s).
 - Dynos restart at least once a day and on every config change or deploy. Anything held only
   in memory (open sockets, in-flight calls) is lost then, so avoid deploying or changing
   config during a rehearsal or call, and keep a single web dyno if call state is in memory.
