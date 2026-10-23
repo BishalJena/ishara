@@ -543,6 +543,48 @@ class CommandLine(unittest.TestCase):
         self.assertEqual(self.transport.sent, [chips(turn_id, "hello"),
                                                chips(turn_id, "hello", "doctor"), {"type": "end"}])
 
+    def test_live_command_runs_live_source_with_the_chosen_input(self):
+        def command(*argv):
+            return mb.live_command(mb.parse_args(["--base-url", "https://b", "--call-id", "c7",
+                                                  "--live", *argv]))
+        head = [str(mb.RECOGNIZER_PYTHON), str(mb.ROOT / "live_source.py")]
+        self.assertEqual(command(), [*head, "--camera", "0"])
+        self.assertEqual(command("--camera", "2", "--bundle", "b.json", "--rest-y", "0.8"),
+                         [*head, "--camera", "2", "--bundle", "b.json", "--rest-y", "0.8"])
+        self.assertEqual(command("--replay-videos", "clips", "--recognizer-python", "/v/python"),
+                         ["/v/python", head[1], "--replay-videos", "clips"])
+
+    def test_live_options_need_live_and_one_input(self):
+        for argv in (["--camera", "1"], ["--replay-videos", "clips"], ["--bundle", "b.json"],
+                     ["--rest-y", "0.8"], ["--live", "--camera", "1", "--replay-videos", "clips"]):
+            with self.subTest(argv=argv), self.assertRaises(SystemExit):
+                self.main("--base-url", "https://b", "--call-id", "c7", *argv)
+        self.assertEqual((self.posts, self.connects), ([], []))
+
+    def test_live_without_the_signclip_venv_fails_before_any_request(self):
+        with self.assertRaises(SystemExit) as raised:
+            self.main("--base-url", "https://b", "--call-id", "c7", "--live",
+                      "--recognizer-python", "/nonexistent/python")
+        self.assertIn("/nonexistent/python", str(raised.exception))
+        self.assertEqual((self.posts, self.connects), ([], []))
+
+    def test_live_signs_from_the_recognizer_become_chips(self):
+        with TemporaryDirectory() as folder:
+            recognizer = Path(folder, "python")
+            recognizer.write_text(
+                f"#!{sys.executable}\n"
+                "import json, sys\n"
+                "assert sys.argv[1].endswith('live_source.py'), sys.argv\n"
+                "assert sys.argv[2:] == ['--camera', '3', '--bundle', 'b.json'], sys.argv\n"
+                "for sign in ('hello', None, 'doctor'):\n"
+                "    print(json.dumps({'sign': sign, 'latency_ms': 500}), flush=True)\n")
+            recognizer.chmod(0o755)
+            self.main("--base-url", "https://b", "--call-id", "c7", "--live", "--camera", "3",
+                      "--bundle", "b.json", "--recognizer-python", str(recognizer), after=2)
+        turn_id = self.transport.sent[0]["turn_id"]
+        self.assertEqual(self.transport.sent, [chips(turn_id, "hello"),
+                                               chips(turn_id, "hello", "doctor"), {"type": "end"}])
+
     def test_backend_errors_exit_nonzero_without_the_token(self):
         def refuse(url, body, headers):
             raise mb.BackendError("POST /calls returned HTTP 403: not on allowlist")

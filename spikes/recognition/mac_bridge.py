@@ -450,6 +450,9 @@ class Bridge:
 
 # ---- command line ----
 
+ROOT = Path(__file__).resolve().parent
+RECOGNIZER_PYTHON = ROOT / "artifacts" / "signclip" / ".venv" / "bin" / "python"
+
 COST_HEADS_UP = ("Cost heads-up: starting a call makes Bolna dial a real phone from its default "
                  "number (about ₹5.5/min plus telephony). Only allowlisted, consenting numbers.")
 PURPOSE = "doctor_appointment"
@@ -570,7 +573,36 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--confirm-cost", action="store_true",
                         help="accept the cost of the call that --contact starts")
     parser.add_argument("--replay", type=Path, help="JSON list of results to play back")
-    return parser.parse_args(argv)
+    live = parser.add_argument_group(
+        "live recognition", "runs live_source.py in the SignCLIP venv; its signs become chips")
+    live.add_argument("--live", action="store_true", help="recognise signs from a webcam or clips")
+    clips = live.add_mutually_exclusive_group()
+    clips.add_argument("--camera", type=int, help="webcam index (default 0)")
+    clips.add_argument("--replay-videos", type=Path, metavar="DIR",
+                       help="rehearse with saved clips through the same live path")
+    live.add_argument("--bundle", type=Path, help="recognition bundle (default: live_source.py's)")
+    live.add_argument("--rest-y", type=float, help="skip the 2 s rest calibration; use this line")
+    live.add_argument("--recognizer-python", type=Path, default=RECOGNIZER_PYTHON,
+                      help="Python of the SignCLIP venv (default: %(default)s)")
+    args = parser.parse_args(argv)
+    if not args.live and any(getattr(args, name) is not None
+                             for name in ("camera", "replay_videos", "bundle", "rest_y")):
+        parser.error("--camera, --replay-videos, --bundle and --rest-y need --live")
+    return args
+
+
+def live_command(args: argparse.Namespace) -> list[str]:
+    """The recognizer child's argv; it inherits this process's working directory."""
+    command = [str(args.recognizer_python), str(ROOT / "live_source.py")]
+    if args.replay_videos is not None:
+        command += ["--replay-videos", str(args.replay_videos)]
+    else:
+        command += ["--camera", str(0 if args.camera is None else args.camera)]
+    if args.bundle is not None:
+        command += ["--bundle", str(args.bundle)]
+    if args.rest_y is not None:
+        command += ["--rest-y", str(args.rest_y)]
+    return command
 
 
 def main(argv: list[str] | None = None, env: Mapping[str, str] = os.environ,
@@ -578,7 +610,13 @@ def main(argv: list[str] | None = None, env: Mapping[str, str] = os.environ,
          lines: Callable[[], AsyncIterator[str]] = stdin_lines,
          out: Callable[[str], None] = print) -> int:
     args = parse_args(argv)
-    sources = (ReplaySource.from_json(args.replay.read_text()),) if args.replay else ()
+    sources: tuple[RecognitionSource, ...] = (
+        (ReplaySource.from_json(args.replay.read_text()),) if args.replay else ())
+    if args.live:
+        if not args.recognizer_python.is_file():
+            raise SystemExit(f"No SignCLIP venv at {args.recognizer_python}; set it up first "
+                             "(README: Set up SignCLIP separately) or pass --recognizer-python.")
+        sources += (SubprocessSource(live_command(args), out),)
     token = env.get("APP_TOKEN")
     if not token:
         raise SystemExit("APP_TOKEN is not set in the environment.")
