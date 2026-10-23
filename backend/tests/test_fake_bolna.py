@@ -21,6 +21,7 @@ from app.markers import (
 )
 from fakes.fake_bolna import (
     LLM_PATH,
+    WEBHOOK_PATH,
     FakeBolna,
     RunEnded,
     SentEvent,
@@ -52,8 +53,15 @@ class StubLLM:
         self.received: list[dict] = []
         self.media_type = "text/event-stream"
         self.fail_status: int | None = None
+        self.webhooks: list[dict] = []
         self.app = FastAPI()
         self.app.post(LLM_PATH)(self._chat)
+        self.app.post(WEBHOOK_PATH)(self._webhook)
+
+    async def _webhook(self, secret: str, request: Request) -> None:
+        if secret != TOKEN:
+            raise HTTPException(404)
+        self.webhooks.append(await request.json())
 
     async def _chat(self, request: Request) -> StreamingResponse:
         if request.headers.get("authorization") != f"Bearer {TOKEN}":
@@ -108,6 +116,41 @@ async def test_start_call_records_recipient_and_speaks_disclosure(fake: FakeBoln
     assert fake.spoken == [DISCLOSURE, DISCLOSURE]
     assert fake.run(first).user_data == {"ishara_call_id": CALL_ID}
     assert fake.run(first).node == "listen"
+
+
+async def test_answered_call_reports_ringing_then_in_progress_to_the_webhook(
+    fake: FakeBolna, stub: StubLLM
+) -> None:
+    run_id = await _start(fake)
+    assert stub.webhooks == [], "statuses arrive after start_call returns the run id"
+
+    run = await fake.run_for_call(CALL_ID)
+
+    assert run.run_id == run_id
+    assert stub.webhooks == [
+        {"id": run_id, "status": "ringing"},
+        {"id": run_id, "status": "in-progress"},
+    ]
+    assert fake.statuses == [(run_id, "ringing"), (run_id, "in-progress")]
+
+
+async def test_status_reports_can_be_turned_off(stub: StubLLM) -> None:
+    fake = FakeBolna(TOKEN, asgi_client(stub.app), report_status=False)
+    run_id = await _start(fake)
+    await fake.send_event(run_id, "end_call", {})
+    await fake.wait_idle()
+
+    assert stub.webhooks == []
+    assert fake.statuses == []
+
+
+async def test_rejected_status_report_fails_the_run(stub: StubLLM) -> None:
+    fake = FakeBolna("wrong-token", asgi_client(stub.app))
+    await _start(fake)
+
+    with pytest.raises(httpx.HTTPStatusError):
+        await fake.run_for_call(CALL_ID)
+    assert fake.statuses == []
 
 
 async def test_receptionist_utterance_posts_listen_prompt_and_stays_quiet(
@@ -260,6 +303,7 @@ async def test_end_call_says_goodbye_and_ends_the_run(fake: FakeBolna, stub: Stu
     assert (run.ended, run.node) == (True, "goodbye")
     assert fake.spoken == [DISCLOSURE, GOODBYE]
     assert stub.received == []
+    assert stub.webhooks[-1] == {"id": run_id, "status": "completed"}
 
 
 async def test_nothing_is_spoken_or_requested_after_the_end(fake: FakeBolna, stub: StubLLM) -> None:
@@ -279,7 +323,7 @@ async def test_nothing_is_spoken_or_requested_after_the_end(fake: FakeBolna, stu
 
 
 async def test_wrong_custom_llm_token_fails(stub: StubLLM) -> None:
-    fake = FakeBolna("wrong-token", asgi_client(stub.app))
+    fake = FakeBolna("wrong-token", asgi_client(stub.app), report_status=False)
     run_id = await _start(fake)
 
     with pytest.raises(httpx.HTTPStatusError):
@@ -306,7 +350,7 @@ async def test_wait_idle_reraises_a_failed_delivery(fake: FakeBolna, stub: StubL
 
 
 async def test_client_can_be_attached_after_construction(stub: StubLLM) -> None:
-    fake = FakeBolna(TOKEN)
+    fake = FakeBolna(TOKEN, report_status=False)
     run_id = await _start(fake)
     with pytest.raises(RuntimeError, match="attach"):
         await fake.silence(run_id)

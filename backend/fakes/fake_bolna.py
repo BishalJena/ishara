@@ -3,6 +3,8 @@
 It follows what Bolna documents and what PLAN.md §3 expects (ledger B24, B25):
 
 - `start_call`: the callee answers at once and hears the static welcome (DISCLOSURE).
+  Like the agent-level webhook, the run reports `ringing` then `in-progress` to our
+  `/bolna/webhook/{secret}` (secret = the custom-LLM token, as the backend expects).
 - listen node: each receptionist utterance, or the `[silence]` repeat, becomes a user
   message and Bolna asks our custom LLM for a reply using the listen prompt.
 - `user_reply` event: its properties merge into the call context, the node moves to
@@ -11,7 +13,7 @@ It follows what Bolna documents and what PLAN.md §3 expects (ledger B24, B25):
 - B24: if the receptionist is mid-utterance when the event lands, the node moves to
   speak but nothing is requested or spoken. The node stays on speak, so the next
   receptionist utterance is answered with the (stale) speak prompt.
-- `end_call` event: static goodbye, then the run ends.
+- `end_call` event: static goodbye, then the run ends and reports `completed`.
 - `send_event` returns before anything is spoken, like Bolna's 202 "published, not
   spoken"; `wait_idle()` waits for the deliveries and re-raises their errors.
 
@@ -45,6 +47,9 @@ from app.markers import (
 from fakes.sse import collect_stream_text
 
 LLM_PATH = "/v1/chat/completions"
+WEBHOOK_PATH = "/bolna/webhook/{secret}"
+ANSWER_STATUSES = ("ringing", "in-progress")
+END_STATUS = "completed"
 LISTEN_PROMPT = (
     "You relay a phone call for a Deaf caller. Stay quiet while the other person talks.\n"
     + render_marker_block("listen")
@@ -82,6 +87,7 @@ class FakeRun:
     spoken: list[str] = field(default_factory=list)
     llm_requests: list[dict[str, Any]] = field(default_factory=list)
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    answered: asyncio.Task[None] | None = None
 
 
 def substitute(template: str, context: Mapping[str, str]) -> str:
@@ -104,6 +110,7 @@ class FakeBolna:
         latency_s: float = 0.0,
         duplicate_events: bool = False,
         receptionist_mid_speech: bool = False,
+        report_status: bool = True,
     ) -> None:
         self._token = custom_llm_token
         self._http = http
@@ -111,6 +118,8 @@ class FakeBolna:
         self.latency_s = latency_s
         self.duplicate_events = duplicate_events
         self.receptionist_mid_speech = receptionist_mid_speech
+        self.report_status = report_status
+        self.statuses: list[tuple[str, str]] = []
         self.runs: dict[str, FakeRun] = {}
         self.recipients: list[str] = []
         self.events: list[SentEvent] = []
@@ -130,6 +139,9 @@ class FakeBolna:
         self.runs[run_id] = run
         self.recipients.append(recipient)
         self._say(run, DISCLOSURE)
+        if self.report_status:
+            # Runs after the caller has stored the run id, like a webhook arriving later.
+            run.answered = self._spawn(self._report(run, *ANSWER_STATUSES))
         return run_id
 
     async def send_event(self, run_id: str, event: str, properties: dict[str, str]) -> None:
@@ -158,11 +170,14 @@ class FakeBolna:
         return [sent for sent in self.events if sent.event == event]
 
     async def run_for_call(self, call_id: str, timeout_s: float = 2.0) -> FakeRun:
-        """The run whose user_data carries this Ishara call id (waits for the dial)."""
+        """The run whose user_data carries this Ishara call id. Waits for the dial and
+        for the answer statuses to reach the backend."""
         async with asyncio.timeout(timeout_s):
             while True:
                 for run in self.runs.values():
                     if run.user_data.get(USER_DATA_CALL_ID) == call_id:
+                        if run.answered is not None:
+                            await run.answered
                         return run
                 await asyncio.sleep(0.01)
 
@@ -173,10 +188,11 @@ class FakeBolna:
 
     # ---- runtime ----
 
-    def _spawn(self, work: Coroutine[Any, Any, None]) -> None:
+    def _spawn(self, work: Coroutine[Any, Any, None]) -> asyncio.Task[None]:
         task = asyncio.get_running_loop().create_task(work)
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
+        return task
 
     async def _deliver(self, run: FakeRun, event: str, properties: dict[str, str]) -> None:
         async with run.lock:
@@ -186,6 +202,8 @@ class FakeBolna:
                 run.node = "goodbye"
                 self._say(run, GOODBYE)
                 run.ended = True
+                if self.report_status:
+                    await self._report(run, END_STATUS)
                 return
             run.context.update(properties)
             run.node = "speak"
@@ -210,9 +228,21 @@ class FakeBolna:
             self._say(run, reply)
         return reply
 
-    async def _ask_llm(self, run: FakeRun, system_prompt: str) -> str:
+    def _client(self) -> httpx.AsyncClient:
         if self._http is None:
             raise RuntimeError("FakeBolna has no HTTP client; call attach() first")
+        return self._http
+
+    async def _report(self, run: FakeRun, *statuses: str) -> None:
+        """POST each execution status to the backend's webhook, in order."""
+        path = WEBHOOK_PATH.format(secret=self._token)
+        for status in statuses:
+            response = await self._client().post(path, json={"id": run.run_id, "status": status})
+            response.raise_for_status()
+            self.statuses.append((run.run_id, status))
+
+    async def _ask_llm(self, run: FakeRun, system_prompt: str) -> str:
+        http = self._client()
         if self.latency_s:
             await asyncio.sleep(self.latency_s)
         payload = {
@@ -222,7 +252,7 @@ class FakeBolna:
         }
         run.llm_requests.append(payload)
         headers = {"Authorization": f"Bearer {self._token}"}
-        async with self._http.stream("POST", LLM_PATH, json=payload, headers=headers) as response:
+        async with http.stream("POST", LLM_PATH, json=payload, headers=headers) as response:
             response.raise_for_status()
             content_type = response.headers.get("content-type", "")
             if not content_type.startswith("text/event-stream"):
