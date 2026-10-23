@@ -21,7 +21,7 @@ from app.protocol import (
     StatusMessage,
     StopMessage,
 )
-from tests.fakes import FakeBackend, FakeTransport, drain, running, template_text
+from tests.fake_backend import FakeBackend, FakeTransport, drain, running, template_text
 from tools.app_client import NOT_DELIVERED_NOTICE, AppSession, NoDraftError
 from tools.console import format_event
 from tools.interactive import Chips, Remove, Say, Simple, parse_command, run_commands

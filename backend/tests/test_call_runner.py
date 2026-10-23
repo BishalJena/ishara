@@ -5,7 +5,7 @@ import pytest
 
 from app.protocol import EndMessage
 from tests.conftest import make_settings
-from tests.fakes import FakeBackend, FakeSockets, mock_backend_client
+from tests.fake_backend import FakeBackend, FakeSockets, mock_backend_client
 from tools.call_runner import (
     UNCONFIRMED_END,
     MissingTokenError,

@@ -10,7 +10,7 @@ from app.protocol import (
     ServerMessage,
     StopMessage,
 )
-from tests.fakes import (
+from tests.fake_backend import (
     FakeBackend,
     FakeClock,
     FakeTransport,

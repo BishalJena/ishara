@@ -10,7 +10,7 @@ from app.protocol import (
     CaptionMessage,
     ChipsMessage,
 )
-from tests.fakes import FakeBackend, FakeClock, FakeTransport, drain, running, template_text
+from tests.fake_backend import FakeBackend, FakeClock, FakeTransport, drain, running, template_text
 from tools.app_client import NOT_DELIVERED_NOTICE, AppSession
 from tools.demo_script import DEMO_SCRIPT, Pacing, ScriptAbortedError, run_demo_script
 

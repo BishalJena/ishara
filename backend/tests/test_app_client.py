@@ -20,7 +20,7 @@ from app.protocol import (
     StatusMessage,
     StopMessage,
 )
-from tests.fakes import FakeBackend, FakeClock, FakeTransport, drain, running
+from tests.fake_backend import FakeBackend, FakeClock, FakeTransport, drain, running
 from tools.app_client import (
     NOT_DELIVERED_NOTICE,
     STALE_DRAFT_NOTICE,

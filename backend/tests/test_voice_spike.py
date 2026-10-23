@@ -9,7 +9,7 @@ import pytest
 from app.protocol import EndMessage
 from scripts import voice_spike
 from tests.conftest import make_settings
-from tests.fakes import FakeBackend, FakeSockets, ScriptedObserver, mock_backend_client
+from tests.fake_backend import FakeBackend, FakeSockets, ScriptedObserver, mock_backend_client
 from tools.cost import CONFIRM_HINT, COST_HEADS_UP
 from tools.voice_checks import SpikeTiming
 

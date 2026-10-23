@@ -7,7 +7,7 @@ import pytest
 from app.protocol import ApproveMessage, CaptionMessage, EndMessage
 from scripts import fake_app
 from tests.conftest import make_settings
-from tests.fakes import FakeBackend, FakeSockets, drain, mock_backend_client
+from tests.fake_backend import FakeBackend, FakeSockets, drain, mock_backend_client
 from tools.cost import CONFIRM_HINT, COST_HEADS_UP
 
 RECEPTIONIST = ["We have 4 pm tomorrow. Does that work?", "Yes, 10:30 tomorrow morning."]
