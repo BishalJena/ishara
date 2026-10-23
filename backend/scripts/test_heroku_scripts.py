@@ -35,6 +35,9 @@ if command == "config:set":
             print(f"{name}: {value}")
 elif command == "ps:type":
     seen = sum(1 for line in previous if json.loads(line)[:1] == ["ps:type"])
+    if not seen and "FAKE_PS_TYPE_ERROR" in os.environ:
+        print(os.environ["FAKE_PS_TYPE_ERROR"], file=sys.stderr)
+        sys.exit(1)
     key = "FAKE_PS_TYPE_AFTER" if seen and "FAKE_PS_TYPE_AFTER" in os.environ else "FAKE_PS_TYPE"
     print(os.environ.get(key, ""))
 elif command == "info":
@@ -296,6 +299,19 @@ class Deploy(HerokuScriptCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("ps:type web=basic", result.stderr)
         self.assertNotIn("status:", result.stdout)
+
+    def test_brand_new_app_without_process_types_still_deploys(self) -> None:
+        # The real CLI exits 1 with this message until the first build adds a Procfile.
+        result = self.deploy("--yes", FAKE_PS_TYPE_ERROR=" ▸    No process types on ishara-test.")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Procfile", self.deployed_files())
+        self.assertIn("status: ok", result.stdout)
+
+    def test_other_ps_type_failures_stop_before_pushing(self) -> None:
+        result = self.deploy("--yes", FAKE_PS_TYPE_ERROR=" ▸    Invalid credentials provided.")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("could not read dyno types", result.stderr)
+        self.assertIsNone(self.deployed_files())
 
     def test_refuses_uncommitted_backend_changes(self) -> None:
         (self.repo / "backend" / "Procfile").write_text("web: changed\n")

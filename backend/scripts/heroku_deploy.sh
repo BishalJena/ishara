@@ -27,8 +27,17 @@ on_eco() {
   grep -Eiq '^[[:space:]]*[a-z0-9_-]+[[:space:]]+eco([[:space:]]|$)' <<<"${1//│/ }"
 }
 
+# A brand-new app has no process types until its first build; the CLI reports that as
+# an error, so treat it as "no dynos yet" and keep every other failure fatal.
 dyno_types() {
-  heroku ps:type --app "$APP" || die "could not read dyno types for $APP (logged in? app exists?)"
+  local output
+  if output=$(heroku ps:type --app "$APP" 2>&1); then
+    printf '%s\n' "$output"
+  elif grep -q 'No process types' <<<"$output"; then
+    return 0
+  else
+    die "could not read dyno types for $APP (logged in? app exists?)"
+  fi
 }
 
 parse_heroku_args "$@"
