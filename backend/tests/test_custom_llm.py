@@ -192,6 +192,19 @@ def test_refused_claim_speaks_nothing(
     assert ledger.spoken == []
 
 
+def test_stale_speak_request_still_forwards_the_new_caption(
+    client: TestClient, ledger: FakeLedger
+) -> None:
+    # Ledger B24: after a skipped speak, Bolna stays on the speak node and answers the
+    # receptionist's next words with the old prompt. The claim is refused, but the
+    # words must still reach the app as a caption.
+    payload = body(speak_prompt(turn_id="undelivered-turn"), ("user", "Sorry, go ahead."))
+
+    assert reply_text(post(client, payload)) == ""
+    assert ledger.captions == ["Sorry, go ahead."]
+    assert ledger.spoken == []
+
+
 @pytest.mark.parametrize("stream", [True, False])
 def test_same_turn_is_spoken_only_once(
     client: TestClient, ledger: FakeLedger, stream: bool
