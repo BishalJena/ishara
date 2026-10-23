@@ -50,10 +50,7 @@ class TurnClaims:
 
 # Async so both run on the event loop: the check-then-set needs no lock.
 async def get_turn_claims(connection: HTTPConnection) -> TurnClaims:
-    state = connection.app.state
-    if getattr(state, "tts_turn_claims", None) is None:
-        state.tts_turn_claims = TurnClaims()
-    return state.tts_turn_claims
+    return connection.app.state.tts_turn_claims
 
 
 async def get_speech_client(
@@ -61,9 +58,7 @@ async def get_speech_client(
 ) -> SarvamTTS:
     if settings.sarvam_api_key is None:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "text-to-speech not configured")
-    transport: httpx.AsyncBaseTransport | None = getattr(
-        connection.app.state, "sarvam_transport", None
-    )
+    transport: httpx.AsyncBaseTransport | None = connection.app.state.sarvam_transport
     return SarvamTTS(settings.sarvam_api_key, transport=transport)
 
 

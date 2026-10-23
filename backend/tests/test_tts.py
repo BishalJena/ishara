@@ -38,8 +38,9 @@ class FakeSarvam:
 
 
 def make_client(fake: FakeSarvam, sarvam_api_key: str | None = SARVAM_KEY) -> TestClient:
-    app = create_app(make_settings(sarvam_api_key=sarvam_api_key))
-    app.state.sarvam_transport = httpx.MockTransport(fake)
+    app = create_app(
+        make_settings(sarvam_api_key=sarvam_api_key), sarvam_transport=httpx.MockTransport(fake)
+    )
     return TestClient(app)
 
 
@@ -126,8 +127,7 @@ def test_missing_sarvam_key_is_503_without_provider_call(key: str | None) -> Non
 
 def test_missing_key_does_not_use_up_the_turn() -> None:
     fake = FakeSarvam()
-    app = create_app(make_settings(sarvam_api_key=None))
-    app.state.sarvam_transport = httpx.MockTransport(fake)
+    app = create_app(make_settings(sarvam_api_key=None), sarvam_transport=httpx.MockTransport(fake))
     client = TestClient(app)
     assert post(client, {"turn_id": "t1", "text": "Yes."}).status_code == 503
     app.state.settings = make_settings(sarvam_api_key=SARVAM_KEY)

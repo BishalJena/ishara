@@ -159,10 +159,7 @@ async def stream_completion(
 
 
 def get_tracker(request: Request) -> UtteranceTracker:
-    tracker = getattr(request.app.state, "utterance_tracker", None)
-    if tracker is None:
-        tracker = request.app.state.utterance_tracker = UtteranceTracker()
-    return tracker
+    return request.app.state.utterance_tracker
 
 
 @router.post("/v1/chat/completions", dependencies=[Depends(require_custom_llm_token)])
