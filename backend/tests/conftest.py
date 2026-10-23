@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import socket
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -22,6 +24,24 @@ def make_settings(**overrides: object) -> Settings:
     }
     values.update(overrides)
     return Settings(_env_file=None, **values)
+
+
+LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+
+
+@pytest.fixture(autouse=True)
+def no_internet(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fail any lookup of a non-loopback host, so a test (or a mutant under mutation
+    testing) that loses its fake transport can't reach Bolna, Groq or Sarvam."""
+    real_getaddrinfo = socket.getaddrinfo
+
+    def loopback_only(host, *args, **kwargs):
+        name = host.decode() if isinstance(host, bytes) else host
+        if name not in LOOPBACK_HOSTS:
+            raise OSError(f"tests must not reach the network (tried {name!r})")
+        return real_getaddrinfo(host, *args, **kwargs)
+
+    monkeypatch.setattr(socket, "getaddrinfo", loopback_only)
 
 
 @pytest.fixture

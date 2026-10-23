@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import httpx
 import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
@@ -81,3 +82,9 @@ def test_unset_server_token_rejects_everything() -> None:
     client = _guarded_app(make_settings(app_token=None))
     assert client.get("/app", headers={"Authorization": "Bearer "}).status_code == 401
     assert client.get("/app", headers={"Authorization": "Bearer None"}).status_code == 401
+
+
+async def test_tests_cannot_reach_real_hosts() -> None:
+    with pytest.raises(httpx.ConnectError, match="must not reach the network"):
+        async with httpx.AsyncClient() as client:
+            await client.get("https://api.sarvam.ai/")
