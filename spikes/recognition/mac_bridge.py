@@ -11,6 +11,7 @@ import asyncio
 import json
 import os
 import sys
+import threading
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -415,7 +416,7 @@ class Bridge:
 # ---- command line ----
 
 COST_HEADS_UP = ("Cost heads-up: starting a call makes Bolna dial a real phone from its default "
-                 "number (about Rs 5.5/min plus telephony). Only allowlisted, consenting numbers.")
+                 "number (about ₹5.5/min plus telephony). Only allowlisted, consenting numbers.")
 PURPOSE = "doctor_appointment"
 
 
@@ -506,11 +507,19 @@ async def connect(url: str, headers: dict[str, str]) -> Transport:
 
 
 async def stdin_lines() -> AsyncIterator[str]:
+    """Terminal lines via a daemon thread: works for ttys, pipes and files alike, and a
+    blocked read never delays exit (asyncio pipes reject /dev/null on macOS)."""
     loop = asyncio.get_running_loop()
-    reader = asyncio.StreamReader()
-    await loop.connect_read_pipe(lambda: asyncio.StreamReaderProtocol(reader), sys.stdin)
-    while line := await reader.readline():
-        yield line.decode()
+    queue: asyncio.Queue[str | _End] = asyncio.Queue()
+
+    def read() -> None:
+        for line in sys.stdin:
+            loop.call_soon_threadsafe(queue.put_nowait, line)
+        loop.call_soon_threadsafe(queue.put_nowait, _End.DONE)
+
+    threading.Thread(target=read, daemon=True).start()
+    while (line := await queue.get()) is not _End.DONE:
+        yield line
 
 
 Connect = Callable[[str, dict[str, str]], Awaitable[Transport]]
