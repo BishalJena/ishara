@@ -1,7 +1,7 @@
 # Ishara backend
 
 FastAPI service for Path B ([PLAN.md §3](../PLAN.md#3-architecture)): app sessions,
-the Cerebras composer and Bolna's custom-LLM endpoint. Python 3.11, managed with `uv`.
+the Groq composer and Bolna's custom-LLM endpoint. Python 3.11, managed with `uv`.
 
 ```sh
 cd backend
