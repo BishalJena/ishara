@@ -181,5 +181,47 @@ class End(unittest.TestCase):
         self.assertIsNone(turn.end())
 
 
+async def collect(source):
+    return [result async for result in source.results()]
+
+
+class Sources(unittest.IsolatedAsyncioTestCase):
+    def test_parse_result(self):
+        self.assertEqual(mb.parse_result(" Doctor "), "doctor")
+        self.assertIsNone(mb.parse_result("?"))
+        for bad in ("hospital", "", "q"):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                mb.parse_result(bad)
+
+    async def test_manual_source_yields_fed_results_until_closed(self):
+        source = mb.ManualSource()
+        for result in ("hello", None, "doctor"):
+            source.feed(result)
+        source.close()
+        self.assertEqual(await collect(source), ["hello", None, "doctor"])
+
+    async def test_replay_waits_before_each_delayed_step(self):
+        events = []
+
+        async def sleep(seconds):
+            events.append(seconds)
+
+        source = mb.ReplaySource.from_json(
+            '["hello", "?", null, {"sign": "doctor", "delay": 1.5}, {"sign": null}]', sleep)
+        async for result in source.results():
+            events.append(result)
+        self.assertEqual(events, ["hello", None, None, 1.5, "doctor", None])
+
+    def test_replay_rejects_bad_steps(self):
+        for text in ('["hospital"]', '[{"delay": 1}]', '[{"sign": "yes", "delay": -1}]',
+                     '[{"sign": "yes", "pause": 1}]'):
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                mb.ReplaySource.from_json(text)
+
+    async def test_blocking_source_drains_the_iterator(self):
+        source = mb.BlockingSource(lambda: iter(["yes", None, "thankyou"]))
+        self.assertEqual(await collect(source), ["yes", None, "thankyou"])
+
+
 if __name__ == "__main__":
     unittest.main()
