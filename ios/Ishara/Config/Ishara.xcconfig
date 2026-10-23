@@ -1,0 +1,7 @@
+// Settings for the Ishara app target. The backend URL and app token come from the
+// untracked Secrets.xcconfig next to this file: copy Secrets.example.xcconfig to
+// Secrets.xcconfig and fill it in. Without it the app runs the fake demo call only.
+ISHARA_BACKEND_URL =
+ISHARA_APP_TOKEN =
+
+#include? "Secrets.xcconfig"

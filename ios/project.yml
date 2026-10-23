@@ -41,10 +41,16 @@ targets:
         excludes:
           - LocalAssets
           - LocalAssets/**
+          - Info.plist
+          - Config/*.xcconfig
       # Untracked models and recordings (see Ishara/LocalAssets/README.md), copied as a folder.
       - path: Ishara/LocalAssets
         type: folder
         buildPhase: resources
+    configFiles:
+      # Includes the untracked Config/Secrets.xcconfig (backend URL + app token) if present.
+      Debug: Ishara/Config/Ishara.xcconfig
+      Release: Ishara/Config/Ishara.xcconfig
     dependencies:
       - package: CallSession
       - package: RecognitionCore
@@ -55,6 +61,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: ai.ishara.demo
         PRODUCT_NAME: Ishara
         GENERATE_INFOPLIST_FILE: YES
+        # Adds the IsharaBackendURL / IsharaAppToken keys filled from the xcconfig.
+        INFOPLIST_FILE: Ishara/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: Ishara
         INFOPLIST_KEY_NSCameraUsageDescription: >-
           Ishara watches your hands to recognise the signs you make. Video stays

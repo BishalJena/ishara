@@ -1,0 +1,69 @@
+import CallSession
+import Foundation
+
+/// The real call: `POST /calls` on the Ishara backend, then one WebSocket per call, via
+/// CallSession's `LiveCall`. The backend asks Bolna to dial (Path B).
+///
+/// When the socket drops, the store goes silent ("Nothing will be sent") and this driver
+/// reconnects a few times, waiting longer each time. Nothing from before the drop is
+/// resent; the store comes back when the backend reports the call status again.
+@MainActor
+final class LiveCallDriver: CallDriver {
+    static let defaultReconnectDelays: [Duration] = [.seconds(1), .seconds(2), .seconds(4)]
+
+    private let client: BackendClient
+    private let reconnectDelays: [Duration]
+    private let sleep: @Sendable (Duration) async throws -> Void
+    private let makeTurnID: () -> TurnID
+    private var call: LiveCall?
+    private var reconnectsUsed = 0
+    private var reconnecting: Task<Void, Never>?
+
+    init(
+        client: BackendClient,
+        reconnectDelays: [Duration] = LiveCallDriver.defaultReconnectDelays,
+        sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
+        makeTurnID: @escaping () -> TurnID = TurnID.random
+    ) {
+        self.client = client
+        self.reconnectDelays = reconnectDelays
+        self.sleep = sleep
+        self.makeTurnID = makeTurnID
+    }
+
+    convenience init(config: BackendConfig) {
+        self.init(client: BackendClient(config: config))
+    }
+
+    func start(_ setup: CallSetup) async throws -> TurnStore {
+        let call = try await LiveCall.start(
+            client: client, contactID: setup.contact.id, purpose: setup.purpose,
+            makeTurnID: makeTurnID)
+        call.onConnectionLost = { [weak self] in self?.connectionLost() }
+        self.call = call
+        return call.store
+    }
+
+    func close() {
+        reconnecting?.cancel()
+        reconnecting = nil
+        call?.onConnectionLost = nil
+        call = nil
+        let client = client
+        Task { await client.disconnect() }
+    }
+
+    private func connectionLost() {
+        guard reconnecting == nil, reconnectsUsed < reconnectDelays.count else { return }
+        let delay = reconnectDelays[reconnectsUsed]
+        reconnectsUsed += 1
+        let sleep = sleep
+        reconnecting = Task { [weak self] in
+            try? await sleep(delay)
+            guard !Task.isCancelled, let self else { return }
+            self.reconnecting = nil
+            guard let call = self.call, call.store.state == .error else { return }
+            await call.connect()
+        }
+    }
+}

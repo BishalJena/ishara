@@ -1,3 +1,6 @@
+# Backend URL and app token for the app (copy Ishara/Config/Secrets.example.xcconfig).
+Ishara/Config/Secrets.xcconfig
+
 # Personal recordings and large models bundled locally; see Ishara/LocalAssets/README.md.
 Ishara/LocalAssets/*
 !Ishara/LocalAssets/README.md

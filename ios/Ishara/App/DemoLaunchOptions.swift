@@ -1,9 +1,16 @@
 import CallSession
 import Foundation
 
-/// Run switches, read from launch arguments, for example `-IsharaReplay hello,doctor`,
+/// Run switches, read from launch arguments, for example `-IsharaDriver live`,
 /// `-IsharaFakeNotDelivered YES` or `-IsharaFixture signing` (Debug builds only).
 struct DemoLaunchOptions {
+    enum Driver: String {
+        /// The scripted demo call on timers. No backend, nothing is dialled.
+        case fake
+        /// The real backend from `Config/Secrets.xcconfig`. Places a real (paid) call.
+        case live
+    }
+
     enum Recognition: String {
         /// Replays fixed results (the fake call's script, `-IsharaReplay`, or the replay menu).
         case scripted
@@ -11,7 +18,9 @@ struct DemoLaunchOptions {
         case pipeline
     }
 
-    /// Scripted unless asked otherwise.
+    /// Fake unless asked otherwise, so running the app never places a call by surprise.
+    var driver: Driver = .fake
+    /// Defaults to scripted with the fake call and to the pipeline with the live one.
     var recognitionOverride: Recognition?
     /// Results the scripted recognizer plays once signing starts, e.g. "hello,doctor,?".
     var replayScript: [RecognitionResult] = []
@@ -22,10 +31,13 @@ struct DemoLaunchOptions {
     /// Open straight on a prepared screen state for screenshots.
     var fixture: DemoFixture?
 
-    var recognition: Recognition { recognitionOverride ?? .scripted }
+    var recognition: Recognition {
+        recognitionOverride ?? (driver == .live ? .pipeline : .scripted)
+    }
 
     static func from(_ defaults: UserDefaults = .standard) -> DemoLaunchOptions {
         var options = DemoLaunchOptions()
+        options.driver = defaults.string(forKey: "IsharaDriver").flatMap(Driver.init(rawValue:)) ?? .fake
         options.recognitionOverride = defaults.string(forKey: "IsharaRecognition").flatMap(Recognition.init(rawValue:))
         options.replayScript = parseReplay(defaults.string(forKey: "IsharaReplay") ?? "")
         options.fakeNotDelivered = defaults.bool(forKey: "IsharaFakeNotDelivered")
