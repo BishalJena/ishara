@@ -170,7 +170,8 @@ def draw(view, status: str, rest_y: float | None, message: str):
     cv2.putText(view, message, (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
 
-def run_camera(index: int, params: Params, rest_y: float | None, out: Path | None, mirror: bool):
+def open_camera(index: int):
+    """The webcam at 1280x720, 30 FPS requested (the camera may deliver less)."""
     import cv2
 
     cap = cv2.VideoCapture(index)
@@ -180,6 +181,13 @@ def run_camera(index: int, params: Params, rest_y: float | None, out: Path | Non
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
     cap.set(cv2.CAP_PROP_FPS, 30)
+    return cap
+
+
+def run_camera(index: int, params: Params, rest_y: float | None, out: Path | None, mirror: bool):
+    import cv2
+
+    cap = open_camera(index)
     keep_s = params.pre_roll_s + params.max_sign_s + params.end_rest_s + 0.5
     detector = SignDetector(rest_y, params) if rest_y is not None else None
     pending: list[Frame] = []
