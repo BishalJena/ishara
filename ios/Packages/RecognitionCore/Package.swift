@@ -9,5 +9,9 @@ let package = Package(
     ],
     targets: [
         .target(name: "RecognitionCore"),
+        .testTarget(
+            name: "RecognitionCoreTests",
+            dependencies: ["RecognitionCore"]
+        ),
     ]
 )
