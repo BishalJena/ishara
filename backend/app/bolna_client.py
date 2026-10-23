@@ -1,7 +1,8 @@
 """HTTP client for the Bolna API (implements ports.BolnaClient).
 
-Errors carry only the operation and HTTP status: Bolna's error bodies can contain
-account identifiers, and the API key must never reach a message or log.
+Every failure raises ports.BolnaError, which carries only the operation and HTTP
+status: Bolna's error bodies can contain account identifiers, and the API key must
+never reach a message or log.
 """
 
 from __future__ import annotations
@@ -12,16 +13,12 @@ from typing import Any
 import httpx
 from pydantic import SecretStr
 
+from app.ports import BolnaError
+
+__all__ = ["BolnaError", "HttpBolnaClient"]
+
 DEFAULT_BASE_URL = "https://api.bolna.ai"
 _ID = re.compile(r"^[A-Za-z0-9-]{1,64}$")
-
-
-class BolnaError(Exception):
-    def __init__(self, status_code: int | None, operation: str, reason: str = "failed") -> None:
-        self.status_code = status_code
-        self.operation = operation
-        status = f"HTTP {status_code}" if status_code is not None else "no response"
-        super().__init__(f"Bolna {operation} {reason} ({status})")
 
 
 def _path_id(value: str) -> str:
@@ -80,7 +77,7 @@ class HttpBolnaClient:
     ) -> httpx.Response:
         try:
             response = await self._http.request(method, path, json=body)
-        except httpx.TransportError as exc:
+        except httpx.HTTPError as exc:
             raise BolnaError(None, operation) from exc
         if not response.is_success:
             raise BolnaError(response.status_code, operation)
@@ -89,7 +86,9 @@ class HttpBolnaClient:
     async def start_call(self, recipient: str, user_data: dict[str, str]) -> str:
         """`POST /call` from the account's default number (no `from_phone_number`)."""
         if not self._agent_id:
-            raise ValueError("BOLNA_AGENT_ID is not set")
+            # The app boots before the agent exists (the custom LLM must be live to
+            # register it), so a call attempt then is a clean failure, not a crash.
+            raise BolnaError(None, "start_call", "has no agent id (BOLNA_AGENT_ID)")
         body = {
             "agent_id": self._agent_id,
             "recipient_phone_number": recipient,

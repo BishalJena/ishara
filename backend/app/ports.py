@@ -21,7 +21,24 @@ class Composer(Protocol):
         ...
 
 
+class BolnaError(Exception):
+    """Every BolnaClient failure (network, HTTP status, bad response, missing agent id).
+
+    The message names only the operation and the HTTP status: Bolna's error bodies can
+    hold account identifiers, and the API key must never reach a message or log.
+    """
+
+    def __init__(self, status_code: int | None, operation: str, reason: str = "failed") -> None:
+        self.status_code = status_code
+        self.operation = operation
+        status = f"HTTP {status_code}" if status_code is not None else "no response"
+        super().__init__(f"Bolna {operation} {reason} ({status})")
+
+
 class BolnaClient(Protocol):
+    """Implementations raise BolnaError, and only BolnaError, when Bolna can't be used;
+    the session layer turns it into 502 / not_delivered / end_failed."""
+
     async def start_call(self, recipient: str, user_data: dict[str, str]) -> str:
         """Ask Bolna to dial `recipient` (already allowlisted). Returns the run id."""
         ...

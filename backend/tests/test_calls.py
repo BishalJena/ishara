@@ -10,12 +10,15 @@ import anyio
 import httpx
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import SecretStr
 from starlette.websockets import WebSocketDisconnect
 
+from app.bolna_client import HttpBolnaClient
 from app.calls import CallManager
 from app.contacts import InvalidContacts, parse_contacts
 from app.main import create_app
 from app.markers import EVENT_END_CALL, EVENT_USER_REPLY
+from app.ports import BolnaClient, BolnaError
 from app.protocol import ComposeRequest, Draft
 from tests.conftest import APP_TOKEN, CUSTOM_LLM_TOKEN, make_settings
 
@@ -73,13 +76,13 @@ class FakeBolna:
     async def start_call(self, recipient: str, user_data: dict[str, str]) -> str:
         self.started.append((recipient, user_data))
         if self.fail_start:
-            raise httpx.ConnectError("bolna down")
+            raise BolnaError(None, "start_call")
         return f"run-{len(self.started)}"
 
     async def send_event(self, run_id: str, event: str, properties: dict[str, str]) -> None:
         self.events.append((run_id, event, properties))
         if self.fail_events:
-            raise httpx.ConnectError("bolna down")
+            raise BolnaError(503, "send_event")
 
     def replies(self) -> list[dict[str, str]]:
         return [props for _, event, props in self.events if event == EVENT_USER_REPLY]
@@ -160,9 +163,9 @@ class Harness:
 def make_harness():
     stack = contextlib.ExitStack()
 
-    def build(delivery_timeout_s: float = 5.0) -> Harness:
+    def build(delivery_timeout_s: float = 5.0, bolna: BolnaClient | None = None) -> Harness:
         settings = make_settings(allowed_recipients=f"clinic={CLINIC},pharmacy={PHARMACY}")
-        bolna, composer = FakeBolna(), FakeComposer()
+        bolna, composer = bolna or FakeBolna(), FakeComposer()
         manager = CallManager(settings, composer, bolna, delivery_timeout_s=delivery_timeout_s)
         app = create_app(settings, composer=composer, bolna=bolna, ledger=manager)
         client = stack.enter_context(TestClient(app))
@@ -245,6 +248,56 @@ def test_bolna_start_failure_is_502_and_call_in_error(harness: Harness) -> None:
     call_id = harness.bolna.started[0][1]["ishara_call_id"]
     with harness.socket(call_id) as ws:
         assert harness.receive(ws) == status("error")
+
+
+def _real_client_harness(make_harness, handler, agent_id: str | None = "agent-1") -> Harness:
+    """The session layer with the real HttpBolnaClient, so its error type is the one
+    the session layer handles (it raises BolnaError, never bare httpx errors)."""
+    client = HttpBolnaClient(
+        SecretStr("test-bolna-key"), agent_id, transport=httpx.MockTransport(handler)
+    )
+    return make_harness(bolna=client)
+
+
+@pytest.mark.parametrize(
+    ("handler", "agent_id"),
+    [
+        (lambda _: httpx.Response(500, json={"error": "down"}), "agent-1"),
+        (lambda _: httpx.Response(200, json={"execution_id": "run-1"}), None),
+    ],
+    ids=["bolna_500", "no_agent_id"],
+)
+def test_real_bolna_client_start_failure_is_502(make_harness, handler, agent_id) -> None:
+    harness = _real_client_harness(make_harness, handler, agent_id)
+    response = harness.client.post(
+        "/calls", json={"contact_id": "clinic", "purpose": "doctor_appointment"}, headers=AUTH
+    )
+    assert response.status_code == 502
+    assert response.json() == {"detail": "could not start the call"}
+
+
+def test_real_bolna_client_event_failure_is_not_delivered(make_harness) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/call":
+            return httpx.Response(200, json={"execution_id": "run-1"})
+        return httpx.Response(500, json={"error": "down"})
+
+    harness = _real_client_harness(make_harness, handler)
+    call_id = harness.start()
+    assert harness.webhook("run-1", "in-progress") == 204
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        approve(ws, "t1")
+        assert harness.receive(ws) == status("speaking")
+        assert without_message(harness.receive(ws)) == {
+            "type": "not_delivered",
+            "turn_id": "t1",
+            "reason": "bolna_unreachable",
+        }
+        assert harness.receive(ws) == status("in_call")
+        ws.send_json({"type": "end"})
+        assert harness.receive(ws) == status("ended")
+        assert without_message(harness.receive(ws)) == error("end_failed")
 
 
 # ---- WebSocket connection ----

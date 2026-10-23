@@ -18,7 +18,6 @@ import uuid
 from collections.abc import Coroutine
 from typing import Any
 
-import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, WebSocket, status
 from pydantic import BaseModel, ValidationError
 from starlette.websockets import WebSocketDisconnect
@@ -29,7 +28,7 @@ from app.bolna_status import ExecutionUpdate, call_state_for
 from app.config import Settings
 from app.contacts import parse_contacts
 from app.deps import get_ledger, get_settings_dep
-from app.ports import BolnaClient, CallLedger, Composer
+from app.ports import BolnaClient, BolnaError, CallLedger, Composer
 from app.protocol import (
     ApproveMessage,
     CallState,
@@ -123,7 +122,7 @@ class CallManager(CallLedger):
         user_data = {markers.USER_DATA_CALL_ID: session.call_id}
         try:
             run_id = await self._bolna.start_call(number, user_data)
-        except httpx.HTTPError as error:
+        except BolnaError as error:
             session.advance(CallState.ERROR)
             log.warning("call %s: Bolna start failed (%s)", session.call_id, type(error).__name__)
             raise CallStartFailed from error
@@ -221,7 +220,7 @@ class CallManager(CallLedger):
         properties = {markers.PROP_REPLY_TEXT: message.text, markers.PROP_TURN_ID: turn.turn_id}
         try:
             await self._bolna.send_event(session.run_id, markers.EVENT_USER_REPLY, properties)
-        except httpx.HTTPError as error:
+        except BolnaError as error:
             log.warning("call %s: user_reply failed (%s)", session.call_id, type(error).__name__)
             await self._fail_delivery(session, turn.turn_id, BOLNA_UNREACHABLE)
 
@@ -241,7 +240,7 @@ class CallManager(CallLedger):
             return
         try:
             await self._bolna.send_event(session.run_id, markers.EVENT_END_CALL, {})
-        except httpx.HTTPError as error:
+        except BolnaError as error:
             log.warning("call %s: end_call failed (%s)", session.call_id, type(error).__name__)
             await self._send(
                 session,

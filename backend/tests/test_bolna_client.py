@@ -80,7 +80,7 @@ async def test_start_call_without_execution_id_raises(handler: Handler) -> None:
 
 async def test_start_call_without_agent_id_fails_before_any_request() -> None:
     client, rec = _client(_reply(200, {"execution_id": RUN_ID}), agent_id=None)
-    with pytest.raises(ValueError):
+    with pytest.raises(BolnaError, match="no agent id"):
         await client.start_call("+910000000001", {})
     assert rec.requests == []
 
@@ -173,9 +173,16 @@ async def test_redirects_are_not_followed() -> None:
     assert len(rec.requests) == 1
 
 
-async def test_network_failure_becomes_bolna_error_without_key() -> None:
+@pytest.mark.parametrize(
+    "failure",
+    [httpx.ConnectTimeout, httpx.DecodingError, httpx.TooManyRedirects],
+    ids=["transport", "decoding", "redirects"],
+)
+async def test_network_failure_becomes_bolna_error_without_key(
+    failure: type[httpx.RequestError],
+) -> None:
     def fail(request: httpx.Request) -> httpx.Response:
-        raise httpx.ConnectTimeout("timed out", request=request)
+        raise failure("boom", request=request)
 
     client, _ = _client(fail)
     with pytest.raises(BolnaError) as error:
