@@ -325,3 +325,38 @@ def test_asking_to_book_is_not_a_claim() -> None:
 )
 def test_meta_text_is_rejected(draft: str, label: str) -> None:
     assert f"meta text: {label}" in check(draft, ["no"])
+
+
+# ---- typography the LLM may use ----
+
+
+def test_curly_apostrophes_do_not_look_like_names() -> None:
+    draft = "Hello, I’d like a doctor’s appointment tomorrow."
+    assert check(draft, ["hello", "doctor", "tomorrow"]) == []
+
+
+@pytest.mark.parametrize("apostrophe", ["’", "‘"])
+def test_curly_apostrophes_cannot_hide_a_refusal(apostrophe: str) -> None:
+    draft = f"Yes, that doesn{apostrophe}t work."
+    assert "adds a refusal the user did not sign" in check(draft, ["yes"], T3_CAPTION)
+
+
+def test_dotted_am_cannot_flip_a_heard_pm() -> None:
+    reasons = check("Yes, 4 a.m. tomorrow works.", ["yes"], T3_CAPTION)
+    assert reasons == ["invented number or time: am"]
+
+
+def test_am_as_a_verb_at_the_start_is_not_a_time() -> None:
+    assert check("Am I able to see the doctor tomorrow?", ["doctor", "tomorrow"]) == []
+
+
+@pytest.mark.parametrize(
+    ("draft", "reason"),
+    [
+        ("No, sorry. Is there anything the week after?", "invented day: week"),
+        ("No, sorry. Do you have any free mornings?", "invented time of day: morning"),
+        ("No, sorry. Are evenings possible?", "invented time of day: evening"),
+    ],
+)
+def test_bare_and_plural_spans_count_as_invented_facts(draft: str, reason: str) -> None:
+    assert check(draft, ["no", "sorry"]) == [reason]
