@@ -10,7 +10,9 @@ import os
 import shutil
 import subprocess
 import tempfile
+import threading
 import unittest
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent
@@ -166,6 +168,148 @@ class ConfigPush(HerokuScriptCase):
         result = self.run_script("heroku_config_push.sh", "--app", "ishara-test", "--yes")
         self.assertNotEqual(result.returncode, 0)
         self.assertNotIn("Set 4 config vars", result.stdout)
+
+
+BASIC_TYPES = """=== Process Types
+ type   size    qty   cost/hour   max cost/month
+──────────────────────────────────────────────────
+ web    Basic   1     ~$0.010     $7
+
+=== Dyno Totals
+ type    total
+───────────────
+ Basic   1
+"""
+ECO_TYPES = """=== Process Types
+ type   size   qty   cost/hour   max cost/month
+─────────────────────────────────────────────────
+ web    Eco    1
+
+=== Dyno Totals
+ type   total
+──────────────
+ Eco    1
+$5 (flat monthly fee, shared across all Eco dynos)
+"""
+GIT_ENV = {
+    "GIT_AUTHOR_NAME": "Test",
+    "GIT_AUTHOR_EMAIL": "test@example.invalid",
+    "GIT_COMMITTER_NAME": "Test",
+    "GIT_COMMITTER_EMAIL": "test@example.invalid",
+}
+
+
+class HealthHandler(BaseHTTPRequestHandler):
+    payload: dict[str, object] = {}
+
+    def do_GET(self) -> None:
+        body = json.dumps(self.payload).encode() if self.path == "/health" else b"{}"
+        self.send_response(200 if self.path == "/health" else 404)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *args: object) -> None:
+        pass
+
+
+class Deploy(HerokuScriptCase):
+    def setUp(self) -> None:
+        super().setUp()
+        backend = self.repo / "backend"
+        (backend / "Procfile").write_text("web: uvicorn app.main:app\n")
+        (backend / ".python-version").write_text("3.11\n")
+        (self.repo / "README.md").write_text("monorepo root\n")
+        self.git("init", "-q")
+        self.git("add", ".")
+        self.git("commit", "-q", "-m", "init")
+        self.remote = self.tmp / "heroku.git"
+        self.git("init", "-q", "--bare", str(self.remote))
+
+        HealthHandler.payload = {
+            "status": "ok",
+            "missing_config": ["GROQ_API_KEY"],
+            "extra": "not-for-output",
+        }
+        server = ThreadingHTTPServer(("127.0.0.1", 0), HealthHandler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        self.env.update(
+            GIT_ENV,
+            HEROKU_GIT_URL=str(self.remote),
+            FAKE_WEB_URL=f"http://127.0.0.1:{server.server_port}/",
+            FAKE_PS_TYPE=BASIC_TYPES,
+            HEALTH_ATTEMPTS="2",
+            HEALTH_DELAY="0",
+        )
+
+    def git(self, *args: str) -> str:
+        return subprocess.run(
+            ["git", *args],
+            cwd=self.repo,
+            env={**os.environ, **GIT_ENV},
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+
+    def deployed_files(self) -> list[str] | None:
+        listing = subprocess.run(
+            ["git", "--git-dir", str(self.remote), "ls-tree", "--name-only", "main"],
+            capture_output=True,
+            text=True,
+        )
+        return listing.stdout.split() if listing.returncode == 0 else None
+
+    def deploy(self, *args: str, **env: str) -> subprocess.CompletedProcess[str]:
+        return self.run_script("heroku_deploy.sh", "--app", "ishara-test", *args, **env)
+
+    def test_without_yes_does_nothing(self) -> None:
+        result = self.deploy()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.heroku_calls(), [])
+        self.assertIsNone(self.deployed_files())
+
+    def test_pushes_only_backend_and_prints_status_and_missing_names(self) -> None:
+        result = self.deploy("--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        files = self.deployed_files()
+        self.assertIn("Procfile", files)
+        self.assertIn(".python-version", files)
+        self.assertNotIn("backend", files)
+        self.assertNotIn("README.md", files)
+        self.assertIn("status: ok", result.stdout)
+        self.assertIn("missing_config: GROQ_API_KEY", result.stdout)
+        self.assertNotIn("not-for-output", result.stdout + result.stderr)
+
+    def test_refuses_eco_before_pushing(self) -> None:
+        for listing in (ECO_TYPES, "│ web │ Eco │ 1 │"):
+            with self.subTest(listing=listing):
+                result = self.deploy("--yes", FAKE_PS_TYPE=listing)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("ps:type web=basic", result.stderr)
+                self.assertIsNone(self.deployed_files())
+
+    def test_fails_when_new_app_comes_up_on_eco(self) -> None:
+        result = self.deploy("--yes", FAKE_PS_TYPE="", FAKE_PS_TYPE_AFTER=ECO_TYPES)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("ps:type web=basic", result.stderr)
+        self.assertNotIn("status:", result.stdout)
+
+    def test_refuses_uncommitted_backend_changes(self) -> None:
+        (self.repo / "backend" / "Procfile").write_text("web: changed\n")
+        result = self.deploy("--yes")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("uncommitted", result.stderr)
+        self.assertIsNone(self.deployed_files())
+
+    def test_unhealthy_status_fails(self) -> None:
+        HealthHandler.payload = {"status": "degraded", "missing_config": []}
+        result = self.deploy("--yes")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("status: degraded", result.stdout)
+        self.assertIn("missing_config: none", result.stdout)
 
 
 if __name__ == "__main__":
