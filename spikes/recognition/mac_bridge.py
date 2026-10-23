@@ -6,13 +6,20 @@ only path to an `approve` message is an explicit SEND or quick reply.
 """
 from __future__ import annotations
 
+import argparse
 import asyncio
 import json
+import os
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
 import uuid
-from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Mapping
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Protocol
+from pathlib import Path
+from typing import Any, Protocol
 
 SIGNS = ("hello", "thankyou", "yes", "no", "sorry", "doctor",
          "today", "tomorrow", "morning", "afternoon", "evening", "time")
@@ -402,3 +409,149 @@ class Bridge:
         for task in self._tasks:
             if task is not current:
                 task.cancel()
+
+
+# ---- command line ----
+
+COST_HEADS_UP = ("Cost heads-up: starting a call makes Bolna dial a real phone from its default "
+                 "number (about Rs 5.5/min plus telephony). Only allowlisted, consenting numbers.")
+PURPOSE = "doctor_appointment"
+
+
+class BackendError(RuntimeError):
+    """The backend refused or could not be reached; the message never contains the token."""
+
+
+def auth_headers(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
+def base_url(value: str) -> str:
+    parts = urllib.parse.urlsplit(value)
+    if parts.scheme not in ("http", "https") or not parts.netloc or parts.query:
+        raise argparse.ArgumentTypeError(f"expected http(s)://host[/path], got {value!r}")
+    return value.rstrip("/")
+
+
+def ws_url(base: str, call_id: str) -> str:
+    scheme, rest = base.split("://", 1)
+    return f"{'wss' if scheme == 'https' else 'ws'}://{rest}/calls/{urllib.parse.quote(call_id)}/ws"
+
+
+PostJson = Callable[[str, Message, dict[str, str]], Message]
+
+
+def post_json(url: str, body: Message, headers: dict[str, str]) -> Message:
+    request = urllib.request.Request(url, json.dumps(body).encode(), method="POST",
+                                     headers={"Content-Type": "application/json", **headers})
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            reply: Message = json.loads(response.read())
+            return reply
+    except urllib.error.HTTPError as error:
+        detail = error.read()[:200].decode(errors="replace")
+        raise BackendError(f"POST /calls returned HTTP {error.code}: {detail}") from error
+    except urllib.error.URLError as error:
+        raise BackendError(f"POST /calls failed: {error.reason}") from error
+
+
+def start_call(base_url: str, contact: str, token: str, confirm_cost: bool,
+               post: PostJson = post_json, out: Callable[[str], None] = print) -> str:
+    """Asks the backend to dial. Refuses unless the cost was confirmed on the command line."""
+    out(COST_HEADS_UP)
+    if not confirm_cost:
+        raise SystemExit("Not starting a call: re-run with --confirm-cost to accept the cost.")
+    reply = post(f"{base_url}/calls", {"contact_id": contact, "purpose": PURPOSE},
+                 auth_headers(token))
+    call_id = str(reply["call_id"])
+    out(f"call {call_id} started: {reply['state']}")
+    return call_id
+
+
+class _WebSocket:
+    """Adapts a websockets connection; a dropped connection simply ends the message stream."""
+
+    def __init__(self, connection: Any) -> None:
+        self._connection = connection
+
+    async def send(self, message: str) -> None:
+        await self._connection.send(message)
+
+    async def _messages(self) -> AsyncIterator[str | bytes]:
+        from websockets.exceptions import ConnectionClosed  # see connect()
+        try:
+            async for raw in self._connection:
+                yield raw
+        except ConnectionClosed:
+            return
+
+    def __aiter__(self) -> AsyncIterator[str | bytes]:
+        return self._messages()
+
+    async def close(self) -> None:
+        await self._connection.close()
+
+
+async def connect(url: str, headers: dict[str, str]) -> Transport:
+    # Imported here so the tests run with the standard library alone.
+    from websockets.asyncio.client import connect as ws_connect
+    from websockets.exceptions import InvalidStatus
+    try:
+        return _WebSocket(await ws_connect(url, additional_headers=headers))
+    except InvalidStatus as error:
+        raise BackendError(f"WebSocket refused: HTTP {error.response.status_code}") from error
+    except OSError as error:
+        raise BackendError(f"WebSocket connection failed: {error.strerror or error}") from error
+
+
+async def stdin_lines() -> AsyncIterator[str]:
+    loop = asyncio.get_running_loop()
+    reader = asyncio.StreamReader()
+    await loop.connect_read_pipe(lambda: asyncio.StreamReaderProtocol(reader), sys.stdin)
+    while line := await reader.readline():
+        yield line.decode()
+
+
+Connect = Callable[[str, dict[str, str]], Awaitable[Transport]]
+
+
+def parse_args(argv: list[str] | None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Mac fallback: send chips to a backend call.")
+    parser.add_argument("--base-url", required=True, type=base_url,
+                        help="backend, e.g. https://host")
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument("--call-id", help="attach to a call that is already running")
+    target.add_argument("--contact", help="start a new call to this contact id, e.g. clinic")
+    parser.add_argument("--confirm-cost", action="store_true",
+                        help="accept the cost of the call that --contact starts")
+    parser.add_argument("--replay", type=Path, help="JSON list of results to play back")
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None, env: Mapping[str, str] = os.environ,
+         post: PostJson = post_json, connect: Connect = connect,
+         lines: Callable[[], AsyncIterator[str]] = stdin_lines,
+         out: Callable[[str], None] = print) -> int:
+    args = parse_args(argv)
+    sources = (ReplaySource.from_json(args.replay.read_text()),) if args.replay else ()
+    token = env.get("APP_TOKEN")
+    if not token:
+        raise SystemExit("APP_TOKEN is not set in the environment.")
+
+    async def session(call_id: str) -> None:
+        transport = await connect(ws_url(args.base_url, call_id), auth_headers(token))
+        out(f"connected to call {call_id}")
+        await Bridge(transport, out=out).run(lines(), sources)
+
+    try:
+        call_id = args.call_id or start_call(args.base_url, args.contact, token,
+                                             args.confirm_cost, post, out)
+        asyncio.run(session(call_id))
+    except BackendError as error:
+        out(f"! {error}")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
