@@ -17,7 +17,7 @@ def make_settings(**overrides: object) -> Settings:
         "custom_llm_token": CUSTOM_LLM_TOKEN,
         "bolna_api_key": "test-bolna-key",
         "bolna_agent_id": "test-agent",
-        "cerebras_api_key": "test-cerebras-key",
+        "groq_api_key": "test-groq-key",
         "allowed_recipients": "+910000000001",
     }
     values.update(overrides)
