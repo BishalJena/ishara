@@ -9,6 +9,23 @@ final class CoreMLEmbeddingModelTests: XCTestCase {
         XCTAssertEqual(CoreMLEmbeddingModel.FeatureName.embedding, "embedding")
     }
 
+    func testModelsLoadOnCPUAndGPUWithoutTheNeuralEngine() {
+        let configuration = CoreMLEmbeddingModel.makeConfiguration()
+
+        XCTAssertEqual(configuration.computeUnits, .cpuAndGPU)
+        XCTAssertFalse(configuration.allowLowPrecisionAccumulationOnGPU)
+    }
+
+    func testComputeUnitsThatAllowTheNeuralEngineAreRefused() {
+        for units in [MLComputeUnits.all, .cpuAndNeuralEngine] {
+            XCTAssertThrowsError(try CoreMLEmbeddingModel.checkComputeUnits(units), "\(units.rawValue)") {
+                XCTAssertEqual($0 as? CoreMLEmbeddingModelError, .neuralEngineNotAllowed)
+            }
+        }
+        XCTAssertNoThrow(try CoreMLEmbeddingModel.checkComputeUnits(.cpuAndGPU))
+        XCTAssertNoThrow(try CoreMLEmbeddingModel.checkComputeUnits(.cpuOnly))
+    }
+
     func testBuildsFloat32MultiArrayWithTensorShapeAndOrder() throws {
         let tensor = try Tensor(shape: [1, 2, 3], values: [0, 1, 2, 10, 11, 12])
         let array = try CoreMLEmbeddingModel.multiArray(from: tensor)

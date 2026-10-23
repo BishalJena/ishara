@@ -1,8 +1,13 @@
 import CoreML
 import Foundation
 
-/// `EmbeddingModel` backed by `SignCLIPEncoder.mlpackage` (ML Program, iOS 17),
+/// `EmbeddingModel` backed by `SignCLIPEncoder.mlpackage` (ML Program, iOS 17, FP16),
 /// using the feature names of the conversion contract.
+///
+/// The FP16 package must not run on the Neural Engine: measured on 47 clips, any
+/// compute-unit setting that allows it gave cosine 0.63–0.81 against PyTorch, while
+/// CPU+GPU gave ≥ 0.9999997 (ml/coreml parity run). Models are therefore always
+/// loaded with `.cpuAndGPU`, and a model configured to use the Neural Engine is refused.
 public final class CoreMLEmbeddingModel: EmbeddingModel {
     public enum FeatureName {
         public static let features = "features"
@@ -12,17 +17,36 @@ public final class CoreMLEmbeddingModel: EmbeddingModel {
 
     private let model: MLModel
 
-    public init(model: MLModel) {
+    /// Wraps an already loaded model. Throws if its configuration allows the Neural Engine.
+    public init(model: MLModel) throws {
+        try Self.checkComputeUnits(model.configuration.computeUnits)
         self.model = model
     }
 
-    /// Loads a compiled `.mlmodelc`, or compiles an `.mlpackage`/`.mlmodel` first.
-    /// Compiling takes seconds, so ship the compiled model where possible.
-    public convenience init(
-        contentsOf url: URL, configuration: MLModelConfiguration = MLModelConfiguration()
-    ) throws {
+    /// Loads a compiled `.mlmodelc`, or compiles an `.mlpackage`/`.mlmodel` first, with
+    /// `makeConfiguration()`. Compiling takes seconds, so ship the compiled model where possible.
+    public convenience init(contentsOf url: URL) throws {
         let compiled = url.pathExtension == "mlmodelc" ? url : try MLModel.compileModel(at: url)
-        try self.init(model: MLModel(contentsOf: compiled, configuration: configuration))
+        try self.init(model: MLModel(contentsOf: compiled, configuration: Self.makeConfiguration()))
+    }
+
+    /// CPU and GPU only, full-precision GPU accumulation (the setting the parity run measured).
+    public static func makeConfiguration() -> MLModelConfiguration {
+        let configuration = MLModelConfiguration()
+        configuration.computeUnits = .cpuAndGPU
+        configuration.allowLowPrecisionAccumulationOnGPU = false
+        return configuration
+    }
+
+    static func checkComputeUnits(_ units: MLComputeUnits) throws {
+        switch units {
+        case .cpuOnly, .cpuAndGPU:
+            return
+        case .all, .cpuAndNeuralEngine:
+            throw CoreMLEmbeddingModelError.neuralEngineNotAllowed
+        @unknown default:
+            throw CoreMLEmbeddingModelError.neuralEngineNotAllowed
+        }
     }
 
     public func embedding(features: Tensor, mask: Tensor) throws -> Tensor {
@@ -89,4 +113,6 @@ func rowMajorStrides(_ shape: [Int]) -> [Int] {
 public enum CoreMLEmbeddingModelError: Error, Equatable {
     case missingOutput(String)
     case unsupportedDataType(Int)
+    /// The FP16 SignCLIP encoder gives wrong embeddings on the Neural Engine.
+    case neuralEngineNotAllowed
 }

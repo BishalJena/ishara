@@ -36,6 +36,7 @@ let embedding = try encoder.embed(clip)                  // raw; L2-normalize in
 
 - Get the model with `../SignPipelineMediaPipe/Scripts/download_holistic_model.sh <dir>` and add it to the app bundle.
 - `CameraFrameSource` needs camera permission (`NSCameraUsageDescription`) granted before `frames()`.
+- `CoreMLEmbeddingModel` always loads the encoder with `computeUnits = .cpuAndGPU` and refuses a model configured for the Neural Engine: the FP16 package gives wrong embeddings there (cosine 0.63–0.81 vs ≥ 0.9999997 on CPU+GPU in the `ml/coreml` parity run).
 - Embeddings are **not** normalized here; clips over 256 frames or under 4 frames are rejected, never truncated.
 
 ## Tests
