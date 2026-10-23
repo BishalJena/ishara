@@ -12,7 +12,8 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent
 ARTIFACTS = ROOT / "artifacts"
 DATASET = ARTIFACTS / "pilot" / "dataset.json"
-VOCABULARY = ("hello", "thankyou", "doctor", "hospital", "tomorrow")
+VOCABULARY = ("hello", "thankyou", "yes", "no", "sorry", "doctor",
+              "today", "tomorrow", "morning", "afternoon", "evening", "time")
 SPLITS = ("enrollment", "calibration", "test")
 NEGATIVES = ("idle", "transition", "incomplete", "unsupported")
 

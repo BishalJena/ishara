@@ -51,7 +51,7 @@ class RetrievalContracts(unittest.TestCase):
         duplicate = {**query, "id": "duplicate", "label": "doctor"}
         genuine = {**record("b"), "label": "tomorrow", "embedding": np.array([0.9, 0.1])}
         result = data.rank(query, [query, duplicate, genuine])
-        modified = {**query, "label": "hospital"}
+        modified = {**query, "label": "morning"}
         self.assertEqual(result, data.rank(modified, [query, duplicate, genuine]))
         self.assertEqual([r["concept"] for r in result["ranking"]], ["tomorrow"])
 

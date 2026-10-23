@@ -214,7 +214,10 @@ def build_parser():
     record.add_argument("--signer", required=True, help="Local pseudonym, not a person's name")
     record.add_argument("--session", required=True, help="Keep the same ID throughout one recording session")
     record.add_argument("--split", choices=data.SPLITS, required=True)
-    record.add_argument("--concept", choices=data.VOCABULARY + data.NEGATIVES, required=True)
+    record.add_argument("--concept", choices=data.VOCABULARY + data.NEGATIVES, required=True,
+                        metavar="CONCEPT", help="One of the demo signs ("
+                        + ", ".join(data.VOCABULARY) + ") or a negative kind ("
+                        + ", ".join(data.NEGATIVES) + ")")
     record.add_argument("--takes", type=int, default=3)
     record.add_argument("--note", default="Sign form not yet checked")
     for command in ("review", "verify"):
