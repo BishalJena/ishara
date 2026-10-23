@@ -117,8 +117,7 @@ class CallSession:
         """A composed draft may be shown only if nothing changed while composing."""
         turn = self.current
         return (
-            not self.finished
-            and turn is not None
+            turn is not None
             and turn.turn_id == turn_id
             and turn.chips_rev == chips_rev
             and turn.phase is TurnPhase.OPEN
