@@ -100,6 +100,13 @@ class AppSession:
         self._sent_chips: list[str] = []
         self._chips_sent_at: float | None = None
 
+    def turn_label(self, turn_id: str) -> str:
+        """Label for display; ids themselves are never printed."""
+        if turn_id == self._turn_id:
+            return "current turn"
+        timing = self._timings.get(turn_id)
+        return timing.label if timing else "unknown turn"
+
     def _current_timing(self) -> TurnTiming:
         timing = self._timings.get(self._turn_id)
         if timing is None:

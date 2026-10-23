@@ -310,3 +310,11 @@ async def test_hang_up_on_closed_socket_sends_nothing() -> None:
         await drain(transport)
         assert await session.hang_up(timeout=1) is False
     assert transport.raw_sent == []
+
+
+async def test_turn_label_never_exposes_ids() -> None:
+    session = _session(FakeTransport())
+    approved = await session.say("Yes.", label="T5")
+    assert session.turn_label(approved) == "T5"
+    assert session.turn_label(session.turn_id) == "current turn"
+    assert session.turn_label("other") == "unknown turn"
