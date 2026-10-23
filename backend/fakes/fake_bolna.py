@@ -44,10 +44,11 @@ from app.markers import (
     USER_DATA_CALL_ID,
     render_marker_block,
 )
+from app.markers import WEBHOOK_PATH as BOLNA_WEBHOOK_PATH
 from fakes.sse import collect_stream_text
 
 LLM_PATH = "/v1/chat/completions"
-WEBHOOK_PATH = "/bolna/webhook/{secret}"
+WEBHOOK_PATH = BOLNA_WEBHOOK_PATH + "/{secret}"
 ANSWER_STATUSES = ("ringing", "in-progress")
 END_STATUS = "completed"
 LISTEN_PROMPT = (

@@ -371,7 +371,7 @@ async def call_socket(
     await manager.detach(call_id, link)
 
 
-@router.post("/bolna/webhook/{secret}", status_code=status.HTTP_204_NO_CONTENT)
+@router.post(markers.WEBHOOK_PATH + "/{secret}", status_code=status.HTTP_204_NO_CONTENT)
 async def bolna_webhook(
     secret: str,
     request: Request,

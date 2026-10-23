@@ -133,8 +133,15 @@ Order: deploy the backend (V1/V2) → register the model → create the agent.
 cd backend
 uv run python -m scripts.bolna_agent render                 # no network
 uv run python -m scripts.bolna_agent register-llm --yes     # needs PUBLIC_BASE_URL, BOLNA_API_KEY, CUSTOM_LLM_TOKEN
-uv run python -m scripts.bolna_agent create --yes           # needs PUBLIC_BASE_URL, BOLNA_API_KEY; then set BOLNA_AGENT_ID
+uv run python -m scripts.bolna_agent create --yes           # needs PUBLIC_BASE_URL, BOLNA_API_KEY, CUSTOM_LLM_TOKEN; then set BOLNA_AGENT_ID
 uv run python -m scripts.bolna_agent update --yes           # also needs BOLNA_AGENT_ID
 ```
+
+`create` and `update` set the agent's `webhook_url` to
+`PUBLIC_BASE_URL/bolna/webhook/<CUSTOM_LLM_TOKEN>` (override with `--webhook-url`).
+The backend refuses SEND until this webhook reports `in-progress` (or the
+receptionist's first words arrive as a caption), so without it the first reply of a
+call is refused. The URL holds a secret, so it is never printed and the committed
+`agent.json` keeps `webhook_url: null`.
 
 Re-run `update` after changing `GOODBYE` so Bolna re-renders the static audio.

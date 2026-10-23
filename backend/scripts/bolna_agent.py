@@ -6,7 +6,10 @@
     uv run python -m scripts.bolna_agent update --yes          # replaces BOLNA_AGENT_ID's config
 
 Write commands refuse to run without --yes and the env names they need. They print
-only ids and names, never keys or Bolna responses.
+only ids and names, never keys, the webhook URL (it holds a secret) or Bolna responses.
+`create`/`update` point the agent's status webhook at our /bolna/webhook/<token> route
+unless --webhook-url is given; without it the backend only learns the call connected
+from the first caption, and SEND is refused until then.
 """
 
 from __future__ import annotations
@@ -29,11 +32,12 @@ from app.bolna_agent import (
 )
 from app.bolna_client import BolnaError, HttpBolnaClient
 from app.config import Settings, get_settings
+from app.markers import WEBHOOK_PATH
 
 REQUIRED_ENV = {
     "register-llm": ("PUBLIC_BASE_URL", "BOLNA_API_KEY", "CUSTOM_LLM_TOKEN"),
-    "create": ("PUBLIC_BASE_URL", "BOLNA_API_KEY"),
-    "update": ("PUBLIC_BASE_URL", "BOLNA_API_KEY", "BOLNA_AGENT_ID"),
+    "create": ("PUBLIC_BASE_URL", "BOLNA_API_KEY", "CUSTOM_LLM_TOKEN"),
+    "update": ("PUBLIC_BASE_URL", "BOLNA_API_KEY", "BOLNA_AGENT_ID", "CUSTOM_LLM_TOKEN"),
 }
 
 
@@ -53,6 +57,11 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
+def status_webhook_url(public_base_url: str, secret: SecretStr) -> str:
+    """The calls.py webhook route; the secret must match CUSTOM_LLM_TOKEN."""
+    return f"{public_base_url.rstrip('/')}{WEBHOOK_PATH}/{secret.get_secret_value()}"
+
+
 async def _run(
     args: argparse.Namespace, settings: Settings, transport: httpx.AsyncBaseTransport | None
 ) -> None:
@@ -65,7 +74,10 @@ async def _run(
             await client.register_custom_model(CUSTOM_LLM_MODEL, base_url, token, CUSTOM_LLM_FAMILY)
             print(f"Registered custom model {CUSTOM_LLM_MODEL} at {base_url}")
             return
-        payload = build_agent_payload(base_url, args.webhook_url)
+        webhook_url = args.webhook_url or status_webhook_url(
+            cast(str, settings.public_base_url), cast(SecretStr, settings.custom_llm_token)
+        )
+        payload = build_agent_payload(base_url, webhook_url)
         if args.command == "create":
             print(await client.create_agent(payload))
             print("Put this id in BOLNA_AGENT_ID (Heroku config and the local .env).")

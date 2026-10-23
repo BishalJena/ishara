@@ -5,15 +5,28 @@ from pathlib import Path
 
 import httpx
 import pytest
+from fastapi.testclient import TestClient
 
 from app.bolna_agent import CUSTOM_LLM_MODEL, build_agent_payload
+from app.calls import CallManager
+from app.composer import TemplateComposer
 from app.config import Settings
+from app.main import create_app
 from scripts.bolna_agent import main
 from tests.conftest import CUSTOM_LLM_TOKEN, make_settings
 
 AGENT_JSON = Path(__file__).resolve().parents[1] / "bolna" / "agent.json"
 PUBLIC_URL = "https://ishara-test.example.com"
 BOLNA_KEY = "test-bolna-key"
+WEBHOOK_URL = f"{PUBLIC_URL}/bolna/webhook/{CUSTOM_LLM_TOKEN}"
+
+
+class _NoBolna:
+    async def start_call(self, recipient: str, user_data: dict[str, str]) -> str:
+        raise AssertionError("no call expected")
+
+    async def send_event(self, run_id: str, event: str, properties: dict[str, str]) -> None:
+        raise AssertionError("no event expected")
 
 
 class Recorder:
@@ -57,6 +70,8 @@ def test_write_commands_refuse_without_yes(command: str, capsys) -> None:
     [
         ("create", "public_base_url", "PUBLIC_BASE_URL"),
         ("create", "bolna_api_key", "BOLNA_API_KEY"),
+        ("create", "custom_llm_token", "CUSTOM_LLM_TOKEN"),
+        ("update", "custom_llm_token", "CUSTOM_LLM_TOKEN"),
         ("update", "public_base_url", "PUBLIC_BASE_URL"),
         ("update", "bolna_api_key", "BOLNA_API_KEY"),
         ("update", "bolna_agent_id", "BOLNA_AGENT_ID"),
@@ -80,11 +95,30 @@ def test_create_posts_the_agent_for_our_backend_and_prints_only_the_id(capsys) -
     assert main(["create", "--yes"], settings=_ready(), transport=recorder.transport) == 0
     (request,) = recorder.requests
     assert (request.method, request.url.path) == ("POST", "/v2/agent")
-    assert json.loads(request.content) == build_agent_payload(PUBLIC_URL + "/v1", None)
-    out = capsys.readouterr().out
-    assert out.splitlines()[0] == "new-agent"
-    assert "BOLNA_AGENT_ID" in out
-    assert BOLNA_KEY not in out
+    assert json.loads(request.content) == build_agent_payload(PUBLIC_URL + "/v1", WEBHOOK_URL)
+    captured = capsys.readouterr()
+    assert captured.out.splitlines()[0] == "new-agent"
+    assert "BOLNA_AGENT_ID" in captured.out
+    for secret in (BOLNA_KEY, CUSTOM_LLM_TOKEN):
+        assert secret not in captured.out + captured.err
+
+
+def test_default_webhook_reaches_the_backend_status_route() -> None:
+    settings = _ready(allowed_recipients="clinic=+910000000001")
+    manager = CallManager(settings, TemplateComposer(), _NoBolna())
+    client = TestClient(create_app(settings, ledger=manager))
+
+    path = WEBHOOK_URL.removeprefix(PUBLIC_URL)
+    assert client.post(path, json={"id": "run-1", "status": "ringing"}).status_code == 204
+    assert client.post(path + "x", json={"id": "run-1", "status": "ringing"}).status_code == 404
+
+
+def test_update_defaults_the_webhook_to_the_backend_route() -> None:
+    recorder = Recorder(httpx.Response(200, json={"status": "updated"}))
+    settings = _ready(public_base_url=PUBLIC_URL + "/")
+    assert main(["update", "--yes"], settings=settings, transport=recorder.transport) == 0
+    (request,) = recorder.requests
+    assert json.loads(request.content)["agent_config"]["webhook_url"] == WEBHOOK_URL
 
 
 def test_update_puts_to_the_configured_agent(capsys) -> None:

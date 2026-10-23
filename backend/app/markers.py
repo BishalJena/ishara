@@ -27,6 +27,9 @@ EVENT_USER_REPLY = "user_reply"
 EVENT_END_CALL = "end_call"
 PROP_REPLY_TEXT = "reply_text"
 PROP_TURN_ID = "turn_id"
+# Bolna's agent-level status webhook posts to WEBHOOK_PATH/<CUSTOM_LLM_TOKEN>; the
+# payloads are unsigned, so the secret path segment is the only check.
+WEBHOOK_PATH = "/bolna/webhook"
 
 _BLOCK = re.compile(
     r"ISHARA_CALL_ID: (?P<call_id>[^\n]*)\n"
