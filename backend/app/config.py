@@ -19,7 +19,7 @@ REQUIRED_PATH_B = (
     "BOLNA_API_KEY",
     "BOLNA_AGENT_ID",
     "CUSTOM_LLM_TOKEN",
-    "CEREBRAS_API_KEY",
+    "GROQ_API_KEY",
     "ALLOWED_RECIPIENTS",
 )
 OPTIONAL = ("SARVAM_API_KEY", "PUBLIC_BASE_URL")
@@ -35,8 +35,8 @@ class Settings(BaseSettings):
     bolna_api_key: SecretStr | None = None
     bolna_agent_id: str | None = None
     custom_llm_token: SecretStr | None = None
-    cerebras_api_key: SecretStr | None = None
-    cerebras_model: str = "gpt-oss-120b"
+    groq_api_key: SecretStr | None = None
+    groq_model: str = "openai/gpt-oss-120b"
     sarvam_api_key: SecretStr | None = None
     allowed_recipients: Annotated[frozenset[str], NoDecode] = Field(default_factory=frozenset)
     public_base_url: str | None = None
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
         "app_token",
         "bolna_api_key",
         "custom_llm_token",
-        "cerebras_api_key",
+        "groq_api_key",
         "sarvam_api_key",
         "bolna_agent_id",
         "public_base_url",
