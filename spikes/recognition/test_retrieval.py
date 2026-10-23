@@ -1,4 +1,5 @@
 """Data leakage and abstention contracts; no model downloads or inference."""
+import json
 import unittest
 from contextlib import ExitStack, contextmanager, redirect_stderr, redirect_stdout
 from io import StringIO
@@ -312,6 +313,78 @@ class CalibrationContracts(unittest.TestCase):
         self.assertIn("| evening | 5 | 5 | 100% | 0 |", report)
         self.assertIn("- Negative accepts: 0 of 20 negative clips", report)
         self.assertIn(report, out.getvalue())
+
+
+class BundleContracts(unittest.TestCase):
+    """The iPhone reads this exact layout; P3 later swaps in iOS-extracted references."""
+
+    def setUp(self):
+        temporary = TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root, self.records = Path(temporary.name), pilot_records()
+        with fake_pilot(self.records, self.root):
+            self.assertEqual(retrieval.pilot("calibrate", "signclip", None, False), 0)
+        self.policy = json.loads((self.root / "retrieval" / "policy-signclip.json").read_text())
+        self.destination = self.root / "evidence" / "recognition-bundle-signclip.json"
+
+    def export(self, records=None, contract=FakeEncoder.contract):
+        with fake_pilot(records or self.records, self.root, contract):
+            return retrieval.export_bundle("signclip", None)
+
+    def test_bundle_has_the_agreed_format(self):
+        self.assertEqual(self.export(), 0)
+        bundle = json.loads(self.destination.read_text())
+        self.assertEqual(list(bundle), ["version", "encoder", "embedding_dim", "thresholds",
+                                        "quality", "references"])
+        self.assertEqual(bundle["version"], 1)
+        self.assertEqual(json.loads(bundle["encoder"]), FakeEncoder.contract)
+        self.assertEqual(bundle["thresholds"], self.policy["thresholds"])
+        self.assertEqual(bundle["quality"], {"min_pose_fraction": 0.6, "min_hand_fraction": 0.2})
+        enrollment = [r for r in self.records if r["split"] == "enrollment"]
+        self.assertEqual([r["id"] for r in bundle["references"]], [r["id"] for r in enrollment])
+        self.assertEqual([r["label"] for r in bundle["references"]],
+                         [r["label"] for r in enrollment])
+        self.assertEqual({r["label"] for r in bundle["references"]}, set(DEMO_SIGNS))
+        self.assertEqual(bundle["embedding_dim"], DIM)
+        for reference in bundle["references"]:
+            self.assertEqual(list(reference), ["id", "label", "embedding"])
+            self.assertEqual(len(reference["embedding"]), DIM)
+            np.testing.assert_allclose(reference["embedding"], toward(reference["label"], 1.0),
+                                       atol=1e-6)
+
+    def test_bundle_quality_follows_the_shared_constant(self):
+        with patch.dict(data.QUALITY, min_hand_fraction=0.3):
+            self.export()
+        self.assertEqual(json.loads(self.destination.read_text())["quality"]["min_hand_fraction"], 0.3)
+
+    def test_changed_enrollment_or_calibration_data_is_refused(self):
+        for split in ("enrollment", "calibration"):
+            records = [dict(r) for r in self.records]
+            next(r for r in records if r["split"] == split)["verification_note"] = "re-reviewed"
+            with self.subTest(split=split), self.assertRaisesRegex(ValueError, "changed since"):
+                self.export(records)
+        self.assertFalse(self.destination.exists())
+
+    def test_different_encoder_contract_is_refused(self):
+        with self.assertRaisesRegex(ValueError, "different encoder contract"):
+            self.export(contract={**FakeEncoder.contract, "checkpoint": "other"})
+        self.assertFalse(self.destination.exists())
+
+    def test_missing_policy_is_refused(self):
+        (self.root / "retrieval" / "policy-signclip.json").unlink()
+        with self.assertRaisesRegex(ValueError, "before exporting a bundle"):
+            self.export()
+
+    def test_mixed_dimensions_or_missing_signs_cannot_be_bundled(self):
+        references = [{"id": f"r{i}", "label": label, "embedding": np.eye(DIM)[i]}
+                      for i, label in enumerate(DEMO_SIGNS)]
+        thresholds = {"similarity": 0.5, "margin": 0.1}
+        self.assertEqual(retrieval.bundle({}, thresholds, references)["embedding_dim"], DIM)
+        with self.assertRaisesRegex(ValueError, "one dimension"):
+            retrieval.bundle({}, thresholds, references + [
+                {"id": "x", "label": "hello", "embedding": np.ones(DIM + 1)}])
+        with self.assertRaisesRegex(ValueError, "every sign"):
+            retrieval.bundle({}, thresholds, references[:-1])
 
 
 class CaptureContracts(unittest.TestCase):

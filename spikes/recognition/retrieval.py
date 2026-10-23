@@ -1,6 +1,7 @@
 """Compare frozen sign embeddings; calibrate and evaluate on disjoint sessions.
 
 replay is development-only. calibrate/evaluate require a verified pilot manifest.
+export-bundle packs the frozen policy and enrollment embeddings for the iPhone.
 No result from this module is automatically sent to composition or speech.
 """
 from __future__ import annotations
@@ -258,9 +259,41 @@ def pilot(command, name, manifest, fresh):
     return 0 if report["passed"] else 2
 
 
+def bundle(contract, thresholds, references):
+    """iPhone matcher input; the field layout is shared with the Swift side."""
+    dims = {len(r["embedding"]) for r in references}
+    if len(dims) != 1:
+        raise ValueError("Enrollment embeddings must all have one dimension")
+    if {r["label"] for r in references} != set(data.VOCABULARY):
+        raise ValueError("The bundle needs enrollment references for every sign")
+    return {"version": 1, "encoder": json.dumps(contract, sort_keys=True, separators=(",", ":")),
+            "embedding_dim": dims.pop(),
+            "thresholds": {"similarity": float(thresholds["similarity"]),
+                           "margin": float(thresholds["margin"])},
+            "quality": dict(data.QUALITY),
+            "references": [{"id": r["id"], "label": r["label"],
+                            "embedding": [float(v) for v in data.unit(r["embedding"])]}
+                           for r in references]}
+
+
+def export_bundle(name, manifest):
+    records = data.load_dataset(manifest)
+    policy = frozen_policy(EVIDENCE / f"policy-{name}.json", records, "exporting a bundle")
+    encoder = Encoder(name)
+    check_encoder(policy, encoder)
+    references = embed_records(encoder, [r for r in records if r["split"] == "enrollment"])
+    if any(r.get("error") for r in references):
+        raise ValueError("An enrollment reference could not be embedded")
+    destination = REPORTS / f"recognition-bundle-{name}.json"
+    data.write_json(destination, bundle(encoder.contract, policy["thresholds"], references))
+    print(f"Bundle with {len(references)} Mac-extracted references: {destination}")
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["replay", "status", "calibrate", "evaluate"])
+    parser.add_argument("command", choices=["replay", "status", "calibrate", "evaluate",
+                                            "export-bundle"])
     parser.add_argument("--encoder", choices=["slgcn", "signclip"], default="slgcn")
     parser.add_argument("--manifest", type=data.Path, default=data.DATASET)
     parser.add_argument("--fresh", action="store_true", help="Disable feature cache for latency measurement")
@@ -271,6 +304,8 @@ def main():
     if args.command == "replay":
         replay(args.encoder)
         return 0
+    if args.command == "export-bundle":
+        return export_bundle(args.encoder, args.manifest)
     return pilot(args.command, args.encoder, args.manifest, args.fresh)
 
 
