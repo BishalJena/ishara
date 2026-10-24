@@ -174,6 +174,9 @@ check_ios_app() {
   if [[ -z $destination ]]; then
     udid=$(pick_simulator)
     [[ -n $udid ]] || { echo "  no available iPhone simulator; add an iOS runtime in Xcode" >&2; exit 1; }
+    # A cold simulator can fail the first app launch ("did not return a process
+    # handle"), so boot it and wait until it's ready before testing.
+    step xcrun simctl bootstatus "$udid" -b
     destination="platform=iOS Simulator,id=$udid"
   fi
   step xcodebuild test -quiet -project "$project" -scheme "${IOS_SCHEME:-Ishara}" \
