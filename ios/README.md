@@ -116,6 +116,21 @@ This runs the unit tests (`IsharaTests`) and the UI tests (`IsharaUITests`),
 which walk the whole PLAN §1 call on the fake driver at `-IsharaFakeTimeScale 0.5`
 (about a minute). Add `-only-testing:IsharaTests` for just the unit tests.
 
+`LocalBackendCallUITests` walks the same call through the live driver against the
+backend's free local demo server (no Bolna, nothing dialled). It is skipped unless you
+start the server, point `Secrets.xcconfig` at it and pass the flag:
+
+```sh
+# backend/: uv run python -m scripts.local_demo --port 8799 --delay 0.3 > /tmp/local-demo.log
+# Secrets.xcconfig: ISHARA_BACKEND_URL = http:/$()/127.0.0.1:8799, ISHARA_APP_TOKEN = ishara-local-demo
+TEST_RUNNER_ISHARA_LOCAL_BACKEND=1 TEST_RUNNER_ISHARA_LOCAL_BACKEND_LOG=/tmp/local-demo.log \
+  xcodebuild -project ios/Ishara.xcodeproj -scheme Ishara \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -only-testing:IsharaUITests/LocalBackendCallUITests test
+```
+
+With the log path it also checks the stand-in Bolna spoke nothing before each SEND.
+
 Packages (macOS host, no simulator needed):
 
 ```sh
