@@ -254,6 +254,9 @@ class BlockingSource:
             yield item
 
 
+PROVISIONAL_BANNER = "PROVISIONAL — uncalibrated, for trying only"
+
+
 def result_line(result: Result, **details: object) -> str:
     """One recognizer result as a JSON line: the wire format of `SubprocessSource`."""
     return json.dumps({"sign": result, **details})

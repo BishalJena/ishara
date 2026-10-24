@@ -34,7 +34,7 @@ import recognition_data as data
 from detect_clips import CALIBRATION_HELP, within
 from detector import CalibrationError, Params, Segment, SignDetector, State, calibrate
 from detector import Frame as DetectorFrame
-from mac_bridge import result_line
+from mac_bridge import PROVISIONAL_BANNER, result_line
 
 DEFAULT_BUNDLE = data.ARTIFACTS / "evidence" / "recognition-bundle-signclip.json"
 LATENCY_BUDGET_S = 2.0  # G2: sign end to chip
@@ -67,22 +67,45 @@ Embed = Callable[[np.ndarray], np.ndarray]
 Show = Callable[[Any, str, "float | None", str], bool]  # image, status, rest_y, message -> keep going
 
 
+TOP_K = 3  # candidates shown per sign so a person can judge how close the runners-up were
+# Each check data.decision applies -> its cut-off's key in Match.thresholds.
+FAILED_CHECKS = {"similarity": "similarity", "margin": "margin", "pose": "min_pose_fraction",
+                 "hands": "min_hand_fraction"}
+
+
+@dataclass(frozen=True)
+class Candidate:
+    sign: str
+    similarity: float
+
+
 @dataclass(frozen=True)
 class Match:
+    """The decision plus the evidence behind it; only `sign` ever becomes a chip."""
     sign: str | None  # None = unsure, a "?" chip that is never sent
     reason: str | None  # why it is unsure
     similarity: float | None = None
     margin: float | None = None
+    top: tuple[Candidate, ...] = ()  # best reference per sign, highest first, at most TOP_K
+    quality: dict[str, float] | None = None  # pose_fraction, hand_fraction of the segment
+    thresholds: dict[str, float] | None = None  # bundle cut-offs plus data.QUALITY minimums
+    failed_checks: tuple[str, ...] = ()  # FAILED_CHECKS keys the frozen decision tripped on
+    provisional: bool = False  # the bundle says its thresholds are not calibrated yet
 
 
 @dataclass(frozen=True)
 class Recognition:
-    sign: str | None  # None = unsure, a "?" chip that is never sent
-    reason: str | None  # why it is unsure
+    match: Match
     latency_s: float  # hands back at rest (segment end) -> result
     segment: Segment
-    similarity: float | None = None
-    margin: float | None = None
+
+    @property
+    def sign(self) -> str | None:
+        return self.match.sign
+
+    @property
+    def reason(self) -> str | None:
+        return self.match.reason
 
 
 @dataclass(frozen=True)
@@ -90,6 +113,18 @@ class Bundle:
     encoder: str
     thresholds: dict[str, float]
     references: list[dict[str, Any]]  # rows in the shape recognition_data.rank expects
+    provisional: bool = False
+
+
+def failed_checks(top: float, margin: float, quality: dict[str, float],
+                  thresholds: dict[str, float]) -> tuple[str, ...]:
+    """Which of data.decision's cut-offs a ranked segment misses, to explain a "?".
+
+    Explanation only: data.decision stays the one that decides.
+    """
+    measured = {"similarity": top, "margin": margin, "pose": quality.get("pose_fraction", 0),
+                "hands": quality.get("hand_fraction", 0)}
+    return tuple(check for check, value in measured.items() if value < thresholds[FAILED_CHECKS[check]])
 
 
 def load_bundle(path: Path | None, warn: Callable[[str], None] = log) -> Bundle | None:
@@ -115,10 +150,15 @@ def load_bundle(path: Path | None, warn: Callable[[str], None] = log) -> Bundle 
         raise ValueError(f"{path}: references must cover exactly {', '.join(data.VOCABULARY)}")
     if any(len(r["embedding"]) != document["embedding_dim"] for r in references):
         raise ValueError(f"{path}: every reference needs embedding_dim values")
+    provisional = document.get("provisional", False)
+    if type(provisional) is not bool:
+        raise ValueError(f"{path}: provisional must be true or false")
+    if provisional:
+        warn(f"WARNING: {PROVISIONAL_BANNER}. {path} was not calibrated on held-out takes.")
     # The bundle drops clip hashes; each reference stands for its own source.
     rows = [{"id": r["id"], "label": r["label"], "sha256": f"bundle:{r['id']}",
              "source_id": f"bundle:{r['id']}", "embedding": r["embedding"]} for r in references]
-    return Bundle(document["encoder"], thresholds, rows)
+    return Bundle(document["encoder"], thresholds, rows, provisional)
 
 
 @dataclass(frozen=True)
@@ -129,26 +169,37 @@ class Matcher:
     embed: Embed
     max_frames: int  # SignCLIP's limit: longer segments are refused, never truncated
 
+    @property
+    def thresholds(self) -> dict[str, float]:
+        return {**self.bundle.thresholds, **data.QUALITY}
+
     def __call__(self, observations: Sequence[Observation]) -> Match:
+        unsure = replace(Match(None, None), thresholds=self.thresholds,
+                         provisional=self.bundle.provisional)
         if len(observations) > self.max_frames:
-            return Match(None, f"{len(observations)} frames > {self.max_frames}; not truncated")
+            return replace(unsure, reason=f"{len(observations)} frames > {self.max_frames}; not truncated")
         try:
             features, quality = self.featurize(observations)
             embedding = self.embed(features)
         except ValueError as error:  # untrackable or too short for SignCLIP: unsure, not fatal
-            return Match(None, str(error))
+            return replace(unsure, reason=str(error))
         query = {"id": LIVE_ID, "sha256": LIVE_ID, "source_id": LIVE_ID, "embedding": embedding}
         result = data.rank(query, self.bundle.references)
         verdict = data.decision(result, quality, self.bundle.thresholds)
         best = result["ranking"][0] if result["ranking"] else None
         top, margin = (best["similarity"] if best else None), result["margin"]
+        evidence = replace(unsure, similarity=top, margin=margin,
+                           top=tuple(Candidate(r["concept"], r["similarity"]) for r in result["ranking"][:TOP_K]),
+                           quality={k: quality.get(k, 0) for k in ("pose_fraction", "hand_fraction")})
         if verdict["concept"] is not None:
-            return Match(verdict["concept"], None, top, margin)
+            return replace(evidence, sign=verdict["concept"])
         reason = verdict["reason"]
-        if best is not None and margin is not None:
-            reason += (f" (best {best['concept']} {top:.3f}, margin {margin:.3f}, pose "
-                       f"{quality.get('pose_fraction', 0):.2f}, hands {quality.get('hand_fraction', 0):.2f})")
-        return Match(None, reason, top, margin)
+        if best is None or margin is None:
+            return replace(evidence, reason=reason)
+        reason += (f" (best {best['concept']} {top:.3f}, margin {margin:.3f}, pose "
+                   f"{quality.get('pose_fraction', 0):.2f}, hands {quality.get('hand_fraction', 0):.2f})")
+        return replace(evidence, reason=reason,
+                       failed_checks=failed_checks(top, margin, quality, self.thresholds))
 
 
 class LiveSource:
@@ -247,27 +298,37 @@ class LiveSource:
         observations = [o for o in recent if within(o.frame.t, segment)]
         sign_end_wall = observations[-1].wall  # the first rest frame is the segment end
         match = Match(None, "no recognition bundle") if self.matcher is None else self.matcher(observations)
-        sign, reason = match.sign, match.reason
         latency = self.clock() - sign_end_wall
         self.latencies.append(latency)
         self.count += 1
         over = "  OVER the 2 s budget" if latency >= LATENCY_BUDGET_S else ""
-        shown = sign or f"? ({reason})"
-        self._message = f"#{self.count} {sign or '?'}  {latency:.2f} s"
+        shown = match.sign or f"? ({match.reason})"
+        self._message = f"#{self.count} {match.sign or '?'}  {latency:.2f} s"
         self.out(f"#{self.count} {span} -> {shown}  latency {latency:.2f} s{over}")
-        return Recognition(sign, reason, latency, segment, match.similarity, match.margin)
+        return Recognition(match, latency, segment)
+
+
+def _rounded(value: float | None) -> float | None:
+    return None if value is None else round(value, 4)
+
+
+def result_details(recognition: Recognition) -> dict[str, Any]:
+    """Everything the bridge and the session log show about one sign; only "sign" is acted on."""
+    match, segment = recognition.match, recognition.segment
+    return {"sign": match.sign, "reason": match.reason,
+            "latency_ms": round(1000 * recognition.latency_s, 1),
+            "similarity": _rounded(match.similarity), "margin": _rounded(match.margin),
+            "segment": [round(segment.start, 3), round(segment.end, 3)],
+            "top": [{"sign": c.sign, "similarity": _rounded(c.similarity)} for c in match.top],
+            "quality": None if match.quality is None else {k: _rounded(v) for k, v in match.quality.items()},
+            "thresholds": match.thresholds, "failed_checks": list(match.failed_checks),
+            "provisional": match.provisional}
 
 
 def result_json(recognition: Recognition) -> str:
-    """The line mac_bridge reads; everything besides the sign is for logs and evidence."""
-    def rounded(value: float | None) -> float | None:
-        return None if value is None else round(value, 4)
-
-    segment = recognition.segment
-    return result_line(recognition.sign, reason=recognition.reason,
-                       latency_ms=round(1000 * recognition.latency_s, 1),
-                       similarity=rounded(recognition.similarity), margin=rounded(recognition.margin),
-                       segment=[round(segment.start, 3), round(segment.end, 3)])
+    """The line mac_bridge reads."""
+    details = result_details(recognition)
+    return result_line(details.pop("sign"), **details)
 
 
 # ---- real camera, clips and model: these need the SignCLIP venv ----
