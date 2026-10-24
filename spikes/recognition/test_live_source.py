@@ -393,8 +393,8 @@ class Calibration(unittest.TestCase):
     def test_closing_the_preview_stops_the_source(self):
         shown = []
 
-        def show(image, status, rest_y, message):
-            shown.append(status)
+        def show(image, overlay):
+            shown.append(overlay.status)
             return len(shown) < 10
 
         observations = (ls.Observation(o.wall, o.frame, o.landmarks, image="img")
@@ -402,6 +402,124 @@ class Calibration(unittest.TestCase):
         results, _, _ = run([observations], FakeModel(sign_vector("doctor")), show=show)
         self.assertEqual(results, [])
         self.assertEqual(shown, ["calibrating"] * 10)
+
+
+def with_images(observations):
+    return (ls.Observation(o.wall, o.frame, o.landmarks, image=o.landmarks) for o in observations)
+
+
+class Preview(unittest.TestCase):
+    def overlays(self, model=None, **options):
+        shown = []
+        script = Script().sign(1.0).hold(0.8, UP_Y).hold(0.6)
+
+        def show(image, overlay):
+            shown.append((image, overlay))
+            return True
+
+        results, _, _ = run([with_images(script.observations())], model, show=show, **options)
+        return results, shown
+
+    def test_the_latest_result_stays_on_screen_until_the_next_one(self):
+        results, shown = self.overlays(FakeModel(sign_vector("doctor")))
+        self.assertEqual(len(results), 2)
+        self.assertEqual([image for image, _ in shown], list(range(len(shown))))  # every frame
+        lasts = [overlay.last for _, overlay in shown]
+        first = lasts.index(results[0])
+        self.assertTrue(all(last is None for last in lasts[:first]))
+        second = lasts.index(results[1])
+        self.assertTrue(all(last is results[0] for last in lasts[first:second]))
+        self.assertTrue(all(last is results[1] for last in lasts[second:]))
+        self.assertEqual(shown[first][1].message, f"#1 doctor  {results[0].latency_s:.2f} s")
+        self.assertEqual(shown[0][1].status, "calibrating")
+        self.assertIn("signing", {overlay.status for _, overlay in shown})
+        self.assertEqual(shown[-1][1].rest_y, 0.9 - 0.08)
+        self.assertFalse(any(overlay.provisional for _, overlay in shown))
+
+    def test_a_provisional_bundle_shows_the_banner_from_the_first_frame(self):
+        _, shown = self.overlays(FakeModel(sign_vector("doctor")), bundle_changes={"provisional": True})
+        self.assertTrue(all(overlay.provisional for _, overlay in shown))
+        _, shown = self.overlays()
+        self.assertFalse(any(overlay.provisional for _, overlay in shown))
+
+
+def recognition(model=None, **options):
+    results, _, _ = run([Script().sign(1.0).observations()], model, **options)
+    return results[0]
+
+
+class ResultPanel(unittest.TestCase):
+    def test_accepted_sign_gets_a_green_label_and_the_numbers_behind_it(self):
+        result = recognition(FakeModel(unit_mix(doctor=0.8, time=0.5, morning=0.3)))
+        panel = ls.result_panel(result)
+        self.assertEqual((panel.label, panel.accepted, panel.why), ("doctor", True, None))
+        self.assertEqual([sign for sign, _ in panel.bars], ["doctor", "time", "morning"])
+        self.assertAlmostEqual(panel.bars[1][1], 0.5 / np.linalg.norm([0.8, 0.5, 0.3]), places=4)
+        self.assertEqual(panel.similarity_cut, 0.8)
+        self.assertEqual(panel.footer, (f"margin 0.30 (min 0.10)  {result.latency_s:.2f} s",
+                                        "body 1.00 (min 0.60)  hands 0.90 (min 0.20)"))
+
+    def test_unsure_sign_shows_a_question_mark_and_why(self):
+        panel = ls.result_panel(recognition(FakeModel(sign_vector("hello"))))
+        self.assertEqual((panel.label, panel.accepted, panel.why), ("?", False, "low margin"))
+        self.assertEqual([sign for sign, _ in panel.bars], ["hello", "thankyou", "afternoon"])
+
+    def test_without_a_bundle_only_the_reason_and_latency_show(self):
+        result = recognition()
+        panel = ls.result_panel(result)
+        self.assertEqual((panel.label, panel.bars, panel.similarity_cut, panel.why),
+                         ("?", (), None, "no recognition bundle"))
+        self.assertEqual(panel.footer, (f"{result.latency_s:.2f} s",))
+
+
+class DrawOverlay(unittest.TestCase):
+    """Pixel checks on a black frame: the colours carry the meaning."""
+    HEIGHT, WIDTH = 720, 1280
+
+    def draw(self, last=None, provisional=False, status="watching"):
+        view = np.zeros((self.HEIGHT, self.WIDTH, 3), np.uint8)
+        ls.draw_overlay(view, ls.Overlay(status, 0.82, "Ready", last, provisional))
+        return view
+
+    def count(self, region, colour):
+        return int(np.all(region == colour, axis=-1).sum())
+
+    def panel(self, view):
+        return view[:400, self.WIDTH - ls.PANEL_WIDTH - 10:]
+
+    def test_accepted_result_is_green_and_never_red(self):
+        view = self.draw(recognition(FakeModel(sign_vector("doctor"))))
+        self.assertGreater(self.count(self.panel(view), ls.GREEN), 500)
+        self.assertEqual(self.count(view, ls.RED), 0)
+        self.assertGreater(self.count(self.panel(view), ls.YELLOW), 0)  # the cut-off ticks
+
+    def test_unsure_result_is_red_and_never_green(self):
+        view = self.draw(recognition(FakeModel(sign_vector("hello"))))
+        self.assertGreater(self.count(self.panel(view), ls.RED), 500)
+        self.assertEqual(self.count(view, ls.GREEN), 0)
+        self.assertGreater(self.count(self.panel(view), ls.GREY), 0)  # bars without a winner
+
+    def test_bars_grow_with_similarity(self):
+        view = self.draw(recognition(FakeModel(unit_mix(doctor=0.8, time=0.5, morning=0.3))))
+        bars = self.panel(view)[100:, 140:141 + ls.BAR_WIDTH]  # below the label, the bar columns
+        rows = [np.all(bars == colour, axis=-1).sum(axis=1).max() for colour in (ls.GREEN, ls.GREY)]
+        self.assertGreater(rows[0], rows[1])
+        similarities = np.array([0.8, 0.5]) / np.linalg.norm([0.8, 0.5, 0.3])
+        # +1: rectangles include both ends; the 2 px cut-off tick covers part of the top bar.
+        self.assertAlmostEqual(rows[0], int(ls.BAR_WIDTH * similarities[0]) + 1, delta=4)
+        self.assertEqual(rows[1], int(ls.BAR_WIDTH * similarities[1]) + 1)
+
+    def test_before_the_first_sign_there_is_no_result_box(self):
+        view = self.draw()
+        self.assertEqual(int(self.panel(view).sum()), 0)
+        self.assertGreater(int(view[:60, :220].sum()), 0)  # the detector pill
+
+    def test_provisional_banner_spans_the_width_and_pushes_the_box_down(self):
+        view = self.draw(provisional=True)
+        self.assertEqual(self.count(view[60:62], ls.RED), 2 * self.WIDTH)
+        with_box = self.draw(recognition(FakeModel(sign_vector("doctor"))), provisional=True)
+        self.assertEqual(self.count(with_box[60:62], ls.RED), 2 * self.WIDTH)
+        self.assertEqual(self.count(self.draw()[60:62], ls.RED), 0)
 
 
 class BridgeBoundary(unittest.TestCase):

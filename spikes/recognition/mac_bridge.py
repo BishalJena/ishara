@@ -308,6 +308,16 @@ CHECK_WORDS = {"similarity": "low similarity", "margin": "low margin",
                "pose": "body seen in too few frames", "hands": "hands seen in too few frames"}
 
 
+def unsure_why(details: Mapping[str, Any]) -> str | None:
+    """Short words for a "?": the failed cut-offs, else the recognizer's reason."""
+    if details["sign"] is not None:
+        return None
+    if checks := details.get("failed_checks"):
+        return ", ".join(CHECK_WORDS.get(c, c) for c in checks)
+    reason: str | None = details.get("reason")
+    return reason
+
+
 def describe_result(details: Mapping[str, Any]) -> str:
     """One readable line per sign, e.g. `✓ doctor  (doctor 0.83 | time 0.61 | no 0.55;
     margin 0.22; 0.46 s)`. Lines from an older recognizer show what they carry."""
@@ -319,11 +329,8 @@ def describe_result(details: Mapping[str, Any]) -> str:
         parts.append(f"margin {margin:.2f}")
     if (latency_ms := details.get("latency_ms")) is not None:
         parts.append(f"{latency_ms / 1000:.2f} s")
-    if sign is None:
-        checks = details.get("failed_checks")
-        why = ", ".join(CHECK_WORDS.get(c, c) for c in checks) if checks else details.get("reason")
-        if why:
-            parts.append(why)
+    if why := unsure_why(details):
+        parts.append(why)
     line = f"✓ {sign}" if sign is not None else "? unsure"
     if parts:
         line += f"  ({'; '.join(parts)})"
