@@ -32,7 +32,7 @@ runs with written, dated results.
 | L3 | Local demo server | the real backend on this Mac with a scripted Bolna and receptionist, for the app or the Mac bridge | server tests in CI; running it is by hand | free | [Build] | 24 Oct: `test_local_demo.py` **10 / 10** in CI |
 | L4 | iOS packages | detector, matcher, call session (`TurnStore`), sign pipeline, without the app | `verify.sh`; CI when `ios/**` changes | free | [Build] | 24 Oct: CallSession **164 / 164**, RecognitionCore **92 / 92**, SignPipeline **66 / 66**; SignPipelineMediaPipe 1 skipped on macOS (**8 / 8** on the simulator, PR #27) |
 | L5 | iOS app unit + UI tests (fake driver) | view model, live driver against an in-memory backend, the whole §1 call clicked through on the fake driver | `verify.sh` only (**not in CI**: CI has no simulator job) | free | [Build] | 24 Oct, iPhone 17 / iOS 27.0: `IsharaTests` **139 / 139**; `IsharaUITests` **4 passed, 1 skipped** of 5 (the skip is L6) |
-| L6 | App ↔ local backend E2E | the iOS app's live driver against the real backend code (L3), nothing dialled | by hand, opt-in UI test | free | [Build] | 24 Oct (PR #27): **passed**, [evidence](experiments/evidence/app-backend-e2e-24oct/README.md). Re-run 24 Oct on `79266c7`: **fails 0 / 1**, the test's check predates the holding line ([issue #41](https://github.com/BishalJena/ishara/issues/41), [§2 L6](#app--local-backend-end-to-end)) |
+| L6 | App ↔ local backend E2E | the iOS app's live driver against the real backend code (L3), nothing dialled | by hand, opt-in UI test | free | [Build] | 24 Oct (PR #27): **passed**, [evidence](experiments/evidence/app-backend-e2e-24oct/README.md). Re-run 24 Oct with `--delay 0.3`: **passed 1 / 1** after the holding-line fix ([issue #41](https://github.com/BishalJena/ishara/issues/41), [§2 L6](#app--local-backend-end-to-end)) |
 | L7 | iOS visual review | every screen and state in light, dark, large text and on the small phone | by hand (fixtures + screenshots) | free | [Build] | 24 Oct: 19 findings + 6 polish; **F1–F9 fixed** in #37–#40, [review](experiments/evidence/ios-visual-review-24oct/README.md), [fixes](experiments/evidence/ios-fixes-verified-24oct/README.md) |
 | L8 | Sign Lab | Mac webcam signs → real recognizer → real Groq drafts → real Sarvam voice on the Mac speakers; no call | by hand; its code is CI-tested with fakes | small (Groq per chip change, Sarvam ₹0.1–0.5 per line) | [You] | 24 Oct smoke (PR #30): 1 Groq draft in 0.23 s, passed the validator; Sarvam 1.82 s, `afplay` exit 0. **Webcam run with the founder's takes: not yet** |
 | L9 | Public-video pipeline eval | saved clips through the live recognizer, composer and voice, scored against hidden labels | by hand | small (17 Groq + 8 Sarvam requests last time) | [Build] | 24 Oct: cross-signer set A **0 / 24** chips (0 wrong), set B **4 / 18** correct, **1** wrong; 5 / 5 turns stayed silent; [report](experiments/video-pipeline-eval.md) |
@@ -151,13 +151,11 @@ TEST_RUNNER_ISHARA_LOCAL_BACKEND=1 TEST_RUNNER_ISHARA_LOCAL_BACKEND_LOG=/tmp/loc
 - By hand instead: launch the app with `-IsharaDriver live -IsharaRecognition scripted`
   and use the replay menu for chips.
 - Latest: passed on 24 Oct with PR #27 ([evidence](experiments/evidence/app-backend-e2e-24oct/README.md)).
-  **Re-run 24 Oct on `main @ 79266c7`: fails, 0 / 1**, with `--delay 0.3` before turn 1
-  and with the default delay after turn 2. Since #37 the scripted Bolna plays the holding
-  line after 15 s × `--delay` of silence, and the test counts it as speech before SEND.
-  The backend behaviour is right; the test's check is out of date:
-  [issue #41](https://github.com/BishalJena/ishara/issues/41). Until it's fixed, read
-  the server log by hand: only the disclosure, holding lines and goodbye may appear
-  without a SEND.
+  Re-run 24 Oct on `main @ 79266c7` failed (0 / 1): since #37 the scripted Bolna plays
+  the holding line after 15 s × `--delay` of silence and the test counted it as speech
+  before SEND ([issue #41](https://github.com/BishalJena/ishara/issues/41)). The test now
+  ignores that fixed line (it never carries the user's words); **re-run with `--delay 0.3`:
+  passed 1 / 1**, with the holding line said 9 times during the call.
 
 ### iOS visual review
 
