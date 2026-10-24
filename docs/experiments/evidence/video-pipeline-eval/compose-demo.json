@@ -1,0 +1,32 @@
+{
+ "turns": [
+  {
+   "turn": "T1",
+   "receptionist": null,
+   "chips": [],
+   "oracle": [
+    "hello",
+    "doctor",
+    "tomorrow"
+   ]
+  },
+  {
+   "turn": "T3",
+   "receptionist": "We have 4 pm tomorrow. Does that work?",
+   "chips": [],
+   "oracle": [
+    "no",
+    "morning"
+   ]
+  },
+  {
+   "turn": "T5",
+   "receptionist": "Yes, 10:30 tomorrow morning.",
+   "chips": [],
+   "oracle": [
+    "yes",
+    "thankyou"
+   ]
+  }
+ ]
+}

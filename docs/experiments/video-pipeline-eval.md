@@ -42,8 +42,11 @@ receptionist line ────────────────────�
 
 Media was downloaded on 24 October 2026 for local evaluation only, under the ignored
 `spikes/recognition/artifacts/video_eval/`. Nothing was committed or redistributed.
-Per-clip records (URL, channel, title, terms, download date, label evidence) are in the
-local `sources.json`.
+Per-clip records (URL, channel, title, terms, download date, label evidence) are in
+[`evidence/video-pipeline-eval/sources.json`](evidence/video-pipeline-eval/sources.json).
+All our own outputs (per-clip results, scores, turn results, composer drafts and the
+Sarvam audio) are in [`evidence/video-pipeline-eval/`](evidence/video-pipeline-eval/README.md);
+the source media and anything derived from it stays local.
 
 | Role | Source | Terms |
 |---|---|---|
