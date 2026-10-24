@@ -533,6 +533,22 @@ class ProvisionalBundleContracts(unittest.TestCase):
                 self.export(unverified, Path(temporary) / "second")
             self.assertFalse((Path(temporary) / "second").exists())
 
+    def test_provisional_cut_offs_are_refused_for_evaluate_and_calibrated_export(self):
+        records = pilot_records()
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            with fake_pilot(records, root):
+                self.assertEqual(retrieval.pilot("calibrate", "signclip", None, False), 0)
+            policy_path = root / "retrieval" / "policy-signclip.json"
+            retrieval.frozen_policy(policy_path, records, "evaluating test")  # calibrated: accepted
+            policy = json.loads(policy_path.read_text())
+            policy_path.write_text(json.dumps({**policy, "provisional": True}))
+            with self.assertRaisesRegex(ValueError, "PROVISIONAL .* cannot be used for evaluating test"):
+                retrieval.frozen_policy(policy_path, records, "evaluating test")
+            with fake_pilot(records, root), self.assertRaisesRegex(ValueError, "PROVISIONAL"):
+                retrieval.export_bundle("signclip", None)
+            self.assertFalse((root / "evidence" / "recognition-bundle-signclip.json").exists())
+
     def test_provisional_flag_selects_the_try_export_and_only_for_export_bundle(self):
         with patch.object(retrieval, "export_provisional_bundle", return_value=0) as provisional, \
                 patch.object(retrieval, "export_bundle", return_value=0) as calibrated:

@@ -268,6 +268,9 @@ def frozen_policy(policy_path, records, purpose):
     if not policy_path.is_file():
         raise ValueError(f"Calibrate on development sessions before {purpose}")
     policy = json.loads(policy_path.read_text())
+    if policy.get("provisional"):
+        raise ValueError(f"{PROVISIONAL_BANNER}: cut-offs from enrollment alone cannot be used for {purpose}; "
+                         "run calibrate on a calibration session")
     if policy["data_fingerprint"] != fingerprint([r for r in records if r["split"] != "test"]):
         raise ValueError("Enrollment/calibration changed since the policy was frozen")
     return policy
