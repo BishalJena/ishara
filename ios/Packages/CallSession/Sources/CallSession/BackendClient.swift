@@ -46,6 +46,31 @@ public enum BackendError: Error, Equatable {
     case notHTTPResponse
 }
 
+/// Why the call socket closed, from the backend's close codes (backend/app/calls.py).
+public enum CallSocketClose: Equatable, Sendable {
+    /// Network loss, a normal close or a code the backend doesn't use. Reconnecting may help.
+    case dropped
+    /// 4401: the backend rejected `APP_TOKEN`.
+    case unauthorized
+    /// 4404: the backend doesn't know this call, e.g. it restarted and lost it.
+    case unknownCall
+    /// 4409: another socket for this call took over.
+    case replaced
+
+    public init(code: Int?) {
+        switch code {
+        case 4401: self = .unauthorized
+        case 4404: self = .unknownCall
+        case 4409: self = .replaced
+        default: self = .dropped
+        }
+    }
+
+    /// Only a plain drop may be reconnected. The same token or call id would be refused
+    /// again, and taking a replaced socket back would make two sockets evict each other.
+    public var allowsReconnect: Bool { self == .dropped }
+}
+
 /// Something that can put an `AppMessage` on the call socket.
 public protocol AppMessageSending: Sendable {
     func send(_ message: AppMessage) async throws
@@ -62,6 +87,10 @@ public actor BackendClient: AppMessageSending {
     /// that aren't valid JSON for a known message are dropped (unknown types arrive as
     /// `.unknown`). Empty and finished before `connect`.
     public private(set) var events: AsyncStream<ServerMessage>
+
+    /// Why the current connection's socket closed. Set just before `events` finishes; nil
+    /// while it is open or before `connect`.
+    public private(set) var lastClose: CallSocketClose?
 
     public init(
         config: BackendConfig,
@@ -100,10 +129,16 @@ public actor BackendClient: AppMessageSending {
         let frames = await transport.connect(authorizedRequest(url: url))
         let (messages, continuation) = AsyncStream<ServerMessage>.makeStream()
         events = messages
-        pump = Task {
+        lastClose = nil
+        pump = Task { [transport] in
             for await frame in frames {
                 guard let message = try? WireCoding.decodeServerMessage(frame) else { continue }
                 continuation.yield(message)
+            }
+            // A replaced connection's pump is cancelled and must not report its close.
+            if !Task.isCancelled {
+                let code = await transport.closeCode
+                if !Task.isCancelled { lastClose = CallSocketClose(code: code) }
             }
             continuation.finish()
         }
