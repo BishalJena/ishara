@@ -274,6 +274,19 @@ async def test_wait_for_only_sees_events_after_the_mark() -> None:
         assert caption.text == "new"
 
 
+async def test_wait_for_caption_skips_the_voices_own_lines() -> None:
+    transport = FakeTransport()
+    session = _session(transport)
+    async with running(session, transport):
+        transport.push(CaptionMessage(text="One moment please.", at=1.0, speaker="agent"))
+        await drain(transport)
+        with pytest.raises(TimeoutError):
+            await session.wait_for_caption(since=0, timeout=0.01)
+        transport.push(CaptionMessage(text="We have 4 pm.", at=2.0))
+        caption = await session.wait_for_caption(since=0, timeout=1)
+        assert caption.text == "We have 4 pm."
+
+
 async def test_wait_raises_when_socket_closes_and_sending_fails_after() -> None:
     transport = FakeTransport()
     session = _session(transport)
