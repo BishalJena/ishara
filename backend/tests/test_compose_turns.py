@@ -4,6 +4,7 @@ httpx.MockTransports; nothing reaches the network."""
 from __future__ import annotations
 
 import base64
+import gzip
 import io
 import json
 import wave
@@ -115,6 +116,29 @@ async def test_both_chip_lists_go_through_the_production_composer_and_the_draft_
     assert Path(row["voice"]["path"]) == tmp_path / "T3.wav"
     assert (tmp_path / "T3.wav").read_bytes()[:4] == b"RIFF"
     assert budget.spent == {"groq": 2, "voice": 1}
+
+
+async def test_a_compressed_groq_answer_still_reaches_the_composer(tmp_path: Path) -> None:
+    """Regression: re-sending a decoded body with its gzip header made every draft fail."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.dumps({"choices": [{"message": {"content": GOOD}}]}).encode()
+        return httpx.Response(
+            200, headers={"content-encoding": "gzip"}, content=gzip.compress(body)
+        )
+
+    recorder = RecordingTransport(httpx.MockTransport(handler))
+    [row] = await run_turns(
+        [turn(["no", "morning"], [])],
+        production(recorder),
+        recorder,
+        None,
+        Budget(groq=1, voice=0),
+        tmp_path,
+    )
+    assert row["recognised"]["draft"]["source"] == "llm"
+    assert row["recognised"]["draft"]["text"] == GOOD
+    assert row["recognised"]["draft"]["groq_raw"] == GOOD
 
 
 async def test_no_accepted_chip_composes_and_speaks_nothing(tmp_path: Path) -> None:

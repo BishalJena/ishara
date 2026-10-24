@@ -83,9 +83,15 @@ class RecordingTransport(httpx.AsyncBaseTransport):
 
     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
         response = await self.inner.handle_async_request(request)
-        body = await response.aread()
+        body = await response.aread()  # decoded: gzip/br already undone
         self.bodies.append(body)
-        return httpx.Response(response.status_code, headers=response.headers, content=body)
+        # The body is handed on decoded, so its encoding and length headers no longer apply.
+        headers = [
+            (name, value)
+            for name, value in response.headers.multi_items()
+            if name.lower() not in ("content-encoding", "content-length")
+        ]
+        return httpx.Response(response.status_code, headers=headers, content=body)
 
 
 def completion_text(body: bytes) -> str | None:
