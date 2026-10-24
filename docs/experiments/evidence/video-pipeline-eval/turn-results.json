@@ -1,0 +1,575 @@
+{
+  "results": [
+    {
+      "turn": "T1",
+      "clips": [
+        "clip_018",
+        "clip_040",
+        "clip_044"
+      ],
+      "segments": [
+        {
+          "start": 2.552,
+          "end": 3.993,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "start": 2.67,
+          "end": 4.505,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "start": 2.803,
+          "end": 4.104,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "recognitions": [
+        {
+          "sign": null,
+          "reason": "insufficient evidence (best hello 0.880, margin 0.038, pose 1.00, hands 1.00)",
+          "latency_ms": 468.1,
+          "similarity": 0.8799,
+          "margin": 0.0376,
+          "segment": [
+            2.552,
+            3.993
+          ],
+          "top": [
+            {
+              "sign": "hello",
+              "similarity": 0.8799
+            },
+            {
+              "sign": "afternoon",
+              "similarity": 0.8423
+            },
+            {
+              "sign": "morning",
+              "similarity": 0.7915
+            }
+          ],
+          "quality": {
+            "pose_fraction": 1.0,
+            "hand_fraction": 1.0
+          },
+          "thresholds": {
+            "similarity": 0.9263592958450317,
+            "margin": 0.016092956066131592,
+            "min_pose_fraction": 0.6,
+            "min_hand_fraction": 0.2
+          },
+          "failed_checks": [
+            "similarity"
+          ],
+          "provisional": true
+        },
+        {
+          "sign": null,
+          "reason": "insufficient evidence (best doctor 0.709, margin 0.031, pose 1.00, hands 0.93)",
+          "latency_ms": 463.7,
+          "similarity": 0.7088,
+          "margin": 0.0313,
+          "segment": [
+            2.67,
+            4.505
+          ],
+          "top": [
+            {
+              "sign": "doctor",
+              "similarity": 0.7088
+            },
+            {
+              "sign": "time",
+              "similarity": 0.6775
+            },
+            {
+              "sign": "evening",
+              "similarity": 0.6088
+            }
+          ],
+          "quality": {
+            "pose_fraction": 1.0,
+            "hand_fraction": 0.9273
+          },
+          "thresholds": {
+            "similarity": 0.9263592958450317,
+            "margin": 0.016092956066131592,
+            "min_pose_fraction": 0.6,
+            "min_hand_fraction": 0.2
+          },
+          "failed_checks": [
+            "similarity"
+          ],
+          "provisional": true
+        },
+        {
+          "sign": null,
+          "reason": "insufficient evidence (best tomorrow 0.697, margin 0.002, pose 1.00, hands 0.69)",
+          "latency_ms": 463.8,
+          "similarity": 0.6967,
+          "margin": 0.002,
+          "segment": [
+            2.803,
+            4.104
+          ],
+          "top": [
+            {
+              "sign": "tomorrow",
+              "similarity": 0.6967
+            },
+            {
+              "sign": "time",
+              "similarity": 0.6947
+            },
+            {
+              "sign": "today",
+              "similarity": 0.682
+            }
+          ],
+          "quality": {
+            "pose_fraction": 1.0,
+            "hand_fraction": 0.6923
+          },
+          "thresholds": {
+            "similarity": 0.9263592958450317,
+            "margin": 0.016092956066131592,
+            "min_pose_fraction": 0.6,
+            "min_hand_fraction": 0.2
+          },
+          "failed_checks": [
+            "similarity",
+            "margin"
+          ],
+          "provisional": true
+        }
+      ],
+      "chips": [],
+      "shown": [
+        "?",
+        "?",
+        "?"
+      ],
+      "log": [
+        "rest line y=0.683",
+        "#1 2.55-3.99 s  ? unsure  (hello 0.88 | afternoon 0.84 | morning 0.79; margin 0.04; 0.47 s; low similarity)  [PROVISIONAL]",
+        "rest line y=0.800",
+        "#2 2.67-4.50 s  ? unsure  (doctor 0.71 | time 0.68 | evening 0.61; margin 0.03; 0.46 s; low similarity)  [PROVISIONAL]",
+        "rest line y=0.800",
+        "#3 2.80-4.10 s  ? unsure  (tomorrow 0.70 | time 0.69 | today 0.68; margin 0.00; 0.46 s; low similarity, low margin)  [PROVISIONAL]"
+      ]
+    },
+    {
+      "turn": "T3",
+      "clips": [
+        "clip_066",
+        "clip_025"
+      ],
+      "segments": [
+        {
+          "start": 2.436,
+          "end": 3.403,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "start": 3.237,
+          "end": 4.404,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "recognitions": [
+        {
+          "sign": null,
+          "reason": "insufficient evidence (best no 0.772, margin 0.025, pose 1.00, hands 0.79)",
+          "latency_ms": 467.2,
+          "similarity": 0.7716,
+          "margin": 0.0248,
+          "segment": [
+            2.436,
+            3.403
+          ],
+          "top": [
+            {
+              "sign": "no",
+              "similarity": 0.7716
+            },
+            {
+              "sign": "evening",
+              "similarity": 0.7468
+            },
+            {
+              "sign": "afternoon",
+              "similarity": 0.741
+            }
+          ],
+          "quality": {
+            "pose_fraction": 1.0,
+            "hand_fraction": 0.7931
+          },
+          "thresholds": {
+            "similarity": 0.9263592958450317,
+            "margin": 0.016092956066131592,
+            "min_pose_fraction": 0.6,
+            "min_hand_fraction": 0.2
+          },
+          "failed_checks": [
+            "similarity"
+          ],
+          "provisional": true
+        },
+        {
+          "sign": null,
+          "reason": "insufficient evidence (best afternoon 0.710, margin 0.020, pose 1.00, hands 0.89)",
+          "latency_ms": 464.2,
+          "similarity": 0.7103,
+          "margin": 0.0204,
+          "segment": [
+            3.237,
+            4.404
+          ],
+          "top": [
+            {
+              "sign": "afternoon",
+              "similarity": 0.7103
+            },
+            {
+              "sign": "evening",
+              "similarity": 0.69
+            },
+            {
+              "sign": "morning",
+              "similarity": 0.6884
+            }
+          ],
+          "quality": {
+            "pose_fraction": 1.0,
+            "hand_fraction": 0.8857
+          },
+          "thresholds": {
+            "similarity": 0.9263592958450317,
+            "margin": 0.016092956066131592,
+            "min_pose_fraction": 0.6,
+            "min_hand_fraction": 0.2
+          },
+          "failed_checks": [
+            "similarity"
+          ],
+          "provisional": true
+        }
+      ],
+      "chips": [],
+      "shown": [
+        "?",
+        "?"
+      ],
+      "log": [
+        "rest line y=0.800",
+        "#1 2.44-3.40 s  ? unsure  (no 0.77 | evening 0.75 | afternoon 0.74; margin 0.02; 0.47 s; low similarity)  [PROVISIONAL]",
+        "rest line y=0.800",
+        "#2 3.24-4.40 s  ? unsure  (afternoon 0.71 | evening 0.69 | morning 0.69; margin 0.02; 0.46 s; low similarity)  [PROVISIONAL]"
+      ]
+    },
+    {
+      "turn": "T5",
+      "clips": [
+        "clip_065",
+        "clip_032"
+      ],
+      "segments": [
+        {
+          "start": 2.569,
+          "end": 3.904,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "start": 2.65,
+          "end": 5.532,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "recognitions": [
+        {
+          "sign": null,
+          "reason": "insufficient evidence (best yes 0.801, margin 0.026, pose 1.00, hands 0.82)",
+          "latency_ms": 464.0,
+          "similarity": 0.8012,
+          "margin": 0.0264,
+          "segment": [
+            2.569,
+            3.904
+          ],
+          "top": [
+            {
+              "sign": "yes",
+              "similarity": 0.8012
+            },
+            {
+              "sign": "today",
+              "similarity": 0.7748
+            },
+            {
+              "sign": "no",
+              "similarity": 0.7363
+            }
+          ],
+          "quality": {
+            "pose_fraction": 1.0,
+            "hand_fraction": 0.825
+          },
+          "thresholds": {
+            "similarity": 0.9263592958450317,
+            "margin": 0.016092956066131592,
+            "min_pose_fraction": 0.6,
+            "min_hand_fraction": 0.2
+          },
+          "failed_checks": [
+            "similarity"
+          ],
+          "provisional": true
+        },
+        {
+          "sign": null,
+          "reason": "insufficient evidence (best evening 0.791, margin 0.017, pose 1.00, hands 1.00)",
+          "latency_ms": 464.8,
+          "similarity": 0.7913,
+          "margin": 0.0171,
+          "segment": [
+            2.65,
+            5.532
+          ],
+          "top": [
+            {
+              "sign": "evening",
+              "similarity": 0.7913
+            },
+            {
+              "sign": "morning",
+              "similarity": 0.7742
+            },
+            {
+              "sign": "hello",
+              "similarity": 0.7715
+            }
+          ],
+          "quality": {
+            "pose_fraction": 1.0,
+            "hand_fraction": 1.0
+          },
+          "thresholds": {
+            "similarity": 0.9263592958450317,
+            "margin": 0.016092956066131592,
+            "min_pose_fraction": 0.6,
+            "min_hand_fraction": 0.2
+          },
+          "failed_checks": [
+            "similarity"
+          ],
+          "provisional": true
+        }
+      ],
+      "chips": [],
+      "shown": [
+        "?",
+        "?"
+      ],
+      "log": [
+        "rest line y=0.800",
+        "#1 2.57-3.90 s  ? unsure  (yes 0.80 | today 0.77 | no 0.74; margin 0.03; 0.46 s; low similarity)  [PROVISIONAL]",
+        "rest line y=0.680",
+        "#2 2.65-5.53 s  ? unsure  (evening 0.79 | morning 0.77 | hello 0.77; margin 0.02; 0.46 s; low similarity)  [PROVISIONAL]"
+      ]
+    },
+    {
+      "turn": "X1",
+      "clips": [
+        "clip_012",
+        "clip_008"
+      ],
+      "segments": [
+        {
+          "start": 2.836,
+          "end": 3.904,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "start": 2.569,
+          "end": 3.937,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "recognitions": [
+        {
+          "sign": null,
+          "reason": "insufficient evidence (best today 0.778, margin 0.078, pose 1.00, hands 0.81)",
+          "latency_ms": 470.8,
+          "similarity": 0.7781,
+          "margin": 0.0782,
+          "segment": [
+            2.836,
+            3.904
+          ],
+          "top": [
+            {
+              "sign": "today",
+              "similarity": 0.7781
+            },
+            {
+              "sign": "tomorrow",
+              "similarity": 0.6999
+            },
+            {
+              "sign": "yes",
+              "similarity": 0.699
+            }
+          ],
+          "quality": {
+            "pose_fraction": 1.0,
+            "hand_fraction": 0.8125
+          },
+          "thresholds": {
+            "similarity": 0.9263592958450317,
+            "margin": 0.016092956066131592,
+            "min_pose_fraction": 0.6,
+            "min_hand_fraction": 0.2
+          },
+          "failed_checks": [
+            "similarity"
+          ],
+          "provisional": true
+        },
+        {
+          "sign": null,
+          "reason": "insufficient evidence (best evening 0.714, margin 0.042, pose 1.00, hands 0.88)",
+          "latency_ms": 466.9,
+          "similarity": 0.7142,
+          "margin": 0.0422,
+          "segment": [
+            2.569,
+            3.937
+          ],
+          "top": [
+            {
+              "sign": "evening",
+              "similarity": 0.7142
+            },
+            {
+              "sign": "morning",
+              "similarity": 0.6719
+            },
+            {
+              "sign": "today",
+              "similarity": 0.6524
+            }
+          ],
+          "quality": {
+            "pose_fraction": 1.0,
+            "hand_fraction": 0.878
+          },
+          "thresholds": {
+            "similarity": 0.9263592958450317,
+            "margin": 0.016092956066131592,
+            "min_pose_fraction": 0.6,
+            "min_hand_fraction": 0.2
+          },
+          "failed_checks": [
+            "similarity"
+          ],
+          "provisional": true
+        }
+      ],
+      "chips": [],
+      "shown": [
+        "?",
+        "?"
+      ],
+      "log": [
+        "rest line y=0.800",
+        "#1 2.84-3.90 s  ? unsure  (today 0.78 | tomorrow 0.70 | yes 0.70; margin 0.08; 0.47 s; low similarity)  [PROVISIONAL]",
+        "rest line y=0.800",
+        "#2 2.57-3.94 s  ? unsure  (evening 0.71 | morning 0.67 | today 0.65; margin 0.04; 0.47 s; low similarity)  [PROVISIONAL]"
+      ]
+    },
+    {
+      "turn": "X2",
+      "clips": [
+        "clip_069",
+        "clip_003"
+      ],
+      "segments": [
+        {
+          "start": 2.236,
+          "end": 3.937,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "start": 2.136,
+          "end": 6.139,
+          "accepted": false,
+          "reason": "too_long"
+        }
+      ],
+      "recognitions": [
+        {
+          "sign": null,
+          "reason": "insufficient evidence (best sorry 0.738, margin 0.012, pose 1.00, hands 1.00)",
+          "latency_ms": 463.4,
+          "similarity": 0.7382,
+          "margin": 0.0119,
+          "segment": [
+            2.236,
+            3.937
+          ],
+          "top": [
+            {
+              "sign": "sorry",
+              "similarity": 0.7382
+            },
+            {
+              "sign": "today",
+              "similarity": 0.7263
+            },
+            {
+              "sign": "tomorrow",
+              "similarity": 0.7045
+            }
+          ],
+          "quality": {
+            "pose_fraction": 1.0,
+            "hand_fraction": 1.0
+          },
+          "thresholds": {
+            "similarity": 0.9263592958450317,
+            "margin": 0.016092956066131592,
+            "min_pose_fraction": 0.6,
+            "min_hand_fraction": 0.2
+          },
+          "failed_checks": [
+            "similarity",
+            "margin"
+          ],
+          "provisional": true
+        }
+      ],
+      "chips": [],
+      "shown": [
+        "?"
+      ],
+      "log": [
+        "rest line y=0.655",
+        "#1 2.24-3.94 s  ? unsure  (sorry 0.74 | today 0.73 | tomorrow 0.70; margin 0.01; 0.46 s; low similarity, low margin)  [PROVISIONAL]",
+        "rest line y=0.800",
+        "segment 2.14-6.14 s rejected (too_long); nothing shown"
+      ]
+    }
+  ]
+}

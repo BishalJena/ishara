@@ -56,7 +56,7 @@ jobs:
       - name: Recognition tests (light deps)
         working-directory: spikes/recognition
         run: |
-          "$LIGHT_PY" -m unittest -v test_retrieval test_detector test_detect_clips test_mac_bridge test_live_source
+          "$LIGHT_PY" -m unittest -v test_retrieval test_detector test_detect_clips test_mac_bridge test_live_source test_record_session test_video_eval
           echo "::notice::test_mini is not run in CI: it imports torch and transformers (requirements.txt)."
 
   scripts:
