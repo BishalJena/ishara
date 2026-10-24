@@ -1,0 +1,128 @@
+{
+  "agent_config": {
+    "agent_name": "Ishara relay",
+    "agent_type": "other",
+    "agent_welcome_message": "Hello, I'm calling for a Deaf caller who is using Ishara, a sign-language app. Their replies may take a few seconds.",
+    "webhook_url": null,
+    "tasks": [
+      {
+        "task_type": "conversation",
+        "toolchain": {
+          "execution": "parallel",
+          "pipelines": [
+            [
+              "transcriber",
+              "llm",
+              "synthesizer"
+            ]
+          ]
+        },
+        "tools_config": {
+          "llm_agent": {
+            "agent_type": "graph_agent",
+            "agent_flow_type": "streaming",
+            "llm_config": {
+              "provider": "custom",
+              "model": "ishara-relay",
+              "family": "llama",
+              "base_url": "https://YOUR-BACKEND.herokuapp.com/v1",
+              "max_tokens": 150,
+              "temperature": 0,
+              "agent_information": "You speak on a phone call for a Deaf caller who replies by signing in the Ishara app. Never add, guess or rephrase anything. Follow the current step exactly.",
+              "current_node_id": "listen",
+              "nodes": [
+                {
+                  "id": "listen",
+                  "prompt": "ISHARA_CALL_ID: {{ishara_call_id}}\nISHARA_NODE: listen\n\nListen only. The caller is signing a reply. Reply with an empty message. If the last message is [silence], say exactly: One moment please, I'm signing my reply.",
+                  "repeat_after_silence_seconds": 15,
+                  "edges": [
+                    {
+                      "to_node_id": "speak",
+                      "condition_type": "event",
+                      "event_name": "user_reply"
+                    },
+                    {
+                      "to_node_id": "goodbye",
+                      "condition_type": "event",
+                      "event_name": "end_call"
+                    }
+                  ]
+                },
+                {
+                  "id": "speak",
+                  "prompt": "ISHARA_CALL_ID: {{ishara_call_id}}\nISHARA_NODE: speak\nISHARA_TURN_ID: {{turn_id}}\nISHARA_REPLY_START\n{{reply_text}}\nISHARA_REPLY_END\n\nSay exactly the text between ISHARA_REPLY_START and ISHARA_REPLY_END, word for word, and nothing else.",
+                  "number_of_words_for_interruption": 0,
+                  "edges": [
+                    {
+                      "to_node_id": "speak",
+                      "condition_type": "event",
+                      "event_name": "user_reply"
+                    },
+                    {
+                      "to_node_id": "goodbye",
+                      "condition_type": "event",
+                      "event_name": "end_call"
+                    },
+                    {
+                      "to_node_id": "listen",
+                      "condition_type": "unconditional"
+                    }
+                  ]
+                },
+                {
+                  "id": "goodbye",
+                  "node_type": "static",
+                  "static_message": "Thank you for your time. Goodbye.",
+                  "function_call": "end_call",
+                  "edges": []
+                }
+              ]
+            }
+          },
+          "transcriber": {
+            "provider": "deepgram",
+            "model": "nova-3",
+            "language": "en",
+            "stream": true,
+            "encoding": "linear16"
+          },
+          "synthesizer": {
+            "provider": "sarvam",
+            "provider_config": {
+              "voice": "Simran (Sales)",
+              "voice_id": "simran_en_sales",
+              "model": "bulbul:v4-flash",
+              "language": "en",
+              "speed": 1.0
+            },
+            "stream": true,
+            "caching": true,
+            "buffer_size": 150,
+            "audio_format": "wav"
+          },
+          "input": {
+            "provider": "plivo",
+            "format": "wav"
+          },
+          "output": {
+            "provider": "plivo",
+            "format": "wav"
+          }
+        },
+        "task_config": {
+          "call_terminate": 600,
+          "hangup_after_silence": 600,
+          "check_if_user_online": false,
+          "hangup_after_LLMCall": false,
+          "voicemail": false,
+          "backchanneling": false
+        }
+      }
+    ]
+  },
+  "agent_prompts": {
+    "task_1": {
+      "system_prompt": "You speak on a phone call for a Deaf caller who replies by signing in the Ishara app. Never add, guess or rephrase anything. Follow the current step exactly."
+    }
+  }
+}
