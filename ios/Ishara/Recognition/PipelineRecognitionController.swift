@@ -39,6 +39,7 @@ final class PipelineRecognitionController: RecognitionController {
     }
 
     var replayOptions: [String] { feed.replayOptions }
+    var camera: LiveCamera? { feed.camera }
 
     func start() {
         guard worker == nil else { return }

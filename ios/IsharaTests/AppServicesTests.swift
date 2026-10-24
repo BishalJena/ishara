@@ -57,4 +57,25 @@ final class AppServicesTests: XCTestCase {
 
         XCTAssertTrue(services.makeRecognition() is PipelineRecognitionController)
     }
+
+    func testPipelineOnADeviceWatchesTheLiveCamera() {
+        var options = DemoLaunchOptions()
+        options.recognitionOverride = .pipeline
+        var services = AppServices(options: options, config: .failure(.missingBackendURL))
+        services.runsInSimulator = false
+
+        XCTAssertNotNil(services.makeRecognition().camera)
+    }
+
+    func testSimulatorAndScriptedRecognitionHaveNoLiveCamera() {
+        var pipeline = DemoLaunchOptions()
+        pipeline.recognitionOverride = .pipeline
+        var simulator = AppServices(options: pipeline, config: .failure(.missingBackendURL))
+        simulator.runsInSimulator = true
+        var scripted = AppServices(options: DemoLaunchOptions(), config: .failure(.missingBackendURL))
+        scripted.runsInSimulator = false
+
+        XCTAssertNil(simulator.makeRecognition().camera, "the simulator replays saved videos")
+        XCTAssertNil(scripted.makeRecognition().camera, "replayed results never use the camera")
+    }
 }
