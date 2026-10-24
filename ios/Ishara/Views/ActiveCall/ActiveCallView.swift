@@ -52,7 +52,9 @@ struct ActiveCallView: View {
     }
 }
 
-/// Clear + SEND while signing, STOP while speaking, Back to Home once ended.
+/// Quick replies + Clear + SEND while signing, STOP while speaking, Back to Home
+/// once ended. Quick replies sit here, not in the scrolling panel, so a long draft
+/// or a delivery banner can't push them out of sight.
 private struct CallActionBar: View {
     let model: ActiveCallViewModel
     let onLeave: () -> Void
@@ -69,21 +71,29 @@ private struct CallActionBar: View {
             .disabled(model.isStopRequested)
             .accessibilityHint("Cancels the reply if it has not been spoken yet")
         } else {
-            HStack(spacing: 12) {
-                Button("Clear", action: model.clear)
-                    .buttonStyle(.bigAction(Color.gray.opacity(0.3), foreground: .primary))
-                    // Sized to its label so the word never wraps at large text sizes;
-                    // SEND takes the remaining width.
-                    .fixedSize(horizontal: true, vertical: false)
-                    .disabled(model.chips.isEmpty && model.draft == nil)
-                Button(action: model.send) {
-                    Label("SEND", systemImage: "paperplane.fill")
-                }
-                .buttonStyle(.bigAction(.orange))
-                .disabled(!model.canSend)
-                .accessibilityLabel("Send reply")
-                .accessibilityHint("Speaks the draft into the call")
+            VStack(spacing: 12) {
+                QuickReplyBar(onChoose: model.choose)
+                    .disabled(!model.canUseQuickReplies)
+                sendRow
             }
+        }
+    }
+
+    private var sendRow: some View {
+        HStack(spacing: 12) {
+            Button("Clear", action: model.clear)
+                .buttonStyle(.bigAction(Color.gray.opacity(0.3), foreground: .primary))
+                // Sized to its label so the word never wraps at large text sizes;
+                // SEND takes the remaining width.
+                .fixedSize(horizontal: true, vertical: false)
+                .disabled(model.chips.isEmpty && model.draft == nil)
+            Button(action: model.send) {
+                Label("SEND", systemImage: "paperplane.fill")
+            }
+            .buttonStyle(.bigAction(.orange))
+            .disabled(!model.canSend)
+            .accessibilityLabel("Send reply")
+            .accessibilityHint("Speaks the draft into the call")
         }
     }
 }
