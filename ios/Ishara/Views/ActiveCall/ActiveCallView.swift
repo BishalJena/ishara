@@ -44,7 +44,9 @@ struct ActiveCallView: View {
         if case .ended(let reason) = model.phase {
             CallEndedPanel(reason: reason)
         } else if case .interrupted(let notice) = model.phase {
-            ConnectionLostPanel(notice: notice)
+            ConnectionLostPanel(notice: notice, isReconnecting: true)
+        } else if case .disconnected(let reason) = model.phase {
+            ConnectionLostPanel(notice: reason, isReconnecting: false)
         } else if case .speaking(let text) = model.delivery {
             SpeakingPanel(text: text, cameraState: model.cameraState,
                           isStopRequested: model.isStopRequested)

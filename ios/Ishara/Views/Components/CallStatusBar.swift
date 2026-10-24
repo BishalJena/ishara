@@ -41,6 +41,8 @@ struct CallStatusBar: View {
             Text(status == .ringing ? "Ringing…" : "Dialing…")
         case .interrupted:
             Text("Connection lost · reconnecting…")
+        case .disconnected:
+            Text("Connection lost")
         case .live:
             if let connectedAt {
                 TimelineView(.periodic(from: connectedAt, by: 1)) { context in

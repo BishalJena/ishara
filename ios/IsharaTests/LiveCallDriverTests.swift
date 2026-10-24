@@ -159,6 +159,42 @@ final class LiveCallDriverTests: XCTestCase {
 
         let sockets = await transport.requests
         XCTAssertEqual(sockets.count, 3, "the first socket plus two reconnects")
+        let gaveUp = await eventually { model.phase == .disconnected("The connection couldn't be restored") }
+        XCTAssertTrue(gaveUp, "still promising a reconnect: \(model.phase)")
+    }
+
+    func testRefusedSocketIsNeverReopenedAndTheScreenSaysWhy() async {
+        let refusals: [(code: Int, reason: String)] = [
+            (4401, "The backend refused the app token"),
+            (4404, "The backend no longer knows this call"),
+            (4409, "This call is now connected somewhere else"),
+        ]
+        for refusal in refusals {
+            transport = FakeTransport()
+            let model = makeModel(makeDriver())
+            await model.start()
+            await transport.push(#"{"type":"status","state":"in_call"}"#)
+            _ = await eventually { model.phase == .live }
+
+            await transport.drop(code: refusal.code)
+
+            let explained = await eventually { model.phase == .disconnected(refusal.reason) }
+            XCTAssertTrue(explained, "\(refusal.code): \(model.phase)")
+            try? await Task.sleep(for: .milliseconds(50))
+            let sockets = await transport.requests
+            XCTAssertEqual(sockets.count, 1, "\(refusal.code) was reconnected")
+            XCTAssertFalse(model.isEnded, "End stays available")
+        }
+    }
+
+    func testDropWithAnOrdinaryCloseCodeStillReconnects() async {
+        let model = makeModel(makeDriver())
+        await model.start()
+
+        await transport.drop(code: 1001)
+
+        let reconnected = await eventually { await self.transport.requests.count == 2 }
+        XCTAssertTrue(reconnected)
         XCTAssertEqual(model.phase, .interrupted("Nothing will be sent"))
     }
 

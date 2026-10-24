@@ -17,6 +17,8 @@ final class ActiveCallViewModel {
         case live
         /// The connection dropped; nothing will be sent. It may come back.
         case interrupted(String)
+        /// The connection is gone and won't be reconnected; only End is left.
+        case disconnected(String)
         case ended(EndReason)
     }
 
@@ -40,6 +42,7 @@ final class ActiveCallViewModel {
     private(set) var store: TurnStore?
     private(set) var cameraState: CameraState = .watching
     private(set) var startFailure: String?
+    private(set) var reconnectStop: ReconnectStop?
     private var userEnded = false
 
     @ObservationIgnored private let driver: any CallDriver
@@ -48,6 +51,7 @@ final class ActiveCallViewModel {
         self.setup = setup
         self.driver = driver
         self.recognition = recognition
+        driver.onReconnectStopped = { [weak self] reason in self?.reconnectStop = reason }
     }
 
     // MARK: Derived state
@@ -58,7 +62,9 @@ final class ActiveCallViewModel {
         switch store.state {
         case .dialing, .ringing: return .connecting(store.state)
         case .inCall, .speaking: return .live
-        case .error: return .interrupted(store.notice ?? TurnStore.disconnectedNotice)
+        case .error:
+            if let reconnectStop { return .disconnected(Self.describe(reconnectStop)) }
+            return .interrupted(store.notice ?? TurnStore.disconnectedNotice)
         case .ended: return .ended(userEnded ? .userEnded : .remoteEnded)
         }
     }
@@ -196,6 +202,15 @@ final class ActiveCallViewModel {
         case .httpStatus(let code)?: "The backend couldn't start the call (HTTP \(code))."
         case .notHTTPResponse?: "The backend couldn't be reached."
         case nil: "The call couldn't start: \(error.localizedDescription)"
+        }
+    }
+
+    private static func describe(_ stop: ReconnectStop) -> String {
+        switch stop {
+        case .refused(.unauthorized): "The backend refused the app token"
+        case .refused(.unknownCall): "The backend no longer knows this call"
+        case .refused(.replaced): "This call is now connected somewhere else"
+        case .refused(.dropped), .attemptsUsedUp: "The connection couldn't be restored"
         }
     }
 }
