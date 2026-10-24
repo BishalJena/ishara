@@ -183,6 +183,15 @@ final class RecognitionBundleTests: XCTestCase {
         XCTAssertNoThrow(try bundle.validate())
     }
 
+    func testProvisionalTryBundleIsRefused() throws {
+        var object = bundleJSON()
+        object["provisional"] = true
+        assertLoadFails(object, with: .provisional)
+
+        object["provisional"] = false
+        XCTAssertEqual(try load(object), try validBundle())
+    }
+
     func testMissingFieldFailsToDecode() {
         var object = bundleJSON()
         object.removeValue(forKey: "thresholds")

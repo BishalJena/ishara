@@ -41,6 +41,7 @@ Settings come from the environment or the repo-root `.env` (see `../.env.example
 | `app/tts.py`, `app/sarvam.py` | Path A `POST /tts` via Sarvam Bulbul (A5) |
 | `fakes/` | `FakeBolna` (plays Bolna's graph runtime over HTTP), `ScriptedBolna` (adds the §1 receptionist) and an SSE reader |
 | `scripts/local_demo.py` | Free local backend for the whole §1 call; see [Local demo](#local-demo-no-bolna-no-cost) |
+| `scripts/sign_lab.py`, `scripts/lab_composer.py`, `scripts/lab_voice.py` | The local demo with the real composer and voice for webcam tests; see [Sign Lab](#sign-lab-webcam-tests-with-the-real-composer-and-voice) |
 | `tools/`, `scripts/fake_app.py`, `scripts/voice_spike.py` | App-side client, PLAN §1 demo script, guided V4 checks (`uv run python -m scripts.fake_app …`) |
 | `scripts/bolna_agent.py` | Render / register / create / update the Bolna agent (writes need `--yes`) |
 | `scripts/heroku_*.sh` | Heroku deploy and config push; see [HEROKU.md](HEROKU.md) |
@@ -96,3 +97,58 @@ app / bridge ──POST /calls, WS──▶ real app (CallManager, template draf
   `--b24` (first SEND of each call ends `not delivered` after 10 s, then SEND
   again), `--delay` (scales the pauses; `0.5` is twice as fast).
 - One call at a time. Tests: `tests/test_local_demo.py`.
+
+## Sign Lab (webcam tests with the real composer and voice)
+
+The local demo, but drafting with the production Groq composer and speaking with
+the real Sarvam voice on the Mac speakers, so signs from the Mac webcam can be
+tested end to end without a phone call. From the repo root, one command:
+
+```sh
+scripts/sign_lab.sh            # Groq drafts + Sarvam voice (small cost, see below)
+scripts/sign_lab.sh --free     # template drafts, no voice, no cost
+```
+
+```text
+webcam ─▶ live_source.py ─▶ mac_bridge.py ──chips, SEND──▶ sign_lab backend (real app)
+          (SignCLIP venv)        ▲                           │  composer: Groq → validator → template
+                                 └──── drafts, captions ─────┤  LabBolna = ScriptedBolna:
+                                                             │    receptionist lines → captions
+                     Mac speakers ◀── afplay ◀── Sarvam ◀────┘    every line the agent speaks
+```
+
+- `sign_lab.sh` checks the bridge venv, the SignCLIP venv and the bundle
+  (`spikes/recognition/artifacts/evidence/recognition-bundle-signclip.json`, or
+  `--bundle PATH`) before starting anything, and prints the exact command to fix
+  each. It starts the backend, waits for `/health`, then runs
+  `mac_bridge.py --live --camera 0 --contact clinic --confirm-cost`. That flag only
+  asks this local backend to start its scripted call: nothing is dialled. Ctrl-C
+  stops both. Backend lines are prefixed `[lab]`.
+- Other flags: `--camera N`, `--port N`, `--env-file PATH`, `--recognition-dir DIR`
+  (a `spikes/recognition` with the venvs, e.g. the main checkout when running from
+  a worktree), and `-- ARGS` for extra bridge args (`-- --replay-videos DIR`
+  replaces the camera).
+- Type the receptionist's lines yourself to check drafts against any reply. That
+  needs two terminals, because the bridge reads SEND from its own:
+  `scripts/sign_lab.sh --backend-only --receptionist manual` and
+  `scripts/sign_lab.sh --bridge-only`. In the backend terminal, Enter sends a line
+  as her words (a caption); `/silence` fires Bolna's silence repeat (holding line).
+- The backend alone: `cd backend && uv run python -m scripts.sign_lab` with
+  `--composer templates|groq`, `--voice none|sarvam`, `--receptionist script|manual`,
+  `--env-file`, `--port`, `--delay`. Defaults are free (templates, silent, scripted).
+- What it prints: `receptionist says`, `chips … (receptionist last said: …)`,
+  `groq answered in X s: <raw>`, `draft (llm|template, X s)`, `  fallback: <why>`
+  (the validator's reasons, a timeout or an error, exactly as production decides),
+  `approved (SEND)`, `agent says`, `voice: playing (Sarvam TTS X s)` and
+  `voice: done (afplay exit N)`.
+- Keys: `GROQ_API_KEY` (and optional `GROQ_MODEL`) for `--composer groq`,
+  `SARVAM_API_KEY` for `--voice sarvam`, read from the repo-root `.env` only (not
+  exported variables), and only when those flags are given. No Bolna key is set.
+- Costs: one Groq request per chip change (a fraction of a paisa each) and one
+  Sarvam request per spoken line (about ₹0.1–0.5): the disclosure, each approved
+  reply and the goodbye.
+- Voice lines play one at a time and never block the server; a Sarvam failure skips
+  that line and is printed. The receptionist herself is not voiced (read her
+  captions, as the Deaf caller would).
+- Tests: `tests/test_sign_lab.py`, `tests/test_lab_composer.py`,
+  `tests/test_lab_voice.py`, `tests/test_sign_lab_script.py` (fake venvs, `--free`).

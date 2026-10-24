@@ -71,6 +71,71 @@ SL-GCN has its own 27-joint input and preprocessing. Preserve raw video; their
 landmark caches are not interchangeable. SignCLIP rejects more than 256 frames
 rather than silently truncating. Neither path invents a missing sign.
 
+## Sign Lab quick try (before calibration)
+
+Record 3 takes of each of the 12 signs in about 10 minutes, then try live recognition
+straight away. This is **not** the R3 calibration session or Gate 2: the cut-offs are
+provisional and nothing here counts as measured accuracy.
+
+```sh
+.venv/bin/python record_session.py --camera 0                     # guided enrollment
+artifacts/signclip/.venv/bin/python retrieval.py export-bundle --encoder signclip --provisional
+../../scripts/sign_lab.sh                                         # the Sign Lab (repo root: scripts/sign_lab.sh)
+```
+
+**Camera permission (macOS):** the first run asks to let your terminal app (Terminal,
+iTerm, VS Code...) use the camera. If it says it can't open the camera or the window
+stays black, turn the app on in System Settings → Privacy & Security → Camera, then
+quit and reopen the terminal.
+
+**Before you start:** sit so your face, shoulders and both hands are in the frame.
+Between signs rest both hands on the table. After each sign drop your hands and hold
+still for about half a second; that's how the take ends.
+
+Each take:
+
+```
+ hands resting ─ SPACE ─▶ 3-2-1 countdown ─▶ GO: sign once ─▶ hands down, still ~0.5 s
+                          (rest line measured)                     │ take ends by itself
+                                                                   ▼
+                     K keep ◀── replay with the tracking overlay ──┘ ──▶ R redo
+```
+
+- The window shows the sign, a one-line hint and where to watch the reference
+  (INCLUDE for most signs, the ISLRTC dictionary for yes, no and sorry). The terminal
+  prints the full link and any local INCLUDE copy under `artifacts/clips/`. Videos are
+  only linked, never downloaded or shared by this tool.
+- The take keeps exactly the detector's cut (0.2 s before the hands rise to the first
+  frame back at rest), the same frames the live recognizer matches.
+- If something goes wrong it says why and waits for SPACE: shoulders not visible,
+  hands moved during the countdown, too short or too long (over 4 s), no sign within
+  8 s. **X** discards a take, **Q**/escape stops the session.
+- **K** only when the replay matches the reference: the take is saved as a verified
+  enrollment clip with the note "self-checked during guided Sign Lab session against
+  &lt;reference&gt;". Takes go to the same `artifacts/pilot/dataset.json` and
+  `artifacts/pilot/clips/` as `pilot_capture.py`, split `enrollment`, signer `demo`, one
+  session `signlab-YYYYMMDD`.
+- **Resume:** run it again with the session ID it printed (`--session signlab-20261024`);
+  signs that already have enough kept takes are skipped. `--takes N` changes the count,
+  `--manual-stop` uses SPACE to stop instead of the detector (whole take kept).
+
+`export-bundle --provisional` uses the verified enrollment takes only (it refuses while
+any enrollment take is unverified) and needs at least 2 takes of every sign. It writes
+`artifacts/evidence/recognition-bundle-signclip-provisional.json`, never the calibrated
+`recognition-bundle-signclip.json`, and no policy file. The schema is the normal bundle's
+plus `"provisional": true` and `leave_one_out` counts, and it prints a
+**PROVISIONAL — uncalibrated, for trying only, not Gate 2** banner.
+
+How the cut-offs are picked (leave-one-out): each take is ranked against all the other
+takes, never itself. Cut-offs sit at observed correct matches; the one accepting the most
+takes with **0 wrong accepts** wins (the lowest on ties). A cut-off that accepts nothing is
+never chosen: if every useful one has a wrong accept, it falls back to similarity 0.90 and
+margin 0.05 and the banner says FALLBACK. Deviations from R2b, on purpose: queries and
+references come from the same session minutes apart, and there are no negatives, so the
+counts are optimistic and idle or unsupported movement was never measured. `evaluate` and
+the calibrated `export-bundle` refuse provisional cut-offs, and the iOS bundle loader
+refuses provisional bundles. The enrollment takes still count for R1; R3 is still needed.
+
 ## Capture and review
 
 Begin with the enrollment budget in [PLAN.md](../../PLAN.md). Keep one pseudonym
@@ -191,14 +256,15 @@ The light `.venv` and the SignCLIP venv as above, plus the bridge venv:
 uv venv --python 3.11 artifacts/bridge/.venv
 uv pip install --python artifacts/bridge/.venv/bin/python --require-hashes -r requirements-bridge.lock
 artifacts/bridge/.venv/bin/python -m unittest test_mac_bridge test_detector test_detect_clips
-.venv/bin/python -m unittest test_live_source   # fakes only: no webcam, no model
+.venv/bin/python -m unittest test_live_source test_record_session   # fakes only: no webcam, no model
 ```
 
 ### Runbook
 
 1. **Enrollment (R1).** Same signer who presents the demo. 3–5 takes per sign in
    one session, then `review` and `verify` each clip
-   ([Capture and review](#capture-and-review)):
+   ([Capture and review](#capture-and-review)), or the guided
+   [Sign Lab session](#sign-lab-quick-try-before-calibration) (`record_session.py --takes 5`):
 
    ```sh
    .venv/bin/python pilot_capture.py capture --signer demo --session enrollment-01 \
@@ -229,10 +295,39 @@ artifacts/bridge/.venv/bin/python -m unittest test_mac_bridge test_detector test
    artifacts/signclip/.venv/bin/python retrieval.py export-bundle --encoder signclip
    ```
 
-5. **Check it alone, no call.** Rest both hands for 2 s when asked (it prints
-   `rest line y=...`), then sign one at a time and drop your hands after each.
-   Every accepted segment prints the sign or `? (reason)` and its latency.
+5. **Check it alone, no call (Sign Lab).** Rest both hands for 2 s when asked (it
+   prints `rest line y=...`), then sign one at a time and drop your hands after each.
    **q** in the window or Ctrl-C stops and prints the latency summary.
+
+   Every accepted segment prints one line with the top 3 matches, the margin to the
+   runner-up and the latency; a `?` also says which cut-off it missed:
+
+   ```
+   #2 0.76-1.60 s  ✓ doctor  (doctor 0.77 | today 0.62 | hello 0.62; margin 0.15; 0.47 s)
+   #3 0.60-1.36 s  ? unsure  (today 0.88 | tomorrow 0.86 | hello 0.79; margin 0.02; 0.71 s; low margin)
+   ```
+
+   The window shows the same for the latest sign until it is replaced:
+
+   ```
+   ┌──────────┐                                     ┌───────────────────────────────┐
+   │ watching │ ← detector pill                     │ doctor   ← green, or a red ?  │
+   └──────────┘   (calibrating/signing/cant see)    │            with why under it  │
+   ██ PROVISIONAL - uncalibrated, for trying only ██│ doctor  ██████████│█  0.77    │
+      ↑ red banner, only for a provisional bundle   │ today   ███████   │   0.62    │
+                                                    │ hello   ███████   │   0.62    │
+                                                    │ margin 0.15 (min 0.05)  0.47 s│
+                                                    │ body 1.00 (min 0.60) hands ...│
+   rest line ─────────────────────────────────────  └───────────────────────────────┘
+   #2 doctor  0.47 s                                  │ = the similarity cut-off
+   ```
+
+   Bars run from 0 to 1. `low similarity` means even the best match is below the
+   cut-off; `low margin` means the runner-up is too close; `body/hands seen in too
+   few frames` means tracking was poor. A bundle marked `"provisional": true` is
+   accepted for trying signs out, but every line says `[PROVISIONAL]` and the
+   window shows a red banner: its thresholds are not calibrated, so nothing it
+   says counts as a G2 measurement.
 
    ```sh
    artifacts/signclip/.venv/bin/python live_source.py --camera 0
@@ -243,7 +338,8 @@ artifacts/bridge/.venv/bin/python -m unittest test_mac_bridge test_detector test
    `--replay-videos DIR` plays every .mp4/.mov/.m4v in DIR in name order. Each clip
    calibrates on its first 2 s; for takes without a leading rest, pass the
    `--rest-y` that live mode printed in the same seat. `--fast` skips the pacing,
-   but then latency no longer means live latency.
+   but then latency no longer means live latency. Replayed clips get the same
+   window; `--no-preview` turns it off.
 
 6. **Into the call.** Attaching to a call the app or backend already started costs
    nothing. Starting one needs `--contact clinic --confirm-cost` (it dials a real,
@@ -264,10 +360,25 @@ artifacts/bridge/.venv/bin/python -m unittest test_mac_bridge test_detector test
    and typed signs still work. `--bundle PATH` and `--rest-y Y` are passed to
    the recognizer.
 
+   Each sign prints the same per-sign line as step 5. Backend events (status,
+   receptionist captions, drafts with their `llm`/`template` source, SEND and
+   `Delivered`) carry a time. `--log` also appends every recognizer result and
+   every message sent or received to a JSONL file for review afterwards, by default
+   `artifacts/lab/session-<date>-<time>.jsonl` (`--log PATH` must stay inside the
+   gitignored `artifacts/`):
+
+   ```sh
+   jq -c 'select(.from == "recognizer") | .message | [.sign, .top[0].sign, .margin]' \
+     artifacts/lab/session-*.jsonl
+   ```
+
 ### What the recognizer guarantees
 
 - Each sign uses the same `recognition_data.rank` and `decision` as calibration,
   with the bundle's frozen thresholds and the shared quality minimums.
+- Only `sign` in a result line becomes a chip. `top`, `quality`, `thresholds`,
+  `failed_checks` and `provisional` are for display and the session log; the old
+  keys (`reason`, `latency_ms`, `similarity`, `margin`, `segment`) are unchanged.
 - Rejected segments (too short, too long, lost tracking) and clips that end
   mid-sign yield nothing.
 - An accepted segment yields `?` when the match is weak, the runner-up is too close,
