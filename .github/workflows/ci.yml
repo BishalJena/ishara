@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A new push to the same PR or branch makes the older run useless; cancel it to save minutes.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install (Python from backend/.python-version)
+        run: uv sync --locked
+      - name: Format
+        run: uv run --locked ruff format --check .
+      - name: Lint
+        run: uv run --locked ruff check .
+      - name: Tests
+        run: uv run --locked pytest -q
+
+  spikes-light:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      LIGHT_PY: ${{ github.workspace }}/.venv-light/bin/python
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          enable-cache: true
+          cache-dependency-glob: spikes/recognition/requirements-light.txt
+      - name: Create light venv
+        run: |
+          uv venv --python 3.11 .venv-light
+          uv pip install --python "$LIGHT_PY" -r spikes/recognition/requirements-light.txt
+      - name: call_flow tests (stdlib only)
+        run: |
+          "$LIGHT_PY" -m unittest discover -s spikes/call_flow -p 'test_*.py'
+      - name: Recognition tests (light deps)
+        working-directory: spikes/recognition
+        run: |
+          "$LIGHT_PY" -m unittest -v test_retrieval
+          echo "::notice::test_mini is not run in CI: it imports torch and transformers (requirements.txt)."
+
+  scripts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: shellcheck (preinstalled on ubuntu runners)
+        run: shellcheck --version && shellcheck -x scripts/*.sh backend/scripts/*.sh
+      - name: Heroku script tests (fake heroku CLI, no network)
+        run: python3 -m unittest discover -v -s backend/scripts -p 'test_*.py'
+
+  # macOS minutes cost 10x on a private repo, so decide on a cheap Linux runner whether the
+  # Swift job is needed at all: only when ios/** changed and at least one package exists.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      swift: ${{ steps.filter.outputs.ios == 'true' && steps.packages.outputs.found == 'true' }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            ios:
+              - 'ios/**'
+              - '.github/workflows/ci.yml'
+      - id: packages
+        name: Find Swift packages
+        run: |
+          shopt -s nullglob
+          manifests=(ios/Packages/*/Package.swift)
+          if (( ${#manifests[@]} )); then
+            printf 'Found: %s\n' "${manifests[@]}"
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::No ios/Packages/*/Package.swift yet; swift-packages job skipped."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  swift-packages:
+    needs: changes
+    if: needs.changes.outputs.swift == 'true'
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: swift test each package
+        run: |
+          shopt -s nullglob
+          manifests=(ios/Packages/*/Package.swift)
+          for manifest in "${manifests[@]}"; do
+            package=$(dirname "$manifest")
+            echo "::group::swift test $package"
+            swift test --package-path "$package"
+            echo "::endgroup::"
+          done
