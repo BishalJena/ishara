@@ -557,7 +557,7 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
         await self.server(type="caption", text="Hello, I'm calling.", at=1.0, speaker="agent")
         await self.server(type="caption", text="City Clinic.", at=2.0, speaker="receptionist")
         self.assertEqual(self.lines, [
-            "12:00:05 Ishara (automatic): Hello, I'm calling.",
+            "12:00:05 Ishara (voice): Hello, I'm calling.",
             "12:00:05 receptionist: City Clinic."])
         self.assertEqual(self.transport.sent, [])
 

@@ -26,7 +26,7 @@ from typing import Any, Protocol
 SIGNS = ("hello", "thankyou", "yes", "no", "sorry", "doctor",
          "today", "tomorrow", "morning", "afternoon", "evening", "time")
 MAX_CHIPS = 8  # backend ChipsMessage limit
-AGENT_LABEL = "Ishara (automatic)"
+AGENT_LABEL = "Ishara (voice)"
 QUICK_REPLIES = {
     "yes": "Yes.",
     "no": "No.",
