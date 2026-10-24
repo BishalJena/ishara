@@ -105,12 +105,13 @@ class FakeModel:
         return self.vector
 
 
-def run(clips, model=None, bundle_dir=None, max_frames=256, **options):
+def run(clips, model=None, bundle_dir=None, max_frames=256, bundle_changes=None, **options):
     lines = []
     matcher = None
     if model is not None:
         with TemporaryDirectory() as directory:
-            bundle = ls.load_bundle(write_bundle(bundle_dir or directory))
+            bundle = ls.load_bundle(write_bundle(bundle_dir or directory, **(bundle_changes or {})),
+                                    lines.append)
         matcher = ls.Matcher(bundle, model.featurize, model.embed, max_frames)
     source = ls.LiveSource(clips, matcher, out=lines.append, **options)
     return list(source), lines, source
@@ -130,7 +131,7 @@ class Matching(unittest.TestCase):
         expected = [i for i, f in enumerate(script.frames)
                     if segment.start - 1e-9 <= f.t <= segment.end + 1e-9]
         self.assertEqual(model.calls, [expected])
-        self.assertAlmostEqual(results[0].similarity, 1.0)
+        self.assertAlmostEqual(results[0].match.similarity, 1.0)
         self.assertIn("rest line y=0.820", lines)
 
     def test_low_similarity_is_unsure(self):
@@ -138,21 +139,24 @@ class Matching(unittest.TestCase):
         results, _, _ = run([Script().sign(1.0).observations()], FakeModel(vector))
         self.assertEqual([r.sign for r in results], [None])
         self.assertIn("insufficient evidence", results[0].reason)
-        self.assertLess(results[0].similarity, THRESHOLDS["similarity"])
+        self.assertLess(results[0].match.similarity, THRESHOLDS["similarity"])
+        self.assertEqual(results[0].match.failed_checks, ("similarity",))
 
     def test_close_runner_up_is_unsure(self):
         results, _, _ = run([Script().sign(1.0).observations()], FakeModel(sign_vector("hello")))
         self.assertEqual([r.sign for r in results], [None])
-        self.assertGreater(results[0].similarity, THRESHOLDS["similarity"])
-        self.assertLess(results[0].margin, THRESHOLDS["margin"])
+        self.assertGreater(results[0].match.similarity, THRESHOLDS["similarity"])
+        self.assertLess(results[0].match.margin, THRESHOLDS["margin"])
+        self.assertEqual(results[0].match.failed_checks, ("margin",))
 
     def test_poor_tracking_is_unsure_even_with_a_perfect_match(self):
-        for quality in ({"pose_fraction": 0.59, "hand_fraction": 0.9},
-                        {"pose_fraction": 1.0, "hand_fraction": 0.19}):
+        for quality, check in (({"pose_fraction": 0.59, "hand_fraction": 0.9}, "pose"),
+                               ({"pose_fraction": 1.0, "hand_fraction": 0.19}, "hands")):
             with self.subTest(quality=quality):
                 results, _, _ = run([Script().sign(1.0).observations()],
                                     FakeModel(sign_vector("doctor"), quality))
                 self.assertEqual([r.sign for r in results], [None])
+                self.assertEqual(results[0].match.failed_checks, (check,))
 
     def test_untrackable_segment_is_unsure_not_fatal(self):
         model = FakeModel(sign_vector("doctor"), error="No tracked shoulders")
@@ -174,6 +178,115 @@ class Matching(unittest.TestCase):
                 results, _, _ = run([script.observations()], FakeModel(sign_vector("doctor")),
                                     max_frames=limit)
                 self.assertEqual([r.sign for r in results], [expected])
+
+
+def unit_mix(**weights):
+    vector = sum(weight * sign_vector(sign) for sign, weight in weights.items())
+    return vector / np.linalg.norm(vector)
+
+
+ALL_THRESHOLDS = {**THRESHOLDS, **data.QUALITY}
+
+
+class Evidence(unittest.TestCase):
+    """The extended result line: what a person needs to judge a match, beside the decision."""
+
+    def details(self, model, **options):
+        results, lines, _ = run([Script().sign(1.0).observations()], model, **options)
+        self.assertEqual(len(results), 1)
+        line = ls.result_json(results[0])
+        return json.loads(line), line, lines
+
+    def test_accepted_line_keeps_the_old_keys_and_adds_top3_quality_and_thresholds(self):
+        details, line, _ = self.details(FakeModel(unit_mix(doctor=0.8, time=0.5, morning=0.3)))
+        self.assertEqual(mb.parse_result_line(line), "doctor")
+        self.assertIsNone(details["reason"])
+        self.assertEqual([c["sign"] for c in details["top"]], ["doctor", "time", "morning"])
+        expected = [0.8, 0.5, 0.3] / np.linalg.norm([0.8, 0.5, 0.3])
+        np.testing.assert_allclose([c["similarity"] for c in details["top"]], expected, atol=1e-4)
+        self.assertEqual(details["similarity"], details["top"][0]["similarity"])
+        self.assertAlmostEqual(details["margin"], expected[0] - expected[1], places=4)
+        self.assertEqual(details["quality"], GOOD)
+        self.assertEqual(details["thresholds"], ALL_THRESHOLDS)
+        self.assertEqual(details["failed_checks"], [])
+        self.assertIs(details["provisional"], False)
+        self.assertEqual(details["segment"], [1.8, 3.0])
+        self.assertIsInstance(details["latency_ms"], float)
+
+    def test_top_list_stops_at_three(self):
+        details, _, _ = self.details(FakeModel(unit_mix(doctor=0.9, time=0.3, morning=0.2, today=0.1)))
+        self.assertEqual([c["sign"] for c in details["top"]], ["doctor", "time", "morning"])
+
+    def test_unsure_line_names_the_failed_checks_and_keeps_its_reason(self):
+        details, line, _ = self.details(FakeModel(sign_vector("hello"), {"pose_fraction": 0.5,
+                                                                        "hand_fraction": 0.9}))
+        self.assertIsNone(mb.parse_result_line(line))
+        self.assertEqual(details["failed_checks"], ["margin", "pose"])
+        self.assertTrue(details["reason"].startswith("insufficient evidence (best hello 1.000"))
+        self.assertEqual([c["sign"] for c in details["top"]], ["hello", "thankyou", "afternoon"])
+        self.assertEqual(details["quality"], {"pose_fraction": 0.5, "hand_fraction": 0.9})
+
+    def test_unmatchable_segment_keeps_thresholds_but_has_no_candidates(self):
+        details, _, _ = self.details(FakeModel(sign_vector("doctor"), error="No tracked shoulders"))
+        self.assertEqual((details["sign"], details["reason"]), (None, "No tracked shoulders"))
+        self.assertEqual((details["top"], details["quality"], details["failed_checks"]), ([], None, []))
+        self.assertEqual(details["thresholds"], ALL_THRESHOLDS)
+
+    def test_without_a_bundle_there_is_no_evidence_to_show(self):
+        results, _, _ = run([Script().sign(1.0).observations()])
+        details = json.loads(ls.result_json(results[0]))
+        self.assertEqual({k: details[k] for k in ("top", "quality", "thresholds", "failed_checks",
+                                                  "provisional")},
+                         {"top": [], "quality": None, "thresholds": None, "failed_checks": [],
+                          "provisional": False})
+
+    def test_a_value_exactly_at_its_cut_off_passes_like_in_the_decision(self):
+        at = {"pose_fraction": 0.6, "hand_fraction": 0.2}
+        self.assertEqual(ls.failed_checks(0.8, 0.1, at, ALL_THRESHOLDS), ())
+        below = {"pose_fraction": 0.59, "hand_fraction": 0.19}
+        self.assertEqual(ls.failed_checks(0.79, 0.09, below, ALL_THRESHOLDS),
+                         ("similarity", "margin", "pose", "hands"))
+        self.assertEqual(ls.failed_checks(0.9, 0.5, {}, ALL_THRESHOLDS), ("pose", "hands"))
+
+    def test_failed_checks_are_empty_exactly_when_the_decision_accepts(self):
+        with TemporaryDirectory() as directory:
+            bundle = ls.load_bundle(write_bundle(directory))
+        rng = np.random.default_rng(7)
+        frame = [ls.Observation(0.0, Frame(0.0, True, ()), 0)]
+        samples = [(sign_vector("doctor"), dict(data.QUALITY, pose_fraction=0.6, hand_fraction=0.2))]
+        for _ in range(400):
+            vector = sign_vector(rng.choice(data.VOCABULARY)) + rng.normal(0, 0.35, DIM)
+            samples.append((vector, {"pose_fraction": rng.uniform(0.4, 1), "hand_fraction": rng.uniform(0, 0.5)}))
+        outcomes = set()
+        for vector, quality in samples:
+            model = FakeModel(vector, quality)
+            match = ls.Matcher(bundle, model.featurize, model.embed, 256)(frame)
+            self.assertEqual(match.sign is None, bool(match.failed_checks), (match, quality))
+            outcomes.update(match.failed_checks or ("accepted",))
+        self.assertEqual(outcomes, {"accepted", "similarity", "margin", "pose", "hands"})
+
+
+class Provisional(unittest.TestCase):
+    def test_a_provisional_bundle_warns_loudly_and_marks_every_result(self):
+        results, lines, _ = run([Script().sign(1.0).observations()], FakeModel(sign_vector("doctor")),
+                                bundle_changes={"provisional": True})
+        self.assertTrue(any(mb.PROVISIONAL_BANNER in line for line in lines))
+        self.assertEqual([r.sign for r in results], ["doctor"])
+        self.assertIs(json.loads(ls.result_json(results[0]))["provisional"], True)
+
+    def test_flag_is_optional_and_must_be_a_boolean(self):
+        for value, expected in ((False, False), (True, True)):
+            with self.subTest(value=value), TemporaryDirectory() as directory:
+                self.assertIs(ls.load_bundle(write_bundle(directory, provisional=value),
+                                             lambda _: None).provisional, expected)
+        with TemporaryDirectory() as directory:
+            warnings = []
+            self.assertIs(ls.load_bundle(write_bundle(directory), warnings.append).provisional, False)
+            self.assertEqual(warnings, [])
+            with self.assertRaises(ValueError):
+                ls.load_bundle(write_bundle(directory, provisional="yes"))
+            with self.assertRaises(ValueError):
+                ls.load_bundle(write_bundle(directory, provisional=1))
 
 
 class Segments(unittest.TestCase):
@@ -243,7 +356,8 @@ class Latency(unittest.TestCase):
         # The segment closes after 0.40 s of rest; matching then takes 0.25 s.
         self.assertAlmostEqual(results[0].latency_s, 0.40 + 0.25, places=6)
         self.assertEqual(source.latencies, [results[0].latency_s])
-        self.assertTrue(any("latency 0.65 s" in line for line in lines))
+        self.assertIn("#1 1.80-3.00 s  ✓ doctor  (doctor 1.00 | afternoon 0.00 | evening 0.00; "
+                      "margin 1.00; 0.65 s)", lines)
         self.assertIn("within the 2 s budget", source.summary())
 
     def test_slow_results_are_flagged_over_budget(self):
@@ -279,8 +393,8 @@ class Calibration(unittest.TestCase):
     def test_closing_the_preview_stops_the_source(self):
         shown = []
 
-        def show(image, status, rest_y, message):
-            shown.append(status)
+        def show(image, overlay):
+            shown.append(overlay.status)
             return len(shown) < 10
 
         observations = (ls.Observation(o.wall, o.frame, o.landmarks, image="img")
@@ -288,6 +402,124 @@ class Calibration(unittest.TestCase):
         results, _, _ = run([observations], FakeModel(sign_vector("doctor")), show=show)
         self.assertEqual(results, [])
         self.assertEqual(shown, ["calibrating"] * 10)
+
+
+def with_images(observations):
+    return (ls.Observation(o.wall, o.frame, o.landmarks, image=o.landmarks) for o in observations)
+
+
+class Preview(unittest.TestCase):
+    def overlays(self, model=None, **options):
+        shown = []
+        script = Script().sign(1.0).hold(0.8, UP_Y).hold(0.6)
+
+        def show(image, overlay):
+            shown.append((image, overlay))
+            return True
+
+        results, _, _ = run([with_images(script.observations())], model, show=show, **options)
+        return results, shown
+
+    def test_the_latest_result_stays_on_screen_until_the_next_one(self):
+        results, shown = self.overlays(FakeModel(sign_vector("doctor")))
+        self.assertEqual(len(results), 2)
+        self.assertEqual([image for image, _ in shown], list(range(len(shown))))  # every frame
+        lasts = [overlay.last for _, overlay in shown]
+        first = lasts.index(results[0])
+        self.assertTrue(all(last is None for last in lasts[:first]))
+        second = lasts.index(results[1])
+        self.assertTrue(all(last is results[0] for last in lasts[first:second]))
+        self.assertTrue(all(last is results[1] for last in lasts[second:]))
+        self.assertEqual(shown[first][1].message, f"#1 doctor  {results[0].latency_s:.2f} s")
+        self.assertEqual(shown[0][1].status, "calibrating")
+        self.assertIn("signing", {overlay.status for _, overlay in shown})
+        self.assertEqual(shown[-1][1].rest_y, 0.9 - 0.08)
+        self.assertFalse(any(overlay.provisional for _, overlay in shown))
+
+    def test_a_provisional_bundle_shows_the_banner_from_the_first_frame(self):
+        _, shown = self.overlays(FakeModel(sign_vector("doctor")), bundle_changes={"provisional": True})
+        self.assertTrue(all(overlay.provisional for _, overlay in shown))
+        _, shown = self.overlays()
+        self.assertFalse(any(overlay.provisional for _, overlay in shown))
+
+
+def recognition(model=None, **options):
+    results, _, _ = run([Script().sign(1.0).observations()], model, **options)
+    return results[0]
+
+
+class ResultPanel(unittest.TestCase):
+    def test_accepted_sign_gets_a_green_label_and_the_numbers_behind_it(self):
+        result = recognition(FakeModel(unit_mix(doctor=0.8, time=0.5, morning=0.3)))
+        panel = ls.result_panel(result)
+        self.assertEqual((panel.label, panel.accepted, panel.why), ("doctor", True, None))
+        self.assertEqual([sign for sign, _ in panel.bars], ["doctor", "time", "morning"])
+        self.assertAlmostEqual(panel.bars[1][1], 0.5 / np.linalg.norm([0.8, 0.5, 0.3]), places=4)
+        self.assertEqual(panel.similarity_cut, 0.8)
+        self.assertEqual(panel.footer, (f"margin 0.30 (min 0.10)  {result.latency_s:.2f} s",
+                                        "body 1.00 (min 0.60)  hands 0.90 (min 0.20)"))
+
+    def test_unsure_sign_shows_a_question_mark_and_why(self):
+        panel = ls.result_panel(recognition(FakeModel(sign_vector("hello"))))
+        self.assertEqual((panel.label, panel.accepted, panel.why), ("?", False, "low margin"))
+        self.assertEqual([sign for sign, _ in panel.bars], ["hello", "thankyou", "afternoon"])
+
+    def test_without_a_bundle_only_the_reason_and_latency_show(self):
+        result = recognition()
+        panel = ls.result_panel(result)
+        self.assertEqual((panel.label, panel.bars, panel.similarity_cut, panel.why),
+                         ("?", (), None, "no recognition bundle"))
+        self.assertEqual(panel.footer, (f"{result.latency_s:.2f} s",))
+
+
+class DrawOverlay(unittest.TestCase):
+    """Pixel checks on a black frame: the colours carry the meaning."""
+    HEIGHT, WIDTH = 720, 1280
+
+    def draw(self, last=None, provisional=False, status="watching"):
+        view = np.zeros((self.HEIGHT, self.WIDTH, 3), np.uint8)
+        ls.draw_overlay(view, ls.Overlay(status, 0.82, "Ready", last, provisional))
+        return view
+
+    def count(self, region, colour):
+        return int(np.all(region == colour, axis=-1).sum())
+
+    def panel(self, view):
+        return view[:400, self.WIDTH - ls.PANEL_WIDTH - 10:]
+
+    def test_accepted_result_is_green_and_never_red(self):
+        view = self.draw(recognition(FakeModel(sign_vector("doctor"))))
+        self.assertGreater(self.count(self.panel(view), ls.GREEN), 500)
+        self.assertEqual(self.count(view, ls.RED), 0)
+        self.assertGreater(self.count(self.panel(view), ls.YELLOW), 0)  # the cut-off ticks
+
+    def test_unsure_result_is_red_and_never_green(self):
+        view = self.draw(recognition(FakeModel(sign_vector("hello"))))
+        self.assertGreater(self.count(self.panel(view), ls.RED), 500)
+        self.assertEqual(self.count(view, ls.GREEN), 0)
+        self.assertGreater(self.count(self.panel(view), ls.GREY), 0)  # bars without a winner
+
+    def test_bars_grow_with_similarity(self):
+        view = self.draw(recognition(FakeModel(unit_mix(doctor=0.8, time=0.5, morning=0.3))))
+        bars = self.panel(view)[100:, 140:141 + ls.BAR_WIDTH]  # below the label, the bar columns
+        rows = [np.all(bars == colour, axis=-1).sum(axis=1).max() for colour in (ls.GREEN, ls.GREY)]
+        self.assertGreater(rows[0], rows[1])
+        similarities = np.array([0.8, 0.5]) / np.linalg.norm([0.8, 0.5, 0.3])
+        # +1: rectangles include both ends; the 2 px cut-off tick covers part of the top bar.
+        self.assertAlmostEqual(rows[0], int(ls.BAR_WIDTH * similarities[0]) + 1, delta=4)
+        self.assertEqual(rows[1], int(ls.BAR_WIDTH * similarities[1]) + 1)
+
+    def test_before_the_first_sign_there_is_no_result_box(self):
+        view = self.draw()
+        self.assertEqual(int(self.panel(view).sum()), 0)
+        self.assertGreater(int(view[:60, :220].sum()), 0)  # the detector pill
+
+    def test_provisional_banner_spans_the_width_and_pushes_the_box_down(self):
+        view = self.draw(provisional=True)
+        self.assertEqual(self.count(view[60:62], ls.RED), 2 * self.WIDTH)
+        with_box = self.draw(recognition(FakeModel(sign_vector("doctor"))), provisional=True)
+        self.assertEqual(self.count(with_box[60:62], ls.RED), 2 * self.WIDTH)
+        self.assertEqual(self.count(self.draw()[60:62], ls.RED), 0)
 
 
 class BridgeBoundary(unittest.TestCase):
