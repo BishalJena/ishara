@@ -229,10 +229,39 @@ artifacts/bridge/.venv/bin/python -m unittest test_mac_bridge test_detector test
    artifacts/signclip/.venv/bin/python retrieval.py export-bundle --encoder signclip
    ```
 
-5. **Check it alone, no call.** Rest both hands for 2 s when asked (it prints
-   `rest line y=...`), then sign one at a time and drop your hands after each.
-   Every accepted segment prints the sign or `? (reason)` and its latency.
+5. **Check it alone, no call (Sign Lab).** Rest both hands for 2 s when asked (it
+   prints `rest line y=...`), then sign one at a time and drop your hands after each.
    **q** in the window or Ctrl-C stops and prints the latency summary.
+
+   Every accepted segment prints one line with the top 3 matches, the margin to the
+   runner-up and the latency; a `?` also says which cut-off it missed:
+
+   ```
+   #2 0.76-1.60 s  ✓ doctor  (doctor 0.77 | today 0.62 | hello 0.62; margin 0.15; 0.47 s)
+   #3 0.60-1.36 s  ? unsure  (today 0.88 | tomorrow 0.86 | hello 0.79; margin 0.02; 0.71 s; low margin)
+   ```
+
+   The window shows the same for the latest sign until it is replaced:
+
+   ```
+   ┌──────────┐                                     ┌───────────────────────────────┐
+   │ watching │ ← detector pill                     │ doctor   ← green, or a red ?  │
+   └──────────┘   (calibrating/signing/cant see)    │            with why under it  │
+   ██ PROVISIONAL - uncalibrated, for trying only ██│ doctor  ██████████│█  0.77    │
+      ↑ red banner, only for a provisional bundle   │ today   ███████   │   0.62    │
+                                                    │ hello   ███████   │   0.62    │
+                                                    │ margin 0.15 (min 0.05)  0.47 s│
+                                                    │ body 1.00 (min 0.60) hands ...│
+   rest line ─────────────────────────────────────  └───────────────────────────────┘
+   #2 doctor  0.47 s                                  │ = the similarity cut-off
+   ```
+
+   Bars run from 0 to 1. `low similarity` means even the best match is below the
+   cut-off; `low margin` means the runner-up is too close; `body/hands seen in too
+   few frames` means tracking was poor. A bundle marked `"provisional": true` is
+   accepted for trying signs out, but every line says `[PROVISIONAL]` and the
+   window shows a red banner: its thresholds are not calibrated, so nothing it
+   says counts as a G2 measurement.
 
    ```sh
    artifacts/signclip/.venv/bin/python live_source.py --camera 0
@@ -243,7 +272,8 @@ artifacts/bridge/.venv/bin/python -m unittest test_mac_bridge test_detector test
    `--replay-videos DIR` plays every .mp4/.mov/.m4v in DIR in name order. Each clip
    calibrates on its first 2 s; for takes without a leading rest, pass the
    `--rest-y` that live mode printed in the same seat. `--fast` skips the pacing,
-   but then latency no longer means live latency.
+   but then latency no longer means live latency. Replayed clips get the same
+   window; `--no-preview` turns it off.
 
 6. **Into the call.** Attaching to a call the app or backend already started costs
    nothing. Starting one needs `--contact clinic --confirm-cost` (it dials a real,
@@ -264,10 +294,25 @@ artifacts/bridge/.venv/bin/python -m unittest test_mac_bridge test_detector test
    and typed signs still work. `--bundle PATH` and `--rest-y Y` are passed to
    the recognizer.
 
+   Each sign prints the same per-sign line as step 5. Backend events (status,
+   receptionist captions, drafts with their `llm`/`template` source, SEND and
+   `Delivered`) carry a time. `--log` also appends every recognizer result and
+   every message sent or received to a JSONL file for review afterwards, by default
+   `artifacts/lab/session-<date>-<time>.jsonl` (`--log PATH` must stay inside the
+   gitignored `artifacts/`):
+
+   ```sh
+   jq -c 'select(.from == "recognizer") | .message | [.sign, .top[0].sign, .margin]' \
+     artifacts/lab/session-*.jsonl
+   ```
+
 ### What the recognizer guarantees
 
 - Each sign uses the same `recognition_data.rank` and `decision` as calibration,
   with the bundle's frozen thresholds and the shared quality minimums.
+- Only `sign` in a result line becomes a chip. `top`, `quality`, `thresholds`,
+  `failed_checks` and `provisional` are for display and the session log; the old
+  keys (`reason`, `latency_ms`, `similarity`, `margin`, `segment`) are unchanged.
 - Rejected segments (too short, too long, lost tracking) and clips that end
   mid-sign yield nothing.
 - An accepted segment yields `?` when the match is weak, the runner-up is too close,
