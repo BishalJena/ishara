@@ -1,7 +1,6 @@
 # Teammate handoff
 
-Current state: **23 October 2026**, branch `main` (the `spike/slgcn-miniature`
-work is merged).
+Current state: **24 October 2026**, branch `main` (PRs #5–#33 are merged).
 This file owns the current capability and direction. Detailed measurements belong
 in the [experiment record](experiments/recognition.md), active tasks in
 [PLAN.md](../PLAN.md), and commands in the spike runbooks.
@@ -17,19 +16,28 @@ in the [experiment record](experiments/recognition.md), active tasks in
 - The speech track has an offline lifecycle mock, a non-telephony Bolna probe and
   an Apple audio/camera diagnostic harness. These are separate tools.
 
-## Demo build progress (23 Oct, open PRs)
+## Demo build progress (24 Oct, merged)
 
-All of this exists as open pull requests with offline tests only. Nothing has run
-against real Bolna or Groq, nothing is deployed to Heroku, and nothing has run on an
-iPhone. [PLAN §6](../PLAN.md#6-schedule-and-todos) has the per-task status.
+Everything below is on `main` with offline tests (`scripts/verify.sh`: backend 782
+tests, recognition, call_flow, three Swift packages, iOS app under `xcodebuild test`).
+[PLAN §6](../PLAN.md#6-schedule-and-todos) has the per-task status.
+
+**What has run for real (23–24 Oct):** the backend is deployed to Heroku (EU, Basic
+dyno) with `/health` green; the custom model is registered with Bolna and the Path B
+graph agent exists (its id lives only in Heroku config and the local `.env`); a live
+custom-LLM smoke returned the holding line for `[silence]`. Groq and Sarvam have been
+called for lab drafts and oracle audio (a few rupees in total). **What has not:** no
+Bolna call has been placed (V4), no sign of the presenting signer has been recorded
+(R1/R3/R4), and nothing has run on an iPhone (P3/T1). The gates G1–G4 are all open.
 
 | Area | What exists | PRs |
 |---|---|---|
-| Backend (`backend/`) | FastAPI foundation, Groq composer with validator and templates, Bolna custom-LLM endpoint, call sessions with single-use approvals, Path A `/tts`, Bolna agent builder, fake Bolna and end-to-end script tests, fake-app and V4 spike tools | #6, #7, #8, #10, #13, #14, #16, #17 |
-| CI and deploy | `scripts/verify.sh`, GitHub Actions, Heroku scripts and `backend/HEROKU.md` | #15 |
-| iOS (`ios/`) | `ios/Ishara` app shell (4 screens, fake data) and local packages `ios/Packages/{RecognitionCore,CallSession,SignPipeline}`. Not yet built or tested under Xcode | #18, #20, #22, #23 |
-| Core ML (`ml/coreml/`) | SignCLIP encoder as FP16 Core ML; matches PyTorch on 47/47 clips with `.cpuAndGPU` on a Mac (the Neural Engine gives wrong embeddings) | #21 |
-| Mac recognition | 12-sign vocabulary, R2b calibration report and iPhone bundle export, start/stop detector, Mac bridge that sends chips to a backend call | #9, #11, #12 |
+| Backend (`backend/`) | FastAPI app, Groq composer with validator and templates, Bolna custom-LLM endpoint, call sessions with single-use approvals, status webhook with its own secret, Path A `/tts`, Bolna agent builder and CLI, fake Bolna and end-to-end script tests, fake-app and V4 spike tools, Sign Lab backend | #6–#8, #10, #13–#17, #26, #30 |
+| CI and deploy | `scripts/verify.sh`, GitHub Actions, Heroku scripts and `backend/HEROKU.md` | #15, #28 |
+| iOS (`ios/`) | `ios/Ishara` app (4 screens, fake and live call drivers, scripted and pipeline recognition) and local packages `ios/Packages/{RecognitionCore,CallSession,SignPipeline,SignPipelineMediaPipe}`; unit and UI tests pass in the simulator | #18, #20, #22, #23, #27 |
+| Core ML (`ml/coreml/`) | SignCLIP encoder as FP16 Core ML; matches PyTorch on 47/47 clips with `.cpuAndGPU` on a Mac (the Neural Engine gives wrong embeddings, so the app refuses it) | #21 |
+| Mac recognition | 12-sign vocabulary, calibration report and bundle export, start/stop detector, live webcam recognizer with top-3 display, Mac bridge into the backend call, guided 12-sign recording session and provisional try bundle | #9, #11, #12, #25, #29, #32 |
+| Evaluation | Cross-signer run on 42 public clips through recognizer, composer and voice: right sign ranked first for 27/39, but 4 correct chips, 1 wrong, the rest `?` at the zero-wrong-accept cut-off; composer on true chips 9/12 fit, one validator gap (see plan task V5b) | #33 |
 
 ## Current direction and blockers
 
@@ -40,8 +48,8 @@ and whole-clip extraction has not met the live response target.
 
 The demo vocabulary is now **12 signs** (hello, thankyou, yes, no, sorry, doctor,
 today, tomorrow, morning, afternoon, evening, time), for one seated signer and one
-complete sign at a time. On `main` the capture tool still lists the earlier five;
-PR #12 extends it (plan task R0). The older browser diagnostic also supports today and location.
+complete sign at a time; the capture and recording tools use it (plan task R0 done).
+The older browser diagnostic also supports today and location.
 Its recognizer is still SL-GCN; uncalibrated SignCLIP ranks are not connected to
 composition or speech.
 
@@ -56,8 +64,9 @@ incorrectly recognized concept; the user still edits and approves.
 **Bolna speech is unproven.** The old hosted sample-speech route returned 403
 and should not be retried. The chosen route (Path B) is a Bolna graph agent that
 places the call, with our backend as its custom LLM and graph events carrying the
-approved text; day-1 task V4 in the plan tests it. The endpoint, agent config and
-spike runner exist as PRs, but no call has been placed. The iPhone harness has been
+approved text; day-1 task V4 in the plan tests it. The endpoint is deployed, the custom
+model and the graph agent are registered with Bolna, and the spike runner exists, but
+no call has been placed. The iPhone harness has been
 built, but physical call/camera/caption coexistence (Path A) has not been
 demonstrated. An offline mock or Apple local voice does not establish Bolna
 integration.
