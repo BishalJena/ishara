@@ -111,11 +111,17 @@ class Encoding(unittest.TestCase):
 
 
 class TextBoxes(unittest.TestCase):
-    def test_union_pads_and_clamps(self):
-        found = [{"box": [0.1, 0.8, 0.3, 0.9]}, {"box": [0.25, 0.85, 0.5, 0.99]}]
-        box = ocr.union_box(found)
-        self.assertEqual([round(v, 3) for v in box], [0.08, 0.78, 0.52, 1.0])
-        self.assertAlmostEqual(ocr.cover((0.0, 0.0, 0.5, 0.5)), 0.25)
+    def test_regions_pad_clamp_and_merge_only_overlapping_boxes(self):
+        caption_a, caption_b, watermark = [0.1, 0.8, 0.3, 0.9], [0.25, 0.85, 0.5, 0.99], [0.0, 0.0, 0.1, 0.05]
+        merged = ocr.regions([caption_a, caption_b, watermark, caption_a])
+        self.assertEqual([[round(v, 3) for v in b] for b in merged], [[0.0, 0.0, 0.12, 0.07], [0.08, 0.78, 0.52, 1.0]])
+        self.assertAlmostEqual(ocr.cover(merged), 0.12 * 0.07 + 0.44 * 0.22)
+        self.assertAlmostEqual(ocr.cover([(0.0, 0.0, 0.5, 0.5)]), 0.25)
+
+    def test_regions_merge_chains_into_one_box(self):
+        merged = ocr.regions([[0.1, 0.1, 0.2, 0.2], [0.5, 0.1, 0.6, 0.2], [0.18, 0.1, 0.52, 0.2]])
+        self.assertEqual(len(merged), 1)
+        self.assertEqual([round(v, 3) for v in merged[0]], [0.08, 0.08, 0.62, 0.22])
 
     def test_pixelate_changes_only_the_box(self):
         frame = np.random.default_rng(0).integers(0, 255, (100, 200, 3), dtype=np.uint8)
@@ -124,15 +130,21 @@ class TextBoxes(unittest.TestCase):
         self.assertTrue(np.array_equal(out[:, :100], frame[:, :100]))
         self.assertFalse(np.array_equal(out[50:, 100:], frame[50:, 100:]))
 
-    def test_meaningful_ignores_low_confidence_and_symbols(self):
-        boxes = [ocr.TextBox("Hello", 0.9, (0, 0, 1, 1)), ocr.TextBox("|", 0.9, (0, 0, 1, 1)),
-                 ocr.TextBox("Time", 0.1, (0, 0, 1, 1))]
-        self.assertEqual([b.text for b in ocr.meaningful(boxes)], ["Hello"])
+    def test_meaningful_ignores_low_confidence_noise_and_symbols(self):
+        boxes = [ocr.TextBox("Hello", 0.5, (0, 0, 1, 1)), ocr.TextBox("|", 0.9, (0, 0, 1, 1)),
+                 ocr.TextBox("ВЕҐ2Q5.", 0.3, (0, 0, 1, 1)), ocr.TextBox("O GOD0DO", 0.3, (0, 0, 1, 1))]
+        self.assertEqual([b.text for b in ocr.meaningful(boxes, ["god", "hello"])], ["Hello"])
+
+    def test_meaningful_keeps_a_low_confidence_candidate_word(self):
+        boxes = [ocr.TextBox("o Time.", 0.3, (0, 0, 1, 1)), ocr.TextBox("Thank you", 0.3, (0, 0, 1, 1)),
+                 ocr.TextBox("Timer", 0.3, (0, 0, 1, 1))]
+        self.assertEqual([b.text for b in ocr.meaningful(boxes, ["time", "thank you"])], ["o Time.", "Thank you"])
+        self.assertEqual(ocr.meaningful(boxes), [])
 
 
 @unittest.skipUnless(sys.platform == "darwin" and HAS_FFMPEG, "Apple Vision OCR needs macOS and ffmpeg")
 class VisionFilter(unittest.TestCase):
-    def write_clip(self, path, text, box_height=0.12):
+    def write_clip(self, path, text, box_height=0.12, watermark=None):
         import cv2
         frames = []
         for i in range(10):
@@ -141,8 +153,23 @@ class VisionFilter(unittest.TestCase):
             if text:
                 cv2.putText(frame, text, (230, int(360 * (1 - box_height / 2))), cv2.FONT_HERSHEY_SIMPLEX, 1.5,
                             (255, 255, 255), 3)
+            if watermark:
+                cv2.putText(frame, watermark, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
             frames.append(frame)
         ocr.encode_frames(frames, 25, path, pp.ENCODE_ARGS)
+
+    def test_far_apart_caption_and_watermark_are_blurred_separately_not_dropped(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "c.mp4"
+            self.write_clip(path, "DOCTOR", watermark="PHIN DEAF")
+            found = ocr.scan(path)
+            self.assertGreater(ocr.cover([ocr.padded((min(f["box"][0] for f in found), min(f["box"][1] for f in found),
+                                                      max(f["box"][2] for f in found), max(f["box"][3] for f in found)))]),
+                               ocr.MAX_COVER)  # one box around both would cover too much
+            record = ocr.clean(path, pp.ENCODE_ARGS, 25, ["doctor", "deaf"])
+            self.assertEqual(record["action"], "blurred")
+            self.assertEqual(len(record["regions"]), 2)
+            self.assertEqual(ocr.scan(path, ["doctor", "deaf"]), [])
 
     def test_a_caption_is_found_blurred_and_gone_on_recheck(self):
         with tempfile.TemporaryDirectory() as tmp:

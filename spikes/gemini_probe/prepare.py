@@ -125,8 +125,9 @@ def prepare(spec_path: Path, seed: int) -> int:
                      "raw_sha256": raw_hashes[source["file"]], "duration": round(info["duration"], 3)})
         print(f"{clip_id} {cut['split']}", flush=True)
     audit = {}
+    words = sorted({cut["label"] for cut in spec["clips"]})
     for row in (r for r in rows if r["split"] == "test"):
-        audit[row["id"]] = ocr.clean(ARTIFACTS / row["path"], ENCODE_ARGS, FPS)
+        audit[row["id"]] = ocr.clean(ARTIFACTS / row["path"], ENCODE_ARGS, FPS, words)
         check_probe(probe(ARTIFACTS / row["path"]))
         print(f"ocr {row['id']}: {audit[row['id']]['action']}", flush=True)
     for row in rows:
