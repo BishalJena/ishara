@@ -387,6 +387,167 @@ class BundleContracts(unittest.TestCase):
             retrieval.bundle({}, thresholds, references[:-1])
 
 
+def loo_rows(signs=None):
+    """Enrollment-like attempts (no negatives) ranked against the synthetic references."""
+    signs = signs or {}
+    queries = [a for label in DEMO_SIGNS
+               for a in signs.get(label, [attempt(label, s) for s in (0.95, 0.9, 0.85)])]
+    return rank_records(queries, REFERENCES)
+
+
+def ranked(label, concept, similarity, margin):
+    return {"label": label, "quality": {"pose_fraction": 1, "hand_fraction": 1},
+            "ranking": [{"concept": concept, "similarity": similarity}], "margin": margin}
+
+
+def enrollment_records(sims=(0.95, 0.9, 0.85)):
+    return [pilot_row("enrollment", label, label, s) for label in DEMO_SIGNS for s in sims]
+
+
+class ProvisionalBundleContracts(unittest.TestCase):
+    """Sign Lab try mode: enrollment-only cut-offs that are never mistaken for calibration."""
+
+    def test_clean_takes_are_all_accepted_at_the_weakest_observed_match(self):
+        rows = loo_rows()
+        thresholds, counts = retrieval.provisional_policy(rows)
+        self.assertEqual(thresholds, {"similarity": min(r["ranking"][0]["similarity"] for r in rows),
+                                      "margin": min(r["margin"] for r in rows)})
+        self.assertEqual((counts["queries"], counts["correct_accepted"], counts["wrong_accepted"],
+                          counts["abstentions"], counts["fallback"]), (36, 36, 0, 0, False))
+        stricter = {**thresholds, "similarity": thresholds["similarity"] + 1e-6}
+        self.assertEqual(sum(c["correct_accepted"] for c in score(rows, stricter)["per_concept"].values()), 24)
+
+    def test_a_confused_take_is_left_out_by_the_most_permissive_clean_cut_off(self):
+        yes = [attempt("yes", 0.9) for _ in range(4)] + [attempt("yes", 0.8),
+                                                         attempt("yes", 0.85, looks_like="no")]
+        rows = loo_rows({label: [attempt(label, 0.95) for _ in range(3)] for label in DEMO_SIGNS}
+                        | {"yes": yes})
+        loosest = {"similarity": 0.8 - 1e-6, "margin": 0.0}
+        self.assertEqual(score(rows, loosest)["per_concept"]["yes"]["wrong_accepted"], 1)
+        thresholds, counts = retrieval.provisional_policy(rows)
+        self.assertEqual((counts["correct_accepted"], counts["wrong_accepted"], counts["fallback"]),
+                         (37, 0, False))
+        self.assertEqual(counts["per_concept"]["yes"],
+                         {"total": 6, "correct_accepted": 4, "wrong_accepted": 0, "abstentions": 2})
+        self.assertAlmostEqual(min(thresholds.values()), 0.8, places=6)
+
+    def test_signs_that_all_look_alike_fall_back_to_the_documented_default(self):
+        rows = loo_rows({label: [attempt(label, 0.99, "hello") for _ in range(3)] for label in DEMO_SIGNS})
+        thresholds, counts = retrieval.provisional_policy(rows)
+        self.assertEqual(thresholds, retrieval.PROVISIONAL_FALLBACK)
+        self.assertIsNot(thresholds, retrieval.PROVISIONAL_FALLBACK)
+        self.assertTrue(counts["fallback"])
+        self.assertEqual((counts["correct_accepted"], counts["wrong_accepted"]), (3, 33))
+        banner = retrieval.provisional_banner(thresholds, counts, Path("bundle.json"))
+        self.assertIn("FALLBACK", banner)
+        self.assertIn("wrong accepts 33", banner)
+
+    def test_cut_off_never_drops_below_the_weakest_correct_match(self):
+        # (0.7, 0.5) would also accept only the hello take, but no correct take was seen at 0.7.
+        rows = [ranked("hello", "hello", 0.9, 0.5), ranked("yes", "hello", 0.7, 0.3)]
+        thresholds, counts = retrieval.provisional_policy(rows)
+        self.assertEqual(thresholds, {"similarity": 0.9, "margin": 0.5})
+        self.assertEqual((counts["correct_accepted"], counts["wrong_accepted"]), (1, 0))
+
+    def test_a_cut_off_that_accepts_nothing_is_never_chosen(self):
+        # Each correct take is dominated by a wrong one, but (0.95, 0.9) would accept nothing.
+        rows = [ranked("hello", "hello", 0.95, 0.30), ranked("yes", "yes", 0.50, 0.90),
+                ranked("no", "hello", 0.96, 0.35), ranked("sorry", "yes", 0.55, 0.95)]
+        self.assertEqual(score(rows, {"similarity": 0.95, "margin": 0.9})["negative_false_accepts"], 0)
+        thresholds, counts = retrieval.provisional_policy(rows)
+        self.assertTrue(counts["fallback"])
+        self.assertEqual(thresholds, retrieval.PROVISIONAL_FALLBACK)
+
+    def test_leave_one_out_never_matches_a_take_to_itself(self):
+        references = []
+        for label in DEMO_SIGNS:
+            for suffix, similarity in (("a", 1.0), ("b", 0.8)):
+                ident = f"{label}-{suffix}"
+                references.append({"id": ident, "sha256": ident, "source_id": ident, "label": label,
+                                   "quality": {"pose_fraction": 1, "hand_fraction": 1},
+                                   "embedding": data.unit(toward(label, similarity))})
+        rows = retrieval.leave_one_out(references)
+        self.assertEqual(len(rows), 24)
+        for row in rows:
+            other = row["id"][:-1] + ("b" if row["id"].endswith("a") else "a")
+            with self.subTest(id=row["id"]):
+                self.assertEqual(row["ranking"][0]["reference_id"], other)
+                self.assertAlmostEqual(row["ranking"][0]["similarity"], 0.8, places=6)
+                self.assertNotIn("embedding", row)
+
+    def test_leave_one_out_needs_two_takes_of_every_sign(self):
+        references = [{"id": f"{label}{i}", "sha256": f"{label}{i}", "source_id": f"{label}{i}",
+                       "label": label, "embedding": toward(label, 0.9)}
+                      for label in DEMO_SIGNS for i in range(2)]
+        retrieval.leave_one_out(references)
+        with self.assertRaisesRegex(ValueError, r"2 takes of every sign; short: time \(1\)$"):
+            retrieval.leave_one_out(references[:-1])
+        with self.assertRaisesRegex(ValueError, "could not be embedded"):
+            retrieval.leave_one_out(references + [{**references[0], "id": "x", "error": "no hands"}])
+
+    def export(self, records, root):
+        with fake_pilot(records, root) as out:
+            status = retrieval.export_provisional_bundle("signclip", None)
+        return status, out.getvalue()
+
+    def test_try_bundle_is_marked_provisional_and_kept_apart_from_calibration(self):
+        import live_source
+
+        records = enrollment_records()
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            status, out = self.export(records, root)
+            path = root / "evidence" / "recognition-bundle-signclip-provisional.json"
+            document = json.loads(path.read_text())
+            loaded = live_source.load_bundle(path)
+            self.assertFalse((root / "evidence" / "recognition-bundle-signclip.json").exists())
+            self.assertFalse((root / "retrieval" / "policy-signclip.json").exists())
+        self.assertEqual(status, 0)
+        self.assertEqual(list(document), ["version", "provisional", "encoder", "embedding_dim", "thresholds",
+                                          "quality", "references", "leave_one_out"])
+        self.assertIs(document["provisional"], True)
+        self.assertEqual(document["version"], 1)
+        self.assertEqual(json.loads(document["encoder"]), FakeEncoder.contract)
+        self.assertEqual(document["quality"], data.QUALITY)
+        self.assertEqual([r["id"] for r in document["references"]], [r["id"] for r in records])
+        loo = document["leave_one_out"]
+        self.assertEqual((loo["queries"], loo["correct_accepted"], loo["wrong_accepted"], loo["fallback"]),
+                         (36, 36, 0, False))
+        self.assertIn("same-session references, no negatives", loo["method"])
+        self.assertEqual(loaded.thresholds, document["thresholds"])
+        self.assertIn(retrieval.PROVISIONAL_BANNER, out)
+        self.assertIn("accepted 36 of 36, wrong accepts 0, abstained 0", out)
+        self.assertNotIn("FALLBACK", out)
+
+    def test_only_verified_enrollment_takes_are_used(self):
+        records = enrollment_records() + [pilot_row("calibration", label, label, 0.9) for label in DEMO_SIGNS]
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.export(records, root)
+            document = json.loads((root / "evidence" / "recognition-bundle-signclip-provisional.json").read_text())
+            self.assertEqual(len(document["references"]), 36)
+            self.assertEqual(document["leave_one_out"]["queries"], 36)
+            unverified = enrollment_records()
+            unverified[5]["verified"] = False
+            with self.assertRaisesRegex(ValueError, "1 enrollment takes are unverified"):
+                self.export(unverified, Path(temporary) / "second")
+            self.assertFalse((Path(temporary) / "second").exists())
+
+    def test_provisional_flag_selects_the_try_export_and_only_for_export_bundle(self):
+        with patch.object(retrieval, "export_provisional_bundle", return_value=0) as provisional, \
+                patch.object(retrieval, "export_bundle", return_value=0) as calibrated:
+            retrieval.main(["export-bundle", "--encoder", "signclip", "--provisional"])
+            provisional.assert_called_once_with("signclip", data.DATASET)
+            calibrated.assert_not_called()
+            retrieval.main(["export-bundle", "--encoder", "signclip"])
+            calibrated.assert_called_once_with("signclip", data.DATASET)
+        for command in ("calibrate", "evaluate", "status", "replay"):
+            with self.subTest(command=command), redirect_stderr(StringIO()) as stderr, \
+                    self.assertRaises(SystemExit):
+                retrieval.main([command, "--provisional"])
+            self.assertIn("--provisional only applies to export-bundle", stderr.getvalue())
+
+
 class CaptureContracts(unittest.TestCase):
     def parse(self, concept):
         from pilot_capture import build_parser

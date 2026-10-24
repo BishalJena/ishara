@@ -2,6 +2,8 @@
 
 replay is development-only. calibrate/evaluate require a verified pilot manifest.
 export-bundle packs the frozen policy and enrollment embeddings for the iPhone.
+export-bundle --provisional builds a separate, clearly marked try bundle from
+enrollment alone (leave-one-out cut-offs); calibrate/evaluate never accept it.
 No result from this module is automatically sent to composition or speech.
 """
 from __future__ import annotations
@@ -17,6 +19,12 @@ import recognition_data as data
 
 EVIDENCE = data.ARTIFACTS / "retrieval"
 REPORTS = data.ARTIFACTS / "evidence"
+PROVISIONAL_BANNER = "PROVISIONAL — uncalibrated, for trying only, not Gate 2"
+# Used when no leave-one-out cut-off accepts a take without a wrong accept. SignCLIP
+# similarities cluster high (public clips: 0.79-0.94, margins 0.00-0.13), so only a
+# strong match with a clear lead over the runner-up gets through.
+PROVISIONAL_FALLBACK = {"similarity": 0.90, "margin": 0.05}
+LEAVE_ONE_OUT_MINIMUM = 2  # takes per sign, so every take has another take of its sign
 
 
 class Encoder:
@@ -149,6 +157,72 @@ def calibration_report(name, thresholds, summary, data_fingerprint):
               f"{100 * c['correct_accepted'] / c['total']:.0f}% | {c['wrong_accepted']} |"
               for label, c in classes.items()]
     return "\n".join(lines) + "\n"
+
+
+def leave_one_out(references):
+    """Each enrollment take ranked against all the other takes; rank() skips the take itself.
+
+    Unlike calibration (R2b), query and references come from the same session.
+    """
+    if any(r.get("error") for r in references):
+        raise ValueError("An enrollment reference could not be embedded")
+    takes = {label: sum(r["label"] == label for r in references) for label in data.VOCABULARY}
+    short = [f"{label} ({count})" for label, count in takes.items() if count < LEAVE_ONE_OUT_MINIMUM]
+    if short:
+        raise ValueError(f"Leave-one-out needs {LEAVE_ONE_OUT_MINIMUM} takes of every sign; short: "
+                         + ", ".join(short))
+    return rank_records(references, references)
+
+
+def provisional_policy(rows):
+    """Enrollment-only cut-off for trying the Sign Lab before a calibration session exists.
+
+    Cut-offs sit at observed correct top matches (never below the weakest one); among
+    those with 0 wrong accepts, the one accepting the most takes wins, the lowest on ties
+    (the most permissive). With no negatives and same-session references the counts are
+    optimistic. A cut-off that accepts nothing is never chosen: if every useful one has a
+    wrong accept, PROVISIONAL_FALLBACK is used and flagged.
+    """
+    correct = [r for r in rows if r["ranking"] and r["ranking"][0]["concept"] == r["label"]]
+    similarities = sorted({r["ranking"][0]["similarity"] for r in correct})
+    margins = sorted({r["margin"] for r in correct})
+    best, best_key = None, None
+    for threshold in similarities:
+        for margin in margins:
+            candidate = {"similarity": threshold, "margin": margin}
+            summary = score(rows, candidate)
+            classes = summary["per_concept"].values()
+            accepted = sum(c["correct_accepted"] for c in classes)
+            if accepted and not sum(c["wrong_accepted"] for c in classes):
+                key = (accepted, -threshold, -margin)
+                if best_key is None or key > best_key:
+                    best, best_key = candidate, key
+    fallback = best is None
+    thresholds = dict(PROVISIONAL_FALLBACK) if fallback else best
+    summary = score(rows, thresholds)
+    classes = summary["per_concept"]
+    counts = {"method": "leave-one-out over enrollment takes: same-session references, no negatives",
+              "queries": len(rows),
+              "correct_accepted": sum(c["correct_accepted"] for c in classes.values()),
+              "wrong_accepted": sum(c["wrong_accepted"] for c in classes.values()),
+              "abstentions": sum(c["abstentions"] for c in classes.values()),
+              "fallback": fallback, "per_concept": classes}
+    return thresholds, counts
+
+
+def provisional_banner(thresholds, counts, destination):
+    rule = "=" * 72
+    lines = [rule, PROVISIONAL_BANNER,
+             f"Leave-one-out on {counts['queries']} enrollment takes (same session, no negatives):",
+             f"  similarity >= {thresholds['similarity']:.4f}, margin >= {thresholds['margin']:.4f}",
+             f"  accepted {counts['correct_accepted']} of {counts['queries']}, "
+             f"wrong accepts {counts['wrong_accepted']}, abstained {counts['abstentions']}"]
+    if counts["fallback"]:
+        lines.append("  FALLBACK: no cut-off accepted a take without a wrong accept, so the conservative "
+                     f"default {PROVISIONAL_FALLBACK} is used. Some signs look alike: expect ? and mix-ups.")
+    lines += ["  Idle and unsupported movement were never measured: expect some false chips.",
+              f"Bundle: {destination}", rule]
+    return "\n".join(lines)
 
 
 def replay(name):
@@ -295,14 +369,42 @@ def export_bundle(name, manifest):
     return 0
 
 
-def main():
+def provisional_bundle_path(name):
+    """Never the calibrated bundle's path, so a try bundle can't silently replace it."""
+    return REPORTS / f"recognition-bundle-{name}-provisional.json"
+
+
+def export_provisional_bundle(name, manifest):
+    """Bundle from verified enrollment takes alone, cut-offs by leave-one-out; no policy file."""
+    enrollment = [r for r in data.load_dataset(manifest) if r["split"] == "enrollment"]
+    unverified = sum(not r["verified"] for r in enrollment)
+    if unverified:
+        raise ValueError(f"{unverified} enrollment takes are unverified; verify or remove them first")
+    encoder = Encoder(name)
+    references = embed_records(encoder, enrollment)
+    thresholds, counts = provisional_policy(leave_one_out(references))
+    calibrated = bundle(encoder.contract, thresholds, references)
+    document = {"version": calibrated["version"], "provisional": True, **calibrated,
+                "leave_one_out": counts}
+    destination = provisional_bundle_path(name)
+    data.write_json(destination, document)
+    print(provisional_banner(thresholds, counts, destination), flush=True)
+    return 0
+
+
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=["replay", "status", "calibrate", "evaluate",
                                             "export-bundle"])
     parser.add_argument("--encoder", choices=["slgcn", "signclip"], default="slgcn")
     parser.add_argument("--manifest", type=data.Path, default=data.DATASET)
     parser.add_argument("--fresh", action="store_true", help="Disable feature cache for latency measurement")
-    args = parser.parse_args()
+    parser.add_argument("--provisional", action="store_true",
+                        help="export-bundle only: enrollment-only try bundle, cut-offs by leave-one-out "
+                             "(uncalibrated, never Gate 2)")
+    args = parser.parse_args(argv)
+    if args.provisional and args.command != "export-bundle":
+        parser.error("--provisional only applies to export-bundle")
     if args.command == "status":
         print(json.dumps(data.readiness(data.load_dataset(args.manifest), final=True), indent=2))
         return 0
@@ -310,6 +412,8 @@ def main():
         replay(args.encoder)
         return 0
     if args.command == "export-bundle":
+        if args.provisional:
+            return export_provisional_bundle(args.encoder, args.manifest)
         return export_bundle(args.encoder, args.manifest)
     return pilot(args.command, args.encoder, args.manifest, args.fresh)
 
