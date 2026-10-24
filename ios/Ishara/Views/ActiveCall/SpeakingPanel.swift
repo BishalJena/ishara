@@ -26,9 +26,6 @@ struct SpeakingCard: View {
             Text("\u{201C}\(text)\u{201D}")
                 .font(.title2.weight(.semibold))
                 .fixedSize(horizontal: false, vertical: true)
-            ProgressView()
-                .progressViewStyle(.linear)
-                .tint(.purple)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
