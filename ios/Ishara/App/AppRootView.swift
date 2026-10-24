@@ -26,7 +26,7 @@ struct AppRootView: View {
                     route = .getReady
                 }
             case .getReady:
-                GetReadyView(onStart: startCall, onBack: { route = .home })
+                GetReadyView(timeScale: options.fakeTimeScale, onStart: startCall, onBack: { route = .home })
             case .activeCall(let model):
                 ActiveCallView(model: model, onLeave: { route = .home })
             }

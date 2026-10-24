@@ -3,6 +3,8 @@ import SwiftUI
 /// Screen 2: framing checklist and 2 s hands-at-rest calibration, then Start call.
 struct GetReadyView: View {
     @State private var model = GetReadyModel()
+    /// Scales the simulated checklist timers (UI tests run them faster).
+    var timeScale: Double = 1
     let onStart: () -> Void
     let onBack: () -> Void
 
@@ -40,7 +42,7 @@ struct GetReadyView: View {
                 .padding()
                 .background(.bar)
             }
-            .task { await model.runSimulatedChecks() }
+            .task { await model.runSimulatedChecks(timeScale: timeScale) }
         }
     }
 }
