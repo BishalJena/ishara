@@ -53,7 +53,8 @@ final class LiveCallTests: XCTestCase {
         store.useQuickReply(.yes)
         store.send()
 
-        let sent = await eventually { await self.transport.sent.count == 1 }
+        let transport = transport!
+        let sent = await eventually { await transport.sent.count == 1 }
         XCTAssertTrue(sent)
         let frames = await transport.sent
         XCTAssertEqual(frames, [#"{"text":"Yes.","turn_id":"turn2","type":"approve"}"#])
@@ -137,6 +138,43 @@ final class LiveCallTests: XCTestCase {
         XCTAssertEqual(requests.count, 2)
         let frames = await transport.sent
         XCTAssertEqual(frames, [], "nothing from before the drop is sent")
+    }
+
+    func testRefusedOrReplacedSocketIsNotReopened() async throws {
+        let cases: [(Int, CallSocketClose)] = [
+            (4401, .unauthorized), (4404, .unknownCall), (4409, .replaced),
+        ]
+        for (code, expected) in cases {
+            transport = FakeTransport()
+            client = BackendClient(config: testConfig, http: http, transport: transport)
+            let call = try await startCall()
+            let store = call.store
+
+            await transport.drop(code: code)
+            _ = await eventually { @MainActor in store.state == .error }
+            await call.connect()
+
+            let close = await call.lastClose
+            XCTAssertEqual(close, expected, "code \(code)")
+            let requests = await transport.requests
+            XCTAssertEqual(requests.count, 1, "code \(code) must not open another socket")
+            XCTAssertEqual(store.state, .error)
+            XCTAssertEqual(store.notice, TurnStore.disconnectedNotice)
+        }
+    }
+
+    func testPlainDropIsReopened() async throws {
+        let call = try await startCall()
+        let store = call.store
+
+        await transport.drop(code: 1006)
+        _ = await eventually { @MainActor in store.state == .error }
+        await call.connect()
+
+        let close = await call.lastClose
+        XCTAssertNil(close, "the reopened socket is live")
+        let requests = await transport.requests
+        XCTAssertEqual(requests.count, 2)
     }
 
     func testReplacingALiveSocketIsNotADisconnect() async throws {

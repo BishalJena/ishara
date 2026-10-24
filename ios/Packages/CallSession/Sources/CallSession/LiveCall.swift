@@ -36,9 +36,16 @@ public final class LiveCall {
         self.store = store
     }
 
+    /// Why the socket last closed, so the UI can tell a drop from a refusal. Nil while open.
+    public var lastClose: CallSocketClose? {
+        get async { await client.lastClose }
+    }
+
     /// Opens (or reopens, after a disconnect) the call socket. Nothing from before a
     /// disconnect is resent; the store stays in `.error` until the backend reports a status.
+    /// Does nothing after a close that reconnecting can't fix (see `allowsReconnect`).
     public func connect() async {
+        if let close = await client.lastClose, !close.allowsReconnect { return }
         listener?.cancel()
         await client.connect(callID: callID)
         let events = await client.events

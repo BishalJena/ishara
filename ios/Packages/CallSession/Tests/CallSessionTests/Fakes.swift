@@ -7,11 +7,13 @@ actor FakeTransport: WebSocketTransport {
     private(set) var requests: [URLRequest] = []
     private(set) var sent: [String] = []
     private(set) var closeCount = 0
+    private(set) var closeCode: Int?
     private var continuation: AsyncStream<String>.Continuation?
     private var failSends = false
 
     func connect(_ request: URLRequest) async -> AsyncStream<String> {
         continuation?.finish()
+        closeCode = nil
         requests.append(request)
         let (frames, continuation) = AsyncStream<String>.makeStream()
         self.continuation = continuation
@@ -32,8 +34,9 @@ actor FakeTransport: WebSocketTransport {
         continuation?.yield(frame)
     }
 
-    /// Simulates the socket going away.
-    func drop() {
+    /// Simulates the socket going away, with the server's close code if it sent one.
+    func drop(code: Int? = nil) {
+        closeCode = code
         continuation?.finish()
         continuation = nil
     }

@@ -35,6 +35,7 @@ package with no dependencies. iOS 17+ and macOS 14+.
 - `not_delivered` offers re-SEND. Only an explicit `resend()` approves the same text again, on a new turn id.
 - End drops anything queued, sends `end`, wipes everything and ignores later input and events.
 - A lost socket (or a backend `error` status) shows "Nothing will be sent", wipes chips and draft and drops the queue. Nothing is resent after reconnecting; the store leaves `.error` when the backend sends a status.
+- `LiveCall.connect()` reopens only after a plain drop. After close code 4401 (bad token), 4404 (unknown call) or 4409 (another socket took over) it does nothing; `lastClose` says which, for the UI.
 
 ## Use
 

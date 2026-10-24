@@ -6,6 +6,9 @@ public protocol WebSocketTransport: Sendable {
     func connect(_ request: URLRequest) async -> AsyncStream<String>
     func send(_ text: String) async throws
     func close() async
+    /// The close code the server sent for the latest socket, once its stream has finished.
+    /// Nil while the socket is open, or when it died without a close frame.
+    var closeCode: Int? { get async }
 }
 
 public enum WebSocketTransportError: Error, Equatable {
@@ -51,6 +54,7 @@ public actor URLSessionWebSocketTransport: WebSocketTransport {
     let pingLoop: PingLoop
     private var task: URLSessionWebSocketTask?
     private var workers: [Task<Void, Never>] = []
+    public private(set) var closeCode: Int?
 
     public init(session: URLSession = .shared, pingInterval: Duration = defaultPingInterval) {
         self.init(session: session, pingLoop: PingLoop(interval: pingInterval))
@@ -67,12 +71,16 @@ public actor URLSessionWebSocketTransport: WebSocketTransport {
         close()
         let task = session.webSocketTask(with: request)
         self.task = task
+        closeCode = nil
         let (frames, continuation) = AsyncStream<String>.makeStream()
 
         let receiver = Task {
             defer { continuation.finish() }
             while !Task.isCancelled {
-                guard let message = try? await task.receive() else { return }
+                guard let message = try? await task.receive() else {
+                    recordClose(of: task)
+                    return
+                }
                 switch message {
                 case let .string(text):
                     continuation.yield(text)
@@ -108,6 +116,15 @@ public actor URLSessionWebSocketTransport: WebSocketTransport {
         workers = []
         task?.cancel(with: .normalClosure, reason: nil)
         task = nil
+    }
+
+    private func recordClose(of task: URLSessionWebSocketTask) {
+        // A socket replaced by `connect` must not overwrite the new socket's code.
+        guard task === self.task else { return }
+        // `.invalid` (0) means no close frame arrived. The backend's 44xx codes have no
+        // named case, but `rawValue` still carries them.
+        let code = task.closeCode.rawValue
+        closeCode = code == URLSessionWebSocketTask.CloseCode.invalid.rawValue ? nil : code
     }
 }
 

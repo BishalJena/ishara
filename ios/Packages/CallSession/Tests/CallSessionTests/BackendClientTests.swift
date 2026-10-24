@@ -112,6 +112,72 @@ final class BackendClientTests: XCTestCase {
         XCTAssertEqual(count, 0)
     }
 
+    // MARK: Socket close
+
+    func testOnlyBackendCloseCodesMapToTerminalReasons() {
+        XCTAssertEqual(CallSocketClose(code: 4401), .unauthorized)
+        XCTAssertEqual(CallSocketClose(code: 4404), .unknownCall)
+        XCTAssertEqual(CallSocketClose(code: 4409), .replaced)
+        for code in [nil, 1000, 1001, 1006, 1011, 4400, 4403, 4410] {
+            XCTAssertEqual(CallSocketClose(code: code), .dropped, "code \(String(describing: code))")
+        }
+    }
+
+    func testOnlyAPlainDropAllowsReconnecting() {
+        XCTAssertTrue(CallSocketClose.dropped.allowsReconnect)
+        XCTAssertFalse(CallSocketClose.unauthorized.allowsReconnect)
+        XCTAssertFalse(CallSocketClose.unknownCall.allowsReconnect)
+        XCTAssertFalse(CallSocketClose.replaced.allowsReconnect)
+    }
+
+    func testCloseCodeIsReportedOnceEventsFinish() async {
+        let cases: [(Int?, CallSocketClose)] = [
+            (nil, .dropped), (1000, .dropped), (4401, .unauthorized), (4404, .unknownCall),
+            (4409, .replaced),
+        ]
+        for (code, expected) in cases {
+            let transport = FakeTransport()
+            let client = BackendClient(config: testConfig, http: FakeHTTP(), transport: transport)
+            await client.connect(callID: "call_123")
+            let events = await client.events
+            let open = await client.lastClose
+            XCTAssertNil(open, "an open socket has no close reason")
+
+            await transport.drop(code: code)
+            for await _ in events {}
+
+            let close = await client.lastClose
+            XCTAssertEqual(close, expected, "code \(String(describing: code))")
+        }
+    }
+
+    func testReconnectClearsTheOldCloseReason() async {
+        let transport = FakeTransport()
+        let client = BackendClient(config: testConfig, http: FakeHTTP(), transport: transport)
+        await client.connect(callID: "call_123")
+        let events = await client.events
+        await transport.drop(code: 4404)
+        for await _ in events {}
+
+        await client.connect(callID: "call_123")
+
+        let close = await client.lastClose
+        XCTAssertNil(close)
+    }
+
+    func testReplacedConnectionDoesNotReportItsClose() async {
+        let transport = FakeTransport()
+        let client = BackendClient(config: testConfig, http: FakeHTTP(), transport: transport)
+        await client.connect(callID: "call_123")
+        let old = await client.events
+
+        await client.connect(callID: "call_123")
+        for await _ in old {}
+
+        let close = await client.lastClose
+        XCTAssertNil(close, "closing the old socket on purpose is not a close of the new one")
+    }
+
     func testEventsBeforeConnectAreAlreadyFinished() async {
         let client = BackendClient(config: testConfig, http: FakeHTTP(), transport: FakeTransport())
         var count = 0
