@@ -36,6 +36,9 @@ let embedding = try encoder.embed(clip)                  // raw; L2-normalize in
 
 - Get the model with `Scripts/download_holistic_model.sh <dir>` and add it to the app bundle.
 - `CameraFrameSource` needs camera permission (`NSCameraUsageDescription`) granted before `frames()`.
+- MediaPipe's Holistic task only accepts upright images, so `HolisticLandmarkProvider` rotates
+  sideways or upside-down BGRA frames (e.g. portrait recordings) with vImage first. Landmarks are
+  always normalized to the upright image.
 - Embeddings are **not** normalized here; clips over 256 frames or under 4 frames are rejected, never truncated.
 
 ## Tests
@@ -44,6 +47,19 @@ let embedding = try encoder.embed(clip)                  // raw; L2-normalize in
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test   # macOS host; needs Xcode for XCTest
 swift build                                                            # Command Line Tools only
 ```
+
+On the iOS simulator (runs the MediaPipe tests too). Fetch the model and test
+photo into the gitignored `TestAssets/` first, or the Holistic tests skip:
+
+```sh
+Scripts/download_holistic_test_assets.sh
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+xcodebuild test -scheme SignPipeline-Package -destination 'id=<simulator UDID>' -derivedDataPath .build/xcode
+```
+
+`SignPipelineMediaPipeTests` runs the real Holistic Landmarker on MediaPipe's own
+Holistic test photo and compares key points with MediaPipe's published result
+(`male_full_height_hands_result_cpu.pbtxt`, tolerance 0.03), upright and sideways.
 
 The golden fixture comes from the Python reference path; regenerate it only if
 the pinned SignCLIP/pose-format versions change (instructions in the script header):
