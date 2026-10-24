@@ -8,10 +8,12 @@ struct CameraPreviewPlaceholder: View {
     var minHeight: CGFloat = 180
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(white: 0.2))
-
+        VStack(alignment: .leading, spacing: 8) {
+            // The pill sits above the placeholder content so it can't cover it
+            // when the text grows.
+            if let state {
+                CameraPill(state: state)
+            }
             VStack(spacing: 8) {
                 Image(systemName: "figure.stand")
                     .font(.system(size: 44))
@@ -22,14 +24,10 @@ struct CameraPreviewPlaceholder: View {
             }
             .foregroundStyle(.white.opacity(0.8))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding()
-
-            if let state {
-                CameraPill(state: state)
-                    .padding(10)
-            }
         }
-        .frame(minHeight: minHeight)
+        .padding(10)
+        .frame(maxWidth: .infinity, minHeight: minHeight)
+        .background(Color(white: 0.2), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 }
