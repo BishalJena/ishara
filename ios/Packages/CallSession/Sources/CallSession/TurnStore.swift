@@ -184,6 +184,7 @@ public final class TurnStore {
         guard acceptsInput else { return false }
         if chip.sign != nil, recognisedSigns.count >= ProtocolLimits.maxChips { return false }
         lastError = nil
+        dismissDeliveryResult()
         chips.append(chip)
         if chip.sign != nil { recognisedChipsChanged() }
         return true
@@ -200,14 +201,19 @@ public final class TurnStore {
     public func useQuickReply(_ reply: QuickReply) {
         guard acceptsInput else { return }
         lastError = nil
+        dismissDeliveryResult()
         beginNewTurn()
         draft = Draft(text: reply.text, origin: .quickReply)
     }
 
     /// Removes every chip and the draft. A new turn begins, so a late draft for the old
-    /// chips is stale; nothing is sent.
+    /// chips is stale; nothing is sent. With nothing to remove, it dismisses an unspoken
+    /// reply that SEND would otherwise offer again.
     public func clear() {
-        guard !chips.isEmpty || draft != nil else { return }
+        guard !chips.isEmpty || draft != nil else {
+            if unspokenText != nil { settle(.idle) }
+            return
+        }
         lastError = nil
         beginNewTurn()
     }
@@ -346,6 +352,12 @@ public final class TurnStore {
         sending = phase
         stopProgress = .none
         lastError = nil
+    }
+
+    /// A new reply replaces the last delivery result, so it can't reappear later. An
+    /// unspoken reply stays: SEND may still offer it once the new reply is cleared.
+    private func dismissDeliveryResult() {
+        if sending == .delivered || sending == .deliveredDespiteStop { settle(.idle) }
     }
 
     private func beginNewTurn() {

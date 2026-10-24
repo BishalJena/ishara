@@ -270,6 +270,32 @@ final class ActiveCallViewModelTests: XCTestCase {
         XCTAssertFalse(model.showsDeliveryResult)
     }
 
+    func testQuickReplyThenClearDoesNotResurrectTheDeliveredBanner() {
+        sign(.hello)
+        draft("Hello.")
+        model.send()
+        store.receive(.spoken(turnID: turn(1)))
+
+        model.choose(.repeat)
+        model.clear()
+
+        XCTAssertEqual(model.delivery, .idle)
+        XCTAssertNil(model.draft)
+    }
+
+    func testClearDismissesAStoppedReply() {
+        model.choose(.yes)
+        model.send()
+        model.stop()
+        store.receive(.notDelivered(turnID: turn(2), reason: "stopped"))
+
+        model.clear()
+
+        XCTAssertNil(model.draft)
+        XCTAssertFalse(model.canSend)
+        XCTAssertEqual(sink.approvals.count, 1)
+    }
+
     // MARK: Stale drafts
 
     func testDraftForStaleTurnIsIgnored() {

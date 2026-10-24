@@ -436,6 +436,50 @@ final class TurnStoreTests: XCTestCase {
         XCTAssertEqual(store.captions.map(\.speaker), [.receptionist, .user])
     }
 
+    func testNewChipDismissesTheDeliveredResult() {
+        showDraft("Hello.")
+        store.send()
+        store.receive(.spoken(turnID: turn(1)))
+
+        store.add(.unsure())
+
+        XCTAssertEqual(store.sending, .idle)
+    }
+
+    func testQuickReplyThenClearDoesNotBringBackTheDeliveredResult() {
+        showDraft("Hello.")
+        store.send()
+        store.receive(.spoken(turnID: turn(1)))
+
+        store.useQuickReply(.repeat)
+        store.clear()
+
+        XCTAssertEqual(store.sending, .idle)
+    }
+
+    func testNewChipKeepsTheNotDeliveredReplyForLater() {
+        showDraft("Hello.")
+        store.send()
+        store.receive(.notDelivered(turnID: turn(1), reason: "no_confirmation"))
+
+        store.add(.recognised(.yes))
+
+        XCTAssertEqual(store.sending, .notDelivered(text: "Hello."))
+    }
+
+    func testClearWithNothingTypedDismissesTheUnspokenReply() {
+        showDraft("Hello.")
+        store.send()
+        store.receive(.notDelivered(turnID: turn(1), reason: "no_confirmation"))
+        let sentBefore = sink.sent
+
+        store.clear()
+
+        XCTAssertEqual(store.sending, .idle)
+        XCTAssertFalse(store.canResend)
+        XCTAssertEqual(sink.sent, sentBefore)
+    }
+
     func testNotDeliveredReplyStaysOutOfTheTranscript() {
         showDraft("Hello.")
         store.send()
