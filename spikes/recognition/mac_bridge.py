@@ -26,6 +26,7 @@ from typing import Any, Protocol
 SIGNS = ("hello", "thankyou", "yes", "no", "sorry", "doctor",
          "today", "tomorrow", "morning", "afternoon", "evening", "time")
 MAX_CHIPS = 8  # backend ChipsMessage limit
+AGENT_LABEL = "Ishara (automatic)"
 QUICK_REPLIES = {
     "yes": "Yes.",
     "no": "No.",
@@ -463,7 +464,10 @@ class Bridge:
                 self.state.on_ended()
                 self.log.show("call ended; nothing more will be sent")
         elif kind == "caption":
-            self.log.show(f"receptionist: {message['text']}")
+            # Agent captions are lines our own voice said without a SEND (disclosure,
+            # holding line, goodbye). Backends from before `speaker` existed omit it.
+            speaker = AGENT_LABEL if message.get("speaker") == "agent" else "receptionist"
+            self.log.show(f"{speaker}: {message['text']}")
         elif kind == "draft":
             draft = self.state.on_draft(message["turn_id"], message["text"], message["source"])
             if draft is not None:

@@ -553,6 +553,14 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
             "12:00:05 (ignored unknown message type 'mystery')"])
         self.assertEqual(self.transport.sent, [])
 
+    async def test_agent_captions_are_labelled_apart_from_the_receptionist(self):
+        await self.server(type="caption", text="Hello, I'm calling.", at=1.0, speaker="agent")
+        await self.server(type="caption", text="City Clinic.", at=2.0, speaker="receptionist")
+        self.assertEqual(self.lines, [
+            "12:00:05 Ishara (automatic): Hello, I'm calling.",
+            "12:00:05 receptionist: City Clinic."])
+        self.assertEqual(self.transport.sent, [])
+
     async def test_session_log_keeps_every_message_in_order(self):
         await self.server(type="caption", text="When would you like to come?", at=1.0)
         await self.signs("tomorrow", None)
