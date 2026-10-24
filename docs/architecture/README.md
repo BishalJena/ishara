@@ -20,11 +20,22 @@ plan ever disagree. Update both together.
 
 ## Where the board lags the plan (as of 23 October)
 
-The PNG and `.excalidraw` still carry three items from the pre-Option-C draft.
-Read them with the plan's wording instead until the board is re-exported:
+The PNG and `.excalidraw` still carry items from the pre-Option-C draft and from before
+the 23 October composer switch. Read them with the plan's wording instead until the board
+is re-exported:
 
 - **Gate 1 "FAIL → Path B"**: Path B is now the main path. The plan's G1 fallbacks are a
   built-in LLM with a "repeat exactly" prompt, then Path A.
 - **"Tuned to the 2 people who recorded"**: the plan uses one signer, the person who
   presents the demo.
 - **"Jev (cloud) 2nd opinion"**: not in the plan; there is no cloud recognizer in the demo.
+- **"Cerebras LLM drafts it"**: read as **Groq** (`openai/gpt-oss-120b`). The composer moved
+  to Groq on 23 October because Cerebras is not free; the validator and template fallback
+  are unchanged.
+
+## Build status behind the board (23 October)
+
+The board shows the target design. The backend, iOS app shell and packages, Core ML
+conversion and Mac fallback exist as open PRs with offline tests; nothing has run against
+real Bolna or on an iPhone yet. See [PLAN.md §6](../../PLAN.md#6-schedule-and-todos) and
+the component table in [§3](../../PLAN.md#components-and-repo-layout-new-code).
