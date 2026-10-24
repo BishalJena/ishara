@@ -5,6 +5,10 @@ struct ActiveCallView: View {
     let model: ActiveCallViewModel
     let onLeave: () -> Void
 
+    /// Grows with Dynamic Type so a whole caption still fits at large sizes, but is
+    /// capped so the chips, draft and SEND keep most of the screen.
+    @ScaledMetric(relativeTo: .body) private var captionHeight: CGFloat = 150
+
     var body: some View {
         VStack(spacing: 12) {
             CallStatusBar(
@@ -15,7 +19,7 @@ struct ActiveCallView: View {
                 onEnd: model.end
             )
             CaptionHistory(captions: model.captions)
-                .frame(height: 150)
+                .frame(height: min(captionHeight, 240))
 
             ScrollView {
                 content
@@ -68,7 +72,9 @@ private struct CallActionBar: View {
             HStack(spacing: 12) {
                 Button("Clear", action: model.clear)
                     .buttonStyle(.bigAction(Color.gray.opacity(0.3), foreground: .primary))
-                    .frame(maxWidth: 120)
+                    // Sized to its label so the word never wraps at large text sizes;
+                    // SEND takes the remaining width.
+                    .fixedSize(horizontal: true, vertical: false)
                     .disabled(model.chips.isEmpty && model.draft == nil)
                 Button(action: model.send) {
                     Label("SEND", systemImage: "paperplane.fill")
