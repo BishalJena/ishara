@@ -22,6 +22,7 @@ struct CallEndedPanel: View {
         .frame(maxWidth: .infinity)
         .background(.background.secondary, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("call.endedPanel")
     }
 
     private var title: String {

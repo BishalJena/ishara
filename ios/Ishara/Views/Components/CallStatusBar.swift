@@ -19,6 +19,7 @@ struct CallStatusBar: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("call.status")
 
             if !isEnded {
                 Button("End", role: .destructive, action: onEnd)
@@ -26,6 +27,7 @@ struct CallStatusBar: View {
                     .tint(.red)
                     .controlSize(.large)
                     .accessibilityLabel("End call")
+                    .accessibilityIdentifier("call.end")
             }
         }
         .padding(12)

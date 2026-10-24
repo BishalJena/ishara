@@ -30,6 +30,7 @@ struct QuickReplyBar: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.large)
+            .accessibilityIdentifier("quickReply.\(reply.id)")
             .accessibilityHint("Puts \u{201C}\(reply.sentence)\u{201D} in the draft")
         }
     }

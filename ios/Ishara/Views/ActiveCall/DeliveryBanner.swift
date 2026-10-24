@@ -39,6 +39,7 @@ struct DeliveryBanner: View {
         .background(color.opacity(0.2), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(color, lineWidth: 1.5))
         .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("call.deliveryBanner")
     }
 }
 

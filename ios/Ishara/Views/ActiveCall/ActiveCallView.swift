@@ -63,6 +63,7 @@ private struct CallActionBar: View {
         if model.isEnded {
             Button("Back to Home", action: onLeave)
                 .buttonStyle(.bigAction(.blue))
+                .accessibilityIdentifier("call.backHome")
         } else if model.isSpeaking {
             Button(action: model.stop) {
                 Label("STOP", systemImage: "stop.fill")
@@ -70,6 +71,7 @@ private struct CallActionBar: View {
             .buttonStyle(.bigAction(.red))
             .disabled(model.isStopRequested)
             .accessibilityHint("Cancels the reply if it has not been spoken yet")
+            .accessibilityIdentifier("call.stop")
         } else {
             VStack(spacing: 12) {
                 QuickReplyBar(onChoose: model.choose)
@@ -87,6 +89,7 @@ private struct CallActionBar: View {
                 // SEND takes the remaining width.
                 .fixedSize(horizontal: true, vertical: false)
                 .disabled(model.chips.isEmpty && model.draft == nil)
+                .accessibilityIdentifier("call.clear")
             Button(action: model.send) {
                 Label("SEND", systemImage: "paperplane.fill")
             }
@@ -94,6 +97,7 @@ private struct CallActionBar: View {
             .disabled(!model.canSend)
             .accessibilityLabel("Send reply")
             .accessibilityHint("Speaks the draft into the call")
+            .accessibilityIdentifier("call.send")
         }
     }
 }

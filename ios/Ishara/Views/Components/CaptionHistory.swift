@@ -48,6 +48,7 @@ private struct CaptionRow: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityElement(children: .combine)
+        .accessibilityIdentifier(entry.speaker == .receptionist ? "caption.receptionist" : "caption.you")
     }
 }
 

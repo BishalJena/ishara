@@ -40,6 +40,7 @@ struct ChipView: View {
         .buttonStyle(.plain)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityHint("Double tap to remove")
+        .accessibilityIdentifier("chip.\(chip.word ?? "unsure")")
     }
 
     private var accessibilityLabel: String {
