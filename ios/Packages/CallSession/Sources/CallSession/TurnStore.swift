@@ -218,7 +218,7 @@ public final class TurnStore {
             state = newState
             notice = nil
             if isLive, connectedAt == nil { connectedAt = Date() }
-        case let .caption(text, at):
+        case let .caption(text, at, _):
             captions.append(Caption(text: text, at: Date(timeIntervalSince1970: at)))
         case let .draft(turnID, text, source):
             // A draft for an older turn, or for chips the user has since removed, is stale.
