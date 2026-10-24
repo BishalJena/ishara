@@ -82,6 +82,9 @@ app / bridge ──POST /calls, WS──▶ real app (CallManager, template draf
   after the second, as captions. Every approved reply is fetched from the
   server's own `/v1/chat/completions` over HTTP, so the backend path is the real
   one. What the agent "speaks" is printed as `agent says: …`.
+- After 15 s with nobody talking (Bolna's silence repeat, scaled by `--delay`) it
+  asks for the holding line. The app gets the disclosure, every holding line and
+  the goodbye as `caption {speaker: "agent"}`.
 - Settings are built in the script, not from `.env`: no Groq, Bolna or Sarvam key
   is set even if one is exported, so drafts come from the templates.
 - It prints the base URL and app token. For the simulator put them in
