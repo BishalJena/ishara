@@ -65,6 +65,7 @@ NUMBER = "+910000000011"
 PURPOSE = "doctor_appointment"
 AUTH = {"Authorization": f"Bearer {APP_TOKEN}"}
 TIMEOUT_S = 5.0
+RING_S = 0.3  # long enough for the app socket to connect before the call is answered
 
 T2_CAPTION = "We have 4 pm tomorrow. Does that work?"
 T4_CAPTION = "Yes, 10:30 tomorrow morning."
@@ -196,6 +197,18 @@ def harness(make_harness: Callable[..., Harness]) -> Harness:
     return make_harness()
 
 
+def _transcript(app: AppSocket) -> list[tuple[str, str]]:
+    """What the user sees, in order: captions by speaker and spoken turns."""
+    app.drain()
+    lines = []
+    for message in app.seen:
+        if message["type"] == "caption":
+            lines.append((message["speaker"], message["text"]))
+        elif message["type"] == "spoken":
+            lines.append(("spoken", message["turn_id"]))
+    return lines
+
+
 def _speak_requests(run: FakeRun) -> int:
     return sum("ISHARA_NODE: speak" in body["messages"][0]["content"] for body in run.llm_requests)
 
@@ -204,12 +217,16 @@ def _speak_requests(run: FakeRun) -> int:
 
 
 def test_plan_demo_script_end_to_end(harness: Harness) -> None:
+    harness.fake.ring_s = RING_S
     call_id = harness.start_call()
-    run = harness.run_for(call_id)
-    assert harness.fake.recipients == [NUMBER]
-    assert run.spoken == [DISCLOSURE]  # turn 0
 
     with harness.socket(call_id) as app:
+        app.expect("status", state="in_call")
+        run = harness.run_for(call_id)
+        assert harness.fake.recipients == [NUMBER]
+        assert run.spoken == [DISCLOSURE]  # turn 0
+        app.expect("caption", text=DISCLOSURE, speaker="agent")
+
         t1 = app.draft("t1", ["hello", "doctor", "tomorrow"])
         assert "doctor" in t1.lower() and "tomorrow" in t1.lower()
         assert run.spoken == [DISCLOSURE], "a draft alone must never be spoken"
@@ -242,12 +259,21 @@ def test_plan_demo_script_end_to_end(harness: Harness) -> None:
 
         app.send({"type": "end"})
         app.expect("status", state="ended")
+        app.expect("caption", text=GOODBYE, speaker="agent")
         harness.idle()
 
     assert run.spoken == [DISCLOSURE, t1, t3, t5, GOODBYE]
     assert run.ended
     assert harness.fake.events[-1].event == "end_call"
-    assert [c["text"] for c in app.matching("caption")] == [T2_CAPTION, T4_CAPTION]
+    assert _transcript(app) == [
+        ("agent", DISCLOSURE),
+        ("spoken", "t1"),
+        ("receptionist", T2_CAPTION),
+        ("spoken", "t3"),
+        ("receptionist", T4_CAPTION),
+        ("spoken", "t5"),
+        ("agent", GOODBYE),
+    ]
 
 
 # ---- safety edge cases ----

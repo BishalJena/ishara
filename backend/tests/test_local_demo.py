@@ -40,7 +40,8 @@ T1_TEXT = "Hello, I'd like a doctor's appointment tomorrow."
 T3_TEXT = "No, sorry, that doesn't work. Is there anything in the morning?"
 T5_TEXT = "Yes, that works. Thank you."
 TOKEN = local_demo.DEV_APP_TOKEN
-FAST = Pauses(ring_s=0.05, reply_s=0.05)
+# The ring gives the app socket time to connect before the call goes live (disclosure).
+FAST = Pauses(ring_s=0.3, reply_s=0.05)
 PACING = Pacing(
     first_caption_wait_s=0.01,
     caption_timeout_s=3,
@@ -86,11 +87,20 @@ def _events(session: AppSession) -> list[str]:
                 return f"spoken {session.turn_label(turn_id)}"
             case NotDeliveredMessage(turn_id=turn_id):
                 return f"not_delivered {session.turn_label(turn_id)}"
-            case CaptionMessage(text=text):
-                return f"caption {text}"
+            case CaptionMessage(text=text, speaker=speaker):
+                return f"{speaker}: {text}"
         return None
 
     return [text for message in session.history if (text := label(message))]
+
+
+async def _end_and_wait_for_goodbye(session: AppSession) -> None:
+    """End like the app and keep reading: the goodbye caption follows `status ended`."""
+    since = session.mark()
+    await session.end()
+    await session.wait_for(
+        lambda m: isinstance(m, CaptionMessage) and m.text == GOODBYE, since=since, timeout=WAIT_S
+    )
 
 
 async def _send_chips(session: AppSession, label: str, chips: list[str]) -> str:
@@ -108,15 +118,18 @@ async def test_plan_script_runs_end_to_end_over_http() -> None:
     async with demo_call(demo) as (call, run):
         timings = await run_demo_script(call.session, PACING, log=logged.append)
         session = call.session
+        await _end_and_wait_for_goodbye(session)
 
     assert [timing.outcome for timing in timings] == ["spoken", "spoken", "spoken"]
     assert run.spoken == [DISCLOSURE, T1_TEXT, T3_TEXT, T5_TEXT, GOODBYE]
     assert _events(session) == [
+        f"agent: {DISCLOSURE}",
         "spoken T1",
-        f"caption {T2}",
+        f"receptionist: {T2}",
         "spoken T3",
-        f"caption {T4}",
+        f"receptionist: {T4}",
         "spoken T5",
+        f"agent: {GOODBYE}",
     ]
     assert session.ended
     assert demo.fake.statuses[-1] == (run.run_id, "completed")
@@ -150,13 +163,16 @@ async def test_b24_talk_over_is_not_delivered_then_a_resend_is_spoken_once() -> 
             lambda m: isinstance(m, CaptionMessage) and m.text == T2, since=since, timeout=WAIT_S
         )
         await demo.fake.wait_idle()
+        await _end_and_wait_for_goodbye(session)
 
     assert run.spoken == [DISCLOSURE, T1_TEXT, GOODBYE]
     assert _events(session) == [
+        f"agent: {DISCLOSURE}",
         "not_delivered T1",
-        f"caption {TALK_OVER_LINE}",
+        f"receptionist: {TALK_OVER_LINE}",
         "spoken T1 again",
-        f"caption {T2}",
+        f"receptionist: {T2}",
+        f"agent: {GOODBYE}",
     ]
     assert session.spoken_counts[first] == 0
     assert session.spoken_counts[resent] == 1
