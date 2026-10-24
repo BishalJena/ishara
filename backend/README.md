@@ -39,7 +39,8 @@ Settings come from the environment or the repo-root `.env` (see `../.env.example
 | `app/bolna_agent.py` | Pure builder for the Path B graph agent (`bolna/agent.json`) |
 | `app/bolna_client.py` | `HttpBolnaClient`: calls, events, agent and custom-model admin |
 | `app/tts.py`, `app/sarvam.py` | Path A `POST /tts` via Sarvam Bulbul (A5) |
-| `fakes/` | `FakeBolna` (plays Bolna's graph runtime over HTTP) and an SSE reader |
+| `fakes/` | `FakeBolna` (plays Bolna's graph runtime over HTTP), `ScriptedBolna` (adds the §1 receptionist) and an SSE reader |
+| `scripts/local_demo.py` | Free local backend for the whole §1 call; see [Local demo](#local-demo-no-bolna-no-cost) |
 | `tools/`, `scripts/fake_app.py`, `scripts/voice_spike.py` | App-side client, PLAN §1 demo script, guided V4 checks (`uv run python -m scripts.fake_app …`) |
 | `scripts/bolna_agent.py` | Render / register / create / update the Bolna agent (writes need `--yes`) |
 | `scripts/heroku_*.sh` | Heroku deploy and config push; see [HEROKU.md](HEROKU.md) |
@@ -56,3 +57,39 @@ Settings come from the environment or the repo-root `.env` (see `../.env.example
 - empty `ALLOWED_RECIPIENTS` → every contact gets 403; a malformed entry stops the boot.
 
 The full check, including the spikes and shell scripts, is `../scripts/verify.sh`.
+
+## Local demo (no Bolna, no cost)
+
+Runs the whole PLAN §1 clinic call on this Mac, for the iOS simulator
+(`-IsharaDriver live`) or the Mac bridge. Nothing is dialled and no paid API is
+reached:
+
+```sh
+cd backend
+uv run python -m scripts.local_demo            # http://127.0.0.1:8000, token ishara-local-demo
+uv run python -m scripts.local_demo --b24      # receptionist talks over the first SEND
+```
+
+```text
+app / bridge ──POST /calls, WS──▶ real app (CallManager, template drafts)
+                                   │  start_call, events     ▲ webhooks, custom-LLM POSTs
+                                   ▼                         │
+                                 ScriptedBolna: rings, answers, plays the receptionist
+```
+
+- `ScriptedBolna` answers after a ring, then says "We have 4 pm tomorrow. Does
+  that work?" after the first spoken reply and "Yes, 10:30 tomorrow morning."
+  after the second, as captions. Every approved reply is fetched from the
+  server's own `/v1/chat/completions` over HTTP, so the backend path is the real
+  one. What the agent "speaks" is printed as `agent says: …`.
+- Settings are built in the script, not from `.env`: no Groq, Bolna or Sarvam key
+  is set even if one is exported, so drafts come from the templates.
+- It prints the base URL and app token. For the simulator put them in
+  `ios/Ishara/Config/Secrets.xcconfig` (`ISHARA_BACKEND_URL = http:/$()/127.0.0.1:8000`,
+  `ISHARA_APP_TOKEN = ishara-local-demo`); the simulator shares the Mac's network,
+  so `127.0.0.1` works. A real iPhone can't reach it.
+- Options: `--port`, `--app-token`, `--contact` (repeatable, default `clinic`;
+  add `--contact clinic --contact mehta-office` to allow the app's second contact),
+  `--b24` (first SEND of each call ends `not delivered` after 10 s, then SEND
+  again), `--delay` (scales the pauses; `0.5` is twice as fast).
+- One call at a time. Tests: `tests/test_local_demo.py`.
