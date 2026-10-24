@@ -13,6 +13,11 @@
 - No Deaf participant validation. Don't present the personalised 12-sign pilot, hearing reenactment or isolated-sign benchmarks as validated natural conversation or usability.
 - No secret keys, account identifiers, telephone values, raw account responses or private credential paths in repository artifacts.
 
+## Verify before committing
+
+- Backend: `cd backend && uv run ruff format --check . && uv run ruff check . && uv run pytest -q`
+- Env names are listed in `.env.example`; `cd backend && uv run python -m app.config` shows which are set.
+
 ## Where to look
 
 - [Active plan: decisions, tasks, gates, tests](PLAN.md)
