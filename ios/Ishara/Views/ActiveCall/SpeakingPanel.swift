@@ -5,14 +5,12 @@ import SwiftUI
 struct SpeakingPanel: View {
     let text: String
     let cameraState: CameraState
+    let camera: LiveCamera?
     let isStopRequested: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            CameraPreviewPlaceholder(
-                state: cameraState,
-                message: "Camera keeps watching\n(you can sign the next thing)"
-            )
+            CameraCard(camera: camera, state: cameraState)
             SpeakingCard(text: text, isStopRequested: isStopRequested)
         }
     }
@@ -44,6 +42,6 @@ private struct SpeakingCard: View {
 
 #Preview {
     SpeakingPanel(text: "No, sorry, 4 pm doesn't work. Is there anything tomorrow morning?",
-                  cameraState: .watching, isStopRequested: false)
+                  cameraState: .watching, camera: nil, isStopRequested: false)
         .padding()
 }
