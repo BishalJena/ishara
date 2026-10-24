@@ -52,6 +52,9 @@ spikes/call_flow/artifacts/
 # Recognition validation clips, weights and generated evidence
 spikes/recognition/artifacts/
 
+# Core ML conversion: weights, compiled packages and parity evidence stay local
+ml/coreml/artifacts/
+
 # Backend spike output (custom-LLM request shapes, recordings) stays local.
 backend/artifacts/
 

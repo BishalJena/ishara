@@ -1,0 +1,4 @@
+# Conversion + parity environment; see README. Extends the SignCLIP inference
+# pins so PyTorch reference embeddings and conversion share one torch build.
+-r ../../spikes/recognition/requirements-signclip.txt
+coremltools==9.0
