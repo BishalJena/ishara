@@ -24,6 +24,8 @@ final class ActiveCallViewModel {
 
     enum EndReason: Equatable {
         case userEnded
+        /// The user ended the call but the backend couldn't confirm the hang-up.
+        case hangUpUnconfirmed
         case remoteEnded
         case failed(String)
     }
@@ -32,6 +34,8 @@ final class ActiveCallViewModel {
         case idle
         case speaking(text: String)
         case delivered
+        /// Spoken although the user tapped STOP.
+        case deliveredDespiteStop
         case notDelivered(text: String)
         /// The user stopped it before it was spoken.
         case stopped(text: String)
@@ -67,7 +71,9 @@ final class ActiveCallViewModel {
         case .error:
             if let reconnectStop { return .disconnected(Self.describe(reconnectStop)) }
             return .interrupted(store.notice ?? TurnStore.disconnectedNotice)
-        case .ended: return .ended(userEnded ? .userEnded : .remoteEnded)
+        case .ended:
+            guard userEnded else { return .ended(.remoteEnded) }
+            return .ended(store.lastError?.code == ServerError.endFailed ? .hangUpUnconfirmed : .userEnded)
         }
     }
 
@@ -94,6 +100,7 @@ final class ActiveCallViewModel {
         case .idle: .idle
         case .speaking(_, let text): .speaking(text: text)
         case .delivered: .delivered
+        case .deliveredDespiteStop: .deliveredDespiteStop
         case .notDelivered(let text): .notDelivered(text: text)
         case .stopped(let text): .stopped(text: text)
         }
@@ -101,6 +108,16 @@ final class ActiveCallViewModel {
 
     var isSpeaking: Bool {
         if case .speaking = delivery { true } else { false }
+    }
+
+    /// STOP was refused: the reply was already being spoken.
+    var isStopTooLate: Bool { store?.stopProgress == .tooLate }
+
+    /// A short message for the latest backend error while the call is on. A too-late STOP
+    /// and a failed hang-up have their own places on screen, so they aren't repeated here.
+    var errorMessage: String? {
+        guard !isEnded, let error = store?.lastError else { return nil }
+        return Self.describe(error)
     }
 
     /// The unspoken sentence (not delivered, or stopped) SEND would offer again: only
@@ -214,6 +231,19 @@ final class ActiveCallViewModel {
         case .httpStatus(let code)?: "The backend couldn't start the call (HTTP \(code))."
         case .notHTTPResponse?: "The backend couldn't be reached."
         case nil: "The call couldn't start: \(error.localizedDescription)"
+        }
+    }
+
+    private static func describe(_ error: ServerError) -> String? {
+        switch error.code {
+        case ServerError.cannotInterrupt, ServerError.endFailed: nil
+        case "stale_turn": "That reply was out of date, so it wasn't sent."
+        case "already_approved": "That reply was already sent."
+        case "busy_speaking": "Wait until the current reply has been spoken."
+        case "call_not_live": "The call isn't connected yet. Nothing was sent."
+        case "call_ended": "The call has ended. Nothing will be sent."
+        case "bad_message": "The backend didn't understand the app. Nothing was sent."
+        default: "Something went wrong on the backend."
         }
     }
 

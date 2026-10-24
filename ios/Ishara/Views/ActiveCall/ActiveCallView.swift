@@ -49,7 +49,8 @@ struct ActiveCallView: View {
             ConnectionLostPanel(notice: reason, isReconnecting: false)
         } else if case .speaking(let text) = model.delivery {
             SpeakingPanel(text: text, cameraState: model.cameraState,
-                          isStopRequested: model.isStopRequested)
+                          isStopRequested: model.isStopRequested,
+                          isStopTooLate: model.isStopTooLate, errorMessage: model.errorMessage)
         } else {
             SigningPanel(model: model)
         }

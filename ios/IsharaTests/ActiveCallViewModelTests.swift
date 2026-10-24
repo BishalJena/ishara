@@ -409,6 +409,69 @@ final class ActiveCallViewModelTests: XCTestCase {
         XCTAssertTrue(model.isStopRequested)
     }
 
+    // MARK: Backend errors
+
+    func testTooLateStopIsShownWhileSpeakingThenNotAsAPlainDelivery() {
+        model.choose(.yes)
+        model.send()
+        model.stop()
+
+        store.receive(.error(code: "cannot_interrupt", message: "Bolna is already speaking; it cannot be interrupted."))
+
+        XCTAssertTrue(model.isStopTooLate)
+        XCTAssertTrue(model.isSpeaking)
+        XCTAssertNil(model.errorMessage, "the too-late STOP has its own banner")
+        store.receive(.spoken(turnID: turn(2)))
+        XCTAssertEqual(model.delivery, .deliveredDespiteStop)
+        XCTAssertFalse(model.isStopTooLate)
+    }
+
+    func testBackendErrorsBecomeShortMessagesAndSendNothing() {
+        let expected: [String: String] = [
+            "stale_turn": "That reply was out of date, so it wasn't sent.",
+            "already_approved": "That reply was already sent.",
+            "busy_speaking": "Wait until the current reply has been spoken.",
+            "call_not_live": "The call isn't connected yet. Nothing was sent.",
+            "call_ended": "The call has ended. Nothing will be sent.",
+            "bad_message": "The backend didn't understand the app. Nothing was sent.",
+            "brand_new_code": "Something went wrong on the backend.",
+        ]
+        sign(.hello)
+        let sentBefore = sink.sent
+        for (code, message) in expected {
+            store.receive(.error(code: code, message: "raw backend text"))
+            XCTAssertEqual(model.errorMessage, message, code)
+        }
+        XCTAssertEqual(sink.sent, sentBefore, "errors never send anything")
+    }
+
+    func testErrorMessageGoesAwayOnTheNextAction() {
+        sign(.hello)
+        store.receive(.error(code: "stale_turn", message: "x"))
+
+        sign(.doctor)
+
+        XCTAssertNil(model.errorMessage)
+    }
+
+    func testFailedHangUpAfterEndIsShownOnTheEndedScreen() {
+        model.end()
+
+        store.receive(.error(code: "end_failed", message: "Could not reach Bolna to hang up."))
+
+        XCTAssertEqual(model.phase, .ended(.hangUpUnconfirmed))
+        XCTAssertNil(model.errorMessage)
+        XCTAssertEqual(sink.ends, 1, "nothing is sent again")
+    }
+
+    func testRemoteEndIsNotReportedAsAnUnconfirmedHangUp() {
+        store.receive(.status(.ended))
+
+        store.receive(.error(code: "end_failed", message: "x"))
+
+        XCTAssertEqual(model.phase, .ended(.remoteEnded))
+    }
+
     // MARK: Ending
 
     func testEndMovesToEndedAndSendsNothingFurther() {
