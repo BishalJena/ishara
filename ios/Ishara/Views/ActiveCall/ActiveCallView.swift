@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// What the call screen is showing, worked out once from the call phase and delivery
-/// so every part of the screen switches on the same answer.
+/// What the call screen is showing. The scrolling panel and the action bar both follow it,
+/// so the sentence SEND or STOP acts on always sits in the bar right next to that button.
 enum ActiveCallStage: Equatable {
-    /// Signing a reply; SEND acts on the draft.
+    /// Signing a reply: the draft sits above SEND.
     case signing
-    /// An approved sentence is being spoken; STOP acts on it.
+    /// The sentence being spoken sits above STOP.
     case speaking(text: String)
     case connectionLost(notice: String, isReconnecting: Bool)
     case ended(ActiveCallViewModel.EndReason)
@@ -34,8 +34,26 @@ struct ActiveCallView: View {
     /// Grows with Dynamic Type so a whole caption still fits at large sizes, but is
     /// capped so the chips, draft and SEND keep most of the screen.
     @ScaledMetric(relativeTo: .body) private var captionHeight: CGFloat = 150
+    /// Heights of the whole screen and of the action bar. Neither depends on the caption
+    /// box, so sizing the captions from them can't feed back into a layout loop.
+    @State private var screenHeight: CGFloat?
+    @State private var actionBarHeight: CGFloat?
 
     private var stage: ActiveCallStage { ActiveCallStage(model) }
+
+    /// At large text sizes the action bar (draft or spoken sentence plus buttons) takes
+    /// much of the screen; the captions then give up space so the chips stay reachable.
+    private var captionBoxHeight: CGFloat {
+        let preferred = min(captionHeight, 240)
+        guard let screenHeight, let actionBarHeight else { return preferred }
+        return max(80, min(preferred, (screenHeight - actionBarHeight) * 0.4))
+    }
+
+    /// Room for the pinned sentence in the action bar. Past this it scrolls inside its
+    /// card, which only happens for very long sentences at the largest text sizes.
+    private var sentenceMaxHeight: CGFloat {
+        (screenHeight ?? 800) * 0.55
+    }
 
     var body: some View {
         VStack(spacing: 12) {
@@ -47,7 +65,7 @@ struct ActiveCallView: View {
                 onEnd: model.end
             )
             CaptionHistory(captions: model.captions)
-                .frame(height: min(captionHeight, 240))
+                .frame(height: captionBoxHeight)
 
             ScrollView {
                 content
@@ -58,10 +76,12 @@ struct ActiveCallView: View {
         .padding(.horizontal)
         .padding(.top, 8)
         .safeAreaInset(edge: .bottom) {
-            CallActionBar(model: model, onLeave: onLeave)
+            CallActionBar(model: model, stage: stage, sentenceMaxHeight: sentenceMaxHeight, onLeave: onLeave)
                 .padding()
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { actionBarHeight = $0 }
                 .background(.bar)
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { screenHeight = $0 }
         .animation(.default, value: model.isSpeaking)
         .animation(.default, value: model.isEnded)
         .task { await model.run() }
@@ -74,36 +94,55 @@ struct ActiveCallView: View {
             CallEndedPanel(reason: reason)
         case .connectionLost(let notice, let isReconnecting):
             ConnectionLostPanel(notice: notice, isReconnecting: isReconnecting)
-        case .speaking(let text):
-            SpeakingPanel(text: text, cameraState: model.cameraState,
-                          isStopRequested: model.isStopRequested)
+        case .speaking:
+            SpeakingPanel(cameraState: model.cameraState)
         case .signing:
             SigningPanel(model: model)
         }
     }
 }
 
-/// Quick replies + Clear + SEND while signing, STOP while speaking, Back to Home
-/// once ended. Quick replies sit here, not in the scrolling panel, so a long draft
-/// or a delivery banner can't push them out of sight.
+/// Draft + quick replies + Clear + SEND while signing, the spoken sentence + STOP while
+/// speaking, Back to Home once ended. The sentence lives here, not in the scrolling
+/// panel, so it can never be scrolled away or hidden behind the button that speaks
+/// or stops it, at any text size.
 private struct CallActionBar: View {
     let model: ActiveCallViewModel
+    let stage: ActiveCallStage
+    let sentenceMaxHeight: CGFloat
     let onLeave: () -> Void
 
     var body: some View {
-        if model.isEnded {
+        switch stage {
+        case .ended:
             Button("Back to Home", action: onLeave)
                 .buttonStyle(.bigAction(.blue))
                 .accessibilityIdentifier("call.backHome")
-        } else if model.isSpeaking {
-            Button(action: model.stop) {
-                Label("STOP", systemImage: "stop.fill")
+        case .speaking(let text):
+            VStack(spacing: 12) {
+                PinnedSentence(maxHeight: sentenceMaxHeight) {
+                    SpeakingCard(text: text, isStopRequested: model.isStopRequested)
+                }
+                Button(action: model.stop) {
+                    Label("STOP", systemImage: "stop.fill")
+                }
+                .buttonStyle(.bigAction(.red))
+                .disabled(model.isStopRequested)
+                .accessibilityHint("Cancels the reply if it has not been spoken yet")
+                .accessibilityIdentifier("call.stop")
             }
-            .buttonStyle(.bigAction(.red))
-            .disabled(model.isStopRequested)
-            .accessibilityHint("Cancels the reply if it has not been spoken yet")
-            .accessibilityIdentifier("call.stop")
-        } else {
+        case .signing:
+            VStack(spacing: 12) {
+                QuickReplyBar(onChoose: model.choose)
+                    .disabled(!model.canUseQuickReplies)
+                PinnedSentence(maxHeight: sentenceMaxHeight) {
+                    DraftCard(draft: model.draft)
+                }
+                sendRow
+            }
+        case .connectionLost:
+            // Pending drafts are wiped when the connection drops, so there is no
+            // sentence to show; the disabled controls keep the layout steady.
             VStack(spacing: 12) {
                 QuickReplyBar(onChoose: model.choose)
                     .disabled(!model.canUseQuickReplies)
@@ -130,5 +169,25 @@ private struct CallActionBar: View {
             .accessibilityHint("Speaks the draft into the call")
             .accessibilityIdentifier("call.send")
         }
+    }
+}
+
+/// Shows the sentence at its natural height when it fits in `maxHeight`, and only
+/// otherwise lets it scroll inside the bar, so the buttons below it stay on screen.
+private struct PinnedSentence<Content: View>: View {
+    let maxHeight: CGFloat
+    @ViewBuilder let content: Content
+
+    @State private var contentHeight: CGFloat?
+
+    var body: some View {
+        ScrollView {
+            content
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .scrollIndicators(.visible)
+        // A ScrollView takes all the height it is offered; pin it to the content instead.
+        .frame(height: min(contentHeight ?? maxHeight, maxHeight))
     }
 }

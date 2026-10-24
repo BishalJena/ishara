@@ -1,24 +1,20 @@
 import SwiftUI
 
-/// Screen 4 body: the exact sentence being spoken. The camera keeps watching so
-/// the user can sign the next thing.
+/// Screen 4 body: the camera keeps watching so the user can sign the next thing. The
+/// sentence being spoken sits in the action bar, right above STOP.
 struct SpeakingPanel: View {
-    let text: String
     let cameraState: CameraState
-    let isStopRequested: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            CameraPreviewPlaceholder(
-                state: cameraState,
-                message: "Camera keeps watching\n(you can sign the next thing)"
-            )
-            SpeakingCard(text: text, isStopRequested: isStopRequested)
-        }
+        CameraPreviewPlaceholder(
+            state: cameraState,
+            message: "Camera keeps watching\n(you can sign the next thing)"
+        )
     }
 }
 
-private struct SpeakingCard: View {
+/// The exact sentence being spoken.
+struct SpeakingCard: View {
     let text: String
     let isStopRequested: Bool
 
@@ -39,11 +35,15 @@ private struct SpeakingCard: View {
         .background(Color.purple.opacity(0.2), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(isStopRequested ? "Stopping" : "Speaking now"): \(text)")
+        .accessibilityIdentifier("call.speaking")
     }
 }
 
 #Preview {
-    SpeakingPanel(text: "No, sorry, 4 pm doesn't work. Is there anything tomorrow morning?",
-                  cameraState: .watching, isStopRequested: false)
-        .padding()
+    VStack {
+        SpeakingPanel(cameraState: .watching)
+        SpeakingCard(text: "No, sorry, 4 pm doesn't work. Is there anything tomorrow morning?",
+                     isStopRequested: false)
+    }
+    .padding()
 }
