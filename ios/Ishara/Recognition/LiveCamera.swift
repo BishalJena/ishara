@@ -42,6 +42,10 @@ struct CameraAccess: Sendable {
 final class LiveCamera {
     /// Shared with `CameraFrameSource`; a preview attaches to it but never starts it.
     @ObservationIgnored let session: AVCaptureSession
+    /// The one preview layer on `session`, moved between screens rather than rebuilt:
+    /// adding or removing a preview connection reconfigures the running session and
+    /// could drop frames recognition is reading while the user signs.
+    @ObservationIgnored let previewLayer: AVCaptureVideoPreviewLayer
     var permission: CameraPermission
     /// The device has no usable front camera.
     var isUnavailable = false
@@ -51,5 +55,7 @@ final class LiveCamera {
     init(session: AVCaptureSession, permission: CameraPermission = .notDetermined) {
         self.session = session
         self.permission = permission
+        previewLayer = AVCaptureVideoPreviewLayer(session: session)
+        previewLayer.videoGravity = .resizeAspectFill
     }
 }

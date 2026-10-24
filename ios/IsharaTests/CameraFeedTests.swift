@@ -23,6 +23,9 @@ final class CameraFeedTests: XCTestCase {
 
         let camera = try XCTUnwrap(recognition.camera)
         XCTAssertTrue(camera.session === source.captureSession, "the preview must not open a second session")
+        XCTAssertTrue(camera.previewLayer.session === source.captureSession)
+        XCTAssertTrue(camera.previewLayer === camera.previewLayer, "one preview layer, moved between screens")
+        XCTAssertEqual(camera.previewLayer.videoGravity, .resizeAspectFill)
         XCTAssertTrue(recognition.camera === feed.camera)
         XCTAssertTrue(feed.camera === feed.camera, "every screen shows the same camera")
     }
