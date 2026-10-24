@@ -400,6 +400,31 @@ of 0.86 with the whole-clip embedding. Before trusting the frozen cut-off live,
 replay the calibration takes with `live_source.py --replay-videos` and check that
 they come out as calibrated.
 
+## Evaluate saved videos end to end (video_eval.py)
+
+Replays saved clips through the same live path and scores them; it never feeds labels,
+audio or file names to the recognizer. Results: [video pipeline evaluation](../../docs/experiments/video-pipeline-eval.md).
+
+```sh
+artifacts/signclip/.venv/bin/python video_eval.py prepare     # local spec -> silent clip_NNN.mp4 + manifest; labels apart
+artifacts/signclip/.venv/bin/python video_eval.py bundle      # references only: live cut, leave-one-out cut-offs, frozen
+artifacts/signclip/.venv/bin/python video_eval.py recognize   # test clips, paced like a camera
+.venv/bin/python video_eval.py score                          # per-sign table, confusions, latency p50/p95
+artifacts/signclip/.venv/bin/python video_eval.py turns --turns artifacts/video_eval/turns.json
+```
+
+- The spec (`artifacts/video_eval/spec.json`, local) lists sources (file, URL, signer,
+  terms, label evidence) and cuts (start, end, label, `reference` or `test`, test set).
+  `prepare` strips audio, subtitles and metadata, pads 2 s of rest before and 1 s after,
+  and refuses a test clip that shares a clip id, hash, source video or signer with a
+  reference; `recognize` and `turns` check that again against the bundle.
+- A reference whose clip the detector can't cut is kept whole (like `--manual-stop`).
+- Compose and voice the turns with the backend:
+  `cd ../../backend && uv run python -m scripts.compose_turns --help` (Groq and Sarvam
+  cost money; calls are capped with `--max-groq` / `--max-voice`).
+- Everything stays under ignored `artifacts/video_eval/`; public videos are for local
+  evaluation only and are never committed.
+
 ## Historical INCLUDE harness
 
 Retained for comparison; it is not the active fresh-data candidate.
