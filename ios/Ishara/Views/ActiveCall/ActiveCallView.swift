@@ -82,6 +82,9 @@ struct ActiveCallView: View {
                 .background(.bar)
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { screenHeight = $0 }
+        // Past AX-XL the status bar, a whole sentence and SEND or STOP no longer fit on
+        // an iPhone 17e together, so the call screen stops growing there.
+        .dynamicTypeSize(...DynamicTypeSize.accessibility3)
         .animation(.default, value: model.isSpeaking)
         .animation(.default, value: model.isEnded)
         .task { await model.run() }
