@@ -20,8 +20,8 @@ def describe(message: ServerMessage, label_for: Callable[[str], str]) -> str:
     match message:
         case StatusMessage(state=state):
             return f"status        {state.value}"
-        case CaptionMessage(text=text):
-            return f'caption       "{text}"'
+        case CaptionMessage(text=text, speaker=speaker):
+            return f'caption       [{speaker}] "{text}"'
         case DraftMessage(turn_id=turn_id, text=text, source=source):
             return f"draft         [{label_for(turn_id)}, {source.value}] {text}"
         case SpokenMessage(turn_id=turn_id):

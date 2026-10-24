@@ -18,6 +18,11 @@ ScriptedBolna answers the "call", so nothing is dialled), plus:
   words (captions), so drafts can be checked against any reply. `/silence` fires
   Bolna's silence repeat (the holding line).
 
+Like Bolna, the scripted call also repeats the listen node after 15 s with nobody
+talking (scaled by --delay), so the holding line is said then too. The app (or the
+Mac bridge) gets the disclosure, every holding line and the goodbye as agent
+captions, apart from the receptionist's words.
+
 Keys come only from the repo-root .env (or --env-file), and only for the flags that
 need them. Exported variables are ignored, and no Bolna key is ever set.
 """
@@ -33,7 +38,7 @@ import sys
 import threading
 from collections.abc import AsyncIterable, AsyncIterator, Callable, Sequence
 from contextlib import AsyncExitStack, asynccontextmanager, suppress
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal
 
@@ -313,7 +318,10 @@ def banner(base_url: str, args: argparse.Namespace, keys: LabKeys) -> str:
         lines += [
             "",
             "Costs: each chip change is one Groq draft (a fraction of a paisa); each spoken "
-            "line is one Sarvam request (about ₹0.1-0.5). Run free with " + FREE_FLAGS + ".",
+            "line is one Sarvam request (about ₹0.1-0.5); the holding line after a long "
+            "silence only plays with --silence-repeat or /silence. Run free with "
+            + FREE_FLAGS
+            + ".",
         ]
     lines += [
         "",
@@ -323,7 +331,8 @@ def banner(base_url: str, args: argparse.Namespace, keys: LabKeys) -> str:
         f"--base-url {base_url} --contact {DEFAULT_CONTACT} --confirm-cost --live --camera 0",
         "",
         "Events: 'receptionist says', 'chips', 'groq answered', 'draft (llm|template)',",
-        "'  fallback: <why>', 'approved (SEND)', 'agent says', 'voice: playing / done'.",
+        "'  fallback: <why>', 'approved (SEND)', 'agent says', 'voice: playing / done',",
+        "'N s of silence' (the holding line follows).",
     ]
     return "\n".join(lines)
 
@@ -352,9 +361,23 @@ def build_parser() -> argparse.ArgumentParser:
         help="where --composer groq and --voice sarvam read their keys (default: %(default)s)",
     )
     parser.add_argument(
-        "--delay", type=_non_negative, default=1.0, help="scale the ring and receptionist pauses"
+        "--delay",
+        type=_non_negative,
+        default=1.0,
+        help="scale the ring, receptionist and silence-repeat pauses",
+    )
+    parser.add_argument(
+        "--silence-repeat",
+        action="store_true",
+        help="say the holding line after each long silence, as Bolna does (off by default: "
+        "with --voice sarvam every repeat is a paid request while you just sit and sign)",
     )
     return parser
+
+
+def lab_pauses(args: argparse.Namespace) -> Pauses:
+    pauses = CALL_PAUSES.scaled(args.delay)
+    return pauses if args.silence_repeat else replace(pauses, silence_s=0)
 
 
 def _out(line: str) -> None:
@@ -384,7 +407,7 @@ def main(argv: list[str] | None = None) -> int:
         receptionist=args.receptionist,
         app_token=args.app_token,
         contacts=args.contact or [DEFAULT_CONTACT],
-        pauses=CALL_PAUSES.scaled(args.delay),
+        pauses=lab_pauses(args),
         log=_out,
     )
     try:

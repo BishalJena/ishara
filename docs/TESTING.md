@@ -44,12 +44,12 @@ until then the rows above describe the target, not the current tree.
 
 | Test (`tests/e2e/test_demo_script.py`) | Safety rule it guards |
 |---|---|
-| `test_plan_demo_script_end_to_end` | §1 turns 0–6: disclosure, captions, 3b wrong chip removed, exact text, goodbye |
+| `test_plan_demo_script_end_to_end` | §1 turns 0–6: disclosure, captions, 3b wrong chip removed, exact text, goodbye, and the whole transcript the app sees in order (agent and receptionist captions) |
 | `test_nothing_is_spoken_before_send` | Nothing is spoken unless the user taps SEND |
 | `test_double_send_speaks_once`, `test_duplicate_event_delivery_speaks_once` | Approval is single use (app side and Bolna side) |
 | `test_stale_turn_approval_is_not_spoken` | A new turn wipes the old approval |
 | `test_send_during_receptionist_speech_is_not_delivered_then_resent_once` | B24: no `spoken` → `not_delivered`; a dead turn never speaks later; re-SEND speaks once |
-| `test_silence_gets_the_holding_line_and_no_caption` | `[silence]` gets the holding line and is not a caption |
+| `test_each_silence_shows_the_holding_line_as_an_agent_caption` | Every `[silence]` gets the holding line, shown as an agent caption, never as the receptionist's words |
 | `test_end_while_reply_is_in_flight_is_not_spoken`, `test_approve_after_end_is_not_spoken` | Ended calls stay silent |
 | `test_unknown_contact_is_refused_and_never_dialled`, `test_start_call_without_app_token_is_refused` | Only allowlisted, authenticated calls |
 

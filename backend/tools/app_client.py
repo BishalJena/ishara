@@ -60,6 +60,10 @@ class SessionClosedError(Exception):
     """The backend closed the call socket."""
 
 
+def is_receptionist(caption: CaptionMessage) -> bool:
+    return caption.speaker == "receptionist"
+
+
 def new_turn_id() -> str:
     return uuid.uuid4().hex
 
@@ -291,7 +295,11 @@ class AppSession:
         return cast(M, message)
 
     async def wait_for_caption(self, *, since: int, timeout: float) -> CaptionMessage:
-        return await self.wait_for_kind(CaptionMessage, since=since, timeout=timeout)
+        """The receptionist's next words. Agent lines (disclosure, holding line, goodbye)
+        are said by our own voice, so they never count as the other side answering."""
+        return await self.wait_for_kind(
+            CaptionMessage, since=since, timeout=timeout, where=is_receptionist
+        )
 
     async def wait_for_draft(self, *, since: int, timeout: float) -> DraftMessage:
         """A draft for the turn that is current when this is called."""
