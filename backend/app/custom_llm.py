@@ -12,7 +12,8 @@ marker block in the node prompt (app.markers). Request kinds and the reply each 
   end calls only through the end_call event.
 - voicemail check: asks for `{"is_voicemail": ...}`. Reply: "No".
 - listen node: forward new receptionist utterances as captions; reply with nothing,
-  or the holding line when the latest user message is Bolna's `[silence]` repeat.
+  or the holding line when the latest user message is Bolna's `[silence]` repeat (the
+  app sees that line as an agent caption).
 - speak node: speak the approved text only if the ledger grants the single-use claim.
 - anything else: empty reply.
 
@@ -138,6 +139,7 @@ async def decide(
 
     if marker.node == "listen":
         if latest_user_is_silence(body):
+            await ledger.record_agent_line(marker.call_id, HOLDING_LINE)
             return Reply(HOLDING_LINE, "holding_line")
         return Reply("", "silent")
 

@@ -240,7 +240,10 @@ def test_plan_demo_script_end_to_end(harness: Harness) -> None:
         }
 
         harness.says(run, T2_CAPTION)
-        app.expect("caption", text=T2_CAPTION)
+        app.expect("caption", text=T2_CAPTION, speaker="receptionist")
+        # The user takes a while to sign T3: Bolna's silence repeat fills the pause.
+        assert harness.silence(run) == HOLDING_LINE
+        app.expect("caption", text=HOLDING_LINE, speaker="agent")
 
         with_wrong_chip = app.draft("t3", ["no", "morning", "afternoon"])
         assert "afternoon" in with_wrong_chip
@@ -250,7 +253,7 @@ def test_plan_demo_script_end_to_end(harness: Harness) -> None:
         app.expect("spoken", turn_id="t3")
 
         harness.says(run, T4_CAPTION)
-        app.expect("caption", text=T4_CAPTION)
+        app.expect("caption", text=T4_CAPTION, speaker="receptionist")
 
         t5 = app.draft("t5", ["yes", "thankyou"])
         assert "thank" in t5.lower()
@@ -262,13 +265,14 @@ def test_plan_demo_script_end_to_end(harness: Harness) -> None:
         app.expect("caption", text=GOODBYE, speaker="agent")
         harness.idle()
 
-    assert run.spoken == [DISCLOSURE, t1, t3, t5, GOODBYE]
+    assert run.spoken == [DISCLOSURE, t1, HOLDING_LINE, t3, t5, GOODBYE]
     assert run.ended
     assert harness.fake.events[-1].event == "end_call"
     assert _transcript(app) == [
         ("agent", DISCLOSURE),
         ("spoken", "t1"),
         ("receptionist", T2_CAPTION),
+        ("agent", HOLDING_LINE),
         ("spoken", "t3"),
         ("receptionist", T4_CAPTION),
         ("spoken", "t5"),
@@ -374,16 +378,20 @@ def test_send_during_receptionist_speech_is_not_delivered_then_resent_once(
         assert app.matching("not_delivered", turn_id="t1b") == []
 
 
-def test_silence_gets_the_holding_line_and_no_caption(harness: Harness) -> None:
+def test_each_silence_shows_the_holding_line_as_an_agent_caption(harness: Harness) -> None:
     call_id = harness.start_call()
     run = harness.run_for(call_id)
 
     with harness.socket(call_id) as app:
         assert harness.silence(run) == HOLDING_LINE
+        assert harness.silence(run) == HOLDING_LINE
         app.round_trip("t1")
 
-        assert run.spoken == [DISCLOSURE, HOLDING_LINE]
+        assert run.spoken == [DISCLOSURE, HOLDING_LINE, HOLDING_LINE]
         assert all(SILENCE_MARKER not in c["text"] for c in app.matching("caption"))
+        assert app.matching("caption", speaker="receptionist") == []
+        assert _transcript(app) == [("agent", HOLDING_LINE)] * 2
+        assert app.matching("status", state="speaking") == [], "no turn was started"
 
 
 def test_approve_after_end_is_not_spoken(harness: Harness) -> None:
