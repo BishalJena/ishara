@@ -53,7 +53,8 @@ final class LiveCallTests: XCTestCase {
         store.useQuickReply(.yes)
         store.send()
 
-        let sent = await eventually { await self.transport.sent.count == 1 }
+        let transport = transport!
+        let sent = await eventually { await transport.sent.count == 1 }
         XCTAssertTrue(sent)
         let frames = await transport.sent
         XCTAssertEqual(frames, [#"{"text":"Yes.","turn_id":"turn2","type":"approve"}"#])
