@@ -1,0 +1,64 @@
+Ishara local demo backend: no Bolna, no Groq, nothing is dialled; template drafts.
+  base URL   http://127.0.0.1:8799
+  app token  ishara-local-demo
+  contacts   clinic
+
+iOS simulator (ios/Ishara/Config/Secrets.xcconfig), run with -IsharaDriver live:
+  ISHARA_BACKEND_URL = http:/$()/127.0.0.1:8799
+  ISHARA_APP_TOKEN = ishara-local-demo
+  (the simulator shares the Mac's network, so 127.0.0.1 reaches this server)
+
+Mac bridge, from spikes/recognition (it insists on --confirm-cost; this server
+costs nothing):
+  APP_TOKEN=ishara-local-demo artifacts/bridge/.venv/bin/python mac_bridge.py --base-url http://127.0.0.1:8799 --contact clinic --confirm-cost --live
+
+Scripted app instead (from backend/):
+  APP_TOKEN=ishara-local-demo uv run python -m scripts.fake_app --base-url http://127.0.0.1:8799 script --contact clinic --confirm-cost
+agent says: Hello, I'm calling for a Deaf caller who is using Ishara, a sign-language app. Their replies may take a few seconds.
+INFO app.calls: call bff0742160834f0594fde26ad801e39f: dialing contact clinic
+bolna status: ringing
+bolna status: in-progress
+INFO app.shape_log: {"content_lengths": [275, 116], "event": "custom_llm_request", "kind": "speak", "message_count": 2, "node": "speak", "outcome": "reply", "response_format": null, "roles": ["system", "assistant"], "stream": true, "tool_choice": null, "tools": [], "top_level_keys": ["messages", "model", "stream"]}
+agent says: Hello, I'd like a doctor's appointment tomorrow.
+receptionist says: We have 4 pm tomorrow. Does that work?
+INFO app.shape_log: {"content_lengths": [151, 116, 48, 38], "event": "custom_llm_request", "kind": "listen", "message_count": 4, "node": "listen", "outcome": "silent", "response_format": null, "roles": ["system", "assistant", "assistant", "user"], "stream": true, "tool_choice": null, "tools": [], "top_level_keys": ["messages", "model", "stream"]}
+INFO app.shape_log: {"content_lengths": [290, 116, 48, 38], "event": "custom_llm_request", "kind": "speak", "message_count": 4, "node": "speak", "outcome": "reply", "response_format": null, "roles": ["system", "assistant", "assistant", "user"], "stream": true, "tool_choice": null, "tools": [], "top_level_keys": ["messages", "model", "stream"]}
+agent says: No, sorry, that doesn't work. Is there anything in the morning?
+receptionist says: Yes, 10:30 tomorrow morning.
+INFO app.shape_log: {"content_lengths": [151, 116, 48, 38, 63, 28], "event": "custom_llm_request", "kind": "listen", "message_count": 6, "node": "listen", "outcome": "silent", "response_format": null, "roles": ["system", "assistant", "assistant", "user", "assistant", "user"], "stream": true, "tool_choice": null, "tools": [], "top_level_keys": ["messages", "model", "stream"]}
+INFO app.shape_log: {"content_lengths": [254, 116, 48, 38, 63, 28], "event": "custom_llm_request", "kind": "speak", "message_count": 6, "node": "speak", "outcome": "reply", "response_format": null, "roles": ["system", "assistant", "assistant", "user", "assistant", "user"], "stream": true, "tool_choice": null, "tools": [], "top_level_keys": ["messages", "model", "stream"]}
+agent says: Yes, that works. Thank you.
+agent says: Thank you for your time. Goodbye.
+bolna status: completed
+agent says: Hello, I'm calling for a Deaf caller who is using Ishara, a sign-language app. Their replies may take a few seconds.
+INFO app.calls: call 535e15f63f7641eea39a245d859910e0: dialing contact clinic
+bolna status: ringing
+bolna status: in-progress
+INFO app.shape_log: {"content_lengths": [275, 116], "event": "custom_llm_request", "kind": "speak", "message_count": 2, "node": "speak", "outcome": "reply", "response_format": null, "roles": ["system", "assistant"], "stream": true, "tool_choice": null, "tools": [], "top_level_keys": ["messages", "model", "stream"]}
+agent says: Hello, I'd like a doctor's appointment tomorrow.
+receptionist says: We have 4 pm tomorrow. Does that work?
+INFO app.shape_log: {"content_lengths": [151, 116, 48, 38], "event": "custom_llm_request", "kind": "listen", "message_count": 4, "node": "listen", "outcome": "silent", "response_format": null, "roles": ["system", "assistant", "assistant", "user"], "stream": true, "tool_choice": null, "tools": [], "top_level_keys": ["messages", "model", "stream"]}
+INFO app.shape_log: {"content_lengths": [290, 116, 48, 38], "event": "custom_llm_request", "kind": "speak", "message_count": 4, "node": "speak", "outcome": "reply", "response_format": null, "roles": ["system", "assistant", "assistant", "user"], "stream": true, "tool_choice": null, "tools": [], "top_level_keys": ["messages", "model", "stream"]}
+agent says: No, sorry, that doesn't work. Is there anything in the morning?
+receptionist says: Yes, 10:30 tomorrow morning.
+INFO app.shape_log: {"content_lengths": [151, 116, 48, 38, 63, 28], "event": "custom_llm_request", "kind": "listen", "message_count": 6, "node": "listen", "outcome": "silent", "response_format": null, "roles": ["system", "assistant", "assistant", "user", "assistant", "user"], "stream": true, "tool_choice": null, "tools": [], "top_level_keys": ["messages", "model", "stream"]}
+INFO app.shape_log: {"content_lengths": [254, 116, 48, 38, 63, 28], "event": "custom_llm_request", "kind": "speak", "message_count": 6, "node": "speak", "outcome": "reply", "response_format": null, "roles": ["system", "assistant", "assistant", "user", "assistant", "user"], "stream": true, "tool_choice": null, "tools": [], "top_level_keys": ["messages", "model", "stream"]}
+agent says: Yes, that works. Thank you.
+agent says: Thank you for your time. Goodbye.
+bolna status: completed
+agent says: Hello, I'm calling for a Deaf caller who is using Ishara, a sign-language app. Their replies may take a few seconds.
+INFO app.calls: call 7a630d337234450594885006c2ee3940: dialing contact clinic
+bolna status: ringing
+bolna status: in-progress
+INFO app.shape_log: {"content_lengths": [275, 116], "event": "custom_llm_request", "kind": "speak", "message_count": 2, "node": "speak", "outcome": "reply", "response_format": null, "roles": ["system", "assistant"], "stream": true, "tool_choice": null, "tools": [], "top_level_keys": ["messages", "model", "stream"]}
+agent says: Hello, I'd like a doctor's appointment tomorrow.
+receptionist says: We have 4 pm tomorrow. Does that work?
+INFO app.shape_log: {"content_lengths": [151, 116, 48, 38], "event": "custom_llm_request", "kind": "listen", "message_count": 4, "node": "listen", "outcome": "silent", "response_format": null, "roles": ["system", "assistant", "assistant", "user"], "stream": true, "tool_choice": null, "tools": [], "top_level_keys": ["messages", "model", "stream"]}
+INFO app.shape_log: {"content_lengths": [290, 116, 48, 38], "event": "custom_llm_request", "kind": "speak", "message_count": 4, "node": "speak", "outcome": "reply", "response_format": null, "roles": ["system", "assistant", "assistant", "user"], "stream": true, "tool_choice": null, "tools": [], "top_level_keys": ["messages", "model", "stream"]}
+agent says: No, sorry, that doesn't work. Is there anything in the morning?
+receptionist says: Yes, 10:30 tomorrow morning.
+INFO app.shape_log: {"content_lengths": [151, 116, 48, 38, 63, 28], "event": "custom_llm_request", "kind": "listen", "message_count": 6, "node": "listen", "outcome": "silent", "response_format": null, "roles": ["system", "assistant", "assistant", "user", "assistant", "user"], "stream": true, "tool_choice": null, "tools": [], "top_level_keys": ["messages", "model", "stream"]}
+INFO app.shape_log: {"content_lengths": [254, 116, 48, 38, 63, 28], "event": "custom_llm_request", "kind": "speak", "message_count": 6, "node": "speak", "outcome": "reply", "response_format": null, "roles": ["system", "assistant", "assistant", "user", "assistant", "user"], "stream": true, "tool_choice": null, "tools": [], "top_level_keys": ["messages", "model", "stream"]}
+agent says: Yes, that works. Thank you.
+agent says: Thank you for your time. Goodbye.
+bolna status: completed
