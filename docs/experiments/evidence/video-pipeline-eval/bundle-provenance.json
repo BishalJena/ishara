@@ -1,0 +1,705 @@
+{
+  "references": [
+    {
+      "id": "clip_001",
+      "sha256": "c816461df786dfdcdd7c0f6c15f358a661f52edfe82124848871f10ed9b785da",
+      "source_id": "src_11",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.069,
+          "end": 3.854,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 107,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.8317757009345794,
+        "face_fraction": 1.0
+      },
+      "signer_id": "islrtc-11"
+    },
+    {
+      "id": "clip_004",
+      "sha256": "058a270259f238b8cbc4bcfc092cb5115cbd90fe757e5f0f23388b052ce49927",
+      "source_id": "src_46",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.24,
+          "end": 3.36,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 29,
+        "pose_fraction": 1.0,
+        "hand_fraction": 1.0,
+        "face_fraction": 1.0
+      },
+      "signer_id": "include-red"
+    },
+    {
+      "id": "clip_006",
+      "sha256": "1abb811a0102a6dba3d4362c78e20bbae60faaeac5f142d7646faca545199afe",
+      "source_id": "src_39",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.48,
+          "end": 3.24,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 20,
+        "pose_fraction": 1.0,
+        "hand_fraction": 1.0,
+        "face_fraction": 1.0
+      },
+      "signer_id": "include-pink"
+    },
+    {
+      "id": "clip_007",
+      "sha256": "284d02d9c6074f3ae73199030d6aeabb0f7b9d3fb9eab3b7794ff1679dd92ace",
+      "source_id": "src_27",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.6,
+          "end": 3.8,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 31,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.7741935483870968,
+        "face_fraction": 1.0
+      },
+      "signer_id": "include-pink"
+    },
+    {
+      "id": "clip_014",
+      "sha256": "2e6aab434e2bc88d665403425a2b5350a90879dcc325d150fef16f35c1c97cb9",
+      "source_id": "src_13",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.36,
+          "end": 3.6,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 32,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.75,
+        "face_fraction": 1.0
+      },
+      "signer_id": "islrtc-13"
+    },
+    {
+      "id": "clip_015",
+      "sha256": "09756388aef9f316b82fe5978412c3094a9bc0342374f620b125a393b3b92be3",
+      "source_id": "src_14",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.28,
+          "end": 3.64,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 35,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.7428571428571429,
+        "face_fraction": 1.0
+      },
+      "signer_id": "islrtc-14"
+    },
+    {
+      "id": "clip_019",
+      "sha256": "3f320a1002dd1fd6d73197dc41c47399c9017ee5c95d5d3f335b7fcecac97531",
+      "source_id": "src_50",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.28,
+          "end": 3.52,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 32,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.875,
+        "face_fraction": 1.0
+      },
+      "signer_id": "include-red"
+    },
+    {
+      "id": "clip_021",
+      "sha256": "041a261be4e2295e9d4010e9c6caee0bc48f4170253e36602ef826a1e5a9fcf4",
+      "source_id": "src_34",
+      "take": "manual",
+      "segments": [],
+      "quality": {
+        "frames": 56,
+        "pose_fraction": 0.9464285714285714,
+        "hand_fraction": 0.875,
+        "face_fraction": 0.9464285714285714
+      },
+      "signer_id": "include-red"
+    },
+    {
+      "id": "clip_022",
+      "sha256": "1804337064db8c260ad9e66717c68a0bfaec999470791c9705a2edd41159560a",
+      "source_id": "src_51",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.24,
+          "end": 3.36,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 29,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.6896551724137931,
+        "face_fraction": 1.0
+      },
+      "signer_id": "include-pink"
+    },
+    {
+      "id": "clip_026",
+      "sha256": "bc803593c9dce42c8c78bc031f34eadbf4a3296e1637026e2289eff4d8a9c15c",
+      "source_id": "src_05",
+      "take": "manual",
+      "segments": [],
+      "quality": {
+        "frames": 73,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.0,
+        "face_fraction": 1.0
+      },
+      "signer_id": "islrtc-05"
+    },
+    {
+      "id": "clip_027",
+      "sha256": "b252637ba03021677c88fae2dfb84c650ba139ef3da53268b2bb603a0b4b2133",
+      "source_id": "src_47",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.64,
+          "end": 3.24,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 16,
+        "pose_fraction": 1.0,
+        "hand_fraction": 1.0,
+        "face_fraction": 1.0
+      },
+      "signer_id": "include-pink"
+    },
+    {
+      "id": "clip_029",
+      "sha256": "d8d9c4fdf364baae8295dd3f7737de43a1c8fb0c995940b2cf0c87586f35d281",
+      "source_id": "src_30",
+      "take": "manual",
+      "segments": [],
+      "quality": {
+        "frames": 54,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.9629629629629629,
+        "face_fraction": 1.0
+      },
+      "signer_id": "include-red"
+    },
+    {
+      "id": "clip_034",
+      "sha256": "876a988e1a39948385614abb7adb062368612a017d8ac1de6980b97f6a499bce",
+      "source_id": "src_23",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.6,
+          "end": 3.68,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 28,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.7142857142857143,
+        "face_fraction": 1.0
+      },
+      "signer_id": "include-stripe-w"
+    },
+    {
+      "id": "clip_035",
+      "sha256": "f9c29ae37d9e692a1eff0b6a28080c53a0d0552cf7bf06e78f4ca0ea976707ae",
+      "source_id": "src_15",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.64,
+          "end": 4.36,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 44,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.8863636363636364,
+        "face_fraction": 1.0
+      },
+      "signer_id": "islrtc-15"
+    },
+    {
+      "id": "clip_036",
+      "sha256": "8cf73caedb61122d3ea0333f19951176611cd4f3d2ddac5fe2544109f2fdb5d0",
+      "source_id": "src_26",
+      "take": "manual",
+      "segments": [],
+      "quality": {
+        "frames": 68,
+        "pose_fraction": 0.9852941176470589,
+        "hand_fraction": 0.8088235294117647,
+        "face_fraction": 0.9852941176470589
+      },
+      "signer_id": "include-red"
+    },
+    {
+      "id": "clip_039",
+      "sha256": "e270b7d1bb177a9e93b2724072a30bf5141182330afc7c7810da6b49c93ce55f",
+      "source_id": "src_17",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.32,
+          "end": 4.12,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 46,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.8913043478260869,
+        "face_fraction": 1.0
+      },
+      "signer_id": "islrtc-17"
+    },
+    {
+      "id": "clip_041",
+      "sha256": "f92f42dd2f585e647fe687de9b82da272d0857362d7cebad56c04d83d2f36344",
+      "source_id": "src_09",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.32,
+          "end": 4.32,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 51,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.9607843137254902,
+        "face_fraction": 1.0
+      },
+      "signer_id": "islrtc-09"
+    },
+    {
+      "id": "clip_042",
+      "sha256": "df4bd7c8e444b97fc7f7446d05086b0a8792874c97c145d75940bb41e3f609f9",
+      "source_id": "src_10",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.64,
+          "end": 4.84,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 56,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.9285714285714286,
+        "face_fraction": 1.0
+      },
+      "signer_id": "islrtc-10"
+    },
+    {
+      "id": "clip_043",
+      "sha256": "4287e42b1d4f040cb6cedfd314cbfd66245ff1158cf531e65adba68c728ef2c8",
+      "source_id": "src_19",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.32,
+          "end": 2.92,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 16,
+        "pose_fraction": 1.0,
+        "hand_fraction": 1.0,
+        "face_fraction": 1.0
+      },
+      "signer_id": "include-redwhite"
+    },
+    {
+      "id": "clip_047",
+      "sha256": "cada0039c12f4a5ea3b3013f6fd9b6c7b0b524312f34ea0642e8f8e6bc4a8509",
+      "source_id": "src_01",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.52,
+          "end": 4.12,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 41,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.8292682926829268,
+        "face_fraction": 1.0
+      },
+      "signer_id": "islrtc-01"
+    },
+    {
+      "id": "clip_050",
+      "sha256": "36bfea92bdfa1fa071c9bf65ebb030e208cee5a047ee440454a9177e21120288",
+      "source_id": "src_04",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.88,
+          "end": 4.64,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 45,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.9111111111111111,
+        "face_fraction": 1.0
+      },
+      "signer_id": "islrtc-04"
+    },
+    {
+      "id": "clip_053",
+      "sha256": "0dc337a9d074ea8ecbcd613c6ddb96e6161c73c972025017b7be9750ec597284",
+      "source_id": "src_03",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.92,
+          "end": 4.24,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 34,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.8823529411764706,
+        "face_fraction": 1.0
+      },
+      "signer_id": "islrtc-03"
+    },
+    {
+      "id": "clip_056",
+      "sha256": "475f1af9b6831100a325018a45643230cc2c57689e9204250a62d7f8746b7a6a",
+      "source_id": "src_18",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.48,
+          "end": 3.96,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 38,
+        "pose_fraction": 1.0,
+        "hand_fraction": 1.0,
+        "face_fraction": 1.0
+      },
+      "signer_id": "include-check"
+    },
+    {
+      "id": "clip_058",
+      "sha256": "5093620e2e5cb4f96d5c175a4b4a93cd8d8fd11629397d8632ae813c06d7472c",
+      "source_id": "src_31",
+      "take": "manual",
+      "segments": [],
+      "quality": {
+        "frames": 47,
+        "pose_fraction": 1.0,
+        "hand_fraction": 1.0,
+        "face_fraction": 1.0
+      },
+      "signer_id": "include-pink"
+    },
+    {
+      "id": "clip_059",
+      "sha256": "d1c9c0336595a5d3b478ee25b9d7147f83f54925fbf92bf3e5ba5efd13b3b796",
+      "source_id": "src_07",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 3.52,
+          "end": 5.56,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 52,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.9230769230769231,
+        "face_fraction": 1.0
+      },
+      "signer_id": "islrtc-07"
+    },
+    {
+      "id": "clip_060",
+      "sha256": "1d0a49298bb7b9410c539540d24f34edaa408a6553d4b32c397e65f16eb8e381",
+      "source_id": "src_16",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.48,
+          "end": 4.04,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 40,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.85,
+        "face_fraction": 1.0
+      },
+      "signer_id": "islrtc-16"
+    },
+    {
+      "id": "clip_061",
+      "sha256": "445d5c721e18184f2d5ba91b2371ce04c2d52dedf78dbf752b321f3f43526a80",
+      "source_id": "src_02",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.52,
+          "end": 3.92,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 36,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.8888888888888888,
+        "face_fraction": 1.0
+      },
+      "signer_id": "islrtc-02"
+    },
+    {
+      "id": "clip_062",
+      "sha256": "62e5f42ad3bed79a43fd7408a89a28fcf20737e391fbb540e5c0d9f8c3af2eaa",
+      "source_id": "src_42",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.24,
+          "end": 3.12,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 23,
+        "pose_fraction": 1.0,
+        "hand_fraction": 1.0,
+        "face_fraction": 1.0
+      },
+      "signer_id": "include-red"
+    },
+    {
+      "id": "clip_063",
+      "sha256": "16b63560e2c102fb1571dec15ef6cc5ef165626f76fcb22f5960ce69c80e1ee2",
+      "source_id": "src_43",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.32,
+          "end": 3.8,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 38,
+        "pose_fraction": 1.0,
+        "hand_fraction": 1.0,
+        "face_fraction": 1.0
+      },
+      "signer_id": "include-pink"
+    },
+    {
+      "id": "clip_064",
+      "sha256": "bc7c258b8a794c6675fe2c4fddae4ddfbf07f2b38f7495b37757fe772d5bbdae",
+      "source_id": "src_38",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.44,
+          "end": 3.08,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 17,
+        "pose_fraction": 1.0,
+        "hand_fraction": 1.0,
+        "face_fraction": 1.0
+      },
+      "signer_id": "include-red"
+    },
+    {
+      "id": "clip_067",
+      "sha256": "2875e3558b032b47760e2c24f7964bbce3e36da7e25e3c1915a4e2fb946a2058",
+      "source_id": "src_08",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.12,
+          "end": 4.36,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 57,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.8947368421052632,
+        "face_fraction": 1.0
+      },
+      "signer_id": "islrtc-08"
+    },
+    {
+      "id": "clip_070",
+      "sha256": "554ae050db237233671a9c53fac6e4b05b6492b3abc8f64fb1035c1bd2d592f4",
+      "source_id": "src_06",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.72,
+          "end": 4.4,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 43,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.8837209302325582,
+        "face_fraction": 1.0
+      },
+      "signer_id": "islrtc-06"
+    },
+    {
+      "id": "clip_071",
+      "sha256": "1a94911d3b405ac3fccd62f32fd78a2da426f5abc5153971c9aed7e821f4ab81",
+      "source_id": "src_35",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.16,
+          "end": 3.56,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 36,
+        "pose_fraction": 1.0,
+        "hand_fraction": 1.0,
+        "face_fraction": 1.0
+      },
+      "signer_id": "include-pink"
+    },
+    {
+      "id": "clip_074",
+      "sha256": "e1c3dded98631fed7f14757d6a8e84b1729b27b93f6ef4f7ae8c5a5eea0016da",
+      "source_id": "src_22",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.16,
+          "end": 3.32,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 30,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.8,
+        "face_fraction": 1.0
+      },
+      "signer_id": "include-redwhite"
+    },
+    {
+      "id": "clip_077",
+      "sha256": "d046d15c934e9368d22fee60439e180f3644130ace7464c35fb5a86a928369c3",
+      "source_id": "src_12",
+      "take": "detector",
+      "segments": [
+        {
+          "start": 2.28,
+          "end": 3.72,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "quality": {
+        "frames": 37,
+        "pose_fraction": 1.0,
+        "hand_fraction": 0.8378378378378378,
+        "face_fraction": 1.0
+      },
+      "signer_id": "islrtc-12"
+    }
+  ],
+  "dropped": []
+}

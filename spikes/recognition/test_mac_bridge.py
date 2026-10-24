@@ -8,6 +8,7 @@ import sys
 import unittest
 import urllib.error
 from contextlib import redirect_stderr, redirect_stdout
+from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
@@ -26,6 +27,17 @@ def chips(turn_id, *signs):
 
 def approve(turn_id, text):
     return {"type": "approve", "turn_id": turn_id, "text": text}
+
+
+NOON = datetime(2026, 10, 24, 12, 0, 5, 250000)
+
+
+def noon():
+    return NOON
+
+
+def read_log(path):
+    return [json.loads(line) for line in Path(path).read_text().splitlines()]
 
 
 def state(*results):
@@ -255,6 +267,97 @@ def child(code):
     return [sys.executable, "-c", "import json, os, sys, time\n" + code]
 
 
+class DescribeResult(unittest.TestCase):
+    TOP = [{"sign": "doctor", "similarity": 0.8312}, {"sign": "hello", "similarity": 0.6149},
+           {"sign": "time", "similarity": 0.55}]
+
+    def test_accepted_sign_shows_top3_margin_and_latency(self):
+        details = {"sign": "doctor", "reason": None, "top": self.TOP, "margin": 0.2163,
+                   "latency_ms": 462.0, "failed_checks": [], "provisional": False}
+        self.assertEqual(mb.describe_result(details),
+                         "✓ doctor  (doctor 0.83 | hello 0.61 | time 0.55; margin 0.22; 0.46 s)")
+
+    def test_unsure_sign_says_which_checks_failed_instead_of_the_long_reason(self):
+        details = {"sign": None, "reason": "insufficient evidence (best morning 0.580, ...)",
+                   "top": [{"sign": "morning", "similarity": 0.58}, {"sign": "evening", "similarity": 0.56}],
+                   "margin": 0.02, "latency_ms": 470.0, "failed_checks": ["similarity", "margin", "pose", "hands"]}
+        self.assertEqual(mb.describe_result(details),
+                         "? unsure  (morning 0.58 | evening 0.56; margin 0.02; 0.47 s; low similarity, "
+                         "low margin, body seen in too few frames, hands seen in too few frames)")
+
+    def test_unsure_without_failed_checks_shows_the_reason(self):
+        self.assertEqual(mb.describe_result({"sign": None, "reason": "no recognition bundle",
+                                             "top": [], "margin": None, "latency_ms": 450.0,
+                                             "failed_checks": []}),
+                         "? unsure  (0.45 s; no recognition bundle)")
+
+    def test_old_recognizer_lines_still_read(self):
+        self.assertEqual(mb.describe_result({"sign": "doctor"}), "✓ doctor")
+        self.assertEqual(mb.describe_result({"sign": None}), "? unsure")
+        self.assertEqual(mb.describe_result({"sign": None, "reason": "low similarity", "latency_ms": 500}),
+                         "? unsure  (0.50 s; low similarity)")
+        self.assertEqual(mb.describe_result({"sign": None, "failed_checks": ["new_check"]}),
+                         "? unsure  (new_check)")
+
+    def test_a_reason_is_never_shown_for_an_accepted_sign(self):
+        self.assertEqual(mb.describe_result({"sign": "yes", "reason": "stray", "failed_checks": ["margin"]}),
+                         "✓ yes")
+
+    def test_provisional_results_are_tagged(self):
+        self.assertEqual(mb.describe_result({"sign": "yes", "provisional": True}), "✓ yes  [PROVISIONAL]")
+        self.assertEqual(mb.describe_result({"sign": "yes", "provisional": False}), "✓ yes")
+
+    def test_parse_result_details_keeps_every_key_and_checks_the_sign(self):
+        line = mb.result_line("doctor", margin=0.2, top=self.TOP)
+        self.assertEqual(mb.parse_result_details(line), {"sign": "doctor", "margin": 0.2, "top": self.TOP})
+        with self.assertRaises(ValueError):
+            mb.parse_result_details('{"sign": "hospital", "margin": 0.2}')
+
+
+class SessionLogTests(unittest.TestCase):
+    def test_show_prefixes_the_time_and_record_without_a_path_writes_nothing(self):
+        lines = []
+        log = mb.SessionLog(lines.append, None, noon)
+        log.show("receptionist: Hello")
+        log.record("backend", {"type": "caption", "text": "Hello"})
+        self.assertEqual(lines, ["12:00:05 receptionist: Hello"])
+
+    def test_records_append_as_json_lines_and_keep_unicode(self):
+        with TemporaryDirectory() as folder:
+            path = Path(folder, "lab", "nested", "s.jsonl")
+            log = mb.SessionLog(print, path, noon)
+            self.assertTrue(path.parent.is_dir())
+            log.record("recognizer", {"sign": None, "reason": "café"})
+            log.record("bridge", {"type": "end"})
+            self.assertIn("café", path.read_text())
+            self.assertEqual(read_log(path), [
+                {"time": "2026-10-24T12:00:05.250", "from": "recognizer",
+                 "message": {"sign": None, "reason": "café"}},
+                {"time": "2026-10-24T12:00:05.250", "from": "bridge", "message": {"type": "end"}}])
+
+    def test_a_failing_write_stops_the_log_once_without_raising(self):
+        with TemporaryDirectory() as folder:
+            lines = []
+            path = Path(folder, "s.jsonl")
+            log = mb.SessionLog(lines.append, path, noon)
+            path.mkdir()  # opening a directory for append fails like a full or removed disk
+            log.record("bridge", {"type": "end"})
+            log.record("bridge", {"type": "end"})
+            self.assertIsNone(log.path)
+            self.assertEqual(len(lines), 1)
+            self.assertTrue(lines[0].startswith("! session log stopped:"))
+
+    def test_log_path_defaults_to_a_timestamped_file_under_artifacts_lab(self):
+        with TemporaryDirectory() as folder, patch.object(mb, "ARTIFACTS", Path(folder)):
+            self.assertEqual(mb.session_log_path("", noon),
+                             Path(folder, "lab", "session-20261024-120005.jsonl"))
+            self.assertEqual(mb.session_log_path(f"{folder}/lab/mine.jsonl"),
+                             Path(folder, "lab", "mine.jsonl"))
+            for outside in ("/tmp/session.jsonl", f"{folder}/../escape.jsonl"):
+                with self.subTest(outside=outside), self.assertRaises(ValueError):
+                    mb.session_log_path(outside)
+
+
 class SubprocessSourceTests(unittest.IsolatedAsyncioTestCase):
     def test_result_lines_round_trip_and_reject_unknown_signs(self):
         line = mb.result_line("doctor", latency_ms=812.5)
@@ -274,14 +377,39 @@ class SubprocessSourceTests(unittest.IsolatedAsyncioTestCase):
             'for sign in ("hello", None, "doctor"):\n'
             '    print(json.dumps({"sign": sign, "latency_ms": 5}), flush=True)\n'), lines.append)
         self.assertEqual(await asyncio.wait_for(collect(source), 30), ["hello", None, "doctor"])
-        self.assertEqual(lines, [])
+        self.assertEqual([line[9:] for line in lines],
+                         ["✓ hello  (0.01 s)", "? unsure  (0.01 s)", "✓ doctor  (0.01 s)"])
+
+    async def test_results_are_timestamped_and_logged_whole(self):
+        lines = []
+        with TemporaryDirectory() as folder:
+            path = Path(folder, "s.jsonl")
+            row = {"sign": "time", "top": [{"sign": "time", "similarity": 0.91}], "margin": 0.3}
+            source = mb.SubprocessSource(child(f'print(json.dumps({row!r}), flush=True)'),
+                                         lines.append, mb.SessionLog(lines.append, path, noon))
+            self.assertEqual(await asyncio.wait_for(collect(source), 30), ["time"])
+            self.assertEqual(lines, ["12:00:05 ✓ time  (time 0.91; margin 0.30)"])
+            self.assertEqual(read_log(path), [{"time": "2026-10-24T12:00:05.250",
+                                               "from": "recognizer", "message": row}])
+
+    async def test_each_result_is_shown_and_a_provisional_bundle_is_announced_once(self):
+        lines = []
+        rows = [{"sign": "doctor", "provisional": True, "top": [{"sign": "doctor", "similarity": 0.9}]},
+                {"sign": None, "provisional": True, "failed_checks": ["margin"]}]
+        source = mb.SubprocessSource(child(
+            f'for row in {rows!r}:\n    print(json.dumps(row), flush=True)\n'), lines.append)
+        self.assertEqual(await asyncio.wait_for(collect(source), 30), ["doctor", None])
+        self.assertEqual([line[9:] for line in lines], [f"!!! {mb.PROVISIONAL_BANNER} !!!",
+                                 "✓ doctor  (doctor 0.90)  [PROVISIONAL]",
+                                 "? unsure  (low margin)  [PROVISIONAL]"])
 
     async def test_a_crashed_child_is_reported_after_its_results(self):
         lines = []
         source = mb.SubprocessSource(child('print(json.dumps({"sign": "yes"}))\nsys.exit(3)'),
                                      lines.append)
         self.assertEqual(await asyncio.wait_for(collect(source), 30), ["yes"])
-        self.assertEqual(lines, ["! live recognizer stopped (exit 3); type signs instead"])
+        self.assertEqual([lines[0][9:], lines[1]],
+                         ["✓ yes", "! live recognizer stopped (exit 3); type signs instead"])
 
     async def test_an_unknown_sign_from_the_child_fails_loudly(self):
         source = mb.SubprocessSource(child('print(json.dumps({"sign": "hospital"}))'))
@@ -293,7 +421,7 @@ class SubprocessSourceTests(unittest.IsolatedAsyncioTestCase):
             pid_file = Path(directory) / "pid"
             source = mb.SubprocessSource(child(
                 f'open({str(pid_file)!r}, "w").write(str(os.getpid()))\n'
-                'print(json.dumps({"sign": "hello"}), flush=True)\ntime.sleep(60)'))
+                'print(json.dumps({"sign": "hello"}), flush=True)\ntime.sleep(60)'), [].append)
             results = source.results()
             self.assertEqual(await asyncio.wait_for(anext(results), 30), "hello")
             pid = int(pid_file.read_text())
@@ -333,7 +461,11 @@ class FakeTransport:
 class BridgeTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.transport, self.lines = FakeTransport(), []
-        self.bridge = mb.Bridge(self.transport, mb.TurnState(new_id=ids()), self.lines.append)
+        self.folder = TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.log_path = Path(self.folder.name, "lab", "session.jsonl")
+        self.log = mb.SessionLog(self.lines.append, self.log_path, noon)
+        self.bridge = mb.Bridge(self.transport, mb.TurnState(new_id=ids()), self.lines.append, self.log)
 
     async def signs(self, *results):
         for result in results:
@@ -382,7 +514,7 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
         await self.bridge.handle_line("s")
         self.assertEqual(self.types(), ["chips"])
         await self.server(type="draft", turn_id="t1", text="Hello.", source="template")
-        self.assertIn("draft (template): Hello.   [s = SEND]", self.lines)
+        self.assertIn("12:00:05 draft (template): Hello.   [s = SEND]", self.lines)
         await self.bridge.handle_line("s")
         await self.bridge.handle_line("s")
         self.assertEqual(self.transport.sent[1:], [approve("t1", "Hello.")])
@@ -403,11 +535,11 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
         await self.bridge.handle_line("s")
         await self.server(type="not_delivered", turn_id="t1", reason="no confirmation")
         self.assertEqual(self.types(), ["chips", "approve"])
-        self.assertIn("! not delivered (no confirmation), tap SEND again (s): Hello.", self.lines)
+        self.assertIn("12:00:05 ! not delivered (no confirmation), tap SEND again (s): Hello.", self.lines)
         await self.bridge.handle_line("s")
         self.assertEqual(self.transport.sent[-1], approve("t2", "Hello."))
         await self.server(type="spoken", turn_id="t2")
-        self.assertEqual(self.lines[-1], "Delivered: Hello.")
+        self.assertEqual(self.lines[-1], "12:00:05 Delivered: Hello.")
 
     async def test_status_caption_and_error_are_shown(self):
         await self.server(type="status", state="speaking")
@@ -415,9 +547,37 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
         await self.server(type="error", code="stale_turn", message="old turn")
         await self.server(type="mystery")
         self.assertEqual(self.lines, [
-            "[status] speaking", "Speaking now...", "receptionist: We have 4 pm tomorrow.",
-            "! backend error stale_turn: old turn", "(ignored unknown message type 'mystery')"])
+            "12:00:05 [status] speaking", "12:00:05 Speaking now...",
+            "12:00:05 receptionist: We have 4 pm tomorrow.",
+            "12:00:05 ! backend error stale_turn: old turn",
+            "12:00:05 (ignored unknown message type 'mystery')"])
         self.assertEqual(self.transport.sent, [])
+
+    async def test_agent_captions_are_labelled_apart_from_the_receptionist(self):
+        await self.server(type="caption", text="Hello, I'm calling.", at=1.0, speaker="agent")
+        await self.server(type="caption", text="City Clinic.", at=2.0, speaker="receptionist")
+        self.assertEqual(self.lines, [
+            "12:00:05 Ishara (voice): Hello, I'm calling.",
+            "12:00:05 receptionist: City Clinic."])
+        self.assertEqual(self.transport.sent, [])
+
+    async def test_session_log_keeps_every_message_in_order(self):
+        await self.server(type="caption", text="When would you like to come?", at=1.0)
+        await self.signs("tomorrow", None)
+        await self.server(type="draft", turn_id="t1", text="Tomorrow, please.", source="llm")
+        await self.bridge.handle_line("s")
+        self.assertIn("12:00:05 SEND: Tomorrow, please.", self.lines)
+        await self.server(type="spoken", turn_id="t1")
+        await self.bridge.handle_line("e")
+        entries = read_log(self.log_path)
+        self.assertEqual({e["time"] for e in entries}, {"2026-10-24T12:00:05.250"})
+        self.assertEqual([(e["from"], e["message"]) for e in entries], [
+            ("backend", {"type": "caption", "text": "When would you like to come?", "at": 1.0}),
+            ("bridge", chips("t1", "tomorrow")),
+            ("backend", {"type": "draft", "turn_id": "t1", "text": "Tomorrow, please.", "source": "llm"}),
+            ("bridge", approve("t1", "Tomorrow, please.")),
+            ("backend", {"type": "spoken", "turn_id": "t1"}),
+            ("bridge", {"type": "end"})])
 
     async def test_end_stops_further_sends(self):
         await self.signs("hello")
@@ -436,6 +596,7 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
         await self.bridge.handle_line("stop")
         self.assertEqual(self.types(), ["chips"])
         self.assertIn("call ended; nothing will be sent", self.lines)
+        self.assertIn("12:00:05 call ended; nothing more will be sent", self.lines)
 
     async def test_run_ends_when_the_user_ends_the_call(self):
         lines = asyncio.Queue()
@@ -584,6 +745,40 @@ class CommandLine(unittest.TestCase):
         turn_id = self.transport.sent[0]["turn_id"]
         self.assertEqual(self.transport.sent, [chips(turn_id, "hello"),
                                                chips(turn_id, "hello", "doctor"), {"type": "end"}])
+
+    def test_log_option_writes_the_whole_session_under_artifacts_lab(self):
+        with TemporaryDirectory() as folder, patch.object(mb, "ARTIFACTS", Path(folder)):
+            recognizer = Path(folder, "python")
+            rows = [{"sign": "hello", "top": [{"sign": "hello", "similarity": 0.9}], "margin": 0.4},
+                    {"sign": None, "failed_checks": ["margin"]}, {"sign": "doctor"}]
+            recognizer.write_text(f"#!{sys.executable}\nimport json\n"
+                                  f"for row in {rows!r}:\n    print(json.dumps(row), flush=True)\n")
+            recognizer.chmod(0o755)
+            self.transport.push(type="caption", text="Hello, clinic.", at=0.5)
+            self.main("--base-url", "https://b", "--call-id", "c7", "--live",
+                      "--recognizer-python", str(recognizer), "--log", after=2)
+            [path] = Path(folder, "lab").glob("session-*.jsonl")
+            entries = read_log(path)
+        self.assertIn(f"session log: {path}", self.lines)
+        self.assertEqual((entries[0]["from"], entries[0]["message"]),
+                         ("bridge", {"type": "connected", "call_id": "c7"}))
+        by_source = {}
+        for entry in entries:
+            by_source.setdefault(entry["from"], []).append(entry["message"])
+        self.assertEqual(by_source["recognizer"], rows)
+        self.assertEqual(by_source["backend"], [{"type": "caption", "text": "Hello, clinic.", "at": 0.5}])
+        self.assertEqual([m["type"] for m in by_source["bridge"]], ["connected", "chips", "chips", "end"])
+        self.assertTrue(any(line.endswith("? unsure  (low margin)") for line in self.lines))
+
+    def test_log_outside_artifacts_is_refused_before_any_request(self):
+        with self.assertRaises(SystemExit), redirect_stderr(io.StringIO()):
+            self.main("--base-url", "https://b", "--call-id", "c7", "--log", "/tmp/session.jsonl")
+        self.assertEqual((self.posts, self.connects), ([], []))
+
+    def test_without_log_nothing_is_written(self):
+        with TemporaryDirectory() as folder, patch.object(mb, "ARTIFACTS", Path(folder)):
+            self.main("--base-url", "https://b", "--call-id", "c7")
+            self.assertEqual(list(Path(folder).iterdir()), [])
 
     def test_backend_errors_exit_nonzero_without_the_token(self):
         def refuse(url, body, headers):

@@ -1,0 +1,1337 @@
+{
+ "sources": [
+  {
+   "source_id": "src_01",
+   "signer_id": "islrtc-01",
+   "url": "https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded/resolve/main/H/Hello.mp4",
+   "channel": "ISLRTC (Govt. of India)",
+   "title": "ISL Dictionary entry Hello",
+   "terms": "ISLRTC Indian Sign Language Dictionary (data.gov.in, till Jan 2024) via the re-encoded Hugging Face mirror silentone0725/Indian_Sign_Language_Data.gov_Rencoded (MIT on the mirror); ISLRTC FAQ Q23: research/teaching/ISL technology use with acknowledgement, no resale",
+   "downloaded": "2026-10-24",
+   "file": "raw/islrtc/Hello.mp4",
+   "label_evidence": "ISLRTC dictionary entry name"
+  },
+  {
+   "source_id": "src_02",
+   "signer_id": "islrtc-02",
+   "url": "https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded/resolve/main/T/Thank_You.mp4",
+   "channel": "ISLRTC (Govt. of India)",
+   "title": "ISL Dictionary entry Thank_You",
+   "terms": "ISLRTC Indian Sign Language Dictionary (data.gov.in, till Jan 2024) via the re-encoded Hugging Face mirror silentone0725/Indian_Sign_Language_Data.gov_Rencoded (MIT on the mirror); ISLRTC FAQ Q23: research/teaching/ISL technology use with acknowledgement, no resale",
+   "downloaded": "2026-10-24",
+   "file": "raw/islrtc/Thank_You.mp4",
+   "label_evidence": "ISLRTC dictionary entry name"
+  },
+  {
+   "source_id": "src_03",
+   "signer_id": "islrtc-03",
+   "url": "https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded/resolve/main/T/Thank_You_(Sign_2).mp4",
+   "channel": "ISLRTC (Govt. of India)",
+   "title": "ISL Dictionary entry Thank_You_(Sign_2)",
+   "terms": "ISLRTC Indian Sign Language Dictionary (data.gov.in, till Jan 2024) via the re-encoded Hugging Face mirror silentone0725/Indian_Sign_Language_Data.gov_Rencoded (MIT on the mirror); ISLRTC FAQ Q23: research/teaching/ISL technology use with acknowledgement, no resale",
+   "downloaded": "2026-10-24",
+   "file": "raw/islrtc/Thank_You_Sign_2.mp4",
+   "label_evidence": "ISLRTC dictionary entry name"
+  },
+  {
+   "source_id": "src_04",
+   "signer_id": "islrtc-04",
+   "url": "https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded/resolve/main/Y/Yes.mp4",
+   "channel": "ISLRTC (Govt. of India)",
+   "title": "ISL Dictionary entry Yes",
+   "terms": "ISLRTC Indian Sign Language Dictionary (data.gov.in, till Jan 2024) via the re-encoded Hugging Face mirror silentone0725/Indian_Sign_Language_Data.gov_Rencoded (MIT on the mirror); ISLRTC FAQ Q23: research/teaching/ISL technology use with acknowledgement, no resale",
+   "downloaded": "2026-10-24",
+   "file": "raw/islrtc/Yes.mp4",
+   "label_evidence": "ISLRTC dictionary entry name"
+  },
+  {
+   "source_id": "src_05",
+   "signer_id": "islrtc-05",
+   "url": "https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded/resolve/main/Y/Yes_(Sign_2).mp4",
+   "channel": "ISLRTC (Govt. of India)",
+   "title": "ISL Dictionary entry Yes_(Sign_2)",
+   "terms": "ISLRTC Indian Sign Language Dictionary (data.gov.in, till Jan 2024) via the re-encoded Hugging Face mirror silentone0725/Indian_Sign_Language_Data.gov_Rencoded (MIT on the mirror); ISLRTC FAQ Q23: research/teaching/ISL technology use with acknowledgement, no resale",
+   "downloaded": "2026-10-24",
+   "file": "raw/islrtc/Yes_Sign_2.mp4",
+   "label_evidence": "ISLRTC dictionary entry name"
+  },
+  {
+   "source_id": "src_06",
+   "signer_id": "islrtc-06",
+   "url": "https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded/resolve/main/N/No.mp4",
+   "channel": "ISLRTC (Govt. of India)",
+   "title": "ISL Dictionary entry No",
+   "terms": "ISLRTC Indian Sign Language Dictionary (data.gov.in, till Jan 2024) via the re-encoded Hugging Face mirror silentone0725/Indian_Sign_Language_Data.gov_Rencoded (MIT on the mirror); ISLRTC FAQ Q23: research/teaching/ISL technology use with acknowledgement, no resale",
+   "downloaded": "2026-10-24",
+   "file": "raw/islrtc/No.mp4",
+   "label_evidence": "ISLRTC dictionary entry name"
+  },
+  {
+   "source_id": "src_07",
+   "signer_id": "islrtc-07",
+   "url": "https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded/resolve/main/N/No_(Sign_2).mp4",
+   "channel": "ISLRTC (Govt. of India)",
+   "title": "ISL Dictionary entry No_(Sign_2)",
+   "terms": "ISLRTC Indian Sign Language Dictionary (data.gov.in, till Jan 2024) via the re-encoded Hugging Face mirror silentone0725/Indian_Sign_Language_Data.gov_Rencoded (MIT on the mirror); ISLRTC FAQ Q23: research/teaching/ISL technology use with acknowledgement, no resale",
+   "downloaded": "2026-10-24",
+   "file": "raw/islrtc/No_Sign_2.mp4",
+   "label_evidence": "ISLRTC dictionary entry name"
+  },
+  {
+   "source_id": "src_08",
+   "signer_id": "islrtc-08",
+   "url": "https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded/resolve/main/S/Sorry.mp4",
+   "channel": "ISLRTC (Govt. of India)",
+   "title": "ISL Dictionary entry Sorry",
+   "terms": "ISLRTC Indian Sign Language Dictionary (data.gov.in, till Jan 2024) via the re-encoded Hugging Face mirror silentone0725/Indian_Sign_Language_Data.gov_Rencoded (MIT on the mirror); ISLRTC FAQ Q23: research/teaching/ISL technology use with acknowledgement, no resale",
+   "downloaded": "2026-10-24",
+   "file": "raw/islrtc/Sorry.mp4",
+   "label_evidence": "ISLRTC dictionary entry name"
+  },
+  {
+   "source_id": "src_09",
+   "signer_id": "islrtc-09",
+   "url": "https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded/resolve/main/S/Sorry_(Sign_2).mp4",
+   "channel": "ISLRTC (Govt. of India)",
+   "title": "ISL Dictionary entry Sorry_(Sign_2)",
+   "terms": "ISLRTC Indian Sign Language Dictionary (data.gov.in, till Jan 2024) via the re-encoded Hugging Face mirror silentone0725/Indian_Sign_Language_Data.gov_Rencoded (MIT on the mirror); ISLRTC FAQ Q23: research/teaching/ISL technology use with acknowledgement, no resale",
+   "downloaded": "2026-10-24",
+   "file": "raw/islrtc/Sorry_Sign_2.mp4",
+   "label_evidence": "ISLRTC dictionary entry name"
+  },
+  {
+   "source_id": "src_10",
+   "signer_id": "islrtc-10",
+   "url": "https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded/resolve/main/S/Sorry_(Sign_3).mp4",
+   "channel": "ISLRTC (Govt. of India)",
+   "title": "ISL Dictionary entry Sorry_(Sign_3)",
+   "terms": "ISLRTC Indian Sign Language Dictionary (data.gov.in, till Jan 2024) via the re-encoded Hugging Face mirror silentone0725/Indian_Sign_Language_Data.gov_Rencoded (MIT on the mirror); ISLRTC FAQ Q23: research/teaching/ISL technology use with acknowledgement, no resale",
+   "downloaded": "2026-10-24",
+   "file": "raw/islrtc/Sorry_Sign_3.mp4",
+   "label_evidence": "ISLRTC dictionary entry name"
+  },
+  {
+   "source_id": "src_11",
+   "signer_id": "islrtc-11",
+   "url": "https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded/resolve/main/D/Doctor.mp4",
+   "channel": "ISLRTC (Govt. of India)",
+   "title": "ISL Dictionary entry Doctor",
+   "terms": "ISLRTC Indian Sign Language Dictionary (data.gov.in, till Jan 2024) via the re-encoded Hugging Face mirror silentone0725/Indian_Sign_Language_Data.gov_Rencoded (MIT on the mirror); ISLRTC FAQ Q23: research/teaching/ISL technology use with acknowledgement, no resale",
+   "downloaded": "2026-10-24",
+   "file": "raw/islrtc/Doctor.mp4",
+   "label_evidence": "ISLRTC dictionary entry name"
+  },
+  {
+   "source_id": "src_12",
+   "signer_id": "islrtc-12",
+   "url": "https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded/resolve/main/T/Today.mp4",
+   "channel": "ISLRTC (Govt. of India)",
+   "title": "ISL Dictionary entry Today",
+   "terms": "ISLRTC Indian Sign Language Dictionary (data.gov.in, till Jan 2024) via the re-encoded Hugging Face mirror silentone0725/Indian_Sign_Language_Data.gov_Rencoded (MIT on the mirror); ISLRTC FAQ Q23: research/teaching/ISL technology use with acknowledgement, no resale",
+   "downloaded": "2026-10-24",
+   "file": "raw/islrtc/Today.mp4",
+   "label_evidence": "ISLRTC dictionary entry name"
+  },
+  {
+   "source_id": "src_13",
+   "signer_id": "islrtc-13",
+   "url": "https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded/resolve/main/T/Tomorrow.mp4",
+   "channel": "ISLRTC (Govt. of India)",
+   "title": "ISL Dictionary entry Tomorrow",
+   "terms": "ISLRTC Indian Sign Language Dictionary (data.gov.in, till Jan 2024) via the re-encoded Hugging Face mirror silentone0725/Indian_Sign_Language_Data.gov_Rencoded (MIT on the mirror); ISLRTC FAQ Q23: research/teaching/ISL technology use with acknowledgement, no resale",
+   "downloaded": "2026-10-24",
+   "file": "raw/islrtc/Tomorrow.mp4",
+   "label_evidence": "ISLRTC dictionary entry name"
+  },
+  {
+   "source_id": "src_14",
+   "signer_id": "islrtc-14",
+   "url": "https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded/resolve/main/M/Morning.mp4",
+   "channel": "ISLRTC (Govt. of India)",
+   "title": "ISL Dictionary entry Morning",
+   "terms": "ISLRTC Indian Sign Language Dictionary (data.gov.in, till Jan 2024) via the re-encoded Hugging Face mirror silentone0725/Indian_Sign_Language_Data.gov_Rencoded (MIT on the mirror); ISLRTC FAQ Q23: research/teaching/ISL technology use with acknowledgement, no resale",
+   "downloaded": "2026-10-24",
+   "file": "raw/islrtc/Morning.mp4",
+   "label_evidence": "ISLRTC dictionary entry name"
+  },
+  {
+   "source_id": "src_15",
+   "signer_id": "islrtc-15",
+   "url": "https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded/resolve/main/A/Afternoon.mp4",
+   "channel": "ISLRTC (Govt. of India)",
+   "title": "ISL Dictionary entry Afternoon",
+   "terms": "ISLRTC Indian Sign Language Dictionary (data.gov.in, till Jan 2024) via the re-encoded Hugging Face mirror silentone0725/Indian_Sign_Language_Data.gov_Rencoded (MIT on the mirror); ISLRTC FAQ Q23: research/teaching/ISL technology use with acknowledgement, no resale",
+   "downloaded": "2026-10-24",
+   "file": "raw/islrtc/Afternoon.mp4",
+   "label_evidence": "ISLRTC dictionary entry name"
+  },
+  {
+   "source_id": "src_16",
+   "signer_id": "islrtc-16",
+   "url": "https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded/resolve/main/E/Evening.mp4",
+   "channel": "ISLRTC (Govt. of India)",
+   "title": "ISL Dictionary entry Evening",
+   "terms": "ISLRTC Indian Sign Language Dictionary (data.gov.in, till Jan 2024) via the re-encoded Hugging Face mirror silentone0725/Indian_Sign_Language_Data.gov_Rencoded (MIT on the mirror); ISLRTC FAQ Q23: research/teaching/ISL technology use with acknowledgement, no resale",
+   "downloaded": "2026-10-24",
+   "file": "raw/islrtc/Evening.mp4",
+   "label_evidence": "ISLRTC dictionary entry name"
+  },
+  {
+   "source_id": "src_17",
+   "signer_id": "islrtc-17",
+   "url": "https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded/resolve/main/T/Time.mp4",
+   "channel": "ISLRTC (Govt. of India)",
+   "title": "ISL Dictionary entry Time",
+   "terms": "ISLRTC Indian Sign Language Dictionary (data.gov.in, till Jan 2024) via the re-encoded Hugging Face mirror silentone0725/Indian_Sign_Language_Data.gov_Rencoded (MIT on the mirror); ISLRTC FAQ Q23: research/teaching/ISL technology use with acknowledgement, no resale",
+   "downloaded": "2026-10-24",
+   "file": "raw/islrtc/Time.mp4",
+   "label_evidence": "ISLRTC dictionary entry name"
+  },
+  {
+   "source_id": "src_18",
+   "signer_id": "include-check",
+   "url": "https://zenodo.org/records/4010759 member Greetings/48. Hello/MVI_0029.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Greetings/48. Hello/MVI_0029.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/hello/MVI_0029.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_19",
+   "signer_id": "include-redwhite",
+   "url": "https://zenodo.org/records/4010759 member Greetings/48. Hello/MVI_9914.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Greetings/48. Hello/MVI_9914.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/hello/MVI_9914.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_20",
+   "signer_id": "include-orange",
+   "url": "https://zenodo.org/records/4010759 member Greetings/48. Hello/MVI_0089.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Greetings/48. Hello/MVI_0089.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/hello/MVI_0089.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_21",
+   "signer_id": "include-stripe-m",
+   "url": "https://zenodo.org/records/4010759 member Greetings/48. Hello/MVI_9954.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Greetings/48. Hello/MVI_9954.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/hello/MVI_9954.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_22",
+   "signer_id": "include-redwhite",
+   "url": "https://zenodo.org/records/4010759 member Greetings/55. Thank you/MVI_9948.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Greetings/55. Thank you/MVI_9948.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/thankyou/MVI_9948.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_23",
+   "signer_id": "include-stripe-w",
+   "url": "https://zenodo.org/records/4010759 member Greetings/55. Thank you/MVI_0058.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Greetings/55. Thank you/MVI_0058.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/thankyou/MVI_0058.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_24",
+   "signer_id": "include-denim",
+   "url": "https://zenodo.org/records/4010759 member Greetings/55. Thank you/MVI_0006.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Greetings/55. Thank you/MVI_0006.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/thankyou/MVI_0006.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_25",
+   "signer_id": "include-orange",
+   "url": "https://zenodo.org/records/4010759 member Greetings/55. Thank you/MVI_0111.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Greetings/55. Thank you/MVI_0111.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/thankyou/MVI_0111.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_26",
+   "signer_id": "include-red",
+   "url": "https://zenodo.org/records/4010759 member Jobs/87. Doctor/MVI_4471.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Jobs/87. Doctor/MVI_4471.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/doctor/MVI_4471.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_27",
+   "signer_id": "include-pink",
+   "url": "https://zenodo.org/records/4010759 member Jobs/87. Doctor/MVI_4754.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Jobs/87. Doctor/MVI_4754.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/doctor/MVI_4754.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_28",
+   "signer_id": "include-denim",
+   "url": "https://zenodo.org/records/4010759 member Jobs/87. Doctor/MVI_5322.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Jobs/87. Doctor/MVI_5322.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/doctor/MVI_5322.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_29",
+   "signer_id": "include-plaid",
+   "url": "https://zenodo.org/records/4010759 member Jobs/87. Doctor/MVI_8874.MP4",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Jobs/87. Doctor/MVI_8874.MP4",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/doctor/MVI_8874.MP4",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_30",
+   "signer_id": "include-red",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/73. Today/MVI_4616.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/73. Today/MVI_4616.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/today/MVI_4616.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_31",
+   "signer_id": "include-pink",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/73. Today/MVI_5031.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/73. Today/MVI_5031.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/today/MVI_5031.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_32",
+   "signer_id": "include-denim",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/73. Today/MVI_5470.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/73. Today/MVI_5470.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/today/MVI_5470.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_33",
+   "signer_id": "include-plaid",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/73. Today/MVI_9160.MP4",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/73. Today/MVI_9160.MP4",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/today/MVI_9160.MP4",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_34",
+   "signer_id": "include-red",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/74. Tomorrow/MVI_4620.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/74. Tomorrow/MVI_4620.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/tomorrow/MVI_4620.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_35",
+   "signer_id": "include-pink",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/74. Tomorrow/MVI_5034.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/74. Tomorrow/MVI_5034.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/tomorrow/MVI_5034.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_36",
+   "signer_id": "include-denim",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/74. Tomorrow/MVI_5477.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/74. Tomorrow/MVI_5477.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/tomorrow/MVI_5477.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_37",
+   "signer_id": "include-plaid",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/74. Tomorrow/MVI_9163.MP4",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/74. Tomorrow/MVI_9163.MP4",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/tomorrow/MVI_9163.MP4",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_38",
+   "signer_id": "include-red",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/82. Morning/MVI_4651.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/82. Morning/MVI_4651.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/morning/MVI_4651.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_39",
+   "signer_id": "include-pink",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/82. Morning/MVI_5060.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/82. Morning/MVI_5060.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/morning/MVI_5060.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_40",
+   "signer_id": "include-denim",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/82. Morning/MVI_5507.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/82. Morning/MVI_5507.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/morning/MVI_5507.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_41",
+   "signer_id": "include-plaid",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/82. Morning/MVI_9188.MP4",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/82. Morning/MVI_9188.MP4",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/morning/MVI_9188.MP4",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_42",
+   "signer_id": "include-red",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/83. Afternoon/MVI_4655.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/83. Afternoon/MVI_4655.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/afternoon/MVI_4655.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_43",
+   "signer_id": "include-pink",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/83. Afternoon/MVI_5063.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/83. Afternoon/MVI_5063.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/afternoon/MVI_5063.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_44",
+   "signer_id": "include-denim",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/83. Afternoon/MVI_5511.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/83. Afternoon/MVI_5511.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/afternoon/MVI_5511.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_45",
+   "signer_id": "include-plaid",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/83. Afternoon/MVI_9191.MP4",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/83. Afternoon/MVI_9191.MP4",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/afternoon/MVI_9191.MP4",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_46",
+   "signer_id": "include-red",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/84. Evening/MVI_4659.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/84. Evening/MVI_4659.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/evening/MVI_4659.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_47",
+   "signer_id": "include-pink",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/84. Evening/MVI_5070.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/84. Evening/MVI_5070.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/evening/MVI_5070.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_48",
+   "signer_id": "include-denim",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/84. Evening/MVI_5515.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/84. Evening/MVI_5515.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/evening/MVI_5515.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_49",
+   "signer_id": "include-plaid",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/84. Evening/MVI_9194.MP4",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/84. Evening/MVI_9194.MP4",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/evening/MVI_9194.MP4",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_50",
+   "signer_id": "include-red",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/86. Time/MVI_4667.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/86. Time/MVI_4667.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/time/MVI_4667.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_51",
+   "signer_id": "include-pink",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/86. Time/MVI_5077.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/86. Time/MVI_5077.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/time/MVI_5077.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_52",
+   "signer_id": "include-denim",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/86. Time/MVI_5524.MOV",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/86. Time/MVI_5524.MOV",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/time/MVI_5524.MOV",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_53",
+   "signer_id": "include-plaid",
+   "url": "https://zenodo.org/records/4010759 member Days_and_Time/86. Time/MVI_9201.MP4",
+   "channel": "INCLUDE (AI4Bharat)",
+   "title": "Days_and_Time/86. Time/MVI_9201.MP4",
+   "terms": "INCLUDE dataset (AI4Bharat, Zenodo 4010759), CC-BY-4.0",
+   "downloaded": "2026-10-24",
+   "file": "raw/include/time/MVI_9201.MP4",
+   "label_evidence": "INCLUDE folder name"
+  },
+  {
+   "source_id": "src_54",
+   "signer_id": "pragya",
+   "url": "https://www.youtube.com/watch?v=VtbYvVDItvg",
+   "channel": "Pragya Gupta",
+   "title": "3 - Indian Sign Language 101 - Basic Words 1",
+   "terms": "YouTube video, standard YouTube licence unless noted; downloaded for local research evaluation only, not redistributed, acknowledged in the report",
+   "downloaded": "2026-10-24",
+   "file": "raw/youtube/VtbYvVDItvg.mp4",
+   "label_evidence": "on-screen caption read while viewing frames"
+  },
+  {
+   "source_id": "src_55",
+   "signer_id": "pragya",
+   "url": "https://www.youtube.com/watch?v=lffGJ29IhZQ",
+   "channel": "Pragya Gupta",
+   "title": "4 - Indian Sign Language 101 - Basic Words 2",
+   "terms": "YouTube video, standard YouTube licence unless noted; downloaded for local research evaluation only, not redistributed, acknowledged in the report",
+   "downloaded": "2026-10-24",
+   "file": "raw/youtube/lffGJ29IhZQ.mp4",
+   "label_evidence": "on-screen caption read while viewing frames"
+  },
+  {
+   "source_id": "src_56",
+   "signer_id": "y4j",
+   "url": "https://www.youtube.com/watch?v=U5LSlcD8xPg",
+   "channel": "Youth4Jobs Foundation",
+   "title": "Basic Indian Sign Language Greetings",
+   "terms": "YouTube video, standard YouTube licence unless noted; downloaded for local research evaluation only, not redistributed, acknowledged in the report",
+   "downloaded": "2026-10-24",
+   "file": "raw/youtube/U5LSlcD8xPg.mp4",
+   "label_evidence": "video chapter title"
+  },
+  {
+   "source_id": "src_57",
+   "signer_id": "phin-b",
+   "url": "https://www.youtube.com/watch?v=T9XE5O_7Bmw",
+   "channel": "PHIN Deaf",
+   "title": "Opposite Word Yes and No in Indian Sign Language",
+   "terms": "YouTube video, standard YouTube licence unless noted; downloaded for local research evaluation only, not redistributed, acknowledged in the report",
+   "downloaded": "2026-10-24",
+   "file": "raw/youtube/T9XE5O_7Bmw.mp4",
+   "label_evidence": "video title + on-screen caption"
+  },
+  {
+   "source_id": "src_58",
+   "signer_id": "phin-a",
+   "url": "https://www.youtube.com/watch?v=hTmhHDFUbTk",
+   "channel": "PHIN Deaf",
+   "title": "Tomorrow Indian Sign Language",
+   "terms": "YouTube video, standard YouTube licence unless noted; downloaded for local research evaluation only, not redistributed, acknowledged in the report",
+   "downloaded": "2026-10-24",
+   "file": "raw/youtube/hTmhHDFUbTk.mp4",
+   "label_evidence": "video title"
+  },
+  {
+   "source_id": "src_59",
+   "signer_id": "phin-a",
+   "url": "https://www.youtube.com/watch?v=Zb2h-pZpieY",
+   "channel": "PHIN Deaf",
+   "title": "Today Indian Sign Language",
+   "terms": "YouTube video, standard YouTube licence unless noted; downloaded for local research evaluation only, not redistributed, acknowledged in the report",
+   "downloaded": "2026-10-24",
+   "file": "raw/youtube/Zb2h-pZpieY.mp4",
+   "label_evidence": "video title"
+  },
+  {
+   "source_id": "src_60",
+   "signer_id": "phin-a",
+   "url": "https://www.youtube.com/watch?v=YPZ7o80wU9k",
+   "channel": "PHIN Deaf",
+   "title": "Evening Indian Sign Language",
+   "terms": "YouTube video, standard YouTube licence unless noted; downloaded for local research evaluation only, not redistributed, acknowledged in the report",
+   "downloaded": "2026-10-24",
+   "file": "raw/youtube/YPZ7o80wU9k.mp4",
+   "label_evidence": "video title"
+  },
+  {
+   "source_id": "src_61",
+   "signer_id": "phin-a",
+   "url": "https://www.youtube.com/watch?v=m-pUXfAMixM",
+   "channel": "PHIN Deaf",
+   "title": "Afternoon Indian Sign Language",
+   "terms": "YouTube video, standard YouTube licence unless noted; downloaded for local research evaluation only, not redistributed, acknowledged in the report",
+   "downloaded": "2026-10-24",
+   "file": "raw/youtube/m-pUXfAMixM.mp4",
+   "label_evidence": "video title"
+  },
+  {
+   "source_id": "src_62",
+   "signer_id": "phin-a",
+   "url": "https://www.youtube.com/watch?v=4TuRjBpBoMM",
+   "channel": "PHIN Deaf",
+   "title": "Morning in Indian Sign Language",
+   "terms": "YouTube video, standard YouTube licence unless noted; downloaded for local research evaluation only, not redistributed, acknowledged in the report",
+   "downloaded": "2026-10-24",
+   "file": "raw/youtube/4TuRjBpBoMM.mp4",
+   "label_evidence": "video title"
+  },
+  {
+   "source_id": "src_63",
+   "signer_id": "phin-a",
+   "url": "https://www.youtube.com/watch?v=mtjse9ZT1Fw",
+   "channel": "PHIN Deaf",
+   "title": "Time Indian Sign Language",
+   "terms": "YouTube video, standard YouTube licence unless noted; downloaded for local research evaluation only, not redistributed, acknowledged in the report",
+   "downloaded": "2026-10-24",
+   "file": "raw/youtube/mtjse9ZT1Fw.mp4",
+   "label_evidence": "video title"
+  },
+  {
+   "source_id": "src_64",
+   "signer_id": "phin-c",
+   "url": "https://www.youtube.com/watch?v=qeI6-V8YAKw",
+   "channel": "PHIN Deaf",
+   "title": "Doctor in Indian Sign Language",
+   "terms": "YouTube video, standard YouTube licence unless noted; downloaded for local research evaluation only, not redistributed, acknowledged in the report",
+   "downloaded": "2026-10-24",
+   "file": "raw/youtube/qeI6-V8YAKw.mp4",
+   "label_evidence": "video title"
+  },
+  {
+   "source_id": "src_65",
+   "signer_id": "def",
+   "url": "https://www.youtube.com/watch?v=F1EDartPuC8",
+   "channel": "DEAF ENABLED FOUNDATION",
+   "title": "Time (Indian Sign Language)",
+   "terms": "YouTube Creative Commons Attribution licence; YouTube video, standard YouTube licence unless noted; downloaded for local research evaluation only, not redistributed, acknowledged in the report",
+   "downloaded": "2026-10-24",
+   "file": "raw/youtube/F1EDartPuC8.mp4",
+   "label_evidence": "video chapter title (CC BY licence on YouTube)"
+  }
+ ],
+ "cuts": [
+  {
+   "source_id": "src_01",
+   "start": 0.0,
+   "end": 2.96,
+   "label": "hello",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_02",
+   "start": 0.0,
+   "end": 2.68,
+   "label": "thankyou",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_03",
+   "start": 0.0,
+   "end": 3.0,
+   "label": "thankyou",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_04",
+   "start": 0.0,
+   "end": 3.44,
+   "label": "yes",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_05",
+   "start": 0.0,
+   "end": 2.92,
+   "label": "yes",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_06",
+   "start": 0.0,
+   "end": 3.08,
+   "label": "no",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_07",
+   "start": 0.0,
+   "end": 3.96,
+   "label": "no",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_08",
+   "start": 0.0,
+   "end": 3.44,
+   "label": "sorry",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_09",
+   "start": 0.0,
+   "end": 2.92,
+   "label": "sorry",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_10",
+   "start": 0.0,
+   "end": 3.4,
+   "label": "sorry",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_11",
+   "start": 0.0,
+   "end": 2.8,
+   "label": "doctor",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_12",
+   "start": 0.0,
+   "end": 2.48,
+   "label": "today",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_13",
+   "start": 0.0,
+   "end": 2.52,
+   "label": "tomorrow",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_14",
+   "start": 0.0,
+   "end": 2.52,
+   "label": "morning",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_15",
+   "start": 0.0,
+   "end": 3.48,
+   "label": "afternoon",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_16",
+   "start": 0.0,
+   "end": 2.56,
+   "label": "evening",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_17",
+   "start": 0.0,
+   "end": 2.96,
+   "label": "time",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_18",
+   "start": 0.0,
+   "end": 2.52,
+   "label": "hello",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_19",
+   "start": 0.0,
+   "end": 2.12,
+   "label": "hello",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_20",
+   "start": 0.0,
+   "end": 2.72,
+   "label": "hello",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_21",
+   "start": 0.0,
+   "end": 2.76,
+   "label": "hello",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_22",
+   "start": 0.0,
+   "end": 2.12,
+   "label": "thankyou",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_23",
+   "start": 0.0,
+   "end": 2.4,
+   "label": "thankyou",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_24",
+   "start": 0.0,
+   "end": 2.12,
+   "label": "thankyou",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_25",
+   "start": 0.0,
+   "end": 2.48,
+   "label": "thankyou",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_26",
+   "start": 0.0,
+   "end": 2.72,
+   "label": "doctor",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_27",
+   "start": 0.0,
+   "end": 2.44,
+   "label": "doctor",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_28",
+   "start": 0.0,
+   "end": 2.0,
+   "label": "doctor",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_29",
+   "start": 0.0,
+   "end": 2.48,
+   "label": "doctor",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_30",
+   "start": 0.0,
+   "end": 2.16,
+   "label": "today",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_31",
+   "start": 0.0,
+   "end": 1.88,
+   "label": "today",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_32",
+   "start": 0.0,
+   "end": 1.76,
+   "label": "today",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_33",
+   "start": 0.0,
+   "end": 2.76,
+   "label": "today",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_34",
+   "start": 0.0,
+   "end": 2.24,
+   "label": "tomorrow",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_35",
+   "start": 0.0,
+   "end": 1.6,
+   "label": "tomorrow",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_36",
+   "start": 0.0,
+   "end": 1.64,
+   "label": "tomorrow",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_37",
+   "start": 0.0,
+   "end": 3.96,
+   "label": "tomorrow",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_38",
+   "start": 0.0,
+   "end": 2.12,
+   "label": "morning",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_39",
+   "start": 0.0,
+   "end": 1.72,
+   "label": "morning",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_40",
+   "start": 0.0,
+   "end": 1.56,
+   "label": "morning",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_41",
+   "start": 0.0,
+   "end": 2.36,
+   "label": "morning",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_42",
+   "start": 0.0,
+   "end": 1.84,
+   "label": "afternoon",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_43",
+   "start": 0.0,
+   "end": 2.08,
+   "label": "afternoon",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_44",
+   "start": 0.0,
+   "end": 1.6,
+   "label": "afternoon",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_45",
+   "start": 0.0,
+   "end": 2.16,
+   "label": "afternoon",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_46",
+   "start": 0.0,
+   "end": 2.28,
+   "label": "evening",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_47",
+   "start": 0.0,
+   "end": 1.68,
+   "label": "evening",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_48",
+   "start": 0.0,
+   "end": 1.48,
+   "label": "evening",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_49",
+   "start": 0.0,
+   "end": 2.68,
+   "label": "evening",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_50",
+   "start": 0.0,
+   "end": 2.32,
+   "label": "time",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_51",
+   "start": 0.0,
+   "end": 1.8,
+   "label": "time",
+   "split": "reference",
+   "set": "-"
+  },
+  {
+   "source_id": "src_52",
+   "start": 0.0,
+   "end": 1.52,
+   "label": "time",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_53",
+   "start": 0.0,
+   "end": 2.56,
+   "label": "time",
+   "split": "test",
+   "set": "B"
+  },
+  {
+   "source_id": "src_54",
+   "start": 92.0,
+   "end": 94.8,
+   "label": "hello",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_54",
+   "start": 94.8,
+   "end": 97.8,
+   "label": "hello",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_54",
+   "start": 488.9,
+   "end": 491.4,
+   "label": "hello",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_54",
+   "start": 296.0,
+   "end": 300.0,
+   "label": "thankyou",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_54",
+   "start": 527.6,
+   "end": 530.2,
+   "label": "thankyou",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_54",
+   "start": 350.6,
+   "end": 354.0,
+   "label": "sorry",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_54",
+   "start": 538.5,
+   "end": 541.7,
+   "label": "sorry",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_55",
+   "start": 46.2,
+   "end": 51.2,
+   "label": "yes",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_55",
+   "start": 52.2,
+   "end": 56.2,
+   "label": "no",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_55",
+   "start": 351.9,
+   "end": 355.2,
+   "label": "morning",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_56",
+   "start": 7.0,
+   "end": 10.0,
+   "label": "hello",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_56",
+   "start": 10.0,
+   "end": 13.5,
+   "label": "hello",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_57",
+   "start": 0.0,
+   "end": 2.6,
+   "label": "yes",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_57",
+   "start": 2.9,
+   "end": 5.2,
+   "label": "no",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_58",
+   "start": 0.0,
+   "end": 3.0,
+   "label": "tomorrow",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_59",
+   "start": 0.0,
+   "end": 2.4,
+   "label": "today",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_60",
+   "start": 0.0,
+   "end": 2.9,
+   "label": "evening",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_61",
+   "start": 0.0,
+   "end": 2.9,
+   "label": "afternoon",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_62",
+   "start": 0.0,
+   "end": 3.3,
+   "label": "morning",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_63",
+   "start": 0.0,
+   "end": 6.2,
+   "label": "time",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_64",
+   "start": 0.0,
+   "end": 3.8,
+   "label": "doctor",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_65",
+   "start": 201.6,
+   "end": 203.9,
+   "label": "morning",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_65",
+   "start": 209.0,
+   "end": 211.2,
+   "label": "afternoon",
+   "split": "test",
+   "set": "A"
+  },
+  {
+   "source_id": "src_65",
+   "start": 214.0,
+   "end": 216.3,
+   "label": "evening",
+   "split": "test",
+   "set": "A"
+  }
+ ]
+}

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from app.markers import HOLDING_LINE
 from app.protocol import (
     AppMessage,
     ApproveMessage,
@@ -102,7 +103,10 @@ async def test_all_nine_checks_measure_and_record_verdicts() -> None:
 async def test_quiet_check_counts_events_inside_the_window_only() -> None:
     transport = FakeTransport()
     session = AppSession(transport)
-    events: list[ServerMessage] = [CaptionMessage(text="hello", at=0.0)]
+    events: list[ServerMessage] = [
+        CaptionMessage(text="hello", at=0.0),
+        CaptionMessage(text=HOLDING_LINE, at=0.0, speaker="agent"),
+    ]
 
     async def talk(_: float) -> None:
         for event in events:
@@ -124,6 +128,27 @@ async def test_quiet_check_counts_events_inside_the_window_only() -> None:
             "it spoke",
         )
     ]
+
+
+async def test_holding_check_counts_holding_lines_apart_from_captions() -> None:
+    transport = FakeTransport()
+    session = AppSession(transport)
+
+    async def silence(_: float) -> None:
+        transport.push(CaptionMessage(text=HOLDING_LINE, at=0.0, speaker="agent"))
+        transport.push(CaptionMessage(text="Goodbye.", at=0.0, speaker="agent"))
+        transport.push(CaptionMessage(text=HOLDING_LINE, at=0.0, speaker="receptionist"))
+        await drain(transport)
+
+    scripted = ScriptedObserver(["", "y", ""])
+    ctx = CheckContext(session, scripted.observer(), QUICK, sleep=silence)
+    async with running(session, transport):
+        results = await run_checks(ctx, [3])
+    assert results[0].measured == (
+        ("captions during silence", "1"),
+        ("holding lines shown", "1"),
+        ("spoken events", "0"),
+    )
 
 
 async def test_missing_caption_and_missing_spoken_are_reported() -> None:

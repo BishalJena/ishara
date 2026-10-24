@@ -4,12 +4,20 @@ import SwiftUI
 /// sentence being spoken sits in the action bar, right above STOP.
 struct SpeakingPanel: View {
     let cameraState: CameraState
+    let camera: LiveCamera?
+    var isStopTooLate = false
+    var errorMessage: String?
 
     var body: some View {
-        CameraPreviewPlaceholder(
-            state: cameraState,
-            message: "Camera keeps watching\n(you can sign the next thing)"
-        )
+        VStack(alignment: .leading, spacing: 14) {
+            CameraCard(camera: camera, state: cameraState)
+            if isStopTooLate {
+                StopTooLateBanner()
+            }
+            if let errorMessage {
+                CallErrorBanner(message: errorMessage)
+            }
+        }
     }
 }
 
@@ -38,7 +46,7 @@ struct SpeakingCard: View {
 
 #Preview {
     VStack {
-        SpeakingPanel(cameraState: .watching)
+        SpeakingPanel(cameraState: .watching, camera: nil)
         SpeakingCard(text: "No, sorry, 4 pm doesn't work. Is there anything tomorrow morning?",
                      isStopRequested: false)
     }

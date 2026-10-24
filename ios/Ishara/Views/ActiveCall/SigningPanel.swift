@@ -8,10 +8,13 @@ struct SigningPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            CameraPreviewPlaceholder(state: model.cameraState, message: "Camera (you signing)")
+            CameraCard(camera: model.recognition.camera, state: model.cameraState)
                 .overlay(alignment: .bottomTrailing) {
                     ReplayMenu(recognition: model.recognition).padding(10)
                 }
+            if let message = model.errorMessage {
+                CallErrorBanner(message: message)
+            }
             if model.showsDeliveryResult {
                 DeliveryBanner(delivery: model.delivery)
             }

@@ -10,6 +10,8 @@ public enum BundleValidationError: Error, Sendable, Equatable {
     case nonFiniteEmbedding(referenceID: String)
     case zeroNormEmbedding(referenceID: String)
     case tooFewLabels(Int)
+    /// A Sign Lab try bundle: cut-offs from enrollment alone, never calibrated (R2b).
+    case provisional
 }
 
 /// The frozen recognition setup exported by the Mac tool: the user's enrolled
@@ -100,11 +102,20 @@ public struct RecognitionBundle: Codable, Sendable, Equatable {
         case embeddingDim = "embedding_dim"
     }
 
+    /// Read only to refuse it; a provisional bundle is never decoded into a usable one.
+    private enum ProvisionalKey: String, CodingKey {
+        case provisional
+    }
+
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         version = try container.decode(Int.self, forKey: .version)
         guard version == Self.supportedVersion else {
             throw BundleValidationError.unsupportedVersion(version)
+        }
+        let marker = try decoder.container(keyedBy: ProvisionalKey.self)
+        guard try marker.decodeIfPresent(Bool.self, forKey: .provisional) != true else {
+            throw BundleValidationError.provisional
         }
         encoder = try container.decode(String.self, forKey: .encoder)
         embeddingDim = try container.decode(Int.self, forKey: .embeddingDim)
@@ -114,7 +125,8 @@ public struct RecognitionBundle: Codable, Sendable, Equatable {
         try validate()
     }
 
-    /// Decodes and validates an exported bundle.
+    /// Decodes and validates an exported bundle. Provisional (Sign Lab try) bundles are
+    /// refused, so the app never treats enrollment-only cut-offs as calibrated.
     public static func load(from data: Data) throws -> RecognitionBundle {
         try JSONDecoder().decode(RecognitionBundle.self, from: data)
     }

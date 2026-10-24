@@ -31,6 +31,11 @@ extension DemoFixture {
         model.attach(store)
 
         store.receive(.status(.inCall))
+        if self == .endedNoCaptions {
+            model.end()
+            return model
+        }
+        store.receive(.caption(text: DemoScript.disclosure, at: Date().timeIntervalSince1970, speaker: .agent))
         store.add(.recognised(.hello))
         store.receive(.draft(turnID: store.currentTurnID, text: "Hello, I'd like a doctor's appointment tomorrow.", source: .llm))
         let firstTurn = store.currentTurnID
@@ -47,6 +52,7 @@ extension DemoFixture {
         if let wrong = store.chips.first(where: { $0.sign == .afternoon }) {
             store.remove(wrong)
         }
+        if self == .composing { return model }
         store.receive(.draft(turnID: store.currentTurnID, text: "No, sorry, 4 pm doesn't work. Is there anything tomorrow morning?", source: .llm))
         model.handle(.camera(.watching))
         let secondTurn = store.currentTurnID
@@ -57,8 +63,27 @@ extension DemoFixture {
             store.receive(.spoken(turnID: secondTurn))
         case .notDelivered:
             store.receive(.notDelivered(turnID: secondTurn, reason: "no_confirmation"))
-        case .ended:
+        case .deliveredDespiteStop:
+            model.stop()
+            store.receive(.error(code: ServerError.cannotInterrupt, message: "Bolna is already speaking."))
+            store.receive(.spoken(turnID: secondTurn))
+        case .stopped:
+            model.stop()
+            store.receive(.notDelivered(turnID: secondTurn, reason: "stopped"))
+        case .stopTooLate:
+            model.stop()
+            store.receive(.error(code: ServerError.cannotInterrupt, message: "Bolna is already speaking."))
+        case .backendError:
+            store.receive(.notDelivered(turnID: secondTurn, reason: "no_confirmation"))
+            store.add(.recognised(.yes))
+            store.receive(.error(code: "stale_turn", message: "That turn is closed; start a new one."))
+        case .ended, .hangUpUnconfirmed:
+            store.receive(.caption(text: "Yes, 10:30 tomorrow morning.", at: Date().timeIntervalSince1970))
+            store.receive(.caption(text: DemoScript.goodbye, at: Date().timeIntervalSince1970, speaker: .agent))
             model.end()
+            if self == .hangUpUnconfirmed {
+                store.receive(.error(code: ServerError.endFailed, message: "Could not reach Bolna to hang up."))
+            }
         case .connectionLost:
             store.connectionLost()
         default:

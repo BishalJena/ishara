@@ -270,6 +270,60 @@ final class ActiveCallViewModelTests: XCTestCase {
         XCTAssertFalse(model.showsDeliveryResult)
     }
 
+    func testQuickReplyThenClearDoesNotResurrectTheDeliveredBanner() {
+        sign(.hello)
+        draft("Hello.")
+        model.send()
+        store.receive(.spoken(turnID: turn(1)))
+
+        model.choose(.repeat)
+        model.clear()
+
+        XCTAssertEqual(model.delivery, .idle)
+        XCTAssertNil(model.draft)
+    }
+
+    func testClearDismissesAStoppedReply() {
+        model.choose(.yes)
+        model.send()
+        model.stop()
+        store.receive(.notDelivered(turnID: turn(2), reason: "stopped"))
+
+        model.clear()
+
+        XCTAssertNil(model.draft)
+        XCTAssertFalse(model.canSend)
+        XCTAssertEqual(sink.approvals.count, 1)
+    }
+
+    // MARK: Composing
+
+    func testComposingWhileRecognisedChipsWaitForTheirDraft() {
+        XCTAssertFalse(model.isComposing)
+        sign(.no, .afternoon)
+        XCTAssertTrue(model.isComposing)
+
+        draft("No. In the afternoon, please.")
+        XCTAssertFalse(model.isComposing)
+
+        // The ✕ on a wrong chip asks for a new draft: composing again, not "sign your reply".
+        model.removeChip(store.chips[1])
+        XCTAssertTrue(model.isComposing)
+        XCTAssertNil(model.draft)
+    }
+
+    func testOnlyUnsureChipsAreNotComposing() {
+        model.handle(.result(.unsure))
+
+        XCTAssertFalse(model.isComposing, "an unsure chip is never sent, so no draft is coming")
+    }
+
+    func testQuickReplyIsNotComposing() {
+        model.choose(.yes)
+
+        XCTAssertFalse(model.isComposing)
+    }
+
     // MARK: Stale drafts
 
     func testDraftForStaleTurnIsIgnored() {
@@ -381,6 +435,21 @@ final class ActiveCallViewModelTests: XCTestCase {
         XCTAssertEqual(sink.approvals.count, 1, "old text is never resent over new chips")
     }
 
+    func testStopBeforeSpeakingShowsStoppedAndOffersSendOnlyOnTap() {
+        model.choose(.yes)
+        model.send()
+        model.stop()
+
+        store.receive(.notDelivered(turnID: turn(2), reason: "stopped"))
+
+        XCTAssertEqual(model.delivery, .stopped(text: "Yes."))
+        XCTAssertEqual(model.draft, DraftDisplay(text: "Yes.", badge: .stopped))
+        XCTAssertTrue(model.canSend)
+        XCTAssertEqual(sink.approvals.count, 1, "Must never resend by itself")
+        model.send()
+        XCTAssertEqual(sink.approvals.last, .approve(turnID: turn(4), text: "Yes."))
+    }
+
     func testStopAsksOnceWhileSpeaking() {
         model.stop()
         XCTAssertEqual(sink.stops, 0)
@@ -392,6 +461,69 @@ final class ActiveCallViewModelTests: XCTestCase {
 
         XCTAssertEqual(sink.stops, 1)
         XCTAssertTrue(model.isStopRequested)
+    }
+
+    // MARK: Backend errors
+
+    func testTooLateStopIsShownWhileSpeakingThenNotAsAPlainDelivery() {
+        model.choose(.yes)
+        model.send()
+        model.stop()
+
+        store.receive(.error(code: "cannot_interrupt", message: "Bolna is already speaking; it cannot be interrupted."))
+
+        XCTAssertTrue(model.isStopTooLate)
+        XCTAssertTrue(model.isSpeaking)
+        XCTAssertNil(model.errorMessage, "the too-late STOP has its own banner")
+        store.receive(.spoken(turnID: turn(2)))
+        XCTAssertEqual(model.delivery, .deliveredDespiteStop)
+        XCTAssertFalse(model.isStopTooLate)
+    }
+
+    func testBackendErrorsBecomeShortMessagesAndSendNothing() {
+        let expected: [String: String] = [
+            "stale_turn": "That reply was out of date, so it wasn't sent.",
+            "already_approved": "That reply was already sent.",
+            "busy_speaking": "Wait until the current reply has been spoken.",
+            "call_not_live": "The call isn't connected yet. Nothing was sent.",
+            "call_ended": "The call has ended. Nothing will be sent.",
+            "bad_message": "The backend didn't understand the app. Nothing was sent.",
+            "brand_new_code": "Something went wrong on the backend.",
+        ]
+        sign(.hello)
+        let sentBefore = sink.sent
+        for (code, message) in expected {
+            store.receive(.error(code: code, message: "raw backend text"))
+            XCTAssertEqual(model.errorMessage, message, code)
+        }
+        XCTAssertEqual(sink.sent, sentBefore, "errors never send anything")
+    }
+
+    func testErrorMessageGoesAwayOnTheNextAction() {
+        sign(.hello)
+        store.receive(.error(code: "stale_turn", message: "x"))
+
+        sign(.doctor)
+
+        XCTAssertNil(model.errorMessage)
+    }
+
+    func testFailedHangUpAfterEndIsShownOnTheEndedScreen() {
+        model.end()
+
+        store.receive(.error(code: "end_failed", message: "Could not reach Bolna to hang up."))
+
+        XCTAssertEqual(model.phase, .ended(.hangUpUnconfirmed))
+        XCTAssertNil(model.errorMessage)
+        XCTAssertEqual(sink.ends, 1, "nothing is sent again")
+    }
+
+    func testRemoteEndIsNotReportedAsAnUnconfirmedHangUp() {
+        store.receive(.status(.ended))
+
+        store.receive(.error(code: "end_failed", message: "x"))
+
+        XCTAssertEqual(model.phase, .ended(.remoteEnded))
     }
 
     // MARK: Ending
@@ -420,16 +552,39 @@ final class ActiveCallViewModelTests: XCTestCase {
     }
 
     func testLateEventsCannotReviveEndedCall() {
+        store.receive(.caption(text: "City Clinic, how can I help?", at: 1))
         model.end()
 
         store.receive(.status(.inCall))
-        store.receive(.caption(text: "Hello?", at: 1))
+        store.receive(.caption(text: "Hello?", at: 2))
         model.choose(.yes)
         model.send()
 
         XCTAssertEqual(model.phase, .ended(.userEnded))
-        XCTAssertTrue(model.captions.isEmpty)
+        XCTAssertEqual(model.captions.map(\.text), ["City Clinic, how can I help?"], "no caption is added after End")
         XCTAssertEqual(sink.approvals, [])
+    }
+
+    func testEndKeepsTheTranscript() {
+        store.receive(.caption(text: "City Clinic, how can I help?", at: 1))
+        model.choose(.yes)
+        model.send()
+        store.receive(.spoken(turnID: turn(2)))
+
+        model.end()
+
+        XCTAssertEqual(model.captions.map(\.text), ["City Clinic, how can I help?", "Yes."])
+        XCTAssertTrue(model.isCallOver)
+    }
+
+    func testCallIsOverOnlyOnceItCannotComeBack() {
+        XCTAssertFalse(model.isCallOver)
+        store.connectionLost()
+        XCTAssertFalse(model.isCallOver, "a reconnect may still bring the call back")
+
+        driver.onReconnectStopped?(.attemptsUsedUp)
+
+        XCTAssertTrue(model.isCallOver)
     }
 
     func testRemoteEndWipesPendingReply() {

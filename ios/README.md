@@ -21,7 +21,8 @@ Views ─▶ ActiveCallViewModel ─▶ TurnStore (CallSession: every SEND safet
 
 The SEND rules live in one place, `TurnStore` in [CallSession](Packages/CallSession/README.md):
 single-use SEND tied to a turn id, stale drafts ignored, `?` never sent, re-SEND only on
-an explicit tap with a new turn id, everything wiped on End or a lost connection.
+an explicit tap with a new turn id, and chips, drafts and pending approvals wiped on End or a
+lost connection. The captions stay on screen as a read-only transcript of the call.
 
 ## Open
 
@@ -66,6 +67,12 @@ for the simulator (including `rest.mov` for calibration).
 - The Core ML encoder always runs on CPU+GPU; the FP16 package is wrong on the Neural Engine.
 - In the simulator, a **Replay a sign** menu on the camera area plays a saved clip (pipeline)
   or injects a result (scripted + live call), since there is no camera.
+- On a device with the pipeline, Get ready, Signing and Speaking show a **live, mirrored
+  front-camera preview** on the same capture session recognition reads (one preview layer,
+  moved between screens), with tracking dots on shoulders and wrists and a dashed rest line
+  once calibrated (the eye button hides them). Camera permission is asked on Get ready; if
+  it's refused the card says so and offers **Open Settings**. Without a live camera
+  (simulator, scripted results, fixtures) the card shows a placeholder.
 
 ## Run
 
@@ -83,7 +90,7 @@ Other switches:
 |---|---|
 | `-IsharaFakeNotDelivered YES` | The first SEND of turn 2 comes back "not delivered", so you have to tap SEND again |
 | `-IsharaFakeTimeScale 0.5` | Runs the Get ready checks and the fake call twice as fast |
-| `-IsharaFixture <name>` | Debug builds only. Opens a prepared state: `home`, `getReady`, `signing`, `speaking`, `delivered`, `notDelivered`, `ended`, `connectionLost` |
+| `-IsharaFixture <name>` | Debug builds only. Opens a prepared state: `home`, `getReady`, `signing`, `speaking`, `delivered`, `notDelivered`, `ended`, `connectionLost`, `composing`, `stopped`, `stopTooLate`, `deliveredDespiteStop`, `backendError`, `endedNoCaptions`, `hangUpUnconfirmed` |
 
 Set them in the scheme (Run → Arguments) or pass them to `xcrun simctl launch`:
 

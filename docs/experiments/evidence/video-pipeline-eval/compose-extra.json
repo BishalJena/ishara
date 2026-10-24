@@ -1,0 +1,83 @@
+{
+ "turns": [
+  {
+   "turn": "X1",
+   "receptionist": "We have slots today and tomorrow. When would you like to come?",
+   "chips": [],
+   "oracle": [
+    "today",
+    "evening"
+   ]
+  },
+  {
+   "turn": "X2",
+   "receptionist": "Your appointment is booked for tomorrow.",
+   "chips": [],
+   "oracle": [
+    "sorry",
+    "time"
+   ]
+  },
+  {
+   "turn": "P1",
+   "receptionist": null,
+   "chips": [],
+   "oracle": [
+    "hello",
+    "doctor",
+    "today",
+    "afternoon"
+   ]
+  },
+  {
+   "turn": "P2",
+   "receptionist": "We have 11 am tomorrow. Does that work?",
+   "chips": [],
+   "oracle": [
+    "no",
+    "evening"
+   ]
+  },
+  {
+   "turn": "P3",
+   "receptionist": "Can you come at 5:15 pm today?",
+   "chips": [],
+   "oracle": [
+    "yes"
+   ]
+  },
+  {
+   "turn": "P4",
+   "receptionist": "We can see you tomorrow.",
+   "chips": [],
+   "oracle": [
+    "time"
+   ]
+  },
+  {
+   "turn": "P5",
+   "receptionist": "Could you repeat that, please?",
+   "chips": [],
+   "oracle": [
+    "sorry"
+   ]
+  },
+  {
+   "turn": "P6",
+   "receptionist": "You're booked for 10:30 tomorrow morning.",
+   "chips": [],
+   "oracle": [
+    "thankyou"
+   ]
+  },
+  {
+   "turn": "P7",
+   "receptionist": null,
+   "chips": [],
+   "oracle": [
+    "doctor",
+    "morning"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,99 @@
+{
+  "spent": {
+    "groq": 3,
+    "voice": 3
+  },
+  "turns": [
+    {
+      "turn": "T1",
+      "receptionist": null,
+      "recognised": {
+        "chips": [],
+        "draft": null,
+        "template": null
+      },
+      "oracle": {
+        "chips": [
+          "hello",
+          "doctor",
+          "tomorrow"
+        ],
+        "draft": {
+          "text": "Hello, I would like to book an appointment with the doctor tomorrow.",
+          "source": "llm",
+          "seconds": 0.224,
+          "groq_raw": "Hello, I would like to book an appointment with the doctor tomorrow.",
+          "validator": []
+        },
+        "template": "Hello, I'd like a doctor's appointment tomorrow."
+      },
+      "voice": null,
+      "oracle_voice": {
+        "path": "../spikes/recognition/artifacts/video_eval/audio/T1-oracle.wav",
+        "text": "Hello, I would like to book an appointment with the doctor tomorrow.",
+        "seconds": 3.52,
+        "tts_seconds": 0.983
+      }
+    },
+    {
+      "turn": "T3",
+      "receptionist": "We have 4 pm tomorrow. Does that work?",
+      "recognised": {
+        "chips": [],
+        "draft": null,
+        "template": null
+      },
+      "oracle": {
+        "chips": [
+          "no",
+          "morning"
+        ],
+        "draft": {
+          "text": "No, 4 pm doesn't work. Do you have any openings tomorrow morning?",
+          "source": "llm",
+          "seconds": 0.175,
+          "groq_raw": "No, 4 pm doesn't work. Do you have any openings tomorrow morning?",
+          "validator": []
+        },
+        "template": "No, sorry, that doesn't work. Is there anything in the morning?"
+      },
+      "voice": null,
+      "oracle_voice": {
+        "path": "../spikes/recognition/artifacts/video_eval/audio/T3-oracle.wav",
+        "text": "No, 4 pm doesn't work. Do you have any openings tomorrow morning?",
+        "seconds": 3.84,
+        "tts_seconds": 1.053
+      }
+    },
+    {
+      "turn": "T5",
+      "receptionist": "Yes, 10:30 tomorrow morning.",
+      "recognised": {
+        "chips": [],
+        "draft": null,
+        "template": null
+      },
+      "oracle": {
+        "chips": [
+          "yes",
+          "thankyou"
+        ],
+        "draft": {
+          "text": "Yes, 10:30 tomorrow morning works. Thank you.",
+          "source": "llm",
+          "seconds": 0.165,
+          "groq_raw": "Yes, 10:30 tomorrow morning works. Thank you.",
+          "validator": []
+        },
+        "template": "Yes, that works. Thank you."
+      },
+      "voice": null,
+      "oracle_voice": {
+        "path": "../spikes/recognition/artifacts/video_eval/audio/T5-oracle.wav",
+        "text": "Yes, 10:30 tomorrow morning works. Thank you.",
+        "seconds": 4.24,
+        "tts_seconds": 1.077
+      }
+    }
+  ]
+}

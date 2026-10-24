@@ -53,6 +53,12 @@ class CallLedger(Protocol):
         """A new receptionist utterance from Bolna's transcript."""
         ...
 
+    async def record_agent_line(self, call_id: str, text: str) -> None:
+        """A fixed line the voice says without a SEND (e.g. the holding line). Shown to
+        the app as an agent caption; never touches turns, approvals or the composer's
+        last caption."""
+        ...
+
     async def claim_reply(self, call_id: str, turn_id: str, text: str) -> bool:
         """True exactly once for an approved, unspoken turn whose text matches the
         approval. False for unknown, stale, ended or already-claimed turns."""

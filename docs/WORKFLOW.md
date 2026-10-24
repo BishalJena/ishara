@@ -51,7 +51,7 @@ Two kinds of "end":
 
 | Situation | What the app does |
 |---|---|
-| Long pause or reading captions | Hands at rest, so nothing happens. Bolna says "One moment please, I'm signing my reply" after a long silence |
+| Long pause or reading captions | Hands at rest, so nothing happens. Bolna says "One moment please, I'm signing my reply" after a long silence, and the caption feed shows it as Ishara's own line |
 | Scratching nose, adjusting the phone | Too short or no match, so it's ignored or shown as [?] |
 | Sign not recognised | [?] chip with "try again". Nothing spoken |
 | Wrong word recognised | User taps ✕ on the chip before SEND |

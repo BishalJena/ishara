@@ -83,6 +83,9 @@ final class DemoCallUITests: XCTestCase {
     private func walkRehearsedClinicCall() {
         app.startCall()
 
+        // Turn 0: the agent's disclosure, the only line said without a SEND at the start.
+        app.waitFor(app.element("caption.agent"), labelContains: "calling for a Deaf caller")
+
         // Turn 1: hello · doctor · tomorrow → LLM draft. Nothing is spoken until SEND.
         app.waitForDraft(containing: turn1)
         XCTAssertEqual(app.element("caption.you").exists, false, "a reply was spoken before SEND")
@@ -115,6 +118,10 @@ final class DemoCallUITests: XCTestCase {
         app.buttons["call.end"].tap()
         app.waitFor(app.element("call.endedPanel"), labelContains: "You ended the call")
         XCTAssertFalse(app.buttons["call.send"].exists)
+        // The captions stay as a read-only transcript of the call.
+        XCTAssertTrue(app.element("caption.you").label.contains(turn5), "the transcript was wiped on End")
+        XCTAssertTrue(app.element("caption.receptionist").label.contains("Yes, 10:30 tomorrow morning."))
+        XCTAssertTrue(app.element("caption.agent").label.contains("Goodbye"), "the agent's goodbye is in the transcript")
         app.buttons["call.backHome"].tap()
         XCTAssertTrue(app.buttons["home.call"].waitForExistence(timeout: 5))
     }

@@ -64,7 +64,7 @@ struct ActiveCallView: View {
                 connectedAt: model.connectedAt,
                 onEnd: model.end
             )
-            CaptionHistory(captions: model.captions)
+            CaptionHistory(captions: model.captions, isCallOver: model.isCallOver)
                 .frame(height: captionBoxHeight)
 
             ScrollView {
@@ -98,7 +98,8 @@ struct ActiveCallView: View {
         case .connectionLost(let notice, let isReconnecting):
             ConnectionLostPanel(notice: notice, isReconnecting: isReconnecting)
         case .speaking:
-            SpeakingPanel(cameraState: model.cameraState)
+            SpeakingPanel(cameraState: model.cameraState, camera: model.recognition.camera,
+                          isStopTooLate: model.isStopTooLate, errorMessage: model.errorMessage)
         case .signing:
             SigningPanel(model: model)
         }
@@ -124,7 +125,8 @@ private struct CallActionBar: View {
         case .speaking(let text):
             VStack(spacing: 12) {
                 PinnedSentence(maxHeight: sentenceMaxHeight) {
-                    SpeakingCard(text: text, isStopRequested: model.isStopRequested)
+                    // Once STOP is refused it is still being spoken, not stopping.
+                    SpeakingCard(text: text, isStopRequested: model.isStopRequested && !model.isStopTooLate)
                 }
                 Button(action: model.stop) {
                     Label("STOP", systemImage: "stop.fill")
@@ -139,7 +141,7 @@ private struct CallActionBar: View {
                 QuickReplyBar(onChoose: model.choose)
                     .disabled(!model.canUseQuickReplies)
                 PinnedSentence(maxHeight: sentenceMaxHeight) {
-                    DraftCard(draft: model.draft)
+                    DraftCard(draft: model.draft, isComposing: model.isComposing)
                 }
                 sendRow
             }

@@ -13,7 +13,14 @@ struct CallEndedPanel: View {
             Text(title)
                 .font(.title2.bold())
                 .multilineTextAlignment(.center)
-            Text("Nothing will be sent. Any pending draft was wiped, so the next call starts clean.")
+            if reason == .hangUpUnconfirmed {
+                Label("Couldn't confirm the hang-up. Check the call is over.",
+                      systemImage: "exclamationmark.triangle.fill")
+                    .font(.headline)
+                    .foregroundStyle(.orange)
+                    .multilineTextAlignment(.center)
+            }
+            Text("Nothing more will be sent. Any unsent draft was wiped.")
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
@@ -27,7 +34,7 @@ struct CallEndedPanel: View {
 
     private var title: String {
         switch reason {
-        case .userEnded: "You ended the call"
+        case .userEnded, .hangUpUnconfirmed: "You ended the call"
         case .remoteEnded: "The call ended"
         case .failed(let message): message
         }
@@ -72,6 +79,7 @@ struct ConnectionLostPanel: View {
         ConnectionLostPanel(notice: "Nothing will be sent", isReconnecting: true)
         ConnectionLostPanel(notice: "The backend no longer knows this call", isReconnecting: false)
         CallEndedPanel(reason: .userEnded)
+        CallEndedPanel(reason: .hangUpUnconfirmed)
         CallEndedPanel(reason: .failed("Connection lost"))
     }
     .padding()

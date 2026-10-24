@@ -65,6 +65,7 @@ final class StubRecognition: RecognitionController {
     let getReady = GetReadyModel()
     var failure: String?
     var notice: String?
+    var camera: LiveCamera?
     var replayOptions: [String] = []
     private(set) var startCount = 0
     private(set) var stopCount = 0

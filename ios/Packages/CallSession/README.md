@@ -33,8 +33,8 @@ package with no dependencies. iOS 17+ and macOS 14+.
 - Clear wipes chips and draft on a new turn id, so a late draft for the old chips is stale. Nothing is sent.
 - `spoken` marks the reply delivered and adds it to the transcript as the user's words.
 - `not_delivered` offers re-SEND. Only an explicit `resend()` approves the same text again, on a new turn id.
-- End drops anything queued, sends `end`, wipes everything and ignores later input and events.
-- A lost socket (or a backend `error` status) shows "Nothing will be sent", wipes chips and draft and drops the queue. Nothing is resent after reconnecting; the store leaves `.error` when the backend sends a status.
+- End drops anything queued, sends `end`, wipes chips, draft and any pending approval, and ignores later input and events. Captions stay as a read-only transcript.
+- A lost socket (or a backend `error` status) shows "Nothing will be sent", wipes chips and draft (captions stay) and drops the queue. Nothing is resent after reconnecting; the store leaves `.error` when the backend sends a status.
 - `LiveCall.connect()` reopens only after a plain drop. After close code 4401 (bad token), 4404 (unknown call) or 4409 (another socket took over) it does nothing; `lastClose` says which, for the UI.
 
 ## Use

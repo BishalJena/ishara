@@ -85,6 +85,11 @@ async def test_script_waits_for_the_receptionist_caption_before_each_later_turn(
                 await asyncio.sleep(0)
             assert [m.type for m in transport.sent].count("approve") == expected_approvals
             assert transport.sent[-1].type == "approve"  # holding until the receptionist speaks
+            transport.push(CaptionMessage(text="One moment please.", at=0.0, speaker="agent"))
+            await drain(transport)
+            for _ in range(20):
+                await asyncio.sleep(0)
+            assert transport.sent[-1].type == "approve", "an agent line is not her answer"
             transport.push(CaptionMessage(text="Receptionist reply.", at=0.0))
         await asyncio.wait_for(task, timeout=1)
     assert [m.type for m in transport.sent].count("approve") == 3

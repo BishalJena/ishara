@@ -18,14 +18,10 @@ struct GetReadyView: View {
                     Text("Prop the phone about an arm away.")
                         .font(.title3)
 
-                    CameraPreviewPlaceholder(
-                        state: nil,
-                        message: "Camera preview\nstick-figure overlay drawn on your body",
-                        minHeight: 240
-                    )
-                    .overlay(alignment: .bottomTrailing) {
-                        ReplayMenu(recognition: recognition).padding(10)
-                    }
+                    CameraCard(camera: recognition.camera, state: nil)
+                        .overlay(alignment: .bottomTrailing) {
+                            ReplayMenu(recognition: recognition).padding(10)
+                        }
 
                     if let failure = recognition.failure {
                         Label(failure, systemImage: "exclamationmark.triangle.fill")

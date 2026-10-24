@@ -38,6 +38,9 @@ class FakeLedger:
     async def record_caption(self, call_id: str, text: str) -> None:
         self.events.append(("caption", call_id, text))
 
+    async def record_agent_line(self, call_id: str, text: str) -> None:
+        self.events.append(("agent_line", call_id, text))
+
     async def claim_reply(self, call_id: str, turn_id: str, text: str) -> bool:
         self.events.append(("claim", call_id, turn_id, text))
         key = (call_id, turn_id)
@@ -273,8 +276,15 @@ def test_silence_gets_holding_line_and_no_caption(
     assert reply_text(first) == ""
     silence = body(listen_prompt(), ("user", "Hello?"), ("assistant", ""), ("user", marker))
     assert reply_text(post(client, silence)) == HOLDING_LINE
-    assert ledger.captions == ["Hello?"]
-    assert all(event[0] == "caption" for event in ledger.events)
+    assert ledger.events == [("caption", CALL, "Hello?"), ("agent_line", CALL, HOLDING_LINE)]
+
+
+def test_each_silence_shows_the_holding_line_again(client: TestClient, ledger: FakeLedger) -> None:
+    silence = [("user", SILENCE_MARKER)]
+    for repeats in (1, 2):
+        history = (silence + [("assistant", HOLDING_LINE)]) * (repeats - 1) + silence
+        assert reply_text(post(client, body(listen_prompt(), *history))) == HOLDING_LINE
+    assert ledger.events == [("agent_line", CALL, HOLDING_LINE)] * 2
 
 
 def test_holding_line_only_when_latest_user_message_is_silence(
@@ -282,7 +292,7 @@ def test_holding_line_only_when_latest_user_message_is_silence(
 ) -> None:
     payload = body(listen_prompt(), ("user", SILENCE_MARKER), ("user", "Are you there?"))
     assert reply_text(post(client, payload)) == ""
-    assert ledger.captions == ["Are you there?"]
+    assert ledger.events == [("caption", CALL, "Are you there?")]
 
 
 def test_caption_forwarded_once_across_resent_history(

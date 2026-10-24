@@ -16,6 +16,8 @@ final class ScriptedRecognitionController: RecognitionController {
     let getReady = GetReadyModel()
     let failure: String? = nil
     let notice: String? = nil
+    /// Nothing watches the camera here, so there is no live picture to preview.
+    let camera: LiveCamera? = nil
     let replayOptions: [String]
 
     @ObservationIgnored private let script: [RecognitionResult]
