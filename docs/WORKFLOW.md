@@ -5,6 +5,11 @@ Updated 23 October 2026 for the demo build. Decisions and tasks live in
 [architecture board](architecture/README.md) (parts B and E). This is the agreed
 demo flow, not a validated product: no Deaf participant has reviewed it.
 
+**Built so far (23 Oct):** the four screens exist on fake data (not yet built in Xcode), and the backend's turn
+and approval rules pass offline tests against a fake Bolna (open PRs, see
+[PLAN §6](../PLAN.md#6-schedule-and-todos)). None of this flow has run on a real call or
+an iPhone yet.
+
 ## The user's journey (four screens)
 
 ```
@@ -17,7 +22,7 @@ demo flow, not a validated product: no Deaf participant has reviewed it.
 |---|---|---|
 | **1 Home** | Picks who to call (e.g. City Clinic) and the purpose (doctor's appointment). Saved details: name, preferred time. Voice: Indian English | Purpose and saved details feed the composer. Path A instead: the user dials in the Phone app, then opens Ishara |
 | **2 Get ready** | Props the phone about an arm away. Checklist: face, both hands, light. Rests their hands on the table for 2 s | The 2 s rest calibrates the start/stop detector. "Start call" asks the backend to have Bolna dial (Path B) |
-| **3 Active call: signing** | Reads the receptionist's caption, signs, checks the chips, checks the draft, taps **SEND**. Quick replies: Yes, No, Wait, Repeat | Each finished sign becomes a chip; every chip change recomposes the draft (Cerebras + validator, template fallback) |
+| **3 Active call: signing** | Reads the receptionist's caption, signs, checks the chips, checks the draft, taps **SEND**. Quick replies: Yes, No, Wait, Repeat | Each finished sign becomes a chip; every chip change recomposes the draft (Groq + validator, template fallback) |
 | **4 Active call: speaking** | Sees "Speaking now…" with the exact sentence; SEND becomes **STOP**; then "✓ Delivered" | The backend sends a Bolna event; Bolna speaks with the Sarvam voice; chips and draft are wiped so old text can't replay |
 
 Camera pill: **green** = watching (hands at rest), **yellow** = sign in progress,
@@ -58,7 +63,7 @@ Two kinds of "end":
 | Receptionist talks over the approved sentence | The speak step is set so ordinary talk cannot cut it off; "stop / wait / hold on" still pauses it. The caption shows what they said |
 | Stop mid-sentence | Not yet spoken: cancelled. Already speaking: Path A can cut the audio; Path B has no documented interrupt (tested on day 1). Words already heard can't be unsaid, so the user sends a correction |
 | Network drops or the call ends | "Nothing will be sent"; pending drafts are wiped; the next call starts clean |
-| Receptionist says "booked" | Shown as their words only. Ishara never claims a booking itself |
+| Receptionist says "booked" | Shown as their words. The draft may repeat a booking word only if the receptionist's caption said it; Ishara never claims a booking on its own |
 
 ## What the app knows and doesn't know
 

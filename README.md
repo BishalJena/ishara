@@ -10,6 +10,11 @@ receptionist's reply comes back as captions.
 Neither recognition nor the call flow has passed its validation gates yet; the
 [plan](PLAN.md#7-gates-go--no-go) lists them.
 
+**Where the build is (23 Oct):** the backend, the iOS app shell, three iOS packages,
+the Core ML conversion and the Mac fallback exist as open pull requests with offline
+tests. Nothing has run against real Bolna, been deployed to Heroku or run on an iPhone
+yet. [PLAN §6](PLAN.md#6-schedule-and-todos) tracks each task.
+
 ## Start here
 
 1. [Plan](PLAN.md): decisions, architecture, day-by-day tasks and gates.
@@ -25,7 +30,7 @@ runbooks explain what setup fetches.
 
 - **On the iPhone:** MediaPipe Holistic → start/stop detector → SignCLIP (Core ML)
   → word chips → draft → **SEND**.
-- **Backend (Heroku):** a Cerebras-drafted sentence with a validator and template
+- **Backend (Heroku):** a Groq-drafted sentence with a validator and template
   fallback; Bolna's custom-LLM endpoint; call and turn state.
 - **Bolna:** places the call (Path B), speaks with a Sarvam voice and transcribes the
   receptionist with Deepgram. Path A, the user's own-number call with Apple's

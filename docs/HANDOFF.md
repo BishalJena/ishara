@@ -17,6 +17,20 @@ in the [experiment record](experiments/recognition.md), active tasks in
 - The speech track has an offline lifecycle mock, a non-telephony Bolna probe and
   an Apple audio/camera diagnostic harness. These are separate tools.
 
+## Demo build progress (23 Oct, open PRs)
+
+All of this exists as open pull requests with offline tests only. Nothing has run
+against real Bolna or Groq, nothing is deployed to Heroku, and nothing has run on an
+iPhone. [PLAN §6](../PLAN.md#6-schedule-and-todos) has the per-task status.
+
+| Area | What exists | PRs |
+|---|---|---|
+| Backend (`backend/`) | FastAPI foundation, Groq composer with validator and templates, Bolna custom-LLM endpoint, call sessions with single-use approvals, Path A `/tts`, Bolna agent builder, fake Bolna and end-to-end script tests, fake-app and V4 spike tools | #6, #7, #8, #10, #13, #14, #16, #17 |
+| CI and deploy | `scripts/verify.sh`, GitHub Actions, Heroku scripts and `backend/HEROKU.md` | #15 |
+| iOS (`ios/`) | `ios/Ishara` app shell (4 screens, fake data) and local packages `ios/Packages/{RecognitionCore,CallSession,SignPipeline}`. Not yet built or tested under Xcode | #18, #20, #22, #23 |
+| Core ML (`ml/coreml/`) | SignCLIP encoder as FP16 Core ML; matches PyTorch on 47/47 clips with `.cpuAndGPU` on a Mac (the Neural Engine gives wrong embeddings) | #21 |
+| Mac recognition | 12-sign vocabulary, R2b calibration report and iPhone bundle export, start/stop detector, Mac bridge that sends chips to a backend call | #9, #11, #12 |
+
 ## Current direction and blockers
 
 **SignCLIP is the leading representation for fresh-data evaluation.** Reference
@@ -26,13 +40,14 @@ and whole-clip extraction has not met the live response target.
 
 The demo vocabulary is now **12 signs** (hello, thankyou, yes, no, sorry, doctor,
 today, tomorrow, morning, afternoon, evening, time), for one seated signer and one
-complete sign at a time. The capture tool still lists the earlier five; extending
-it is plan task R0. The older browser diagnostic also supports today and location.
+complete sign at a time. On `main` the capture tool still lists the earlier five;
+PR #12 extends it (plan task R0). The older browser diagnostic also supports today and location.
 Its recognizer is still SL-GCN; uncalibrated SignCLIP ranks are not connected to
 composition or speech.
 
-**Composer (decided 23 Oct):** a Cerebras LLM drafts the sentence from the chips
-plus the live call transcript, a validator rejects missing meanings or invented
+**Composer (decided 23 Oct):** a Groq LLM (`openai/gpt-oss-120b`; it replaced
+Cerebras, which is not free) drafts the sentence from the chips plus the live call
+transcript, a validator rejects missing meanings or invented
 days, times, numbers and names, and the fixed templates are the fallback. The
 earlier local Qwen experiment changed the meaning of a requested-day example, which
 is why the validator and template fallback exist. No composer can repair an
@@ -41,7 +56,8 @@ incorrectly recognized concept; the user still edits and approves.
 **Bolna speech is unproven.** The old hosted sample-speech route returned 403
 and should not be retried. The chosen route (Path B) is a Bolna graph agent that
 places the call, with our backend as its custom LLM and graph events carrying the
-approved text; day-1 task V4 in the plan tests it. The iPhone harness has been
+approved text; day-1 task V4 in the plan tests it. The endpoint, agent config and
+spike runner exist as PRs, but no call has been placed. The iPhone harness has been
 built, but physical call/camera/caption coexistence (Path A) has not been
 demonstrated. An offline mock or Apple local voice does not establish Bolna
 integration.
