@@ -71,8 +71,20 @@ def bridgeconn_by_word(catalogue: list[dict]) -> dict[str, list[dict]]:
     return words
 
 
+# Pictures that give the answer away, found by viewing frames of every set A cut. Text is
+# handled by the OCR filter; pictures are not, so these cuts are cropped, trimmed or dropped.
+SET_A_DROPPED = {"F1EDartPuC8"}  # Deaf Enabled Foundation: sun, clock and sky colour show the time of day
+SET_A_FIXES = {
+    # PHIN "time": a clock picture fills the left half, then T-I-M-E is fingerspelled;
+    # keep the signer's half and only the final wrist-tap sign.
+    ("mtjse9ZT1Fw", 0.0): {"start": 4.6, "end": 6.3, "crop": "640:720:640:0"},
+    # PHIN "doctor": a captioned doctor photo on the left; the last 0.4 s is the end card.
+    ("qeI6-V8YAKw", 0.0): {"start": 0.0, "end": 3.4, "crop": "742:720:538:0"},
+}
+
+
 def set_a_cuts(words: set[str]) -> tuple[list[dict], list[dict]]:
-    """The earlier probe's YouTube test cuts (set A) for the demo words, unchanged boundaries."""
+    """The earlier probe's YouTube test cuts (set A) for the demo words, minus picture leaks."""
     spec = json.loads((VIDEO_EVAL / "spec.json").read_text())
     sources = {s["source_id"]: s for s in spec["sources"]}
     used, cuts = {}, []
@@ -81,7 +93,11 @@ def set_a_cuts(words: set[str]) -> tuple[list[dict], list[dict]]:
         if cut["split"] != "test" or cut["set"] != "A" or label not in words:
             continue
         source = sources[cut["source_id"]]
-        source_id = f"yt_{source['url'].rsplit('=', 1)[-1]}"
+        video = source["url"].rsplit("=", 1)[-1]
+        if video in SET_A_DROPPED:
+            continue
+        cut = {**cut, **SET_A_FIXES.get((video, cut["start"]), {})}
+        source_id = f"yt_{video}"
         used[source_id] = {"source_id": source_id, "dataset": "youtube", "signer_id": f"youtube-{source['signer_id']}",
                            "url": source["url"], "channel": source["channel"], "title": source["title"],
                            "terms": source["terms"], "file": f"../video_eval/{source['file']}",
