@@ -106,11 +106,11 @@ def video_part(data: bytes | None = None, uri: str | None = None) -> dict:
     return part
 
 
-def request_body(words: Sequence[str], video: dict) -> dict:
+def request_body(words: Sequence[str], video: dict, thinking: str = THINKING_LEVEL) -> dict:
     """Everything sent for one clip. Only the video bytes, the instruction and the list."""
     return {"model": MODEL, "store": False,
             "input": [video, {"type": "text", "text": prompt.build_prompt(words)}],
-            "generation_config": {"thinking_level": THINKING_LEVEL, "max_output_tokens": MAX_OUTPUT_TOKENS},
+            "generation_config": {"thinking_level": thinking, "max_output_tokens": MAX_OUTPUT_TOKENS},
             "response_format": {"type": "text", "mime_type": "application/json",
                                 "schema": prompt.response_schema(words)}}
 
@@ -147,8 +147,9 @@ class GeminiProbe:
     """Runs clips through Gemini with the budget guard; `client` is a google-genai Client."""
 
     def __init__(self, client: Any, words: Sequence[str], budget: Budget, seed: int, secret: str = "",
-                 sleep: Callable[[float], None] = time.sleep) -> None:
+                 sleep: Callable[[float], None] = time.sleep, thinking: str = THINKING_LEVEL) -> None:
         self.client, self.words, self.budget, self.secret = client, list(words), budget, secret
+        self.thinking = thinking
         self.seed, self.sleep = seed, sleep
         self.input_estimate = 0
         self.lock = threading.Lock()
@@ -174,7 +175,7 @@ class GeminiProbe:
                 video = video_part(uri=uploaded.uri)
             else:
                 video = video_part(data=data)
-            body = request_body(words, video)
+            body = request_body(words, video, self.thinking)
             started = time.perf_counter()
             interaction = self.create(body)
             latency = time.perf_counter() - started
@@ -187,7 +188,7 @@ class GeminiProbe:
                     "confidence": confidence, "raw": (getattr(interaction, "output_text", "") or "")[:300],
                     "latency_s": round(latency, 3), "usage": usage, "cost_usd": round(actual, 6),
                     "interaction_status": str(getattr(interaction, "status", "")), "candidates_order_seed":
-                    f"{self.seed}:{clip['id']}"}
+                    f"{self.seed}:{clip['id']}", "thinking_level": self.thinking}
         except Exception as error:  # noqa: BLE001 - an API failure is recorded per clip, never fatal
             return {"id": clip["id"], "sha256": clip["sha256"], "status": "error",
                     "error": redact(f"{type(error).__name__}: {error}", self.secret)[:500]}
@@ -234,7 +235,7 @@ def spent(path: Path) -> float:
 
 
 def run(out_dir: Path, cap_usd: float, limit: int | None, workers: int, seed: int,
-        durations: dict[str, float]) -> int:
+        durations: dict[str, float], thinking: str = THINKING_LEVEL) -> int:
     from google import genai
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -244,7 +245,8 @@ def run(out_dir: Path, cap_usd: float, limit: int | None, workers: int, seed: in
     todo = [c for c in clips if c["id"] not in finished][:limit]
     budget = Budget(cap_usd, spent_usd=spent(cost_log))
     secret = read_key()
-    probe = GeminiProbe(genai.Client(api_key=secret), load_candidates(), budget, seed, secret)
+    probe = GeminiProbe(genai.Client(api_key=secret), load_candidates(), budget, seed, secret,
+                        thinking=thinking)
     print(f"{len(todo)} clips to ask; spent so far ${budget.spent_usd:.4f} of ${cap_usd:.2f}", flush=True)
     lock = threading.Lock()
 
@@ -272,9 +274,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--limit", type=int)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--seed", type=int, default=20261025)
+    parser.add_argument("--thinking", choices=("low", "medium", "high"), default=THINKING_LEVEL,
+                        help="only to measure the pilot's accuracy against cost; the full run uses low")
     args = parser.parse_args(argv)
     durations = clip_durations()
-    return run(args.out_dir, args.cap_usd, args.limit, args.workers, args.seed, durations)
+    return run(args.out_dir, args.cap_usd, args.limit, args.workers, args.seed, durations, args.thinking)
 
 
 def clip_durations() -> dict[str, float]:

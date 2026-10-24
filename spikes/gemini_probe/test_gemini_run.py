@@ -171,6 +171,13 @@ class Request(Workspace):
         for leak in (self.clip["id"], "c_0000", ".mp4", "clips/", self.clip["sha256"], "answer_key", "doctor\"}"):
             self.assertNotIn(leak, serialized)
 
+    def test_a_chosen_thinking_level_is_sent_and_recorded(self):
+        probe, client = self.probe([interaction()])
+        probe.thinking = "high"
+        record = probe.ask(self.clip, root=self.root)
+        self.assertEqual(client.interactions.bodies[0]["generation_config"]["thinking_level"], "high")
+        self.assertEqual(record["thinking_level"], "high")
+
     def test_the_order_differs_between_clips_but_repeats_for_the_same_clip(self):
         probe, client = self.probe([interaction() for _ in range(3)])
         other = {**self.clip, "id": "c_0000000000ef"}
