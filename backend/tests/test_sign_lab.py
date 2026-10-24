@@ -311,3 +311,13 @@ async def test_manual_receptionist_after_the_call_ended_says_so() -> None:
         await until(lambda: run.ended)
         await lines.queue.put("Hello?\n")
         await until(lambda: any(line.startswith("no call is up yet") for line in logs))
+
+
+def test_silence_repeat_is_off_unless_asked_for() -> None:
+    from scripts.sign_lab import build_parser, lab_pauses
+
+    off = lab_pauses(build_parser().parse_args([]))
+    on = lab_pauses(build_parser().parse_args(["--silence-repeat", "--delay", "2"]))
+    assert off.silence_s == 0
+    assert on.silence_s > 0
+    assert on.ring_s == off.ring_s * 2

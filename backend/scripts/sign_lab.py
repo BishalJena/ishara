@@ -38,7 +38,7 @@ import sys
 import threading
 from collections.abc import AsyncIterable, AsyncIterator, Callable, Sequence
 from contextlib import AsyncExitStack, asynccontextmanager, suppress
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal
 
@@ -318,8 +318,10 @@ def banner(base_url: str, args: argparse.Namespace, keys: LabKeys) -> str:
         lines += [
             "",
             "Costs: each chip change is one Groq draft (a fraction of a paisa); each spoken "
-            "line is one Sarvam request (about ₹0.1-0.5), including the holding line after "
-            "each long silence. Run free with " + FREE_FLAGS + ".",
+            "line is one Sarvam request (about ₹0.1-0.5); the holding line after a long "
+            "silence only plays with --silence-repeat or /silence. Run free with "
+            + FREE_FLAGS
+            + ".",
         ]
     lines += [
         "",
@@ -364,7 +366,18 @@ def build_parser() -> argparse.ArgumentParser:
         default=1.0,
         help="scale the ring, receptionist and silence-repeat pauses",
     )
+    parser.add_argument(
+        "--silence-repeat",
+        action="store_true",
+        help="say the holding line after each long silence, as Bolna does (off by default: "
+        "with --voice sarvam every repeat is a paid request while you just sit and sign)",
+    )
     return parser
+
+
+def lab_pauses(args: argparse.Namespace) -> Pauses:
+    pauses = CALL_PAUSES.scaled(args.delay)
+    return pauses if args.silence_repeat else replace(pauses, silence_s=0)
 
 
 def _out(line: str) -> None:
@@ -394,7 +407,7 @@ def main(argv: list[str] | None = None) -> int:
         receptionist=args.receptionist,
         app_token=args.app_token,
         contacts=args.contact or [DEFAULT_CONTACT],
-        pauses=CALL_PAUSES.scaled(args.delay),
+        pauses=lab_pauses(args),
         log=_out,
     )
     try:
