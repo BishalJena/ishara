@@ -6,6 +6,8 @@ struct SpeakingPanel: View {
     let text: String
     let cameraState: CameraState
     let isStopRequested: Bool
+    var isStopTooLate = false
+    var errorMessage: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -13,7 +15,14 @@ struct SpeakingPanel: View {
                 state: cameraState,
                 message: "Camera keeps watching\n(you can sign the next thing)"
             )
-            SpeakingCard(text: text, isStopRequested: isStopRequested)
+            if isStopTooLate {
+                StopTooLateBanner()
+            }
+            if let errorMessage {
+                CallErrorBanner(message: errorMessage)
+            }
+            // Once STOP is refused it is still being spoken, not stopping.
+            SpeakingCard(text: text, isStopRequested: isStopRequested && !isStopTooLate)
         }
     }
 }

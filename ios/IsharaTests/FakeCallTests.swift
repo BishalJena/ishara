@@ -20,6 +20,9 @@ final class FakeCallTests: XCTestCase {
             model.draft?.text == "Hello, I'd like a doctor's appointment tomorrow."
         }
         XCTAssertTrue(firstDraft)
+        XCTAssertEqual(model.captions.first, Caption(text: DemoScript.disclosure,
+                                                     at: try XCTUnwrap(model.captions.first).at, speaker: .agent),
+                       "the call opens with the agent's disclosure")
         model.send()
         let firstDelivered = await eventually(timeout: .seconds(5)) { model.delivery == .delivered }
         XCTAssertTrue(firstDelivered)
@@ -62,6 +65,9 @@ final class FakeCallTests: XCTestCase {
         ])
         model.end()
         XCTAssertEqual(model.phase, .ended(.userEnded))
+        XCTAssertEqual(model.captions.last?.text, DemoScript.goodbye)
+        XCTAssertEqual(model.captions.last?.speaker, .agent)
+        XCTAssertEqual(model.captions.filter { $0.speaker == .agent }.count, 2, "only the disclosure and the goodbye")
     }
 
     // MARK: Scripted recognition

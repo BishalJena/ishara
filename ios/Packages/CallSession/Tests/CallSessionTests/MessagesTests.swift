@@ -78,6 +78,33 @@ final class MessagesTests: XCTestCase {
             .caption(text: "We have 4 pm tomorrow. Does that work?", at: 1_793_430_000.25))
     }
 
+    func testCaptionWithoutSpeakerIsTheReceptionists() throws {
+        let caption = try WireCoding.decodeServerMessage(#"{"type":"caption","text":"Hello?","at":1.0}"#)
+        guard case let .caption(_, _, speaker) = caption else { return XCTFail("not a caption: \(caption)") }
+        XCTAssertEqual(speaker, .receptionist)
+    }
+
+    func testCaptionDecodesReceptionistSpeaker() throws {
+        XCTAssertEqual(
+            try WireCoding.decodeServerMessage(
+                #"{"type":"caption","text":"We have 4 pm tomorrow.","at":1793430000.25,"speaker":"receptionist"}"#),
+            .caption(text: "We have 4 pm tomorrow.", at: 1_793_430_000.25, speaker: .receptionist))
+    }
+
+    func testCaptionDecodesAgentSpeaker() throws {
+        XCTAssertEqual(
+            try WireCoding.decodeServerMessage(
+                #"{"type":"caption","text":"One moment please, I'm signing my reply.","at":1793430000.25,"speaker":"agent"}"#),
+            .caption(text: "One moment please, I'm signing my reply.", at: 1_793_430_000.25, speaker: .agent))
+    }
+
+    func testCaptionWithUnknownSpeakerIsKeptAsTheReceptionists() throws {
+        XCTAssertEqual(
+            try WireCoding.decodeServerMessage(
+                #"{"type":"caption","text":"Hello?","at":1.0,"speaker":"narrator"}"#),
+            .caption(text: "Hello?", at: 1, speaker: .receptionist))
+    }
+
     func testCaptionDecodesIntegerTimestamp() throws {
         XCTAssertEqual(
             try WireCoding.decodeServerMessage(#"{"type":"caption","text":"Hi","at":1793430000}"#),

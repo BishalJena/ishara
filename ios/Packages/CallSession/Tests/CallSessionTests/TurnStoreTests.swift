@@ -436,6 +436,50 @@ final class TurnStoreTests: XCTestCase {
         XCTAssertEqual(store.captions.map(\.speaker), [.receptionist, .user])
     }
 
+    func testNewChipDismissesTheDeliveredResult() {
+        showDraft("Hello.")
+        store.send()
+        store.receive(.spoken(turnID: turn(1)))
+
+        store.add(.unsure())
+
+        XCTAssertEqual(store.sending, .idle)
+    }
+
+    func testQuickReplyThenClearDoesNotBringBackTheDeliveredResult() {
+        showDraft("Hello.")
+        store.send()
+        store.receive(.spoken(turnID: turn(1)))
+
+        store.useQuickReply(.repeat)
+        store.clear()
+
+        XCTAssertEqual(store.sending, .idle)
+    }
+
+    func testNewChipKeepsTheNotDeliveredReplyForLater() {
+        showDraft("Hello.")
+        store.send()
+        store.receive(.notDelivered(turnID: turn(1), reason: "no_confirmation"))
+
+        store.add(.recognised(.yes))
+
+        XCTAssertEqual(store.sending, .notDelivered(text: "Hello."))
+    }
+
+    func testClearWithNothingTypedDismissesTheUnspokenReply() {
+        showDraft("Hello.")
+        store.send()
+        store.receive(.notDelivered(turnID: turn(1), reason: "no_confirmation"))
+        let sentBefore = sink.sent
+
+        store.clear()
+
+        XCTAssertEqual(store.sending, .idle)
+        XCTAssertFalse(store.canResend)
+        XCTAssertEqual(sink.sent, sentBefore)
+    }
+
     func testNotDeliveredReplyStaysOutOfTheTranscript() {
         showDraft("Hello.")
         store.send()
@@ -569,6 +613,24 @@ final class TurnStoreTests: XCTestCase {
              Caption(text: "Does that work?", at: Date(timeIntervalSince1970: 101.5))])
     }
 
+    func testAgentCaptionIsKeptAsTheAgentsLine() {
+        store.receive(.caption(text: "Hello, I'm calling for a Deaf caller.", at: 1, speaker: .agent))
+        store.receive(.caption(text: "City Clinic, how can I help?", at: 2, speaker: .receptionist))
+
+        XCTAssertEqual(store.captions.map(\.speaker), [.agent, .receptionist])
+    }
+
+    func testAgentCaptionSendsNothingAndKeepsTheDraft() {
+        showDraft("Hello.")
+        let sentBefore = sink.sent
+
+        store.receive(.caption(text: "One moment please, I'm signing my reply.", at: 1, speaker: .agent))
+
+        XCTAssertEqual(sink.sent, sentBefore)
+        XCTAssertEqual(store.draft?.text, "Hello.")
+        XCTAssertEqual(store.sending, .idle)
+    }
+
     func testCaptionKeepsTheDraft() {
         showDraft("Hello.")
 
@@ -585,6 +647,41 @@ final class TurnStoreTests: XCTestCase {
 
         XCTAssertEqual(store.lastError, ServerError(code: "stale_turn", message: "turn turn0 is not current"))
         XCTAssertEqual(store.sending, .speaking(turnID: turn(1), text: "Hello."))
+    }
+
+    func testErrorsNeverSendOrSettleAnything() {
+        showDraft("Hello.")
+        store.send()
+        let sentBefore = sink.sent
+        let codes = ["stale_turn", "already_approved", "busy_speaking", "call_not_live", "call_ended",
+                     "bad_message", "cannot_interrupt", "end_failed", "something_new"]
+
+        for code in codes {
+            store.receive(.error(code: code, message: "x"))
+        }
+
+        XCTAssertEqual(sink.sent, sentBefore)
+        XCTAssertEqual(store.sending, .speaking(turnID: turn(1), text: "Hello."))
+        XCTAssertEqual(store.state, .inCall)
+    }
+
+    func testErrorClearsOnTheUsersNextAction() {
+        store.add(.recognised(.hello))
+        store.receive(.error(code: "stale_turn", message: "x"))
+
+        store.add(.recognised(.doctor))
+
+        XCTAssertNil(store.lastError)
+    }
+
+    func testErrorClearsWhenTheReplySettles() {
+        showDraft("Hello.")
+        store.send()
+        store.receive(.error(code: "busy_speaking", message: "x"))
+
+        store.receive(.spoken(turnID: turn(1)))
+
+        XCTAssertNil(store.lastError)
     }
 
     func testUnknownMessageChangesNothing() {
@@ -616,6 +713,86 @@ final class TurnStoreTests: XCTestCase {
         XCTAssertFalse(store.isStopRequested)
     }
 
+    func testUnspokenReplyAfterStopIsStoppedNotAFailure() {
+        store.useQuickReply(.yes)
+        store.send()
+        store.stop()
+
+        store.receive(.notDelivered(turnID: turn(2), reason: "stopped"))
+
+        XCTAssertEqual(store.sending, .stopped(text: "Yes."))
+        XCTAssertEqual(store.captions, [], "nothing was spoken")
+    }
+
+    func testNotDeliveredWithoutStopStaysAFailure() {
+        store.useQuickReply(.yes)
+        store.send()
+
+        store.receive(.notDelivered(turnID: turn(2), reason: "stopped"))
+
+        XCTAssertEqual(store.sending, .notDelivered(text: "Yes."))
+    }
+
+    func testStoppedReplyIsOnlyResentOnATapWithANewTurnID() {
+        store.useQuickReply(.yes)
+        store.send()
+        store.stop()
+        let sentBefore = sink.sent
+        store.receive(.notDelivered(turnID: turn(2), reason: "stopped"))
+        XCTAssertEqual(sink.sent, sentBefore, "never resend automatically")
+        XCTAssertTrue(store.canResend)
+
+        store.resend()
+
+        XCTAssertEqual(sink.approvals.last, .approve(turnID: turn(4), text: "Yes."))
+        XCTAssertEqual(store.sending, .speaking(turnID: turn(4), text: "Yes."))
+    }
+
+    func testStopRefusedAsTooLateIsRecordedForTheReply() {
+        store.useQuickReply(.yes)
+        store.send()
+        store.stop()
+
+        store.receive(.error(code: "cannot_interrupt", message: "Bolna is already speaking."))
+
+        XCTAssertEqual(store.stopProgress, .tooLate)
+        XCTAssertTrue(store.isStopRequested, "STOP is not offered again")
+        store.stop()
+        XCTAssertEqual(sink.sent.filter { $0 == .stop }.count, 1)
+    }
+
+    func testCannotInterruptWithoutAStopChangesNoStopState() {
+        store.useQuickReply(.yes)
+        store.send()
+
+        store.receive(.error(code: "cannot_interrupt", message: "x"))
+
+        XCTAssertEqual(store.stopProgress, .none)
+    }
+
+    func testReplySpokenAfterATooLateStopIsNotAPlainDelivery() {
+        store.useQuickReply(.yes)
+        store.send()
+        store.stop()
+        store.receive(.error(code: "cannot_interrupt", message: "x"))
+
+        store.receive(.spoken(turnID: turn(2)))
+
+        XCTAssertEqual(store.sending, .deliveredDespiteStop)
+        XCTAssertEqual(store.captions.map(\.text), ["Yes."])
+        XCTAssertEqual(store.stopProgress, .none)
+    }
+
+    func testReplySpokenWhileStopWasPendingIsNotAPlainDelivery() {
+        store.useQuickReply(.yes)
+        store.send()
+        store.stop()
+
+        store.receive(.spoken(turnID: turn(2)))
+
+        XCTAssertEqual(store.sending, .deliveredDespiteStop)
+    }
+
     func testStopCanBeSentAgainForTheNextReply() {
         store.useQuickReply(.yes)
         store.send()
@@ -629,7 +806,7 @@ final class TurnStoreTests: XCTestCase {
         XCTAssertEqual(sink.sent.filter { $0 == .stop }.count, 2)
     }
 
-    func testEndDropsPendingThenSendsEndAndWipesEverything() {
+    func testEndDropsPendingThenSendsEndAndWipesWhatCouldBeSent() {
         store.receive(.caption(text: "Hello?", at: 1))
         showDraft("Hello.")
         store.add(.unsure())
@@ -641,8 +818,35 @@ final class TurnStoreTests: XCTestCase {
         XCTAssertEqual(store.state, .ended)
         XCTAssertEqual(store.chips, [])
         XCTAssertNil(store.draft)
-        XCTAssertEqual(store.captions, [])
         XCTAssertEqual(store.sending, .idle)
+    }
+
+    func testEndKeepsTheCaptionsAsATranscript() {
+        store.receive(.caption(text: "City Clinic, how can I help?", at: 1))
+        showDraft("Hello.")
+        store.send()
+        store.receive(.spoken(turnID: turn(1)))
+
+        store.end()
+
+        XCTAssertEqual(store.captions.map(\.text), ["City Clinic, how can I help?", "Hello."])
+        XCTAssertEqual(store.captions.map(\.speaker), [.receptionist, .user])
+    }
+
+    func testBackendEndKeepsTheCaptionsAsATranscript() {
+        store.receive(.caption(text: "City Clinic, how can I help?", at: 1))
+
+        store.receive(.status(.ended))
+
+        XCTAssertEqual(store.captions.map(\.text), ["City Clinic, how can I help?"])
+    }
+
+    func testConnectionLostKeepsTheCaptions() {
+        store.receive(.caption(text: "City Clinic, how can I help?", at: 1))
+
+        store.connectionLost()
+
+        XCTAssertEqual(store.captions.map(\.text), ["City Clinic, how can I help?"])
     }
 
     func testEndWhileSpeakingClearsThePhase() {
@@ -671,17 +875,37 @@ final class TurnStoreTests: XCTestCase {
     }
 
     func testBackendEventsAreIgnoredAfterEnd() {
+        store.receive(.caption(text: "City Clinic, how can I help?", at: 1))
         store.end()
 
         store.receive(.status(.inCall))
-        store.receive(.caption(text: "Hello?", at: 1))
+        store.receive(.caption(text: "Hello?", at: 2))
+        store.receive(.caption(text: "Goodbye.", at: 3, speaker: .agent))
         store.receive(.draft(turnID: store.currentTurnID, text: "Hello.", source: .llm))
         store.connectionLost()
 
         XCTAssertEqual(store.state, .ended)
-        XCTAssertEqual(store.captions, [])
+        XCTAssertEqual(store.captions.map(\.text), ["City Clinic, how can I help?"], "no caption is added after End")
         XCTAssertNil(store.draft)
         XCTAssertNil(store.notice)
+    }
+
+    func testFailedHangUpAfterEndIsStillRecorded() {
+        store.end()
+
+        store.receive(.error(code: "end_failed", message: "Could not reach Bolna to hang up."))
+
+        XCTAssertEqual(store.lastError, ServerError(code: "end_failed", message: "Could not reach Bolna to hang up."))
+        XCTAssertEqual(store.state, .ended)
+    }
+
+    func testOtherErrorsAfterEndAreIgnored() {
+        store.end()
+
+        store.receive(.error(code: "call_ended", message: "x"))
+        store.receive(.error(code: "stale_turn", message: "x"))
+
+        XCTAssertNil(store.lastError)
     }
 
     func testBackendEndedStatusWipesWithoutSending() {

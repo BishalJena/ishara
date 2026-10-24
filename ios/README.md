@@ -21,7 +21,8 @@ Views ─▶ ActiveCallViewModel ─▶ TurnStore (CallSession: every SEND safet
 
 The SEND rules live in one place, `TurnStore` in [CallSession](Packages/CallSession/README.md):
 single-use SEND tied to a turn id, stale drafts ignored, `?` never sent, re-SEND only on
-an explicit tap with a new turn id, everything wiped on End or a lost connection.
+an explicit tap with a new turn id, and chips, drafts and pending approvals wiped on End or a
+lost connection. The captions stay on screen as a read-only transcript of the call.
 
 ## Open
 
@@ -82,7 +83,7 @@ Other switches:
 |---|---|
 | `-IsharaFakeNotDelivered YES` | The first SEND of turn 2 comes back "not delivered", so you have to tap SEND again |
 | `-IsharaFakeTimeScale 0.5` | Runs the Get ready checks and the fake call twice as fast |
-| `-IsharaFixture <name>` | Debug builds only. Opens a prepared state: `home`, `getReady`, `signing`, `speaking`, `delivered`, `notDelivered`, `ended`, `connectionLost` |
+| `-IsharaFixture <name>` | Debug builds only. Opens a prepared state: `home`, `getReady`, `signing`, `speaking`, `delivered`, `notDelivered`, `ended`, `connectionLost`, `composing`, `stopped`, `stopTooLate`, `deliveredDespiteStop`, `backendError`, `endedNoCaptions`, `hangUpUnconfirmed` |
 
 Set them in the scheme (Run → Arguments) or pass them to `xcrun simctl launch`:
 

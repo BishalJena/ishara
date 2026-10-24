@@ -49,6 +49,8 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         schedule(after: 1) { $0.deliver(.status(.ringing)) }
         schedule(after: 2.5) { driver in
             driver.deliver(.status(.inCall))
+            // Turn 0: the agent opens with the disclosure before the user signs.
+            driver.deliver(.caption(text: DemoScript.disclosure, at: Date().timeIntervalSince1970, speaker: .agent))
             driver.playNextStage()
         }
         return store
@@ -73,9 +75,11 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         case .stop:
             guard let turnID = speakingTurn else { return }
             speakingTask?.cancel()
-            speakingTask = schedule(after: 0.3) { $0.finishSpeaking(turnID: turnID, delivered: false) }
+            speakingTask = schedule(after: 0.3) { $0.finishSpeaking(turnID: turnID, delivered: false, reason: "stopped") }
         case .end:
-            // The store has already ended itself; the backend would only confirm it.
+            // The agent says goodbye as it hangs up. The store ignores events once it has
+            // ended, so the caption goes in now, while `end()` is still on its way.
+            deliver(.caption(text: DemoScript.goodbye, at: Date().timeIntervalSince1970, speaker: .agent))
             finish()
         }
     }
@@ -98,10 +102,10 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         }
     }
 
-    private func finishSpeaking(turnID: TurnID, delivered: Bool) {
+    private func finishSpeaking(turnID: TurnID, delivered: Bool, reason: String = "no_confirmation") {
         speakingTurn = nil
         speakingTask = nil
-        deliver(delivered ? .spoken(turnID: turnID) : .notDelivered(turnID: turnID, reason: "no_confirmation"))
+        deliver(delivered ? .spoken(turnID: turnID) : .notDelivered(turnID: turnID, reason: reason))
         deliver(.status(.inCall))
         if delivered {
             schedule(after: 2) { $0.playNextStage() }
