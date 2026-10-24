@@ -138,6 +138,28 @@ async def test_no_accepted_chip_composes_and_speaks_nothing(tmp_path: Path) -> N
     assert budget.spent == {"groq": 1, "voice": 0}
 
 
+async def test_voice_oracle_adds_a_separate_ground_truth_file_but_keeps_the_turn_silent(
+    tmp_path: Path,
+) -> None:
+    recorder = groq(GOOD)
+    spoken: list[str] = []
+    budget = Budget(groq=5, voice=5)
+    [row] = await run_turns(
+        [turn([], ["no", "morning"])],
+        production(recorder),
+        recorder,
+        sarvam(spoken),
+        budget,
+        tmp_path,
+        voice_oracle=True,
+    )
+    assert row["voice"] is None
+    assert row["oracle_voice"]["text"] == GOOD
+    assert [p.name for p in tmp_path.iterdir()] == ["T3-oracle.wav"]
+    assert spoken == [GOOD]
+    assert budget.spent == {"groq": 1, "voice": 1}
+
+
 async def test_the_groq_cap_stops_the_run_before_an_extra_paid_call(tmp_path: Path) -> None:
     seen: list[dict] = []
     recorder = groq(GOOD, GOOD, seen=seen)

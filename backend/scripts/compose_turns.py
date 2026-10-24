@@ -8,7 +8,9 @@ chips the recognizer accepted and the ground-truth (oracle) chips. Both chip lis
 through `app.composer.build_composer` exactly as production builds it (Groq, 1.5 s
 budget, validator, template fallback) and through `TemplateComposer`; the recognised
 draft, which is what the user would SEND, is synthesised with `SarvamTTS`. An empty chip
-list composes nothing, as in the app. Groq's raw answer is kept by a transport wrapper
+list composes nothing, as in the app. With --voice-oracle the ground-truth draft is also
+synthesised (`<turn>-oracle.wav`) to hear what a correct recognition would have said; it
+is never what the pipeline speaks. Groq's raw answer is kept by a transport wrapper
 so a rejected draft can be shown next to the validator's reasons.
 
 Paid calls are capped (--max-groq, --max-voice); the run stops before going over. Keys
@@ -126,6 +128,7 @@ async def run_turns(
     tts: SarvamTTS | None,
     budget: Budget,
     audio_dir: Path,
+    voice_oracle: bool = False,
 ) -> list[dict[str, Any]]:
     templates = TemplateComposer()
     results = []
@@ -148,25 +151,27 @@ async def run_turns(
                 "draft": await compose(llm, recorder, request),
                 "template": (await templates.compose(request)).text,
             }
-        row["voice"] = await speak(row, tts, budget, audio_dir)
+        row["voice"] = await speak(row["recognised"]["draft"], tts, budget, audio_dir / turn.turn)
+        if voice_oracle:
+            oracle_wav = audio_dir / f"{turn.turn}-oracle"
+            row["oracle_voice"] = await speak(row["oracle"]["draft"], tts, budget, oracle_wav)
         results.append(row)
         print(f"{turn.turn}: {json.dumps(row, ensure_ascii=False)}", flush=True)
     return results
 
 
 async def speak(
-    row: dict[str, Any], tts: SarvamTTS | None, budget: Budget, audio_dir: Path
+    draft: dict[str, Any] | None, tts: SarvamTTS | None, budget: Budget, stem: Path
 ) -> dict[str, Any] | None:
-    """The recognised draft is what SEND would speak; no draft means silence."""
-    draft = row["recognised"]["draft"]
+    """Synthesise a draft to `stem`.wav; no draft means silence."""
     if tts is None or draft is None:
         return None
     budget.spend("voice")
     started = time.perf_counter()
     wav = await tts.synthesize(draft["text"])
     elapsed = time.perf_counter() - started
-    audio_dir.mkdir(parents=True, exist_ok=True)
-    path = audio_dir / f"{row['turn']}.wav"
+    stem.parent.mkdir(parents=True, exist_ok=True)
+    path = stem.with_suffix(".wav")
     path.write_bytes(wav)
     return {
         "path": str(path),
@@ -185,6 +190,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-groq", type=int, default=20)
     parser.add_argument("--max-voice", type=int, default=8)
     parser.add_argument("--templates-only", action="store_true", help="free: no Groq, no voice")
+    parser.add_argument(
+        "--voice-oracle", action="store_true", help="also voice the ground-truth drafts"
+    )
     parser.add_argument("--play", action="store_true", help="afplay the first WAV")
     return parser
 
@@ -202,13 +210,15 @@ async def amain(args: argparse.Namespace) -> int:
         settings = Settings(_env_file=None, groq_api_key=keys.groq_key, groq_model=keys.groq_model)
         llm = build_composer(settings, transport=recorder)
         tts = SarvamTTS(keys.sarvam_key) if keys.sarvam_key else None
-    results = await run_turns(turns, llm, recorder, tts, budget, args.audio_dir)
+    results = await run_turns(
+        turns, llm, recorder, tts, budget, args.audio_dir, voice_oracle=args.voice_oracle
+    )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(
         json.dumps({"spent": budget.spent, "turns": results}, indent=2, ensure_ascii=False) + "\n"
     )
     print(f"paid calls: {budget.spent}; results: {args.out}")
-    wavs = [r["voice"]["path"] for r in results if r["voice"]]
+    wavs = [v["path"] for r in results for v in (r["voice"], r.get("oracle_voice")) if v]
     if args.play and wavs:
         print(f"playing {wavs[0]}: afplay exit {subprocess.run(['afplay', wavs[0]]).returncode}")
     return 0
