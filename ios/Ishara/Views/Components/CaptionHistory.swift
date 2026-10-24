@@ -21,6 +21,9 @@ struct CaptionHistory: View {
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            // Opens on the newest caption even when the history already has entries
+            // (for example after returning to the screen); onChange only sees later ones.
+            .defaultScrollAnchor(.bottom)
             .onChange(of: captions.last?.id) { _, lastID in
                 guard let lastID else { return }
                 withAnimation { proxy.scrollTo(lastID, anchor: .bottom) }
