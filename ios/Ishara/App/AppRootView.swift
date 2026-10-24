@@ -32,6 +32,7 @@ struct AppRootView: View {
             case .getReady(let recognition):
                 GetReadyView(
                     recognition: recognition,
+                    modeDescription: services.modeDescription,
                     onStart: { startCall(recognition: recognition) },
                     onBack: {
                         recognition.stop()
