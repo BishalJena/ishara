@@ -449,9 +449,8 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 Mutation-minded tests: every safety rule (single-use approval, no invented times,
 "?" never spoken, allowlist) needs a test that **fails if the rule is removed**.
 
-Commands, files and owners for each layer and gate are in
-[docs/TESTING.md](docs/TESTING.md) (arrives with PR #8), along with what is automated vs
-manual and the mutation-testing target.
+How to run each layer, what pass means, what is automated vs manual, the mutation
+results and the latest measured results are in [docs/TESTING.md](docs/TESTING.md).
 
 ---
 
