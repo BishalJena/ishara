@@ -296,6 +296,34 @@ final class ActiveCallViewModelTests: XCTestCase {
         XCTAssertEqual(sink.approvals.count, 1)
     }
 
+    // MARK: Composing
+
+    func testComposingWhileRecognisedChipsWaitForTheirDraft() {
+        XCTAssertFalse(model.isComposing)
+        sign(.no, .afternoon)
+        XCTAssertTrue(model.isComposing)
+
+        draft("No. In the afternoon, please.")
+        XCTAssertFalse(model.isComposing)
+
+        // The ✕ on a wrong chip asks for a new draft: composing again, not "sign your reply".
+        model.removeChip(store.chips[1])
+        XCTAssertTrue(model.isComposing)
+        XCTAssertNil(model.draft)
+    }
+
+    func testOnlyUnsureChipsAreNotComposing() {
+        model.handle(.result(.unsure))
+
+        XCTAssertFalse(model.isComposing, "an unsure chip is never sent, so no draft is coming")
+    }
+
+    func testQuickReplyIsNotComposing() {
+        model.choose(.yes)
+
+        XCTAssertFalse(model.isComposing)
+    }
+
     // MARK: Stale drafts
 
     func testDraftForStaleTurnIsIgnored() {

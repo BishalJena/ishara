@@ -134,6 +134,12 @@ final class ActiveCallViewModel {
         return DraftDisplay(text: retryText, badge: .notDelivered)
     }
 
+    /// Recognised chips are on screen and their draft is still being written.
+    var isComposing: Bool {
+        guard let store else { return false }
+        return !store.recognisedSigns.isEmpty && store.draft == nil
+    }
+
     var canSend: Bool {
         guard let store else { return false }
         return store.canSend || retryText != nil

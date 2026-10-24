@@ -18,7 +18,7 @@ struct SigningPanel: View {
                 DeliveryBanner(delivery: model.delivery)
             }
             ChipRow(chips: model.chips, onRemove: model.removeChip)
-            DraftCard(draft: model.draft)
+            DraftCard(draft: model.draft, isComposing: model.isComposing)
         }
     }
 }
