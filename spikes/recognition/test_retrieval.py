@@ -435,6 +435,30 @@ class CaptureContracts(unittest.TestCase):
                     verify(SimpleNamespace(manifest=manifest, id=row["id"], note="Not actually reviewed"))
                 self.assertEqual(manifest.read_bytes(), original)
 
+    def test_take_is_verified_only_with_an_explicit_confirmation_note(self):
+        from pilot_capture import save_take
+
+        validate = data.validate_records
+        metadata = {k: v for k, v in record().items()
+                    if k in {"signer_id", "session_id", "split", "label", "negative_kind", "provenance"}}
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest = root / "dataset.json"
+            with patch.object(data, "ARTIFACTS", root), patch.object(
+                data, "validate_records",
+                side_effect=lambda rows, verify_files=True: validate(rows, root, verify_files)
+            ):
+                for shade, note, verified in ((10, "", False), (90, "   ", False),
+                                              (170, "  checked against INCLUDE  ", True)):
+                    frames = [np.full((48, 64, 3), shade + i, np.uint8) for i in range(6)]
+                    row = save_take(frames, [i / 25 for i in range(6)], metadata, manifest,
+                                    verification_note=note)
+                    with self.subTest(note=note):
+                        self.assertIs(row["verified"], verified)
+                        self.assertEqual(row["verification_note"], note.strip())
+                self.assertEqual([r["verified"] for r in data.load_dataset(manifest)],
+                                 [False, False, True])
+
 
 if __name__ == "__main__":
     unittest.main()
