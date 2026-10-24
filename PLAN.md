@@ -278,29 +278,31 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 - [x] **R0 [Build]** Extend the recognition tools from 5 to the 12 signs:
   `VOCABULARY` in `spikes/recognition/recognition_data.py`, plus tests.
   *Done:* `pilot_capture.py capture --concept morning` is accepted; tests pass. (PR #12)
-- [ ] **V1 [Build]** Backend skeleton in `backend/`: FastAPI app, config loading from env,
+- [x] **V1 [Build]** Backend skeleton in `backend/`: FastAPI app, config loading from env,
   `/health`, pytest, `Procfile`, deployed to the Heroku Basic dyno.
   *Done:* `/health` is green on Heroku; tests pass locally.
-  (code in PR #6, deploy scripts in PR #15; pending: Heroku deploy and `/health` on Heroku)
-- [ ] **V2 [Build]** Custom-LLM endpoint `/v1/chat/completions` that **logs the request
+  (done 23 Oct: deployed to Heroku EU on a Basic dyno, `/health` green; see #26)
+- [x] **V2 [Build]** Custom-LLM endpoint `/v1/chat/completions` that **logs the request
   shapes** Bolna sends (conversation, routing, end-of-call, voicemail) with secrets
   redacted, and streams an empty reply. Register it after V1 is deployed:
   `POST /user/model/custom` with base URL `PUBLIC_BASE_URL/v1` and `CUSTOM_LLM_TOKEN` as the
   model key (Bolna checks the endpoint at registration). *Done:* registered in Bolna as a
   custom model **and selectable as the LLM of a graph agent** (ledger B23). If a graph agent
   cannot use it, go straight to G1 fallback 1.
-  (code in PR #13: shape log plus single-use verbatim replies; pending: deploy, registration
-  and the graph-agent check)
+  (done 23 Oct: deployed, registered as a custom model, and Bolna accepted a graph agent
+  that names it; a live `[silence]` request returned the holding line. Whether Bolna calls
+  it during a real call is V4)
 
 ### Sat 24 Oct: day-1 Bolna test → Gate 1
 
-- [ ] **V3 [Build]** `backend/bolna/agent.json`: graph agent with a disclosure welcome, a `listen`
+- [x] **V3 [Build]** `backend/bolna/agent.json`: graph agent with a disclosure welcome, a `listen`
   node (silence repeat about 15 s), a `speak` node (`{{reply_text}}`), and a static goodbye with
   `end_call`. Sarvam voice, Deepgram nova-3 en-IN, silence hangup and online check
   off. Create it via the API **only after the custom LLM is registered (V2)**, because the
   agent refers to the registered model by name. *Done:* the agent exists and its id is saved
   in `BOLNA_AGENT_ID`.
-  (builder, `agent.json` and CLI in PR #14; pending: `register-llm` and `create` against Bolna)
+  (done 23 Oct: agent created via the API, id in Heroku config and `.env`; the transcriber
+  language is plain `en`, since Bolna rejected `en-IN` for nova-3)
 - [ ] **V4 [Build + Mate]** Spike call to the teammate's phone (cost about ₹20–30, heads-up first):
   1. The agent stays quiet while the teammate talks.
   2. A `user_reply` event makes it speak the **exact** text.
@@ -323,7 +325,8 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 - [ ] **R2 [Build]** Start/stop detector on the Mac (rest calibration, hands-up start,
   0.4 s rest end, minimum and maximum length) over live webcam and saved clips.
   *Done:* it cuts the enrollment takes correctly; unit tests cover the boundaries.
-  (code and boundary tests in PR #11; pending: R1 enrollment takes and a live webcam check)
+  (code merged, #11/#25; live replay of public clips cuts segments at about 0.47 s after the hands
+  rest; pending: R1 takes from the presenting signer and a live webcam check)
 - [x] **P1 [Build]** Convert the SignCLIP video encoder to Core ML (`ml/coreml/`), FP16, with
   padding to ≤256 frames. *Done:* the `.mlpackage` gives the same embeddings as PyTorch (cosine ≥ 0.999)
   on the saved clips.
@@ -336,17 +339,23 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 
 - [x] **V5 [Build]** Composer: templates for the 12 signs plus purpose, a Groq prompt, the validator,
   a 1.5 s timeout and the fallback. *Done:* a fixture test for every script turn (§1), and
-  validator tests for invented times, a missing "no" and an over-long draft. (PR #10; the live
-  Groq check is not run yet, and the app entry point still has to pass `build_composer`)
+  validator tests for invented times, a missing "no" and an over-long draft. (PR #10, wired in
+  #26; live Groq drafts for T1/T3/T5 passed the validator in 0.17–0.22 s, #33)
+- [ ] **V5b [Build]** Close the validator gap found in #33: for `thankyou` alone after "You're
+  booked for 10:30 tomorrow morning", Groq's *"Thank you, that works perfectly for me."* passed,
+  although nobody signed agreement. Reject drafts that add acceptance, refusal or confirmation
+  ("that works", "sounds good", "I agree", "I can't") unless `yes`/`no` is among the chips.
+  *Done:* a fixture for the P6 case fails before the fix and passes after; the §1 turns still pass.
 - [ ] **R3 [You]** Calibration session: 5 × 12 signs plus 20 negatives.
 - [ ] **R2b [Build]** Set the "close enough" cut-off on the calibration session only, then freeze it.
   *Done:* on the calibration clips the frozen cut-off accepts **at least 60% of attempts for
   every sign with 0 wrong accepts and 0 accepts on the 20 negatives**. A cut-off that rejects
   everything does not pass. Record the cut-off and the per-sign counts.
   (calibration report and bundle export in PR #12; pending: R3 calibration session)
-- [ ] **A1 [Build]** Xcode project `ios/Ishara/` with the 4 screens from the board (Home, Get ready,
+- [x] **A1 [Build]** Xcode project `ios/Ishara/` with the 4 screens from the board (Home, Get ready,
   Active call signing, Active call speaking) running on fake data in the simulator.
-  (code in PR #22, draft; pending: Xcode build, simulator run and screenshots)
+  (done 24 Oct: #22/#27 built and tested in the simulator, including a UI test that walks the
+  clinic script on fake data)
 
 ### Mon 26 Oct: final recognition test → Gate 2
 
@@ -360,8 +369,8 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 
 - [ ] **P2 [Build]** MediaPipe Holistic (iOS) feeding the Swift detector and matcher, using the
   frozen cut-off and your enrollment references bundled in the app.
-  (SignPipeline in PR #18 and RecognitionCore in PR #23, both draft; pending: `swift test` under
-  Xcode, the R2b cut-off, enrollment references and wiring into the app)
+  (code merged and wired, #18/#23/#27, Swift tests pass; pending: the R2b cut-off, enrollment
+  references, and a run on a device with a camera)
 - [ ] **P3 [Build]** Parity: run the same saved videos through the simulator pipeline and through the Mac.
   Note the Mac uses the legacy `mp.solutions.holistic` (MediaPipe 0.10.21) while iOS only has the
   newer Holistic Landmarker task, so landmarks will differ. The iOS task's pose model is
@@ -371,9 +380,11 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
   the iPhone with `.cpuAndGPU` (the Neural Engine failed on the Mac, P1).
   *Done:* both give the same accepted label (or "?") on every calibration clip.
 - [ ] **G3 Gate 3** (see §7).
-- [ ] **A2 [Build]** Wire the app to the backend: start call, chips → draft, SEND, captions,
+- [x] **A2 [Build]** Wire the app to the backend: start call, chips → draft, SEND, captions,
   status, STOP, End. Uses the replay-video recognizer in the simulator.
-  (CallSession package in PR #20, draft; pending: `swift test` under Xcode and wiring into the app)
+  (done 24 Oct: #20/#27, `LiveCallDriver` over `POST /calls` and the call WebSocket, tested
+  against an in-memory backend and a local demo backend; pending only a run against the
+  deployed backend, which is A3)
 
 ### Wed 28 Oct: full flow in the simulator
 
@@ -382,11 +393,12 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
   (offline rehearsal with a fake Bolna in PR #8 and a fake app in PR #17; pending: the real call)
 - [ ] **A4 [Build]** Mac fallback: the Mac webcam recognizer posts chips to the same backend
   WebSocket, so the demo works even without the on-device recognizer.
-  (Mac bridge with manual and replay input in PR #9; pending: the live webcam source and a run
-  against the deployed backend)
+  (code merged, #9/#25/#29/#30: live webcam source, top-3 display, Sign Lab local backend;
+  pending: a webcam run with the presenting signer's bundle and a run against the deployed backend)
 - [ ] **A5 [Build]** Path A mode (bonus): backend `/tts` (Sarvam) → WAV → app plays it
   with the injection mode on. Needs `SARVAM_API_KEY`.
-  (backend `/tts` in PR #7; pending: a live Sarvam request and playback in the app)
+  (backend `/tts` merged, #7; Sarvam v4-flash answered live requests in 0.65–1.08 s (#33);
+  pending: playback in the app on a device with injection on)
 
 ### Thu 29 Oct: real iPhone → Gate 4
 

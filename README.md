@@ -10,10 +10,13 @@ receptionist's reply comes back as captions.
 Neither recognition nor the call flow has passed its validation gates yet; the
 [plan](PLAN.md#7-gates-go--no-go) lists them.
 
-**Where the build is (23 Oct):** the backend, the iOS app shell, three iOS packages,
-the Core ML conversion and the Mac fallback exist as open pull requests with offline
-tests. Nothing has run against real Bolna, been deployed to Heroku or run on an iPhone
-yet. [PLAN §6](PLAN.md#6-schedule-and-todos) tracks each task.
+**Where the build is (24 Oct):** the backend, the iOS app and its packages, the Core ML
+conversion, the Mac fallback and the Sign Lab tools are merged on `main` with offline
+tests, and the backend is deployed to Heroku with the Bolna custom model and graph
+agent registered. No Bolna call has been placed, no sign of the presenting signer has
+been recorded, and nothing has run on an iPhone. A cross-signer check on public videos
+is in the [pipeline evaluation](docs/experiments/video-pipeline-eval.md).
+[PLAN §6](PLAN.md#6-schedule-and-todos) tracks each task.
 
 ## Start here
 
