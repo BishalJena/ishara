@@ -1,0 +1,9990 @@
+{
+ "clips": {
+  "c_ee69066c1ac7": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_ec29472e13a8": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 21,
+   "action": "none"
+  },
+  "c_3ef8ad4cd476": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 24,
+   "action": "none"
+  },
+  "c_40721da395a4": {
+   "text_found": true,
+   "texts": [
+    ") Neeg for ESS",
+    ") Nees for ESS",
+    ") Negg for ESS",
+    "14Al 100 100",
+    "1553 120 10-6",
+    "1553 120 1016",
+    "1553 120 1076",
+    "1553 120 107\u044c",
+    "1553 120 10\u043a6",
+    "1553 120 10\u043d6",
+    "1553 120 10\u043d\u044c",
+    "1553 120 10\u04456",
+    "1553 120 120 \u043a6",
+    "1553 120 120-6",
+    "1553 120 120K%",
+    "1553 120 120\u043a6",
+    "1553 120 120\u043d6",
+    "1553 120 120\u043d\u044c",
+    "1553 120 128-1",
+    "1553 120 1316",
+    "1553 120 18.6",
+    "1556/40",
+    "155\u0437 120 10\u043a\u0440",
+    "> Neeg for ESS e",
+    "Executiive Infotmation",
+    "Executiive Infotuatim",
+    "Executiive Infotuatin",
+    "Executiive Infotuation",
+    "Executiive Infotwatien",
+    "Executiive Infotwation",
+    "Executive Infotmatinn",
+    "Executive Infotuatin",
+    "Executive Infotuatinn",
+    "Executive Infotuation",
+    "J",
+    "Neef for ESS",
+    "Neef for ESSe",
+    "Neeg for ESS",
+    "Neeg for ESSe",
+    "Nees for ESS",
+    "Nees for ESS e",
+    "Nees for ESS,",
+    "Nees for ESS.",
+    "Nees for ESSe",
+    "Nees_for ESS",
+    "Negg for ESS",
+    "Seapport Syftem",
+    "Sepport Syftem",
+    "Sepport Syften",
+    "Sepport\u1ea1\u1ea0\u1ea1\u00bfHtem",
+    "Sepport\u1ea1\u1ed7\u1ea0\u1ea1S\u00bfyHem",
+    "Sgiten",
+    "Sispport Syftem",
+    "Suapport Syftem",
+    "Support Syftem",
+    "Support Syften",
+    "Support Syptem",
+    "Support Syrtem",
+    "Support System",
+    "Support Systen",
+    "Supporti\u1ea0Syften",
+    "Supporti\u1ea0Systen",
+    "Supporti\u1ea1\u1ea0System",
+    "Support\u1ea1\u1ed7\u1ea0\u1ea1\u00bfHem",
+    "Syiten",
+    "Syten",
+    "Trendanalns",
+    "Trendanalys",
+    "Trendanlns",
+    "Trendanlys",
+    "nces"
+   ],
+   "frames_with_text": 40,
+   "ignored_noise_boxes": 186,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0789,
+     0.171,
+     0.4638
+    ],
+    [
+     0.0,
+     0.4695,
+     0.1732,
+     0.6311
+    ],
+    [
+     0.9659,
+     0.8939,
+     1.0,
+     0.9867
+    ]
+   ],
+   "cover": 0.097,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_160560e40030": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 1,
+   "action": "none"
+  },
+  "c_e72a7946e6ae": {
+   "text_found": true,
+   "texts": [
+    "F205",
+    "F2053"
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 15,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.2578,
+     0.0513,
+     0.4478
+    ]
+   ],
+   "cover": 0.0097,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_29345b74e746": {
+   "text_found": true,
+   "texts": [
+    "F205."
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 29,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2316,
+     0.3328,
+     0.2872,
+     0.52
+    ]
+   ],
+   "cover": 0.0104,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_9c7988e4a1e6": {
+   "text_found": true,
+   "texts": [
+    "33"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 2,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0034,
+     0.4578,
+     0.0559,
+     0.52
+    ]
+   ],
+   "cover": 0.0033,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_72a350243ffe": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "C"
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 13,
+   "action": "blurred",
+   "regions": [
+    [
+     0.7237,
+     0.4994,
+     0.7762,
+     0.5644
+    ],
+    [
+     0.9112,
+     0.8661,
+     0.9638,
+     0.9644
+    ]
+   ],
+   "cover": 0.0086,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_a3d9828c620f": {
+   "text_found": true,
+   "texts": [
+    "(23][",
+    "(23]|",
+    "Your",
+    "[23]",
+    "ynah",
+    "you",
+    "your",
+    "yous"
+   ],
+   "frames_with_text": 13,
+   "ignored_noise_boxes": 44,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0786,
+     0.0751,
+     0.2394
+    ],
+    [
+     0.7925,
+     0.4606,
+     0.845,
+     0.5283
+    ]
+   ],
+   "cover": 0.0156,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_f564bb0d0873": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 15,
+   "action": "none"
+  },
+  "c_e455c64d2eab": {
+   "text_found": true,
+   "texts": [
+    "23]"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 3,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.4689,
+     0.0481,
+     0.5311
+    ]
+   ],
+   "cover": 0.003,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_8afdaf3cbaae": {
+   "text_found": true,
+   "texts": [
+    "[23]"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 6,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2316,
+     0.53,
+     0.2841,
+     0.595
+    ]
+   ],
+   "cover": 0.0034,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_d55c511524c5": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 1,
+   "action": "none"
+  },
+  "c_8ec627537394": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 9,
+   "action": "none"
+  },
+  "c_b9a898ac1289": {
+   "text_found": true,
+   "texts": [
+    "+ 259.21+ 173.88 YAB",
+    "+ 259.21+173,88 YAB",
+    "+ 259.21+173.88 YAB",
+    "+(\u043b\u043ej+(\u0437]\u20212(\u0437\u043e)(\u0442\u043e)(\u0432\u0425\u044d",
+    "+(\u043b\u043e}+(\u0437]+2(\u0437o)(\u0442\u043e)(\u0432\u0445\u044d)",
+    "+(\u043b\u043e}+(\u0437]+2(\u0437\u043e)(\u0442\u043e)(\u0432\u0445\u044d)",
+    "+(\u0442j+(\u0437]\u20212(\u0437o)(\u0442\u043e)(\u0432\u0425\u044d\u0443",
+    "+(\u0442}+(\u0437]+2(\u0437\u043e)(\u0442\u043e)(\u0432\u0425\u044d",
+    "+(\u0442\u043e]+(\u0437]+2(\u0437\u043e)(\u0442\u043e)(\u0432\u0445\u044d",
+    "+(\u0442\u043ej+(\u0437]+2(\u0437o)(\u0442\u043e)(\u0432\u0425\u044d)",
+    "+(\u0442\u043ej+(\u0437]+2(\u0437o)(\u0442\u043e)(\u0432\u0445\u044d)",
+    "+(\u0442\u043ej+(\u0437]+2(\u0437\u043e)(\u0442\u043e)(\u0432\u0445\u044d)",
+    "+(\u0442\u043ej+(\u0437]\u20212(\u0437o)(\u0442\u043e)(\u0432\u0425\u044d)",
+    "+(\u0442\u043ej+(\u0437]\u20212(\u0437o)(\u0442\u043e)(\u0432\u0425\u044d\u0443",
+    "+(\u0442\u043e}+(\u0437]+2(\u0437o)(\u0442\u043e)(\u0432\u0425\u044d",
+    "+(\u0442\u043e}+(\u0437]+2(\u0437\u043e)(\u0442\u043e)(\u0432\u0425\u044d",
+    "+(\u0442\u043e}+(\u0437]+2(\u0437\u043e)(\u0442\u043e)(\u0432\u0425\u044d)",
+    "+(\u0442\u043e}+(\u0437]+2(\u0437\u043e)(\u0442\u043e)(\u0432\u0445\u044d)",
+    "+259.21 + 173.88 YAB",
+    "+259.21 + 173.88 YAS",
+    "+259.21+173,88 YAB",
+    "+259.21+173.88 YAB",
+    "+259.21+175.88 YAB",
+    "9.214 (3-86x1)]2",
+    "9.214 (72-88x1i\u1ecai",
+    "9.214 (72.88x1)i\u1ecai",
+    "9.214 173-88x1)]2",
+    "9.214 173-88x1)\u1eca\u1ed3\u1ecai",
+    "9.214 173-88x1\u1ecai",
+    "9.214 173-88x1\u1ecai\u1ecai",
+    "9.214 173-88x1\u1eca\u1ed3\u1ecai",
+    "9.214 173.88x1)]2",
+    "YAB]\"",
+    "YAB]\u00b7",
+    "YAB]\u00b7a",
+    "\u00b7 (70)+(3)+2(30)(7o)(B)(\u00ae)"
+   ],
+   "frames_with_text": 54,
+   "ignored_noise_boxes": 218,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1757,
+     0.1565,
+     0.2697
+    ],
+    [
+     0.0,
+     0.2861,
+     0.1734,
+     0.5306
+    ]
+   ],
+   "cover": 0.0571,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_1346027a5fb1": {
+   "text_found": true,
+   "texts": [
+    "(9.214 173-86x1)2",
+    "(9.214 173-8\u20acx1)2",
+    "(9.214 173.-8\u20b4x1)2",
+    "+ (70)+ (23)+2(30) (70) (8x)",
+    "+ 259.21 + 173.88 YAB",
+    "+ 259.21 +173.88 YA8",
+    "+ 259.21 +173.88 YAB",
+    "+ 259.21+173.88 YA8",
+    "+ 259.21+173.88 YAB",
+    "+ 259.21+175.88 YAB",
+    "+(\u0442\u043ej+(\u0437]+2(\u043e)(\u0442\u043e)\u0432\u0445\u044d",
+    "+259.21+173.88 YA8",
+    "+259.21+173.88 YAB",
+    "7 (70)+ (23) + 2(30) (70)(18X9)",
+    "7 (70)+ (23) + 2(30) (70)(1BXD)",
+    "7 (70)+ (23) + 2(30) (70)(1BXS)",
+    "7 (70)+ (23)+ 2(30) (70)(18Xe)",
+    "7 (70)+ (23)+ 2(30) (70)(1BX)",
+    "9.2(4 173.88x1)]2",
+    "9.21(4 173.88x1)]2",
+    "9.214 (73-88x1)] 2",
+    "9.214 (73.88x1)]2",
+    "9.214 173-86x1)2",
+    "9.214 173-88x1)] 2",
+    "9.214 173-8\u20acx1)2",
+    "9.214 173.-86x1)2",
+    "9.21\u00b7 173.88x1)]2",
+    "9.21\u00b7 173.88\u00d71)]2",
+    "9.21\u00b7 173\ufffe88x1)]2",
+    "A8",
+    "AB",
+    "Y AB",
+    "Y AB Y2",
+    "Y AB ]\"",
+    "Y AB ]\u00bd",
+    "Y AB]\"",
+    "Y AB]\"\u00aa",
+    "Y ABi\u1ed3i",
+    "Y AB\u1eca\u1ed3\u1eca",
+    "Y AB\u1ed3i",
+    "Y AB\u1ed3\u1eca",
+    "YAB",
+    "YAB]\"",
+    "YAB]\"\u00aa",
+    "YA\u0412",
+    "\u00b7 (7)+ (23)+ 2(30) (70)(8X2)",
+    "\u00b7 (70)+ (23) + 2(30) (70) (1B)X)",
+    "\u00b7 (70)+ (23)+ 2(30) (70)(1BX)",
+    "\u00b7 (70)+ (23)+ 2(30) (70)(1BXD",
+    "\u00b7 (70)+ (23)+ 2(30) (70)(1BXD)",
+    "\u00b7 (70)+ (23)+ 2(30) (70)(BXD)",
+    "\u00b7 (70)+ (3)+ 2(30) (70)(BXB)",
+    "\u2022 xg6s +20",
+    "\u2022 xg6s +2x"
+   ],
+   "frames_with_text": 67,
+   "ignored_noise_boxes": 237,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1882,
+     0.1356,
+     0.2674
+    ],
+    [
+     0.0,
+     0.2868,
+     0.1766,
+     0.5334
+    ],
+    [
+     0.2807,
+     0.2883,
+     0.344,
+     0.4768
+    ],
+    [
+     0.2878,
+     0.4828,
+     0.3419,
+     0.5533
+    ]
+   ],
+   "cover": 0.07,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_269e14705629": {
+   "text_found": true,
+   "texts": [
+    "1233"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 1,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0769,
+     0.5078,
+     0.1294,
+     0.57
+    ]
+   ],
+   "cover": 0.0033,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_2368fb336457": {
+   "text_found": true,
+   "texts": [
+    "02-\u0105\u0142\u0105\u0142"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 4,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2237,
+     0.3467,
+     0.2794,
+     0.4811
+    ]
+   ],
+   "cover": 0.0075,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_ba3c7de4fcc2": {
+   "text_found": true,
+   "texts": [
+    "(23",
+    "(23]",
+    "(33]",
+    "857205",
+    "857205.",
+    "ena",
+    "m\u00e0"
+   ],
+   "frames_with_text": 19,
+   "ignored_noise_boxes": 16,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1048,
+     0.0714,
+     0.1958
+    ],
+    [
+     0.2901,
+     0.2378,
+     0.3533,
+     0.5153
+    ],
+    [
+     0.7925,
+     0.4578,
+     0.845,
+     0.5256
+    ]
+   ],
+   "cover": 0.0276,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_137dc1f8ce50": {
+   "text_found": true,
+   "texts": [
+    "[23] |"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 7,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2171,
+     0.33,
+     0.2804,
+     0.5172
+    ],
+    [
+     0.2237,
+     0.5244,
+     0.2778,
+     0.595
+    ]
+   ],
+   "cover": 0.0157,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_17ee4fceb78c": {
+   "text_found": true,
+   "texts": [
+    "827205",
+    "D"
+   ],
+   "frames_with_text": 3,
+   "ignored_noise_boxes": 16,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2224,
+     0.2989,
+     0.2823,
+     0.5567
+    ],
+    [
+     0.2253,
+     0.08,
+     0.2778,
+     0.1478
+    ]
+   ],
+   "cover": 0.019,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_1bbf603d0ea4": {
+   "text_found": true,
+   "texts": [
+    "23",
+    "33] |",
+    "33]|",
+    "F285"
+   ],
+   "frames_with_text": 5,
+   "ignored_noise_boxes": 1,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0737,
+     0.3133,
+     0.1294,
+     0.4978
+    ],
+    [
+     0.0769,
+     0.505,
+     0.1294,
+     0.57
+    ]
+   ],
+   "cover": 0.0137,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_dba9214b835a": {
+   "text_found": true,
+   "texts": [
+    "23",
+    "23]",
+    "837205.",
+    "837205\u0158\u0219\u0158\u0219",
+    "na"
+   ],
+   "frames_with_text": 6,
+   "ignored_noise_boxes": 23,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1217,
+     0.0575,
+     0.1867
+    ],
+    [
+     0.2907,
+     0.2378,
+     0.3526,
+     0.5151
+    ],
+    [
+     0.7925,
+     0.4578,
+     0.845,
+     0.5228
+    ]
+   ],
+   "cover": 0.0243,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_2d8a2c658d21": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 4,
+   "action": "none"
+  },
+  "c_65bc8dd95e89": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 27,
+   "action": "none"
+  },
+  "c_80ea2fdfdc26": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "33J",
+    "33]",
+    "[23]"
+   ],
+   "frames_with_text": 6,
+   "ignored_noise_boxes": 9,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.455,
+     0.0497,
+     0.5256
+    ]
+   ],
+   "cover": 0.0035,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_ce4a7a28b1f2": {
+   "text_found": true,
+   "texts": [
+    "\u0454\u2264"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 4,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0758,
+     0.1281,
+     0.1325,
+     0.5607
+    ]
+   ],
+   "cover": 0.0245,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_5e38664d2962": {
+   "text_found": true,
+   "texts": [
+    "23"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 6,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.4606,
+     0.0481,
+     0.5228
+    ]
+   ],
+   "cover": 0.003,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_f25a25b54d11": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 4,
+   "action": "none"
+  },
+  "c_cce90fbdf957": {
+   "text_found": true,
+   "texts": [
+    "+ (70)+ (23)+2(30)(70) (18XeD)",
+    "+ (70)+ (23)+2(30)(70) (18Xes)",
+    "+ (70)+ (3)+2(30) (70)(18Xe)",
+    "+ (70)+(23) + 2(30) (70) (8Xe)",
+    "+ (70)+(23) + 2(30) (7o) (8xe)",
+    "+ (70)+(23)+ 2(30) (70) (8Xe)",
+    "+ (70)+(23)+ 2(30) (70) (BXe)",
+    "+ (70)+(23)+ 2(30) (7o) (8xe)",
+    "+ (7o)+ (23)+ 2(30) (70) (8Xe)",
+    "+ (7o)+(23)+ 2(30) (70) (8Xe)",
+    "+ (7o)+(23)+ 2(30) (70) (BXe)",
+    "+ (7o)+(23)+ 2(30) (70) (Bxe)",
+    "+ (7o)+(23)+ 2(30)(70) (BXe)",
+    "+ (To)+ (23)+ 2(30) (70) (8Xe)",
+    "+ (To)+ (23)+ 2(30) (70) (BXe)",
+    "+ (To)+ (23)+ 2(30) (7o) (8Xe)",
+    "+ (To)+(23)+ 2(30) (70) (8Xe)",
+    "+ (To)+(23)+ 2(30) (70) (Bxe)",
+    "+ (To)+(23)+ 2(30) (7o) (8Xe)",
+    "+ (To)+(23)+ 2(30) (7o) (8xe)",
+    "+ (To)+(23)+ 2(30)(70) (8xe)",
+    "+ 259.21+173,88 YAB",
+    "+ 259.21+173.88 YAB",
+    "+ 259.21+175.88 YAB",
+    "+259.21+173.88 YAB",
+    "+259.21+173.88 YAB\u0142",
+    "+259.21+175.88 KAB",
+    "+259.21+175.88 YAB",
+    "39,-214 173.86x1i\u1ed3\u1eca",
+    "39,-214 173.86x1i\u1ed3\u1ecai",
+    "391-214 173.86x1i\u1ed3\u1eca",
+    "59.-214 173.86x1)]2",
+    "59.2(4 173-86\u00d71)]2",
+    "59.2(4 173-88x1)i2",
+    "59.2(4 173-88\u00d71)2",
+    "59.2(4 173-88\u00d71)]2",
+    "59.214 172.88\u00d71)]2",
+    "59.214 173.88\u00d71)]2",
+    "5\u0437\u043e\u0442\u0438",
+    "7 (70)+ (3)+2(30) (70)(18Xe)",
+    "7 (70)+ (3)+2(30)(70)(18Xe)",
+    "9.214 173.86x1)]2",
+    "9.21J 173.88x1)]2",
+    "Y AB ]"
+   ],
+   "frames_with_text": 68,
+   "ignored_noise_boxes": 230,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.2873,
+     0.1766,
+     0.5812
+    ],
+    [
+     0.2878,
+     0.4828,
+     0.3419,
+     0.5506
+    ]
+   ],
+   "cover": 0.0556,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_cc3fa7900274": {
+   "text_found": true,
+   "texts": [
+    "Your",
+    "your"
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 23,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0803,
+     0.07,
+     0.2338
+    ]
+   ],
+   "cover": 0.0107,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_fec5f426b78e": {
+   "text_found": true,
+   "texts": [
+    "200",
+    "21",
+    "212",
+    "22",
+    "220",
+    "72",
+    "MABS",
+    "MAES",
+    "MAIS",
+    "MAPE",
+    "MAPS",
+    "MAR",
+    "MARS",
+    "PHOCONsig",
+    "PrOCONsiCg",
+    "PrOCONsicg",
+    "PrOCONsig",
+    "PrOCONsing",
+    "PrOCONsi\u0434",
+    "PrOCoNsig",
+    "PrOcONsig",
+    "PrOcONsing",
+    "ProCONsig",
+    "ProCoNsig",
+    "ProCoNsing",
+    "ProcONsing",
+    "ProcoNsig",
+    "Procossig",
+    "Time",
+    "procoNsig"
+   ],
+   "frames_with_text": 110,
+   "ignored_noise_boxes": 49,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1541,
+     0.1231,
+     0.3269
+    ],
+    [
+     0.0,
+     0.3702,
+     0.0966,
+     0.5714
+    ]
+   ],
+   "cover": 0.0407,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_5cd20d00c817": {
+   "text_found": true,
+   "texts": [
+    "-o",
+    "22",
+    "220",
+    "23",
+    "33 ||",
+    "5",
+    "5)",
+    "Lisvosond",
+    "MAB",
+    "MAE",
+    "MAES",
+    "MAIS",
+    "MAPE",
+    "MAPS",
+    "MARS",
+    "MAS",
+    "MAiS",
+    "MA\u00dfS",
+    "PrOCONig",
+    "PrOCONsig",
+    "PrOCoNsig",
+    "PrOcoNsig",
+    "PrOcoNsing",
+    "ProCONsiCg",
+    "ProcoNsicg",
+    "ProcoNsig",
+    "ProcoNsing",
+    "Procossing",
+    "Time",
+    "procersig",
+    "processig",
+    "procoNsicg",
+    "procoNsig",
+    "procorsig",
+    "procorsing",
+    "procossicg",
+    "procossig",
+    "procossing"
+   ],
+   "frames_with_text": 117,
+   "ignored_noise_boxes": 41,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1564,
+     0.1251,
+     0.3183
+    ],
+    [
+     0.0,
+     0.3717,
+     0.0993,
+     0.5708
+    ],
+    [
+     0.2456,
+     0.3633,
+     0.2997,
+     0.4339
+    ],
+    [
+     0.2487,
+     0.555,
+     0.2997,
+     0.62
+    ]
+   ],
+   "cover": 0.0472,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_37c9f62b54f8": {
+   "text_found": true,
+   "texts": [
+    "0 5.",
+    "05."
+   ],
+   "frames_with_text": 8,
+   "ignored_noise_boxes": 2,
+   "action": "blurred",
+   "regions": [
+    [
+     0.23,
+     0.3328,
+     0.2856,
+     0.4589
+    ]
+   ],
+   "cover": 0.007,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_1af3a226720c": {
+   "text_found": true,
+   "texts": [
+    "+ (70)+ (23)+ 2(30)(70)(8XD)",
+    "+ (70)+(23)+ 2(30)(70)(8XD)",
+    "+ (70+ (3)+ 2(30)(7o) (8)E)",
+    "+ (70+ (3)+ 2(30)(To) (8XE)",
+    "+ (70+ (3)+ 2(30)(To) (8XER)",
+    "+ (70+ (3)+ 2(30)(To) (BXED)",
+    "+ (70+ (3)+ 2(30)(To)(B)ER)",
+    "+ (7o)+(23)+2(3o)(To)(BXe)",
+    "+ (T0+ (23)+ 2(30)(7o)(BXB)",
+    "+ (T0+ (3)+ 2(30)(7o) (B)E\u0110)",
+    "+ (T0+ (3)+ 2(30)(7o) (BXe\u0110)",
+    "+ (To)+ (3)+ 2(30)(7o) (8)\u00e9))",
+    "+ (To)+ (3)+ 2(30)(7o)(8XBY",
+    "+ (To+ (3)+ 2(30)(7o)(B)B)",
+    "+ (To+ (3)+ 2(30)(To) (B)B)",
+    "+ (To+ (3)+ 2(30)(To)(8)B)",
+    "+259.21+173.88 YAB",
+    "+259.21+175.88 YAB",
+    "9.214 172-88x1)i\u1ed3\u1ecai",
+    "9.214 173-88x1)i\u1ecai2",
+    "9.214 173-88\u00d71)i2",
+    "9.214 173-88\u0445\u0456)]\u00bd",
+    "CAOB",
+    "CAUB",
+    "Y 45 ]%",
+    "Y AB ]\u00b7a",
+    "Y AB]\"",
+    "Y AB]\u00b7a",
+    "YAB",
+    "YAB]\u00b7a",
+    "xBOS + 2x, XYAB",
+    "\u00b7 (70)+ (23)+ 2(30)(70)(18X)",
+    "\u00b7 (70)+ (23)+ 2(30)(70)(8X)"
+   ],
+   "frames_with_text": 59,
+   "ignored_noise_boxes": 248,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1772,
+     0.1559,
+     0.2617
+    ],
+    [
+     0.0,
+     0.2864,
+     0.1751,
+     0.528
+    ]
+   ],
+   "cover": 0.0555,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_456b09641e2d": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_81a0e6d8e08d": {
+   "text_found": true,
+   "texts": [
+    "- Cotlaga",
+    "- Cotlage",
+    "- Cotlega",
+    "- Scheol",
+    "- Scheot",
+    "- School",
+    "= Scheol",
+    "= Scheot",
+    "= Schoof",
+    "= Schook",
+    "= School",
+    "= Schoot",
+    "Collaga",
+    "Cotlaga",
+    "Cotlage",
+    "Cotleg",
+    "Cotlega",
+    "Cotlege",
+    "Cottaga",
+    "Cottage",
+    "Cottega",
+    "Cottege",
+    "Istem",
+    "Istems",
+    "Isteng",
+    "JMLO",
+    "JMLO-",
+    "JMLOL",
+    "Order",
+    "Ordet",
+    "Oro",
+    "School",
+    "Semise",
+    "Semist",
+    "Semsist",
+    "VILO",
+    "VMLON",
+    "WSME PIACE",
+    "WSME PIACEF",
+    "WSME PIACF",
+    "WSME PIACeF",
+    "WSME PIALE",
+    "WSVE PIACE",
+    "WSVE PIALEF",
+    "WSVIE PIACE",
+    "WSVIE PIALE",
+    "WSVIE PIARE",
+    "WUME PIACE",
+    "WUME PIACEF",
+    "WUME PIAEEF",
+    "WUME PIALE",
+    "WUME PIALe",
+    "WUME PIALe\u00d9",
+    "WUME PIAREF",
+    "WUME PIRLE",
+    "WUSVIE PIRLEF",
+    "WUVE PIACE",
+    "WUVE PIACE\u00d9",
+    "WUVE PIALE",
+    "WUVE PIALEF",
+    "WUVE PIALe",
+    "WUVIE PIALE",
+    "WUVIE PIALEF",
+    "WUVTE PIACE",
+    "[23",
+    "_ Collaga",
+    "_ Cotlaga",
+    "_ Cotleg",
+    "_ Cotlega",
+    "emis",
+    "emsist",
+    "istam",
+    "istams",
+    "istans",
+    "istem",
+    "istems",
+    "isteng",
+    "jstam",
+    "mise",
+    "orde",
+    "order.ist",
+    "orderist",
+    "ordes",
+    "ordet",
+    "stem",
+    "stens"
+   ],
+   "frames_with_text": 64,
+   "ignored_noise_boxes": 114,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0798,
+     0.1047,
+     0.2522
+    ],
+    [
+     0.0,
+     0.2582,
+     0.0988,
+     0.5551
+    ],
+    [
+     0.2237,
+     0.4967,
+     0.2762,
+     0.5617
+    ]
+   ],
+   "cover": 0.0508,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_e68c2a787793": {
+   "text_found": true,
+   "texts": [
+    "- Collaga",
+    "- Collage",
+    "- Collega",
+    "- College",
+    "- Cotlaga",
+    "- Cotlega",
+    "- Cotlege",
+    "- Scheol",
+    "- Scheol\u00ae",
+    "- School",
+    ". School",
+    ": Scheol",
+    ": School",
+    "= Scheol",
+    "= School",
+    "Collaga",
+    "Collega",
+    "Cotlaga",
+    "Cotlega",
+    "JMLOS",
+    "Order",
+    "Ordes",
+    "Ordet",
+    "Ordey",
+    "Scheol",
+    "Scheol\u00e0",
+    "Scheot",
+    "School",
+    "Schoot",
+    "Semise",
+    "USVE PIA",
+    "USVE PIRI",
+    "VMILOS",
+    "VMLOO",
+    "VMLOS",
+    "WSME PIAG",
+    "WSME PIAY",
+    "WSVE PIA",
+    "WSVE PIAE",
+    "WSVE PIAG",
+    "WSVE PIAI",
+    "WSVE PIR",
+    "WSVE PIRE",
+    "WSVE PIRG",
+    "WSVE PIRI",
+    "_ Collaga",
+    "_ Collage",
+    "_ Collega",
+    "_ College",
+    "_ Cotlaga",
+    "_ Cotlega",
+    "_ Cotlega\u00e0",
+    "_ Cotlege",
+    "istem",
+    "jatem",
+    "jitem",
+    "jitens",
+    "jstem",
+    "jstems",
+    "jstens",
+    "jztam",
+    "jztem",
+    "jztems",
+    "jztens",
+    "mise",
+    "order",
+    "ordet",
+    "ordey",
+    "oxder",
+    "\u2022 School"
+   ],
+   "frames_with_text": 81,
+   "ignored_noise_boxes": 79,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0798,
+     0.1028,
+     0.2538
+    ],
+    [
+     0.0,
+     0.2685,
+     0.0969,
+     0.5584
+    ]
+   ],
+   "cover": 0.046,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_0b0625fded6d": {
+   "text_found": true,
+   "texts": [
+    "na!",
+    "na/",
+    "n\u0430/",
+    "\u043d\u0430,"
+   ],
+   "frames_with_text": 47,
+   "ignored_noise_boxes": 31,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1828,
+     0.0762,
+     0.2811
+    ]
+   ],
+   "cover": 0.0075,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_c5baec9e25fe": {
+   "text_found": true,
+   "texts": [
+    "1:0",
+    "ma/",
+    "mal",
+    "\u0442a/"
+   ],
+   "frames_with_text": 50,
+   "ignored_noise_boxes": 72,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1809,
+     0.084,
+     0.2879
+    ],
+    [
+     0.75,
+     0.5675,
+     0.8104,
+     0.6995
+    ]
+   ],
+   "cover": 0.017,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_70f756c9f287": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 2,
+   "action": "none"
+  },
+  "c_5e2be91e1aff": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "(23]|",
+    "- Scheof",
+    "- Scheol",
+    "- Scheot",
+    "- School",
+    "- Schoot",
+    "- Sch\u00e6ol",
+    "-- Scheot",
+    "-Scheot",
+    "20",
+    "2= Scheot",
+    "2> School",
+    "33",
+    "33] |",
+    "33]|",
+    "= Scheo",
+    "= Scheof",
+    "= Scheol",
+    "= Scheot",
+    "= Schoof",
+    "= School",
+    "= Schoot",
+    "COSVE PIA",
+    "COSVE PIAE",
+    "COSVE PIAI",
+    "COSVE PIALE",
+    "COSVE PIRI",
+    "CSVE PIAI",
+    "CSVIE PIA",
+    "CUSVE PIAE",
+    "CUSVE PIAI",
+    "CUSVE PIRI",
+    "Collaga",
+    "Collage",
+    "Collega",
+    "College",
+    "Coltaga",
+    "Cotlaga",
+    "Cotlega",
+    "Cotloga",
+    "Order",
+    "Ordes",
+    "Ordet",
+    "Ordey",
+    "Scheol",
+    "Scheot",
+    "School",
+    "Schoot",
+    "Sch\u00e6ot",
+    "Semist",
+    "Syztem",
+    "UOSVE PIAI",
+    "UOSVE PIRI",
+    "USVE PIAG",
+    "UUSVE PIAI",
+    "WOSVE PIACE",
+    "WOSVE PIACe",
+    "WOSVE PIAE",
+    "WOSVE PIAI",
+    "WOSVIE PIALE",
+    "WSVE PIA",
+    "WSVE PIAE",
+    "WSVE PIAI",
+    "WSVE PIRI",
+    "WSVIE PIA",
+    "WUSVE PIACE",
+    "WUSVE PIACO",
+    "WUSVE PIRI",
+    "[23]",
+    "en",
+    "order",
+    "ordey",
+    "system",
+    "\u2022 Scheot"
+   ],
+   "frames_with_text": 70,
+   "ignored_noise_boxes": 153,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0703,
+     0.1153,
+     0.2422
+    ],
+    [
+     0.0,
+     0.2567,
+     0.1059,
+     0.5451
+    ],
+    [
+     0.2316,
+     0.3328,
+     0.2872,
+     0.4533
+    ],
+    [
+     0.2331,
+     0.4856,
+     0.2872,
+     0.5533
+    ],
+    [
+     0.7378,
+     0.4994,
+     0.7919,
+     0.5672
+    ],
+    [
+     0.9081,
+     0.8772,
+     0.9872,
+     0.9839
+    ]
+   ],
+   "cover": 0.0728,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_3088ebc48e15": {
+   "text_found": true,
+   "texts": [
+    "23",
+    "33 |",
+    "33]",
+    "[23]"
+   ],
+   "frames_with_text": 5,
+   "ignored_noise_boxes": 4,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.33,
+     0.0544,
+     0.5228
+    ]
+   ],
+   "cover": 0.0105,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_3c91eb66eb11": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 2,
+   "action": "none"
+  },
+  "c_604338695f14": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "23 |",
+    "23 ||",
+    "33 ||"
+   ],
+   "frames_with_text": 5,
+   "ignored_noise_boxes": 7,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2284,
+     0.4911,
+     0.2794,
+     0.5533
+    ],
+    [
+     0.7237,
+     0.4994,
+     0.7762,
+     0.5672
+    ]
+   ],
+   "cover": 0.0067,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_33be9946776c": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "23]",
+    "[\u017e\u0417]",
+    "your",
+    "yous"
+   ],
+   "frames_with_text": 6,
+   "ignored_noise_boxes": 27,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0808,
+     0.074,
+     0.2396
+    ],
+    [
+     0.7925,
+     0.4578,
+     0.8466,
+     0.5283
+    ]
+   ],
+   "cover": 0.0156,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_8c93cd4b135e": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 1,
+   "action": "none"
+  },
+  "c_25c7976f67bf": {
+   "text_found": true,
+   "texts": [
+    "-O",
+    "-c",
+    "-o",
+    "22",
+    "220",
+    "23]|",
+    "72",
+    "MAPE",
+    "MAPS",
+    "M\u0410PE",
+    "PHOCONiY",
+    "PHOCONig",
+    "PHOCONsig",
+    "PHOCONsing",
+    "PrOCONsig",
+    "PrOCONsing",
+    "PrOcONsing",
+    "PrOcoNsing",
+    "ProCONsig",
+    "ProCoNsig",
+    "ProcoNsiCg",
+    "ProcoNsicg",
+    "ProcoNsing",
+    "ProcoNsirg",
+    "Procorsing",
+    "Procovsing",
+    "Time",
+    "procorsing",
+    "\u041c\u0410PE"
+   ],
+   "frames_with_text": 97,
+   "ignored_noise_boxes": 39,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1539,
+     0.1245,
+     0.3129
+    ],
+    [
+     0.0,
+     0.3698,
+     0.0961,
+     0.566
+    ],
+    [
+     0.2441,
+     0.1022,
+     0.2997,
+     0.1811
+    ],
+    [
+     0.2441,
+     0.3356,
+     0.2997,
+     0.5422
+    ],
+    [
+     0.2456,
+     0.5578,
+     0.2997,
+     0.6228
+    ]
+   ],
+   "cover": 0.058,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_2c2c6a1e7cf9": {
+   "text_found": true,
+   "texts": [
+    "205",
+    "23]",
+    "p"
+   ],
+   "frames_with_text": 3,
+   "ignored_noise_boxes": 5,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0029,
+     0.3377,
+     0.0595,
+     0.4874
+    ],
+    [
+     0.0081,
+     0.5356,
+     0.0606,
+     0.5978
+    ],
+    [
+     0.4175,
+     0.5948,
+     0.4825,
+     0.7163
+    ]
+   ],
+   "cover": 0.0196,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_3a5b532b02e8": {
+   "text_found": true,
+   "texts": [
+    "205",
+    "295",
+    "F205"
+   ],
+   "frames_with_text": 7,
+   "ignored_noise_boxes": 11,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2175,
+     0.0,
+     0.2742,
+     0.1015
+    ],
+    [
+     0.2198,
+     0.1123,
+     0.2776,
+     0.2377
+    ],
+    [
+     0.2206,
+     0.3161,
+     0.2778,
+     0.5033
+    ],
+    [
+     0.771,
+     0.0,
+     0.832,
+     0.5459
+    ]
+   ],
+   "cover": 0.057,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_9dbbc9d3f48a": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "1ime",
+    "23",
+    "Fime",
+    "MAPE",
+    "MAPS",
+    "NAPS",
+    "Pocossig",
+    "PrOcoNsig",
+    "ProcoHing",
+    "ProcoNsig",
+    "Procorsing",
+    "Procosing",
+    "Procossig",
+    "Procossing",
+    "Time",
+    "fime",
+    "pime",
+    "pocorsig",
+    "pocossig",
+    "pocossing",
+    "procesing",
+    "procorsing",
+    "procosing",
+    "procossig",
+    "procossing",
+    "procoving",
+    "time"
+   ],
+   "frames_with_text": 87,
+   "ignored_noise_boxes": 56,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.154,
+     0.1213,
+     0.2591
+    ],
+    [
+     0.0,
+     0.3661,
+     0.0939,
+     0.5702
+    ],
+    [
+     0.2395,
+     0.2602,
+     0.299,
+     0.5561
+    ],
+    [
+     0.2441,
+     0.5578,
+     0.2981,
+     0.6228
+    ],
+    [
+     0.7425,
+     0.0393,
+     0.8033,
+     0.6126
+    ]
+   ],
+   "cover": 0.0879,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_eb9ca22279cd": {
+   "text_found": true,
+   "texts": [
+    "05."
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 20,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2316,
+     0.3383,
+     0.2856,
+     0.4561
+    ],
+    [
+     0.2331,
+     0.0856,
+     0.2841,
+     0.2089
+    ],
+    [
+     0.705,
+     0.3439,
+     0.7606,
+     0.5061
+    ]
+   ],
+   "cover": 0.0217,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_9f17679249ee": {
+   "text_found": true,
+   "texts": [
+    ") Need for ESSe",
+    ") Need for Ess",
+    ") Need for Ess.",
+    ") Neef for ESS",
+    ") Neeg for ESS,",
+    ") Neeg for ESS.",
+    ") Neeg for EsS.",
+    ") Neeg for Ess",
+    ") Neeg for Ess.",
+    ") Neel for ESSe",
+    ") Nees for ESS,",
+    ") Neet for ESS e",
+    "1553 120 10-6",
+    "1553 120 100\u04456",
+    "1553 120 1016",
+    "1553 120 106",
+    "1553 120 10\u043a6",
+    "1553 120 10\u043a\u044c",
+    "1553 120 10\u04456",
+    "1553 120 120 x0",
+    "1553 120 120 \u043a6",
+    "1553 120 120x0",
+    "1553 120 120x6",
+    "1553 120 120\u043a6",
+    "1553 120 120\u043a\u044c",
+    "1553 120 120\u04450",
+    "1553 120 120\u04456",
+    "1556/40",
+    "> Neeg for ESS e",
+    "CUnBE VEWAU",
+    "CUnbE UEWAvY",
+    "Executiive Infotuatin",
+    "Executiive Infotuation",
+    "Executive Infotmation",
+    "Executive Infotuation",
+    "Frendanalys",
+    "Need for EsS,",
+    "Need for Ess",
+    "Need for Ess.",
+    "Neef for ESS",
+    "Neef for Ess",
+    "Nees for ESS",
+    "Nees for Ess",
+    "Nees for Ess.",
+    "Neet for ESS",
+    "Neet for ESS,",
+    "Neet for Ess",
+    "Neet for Ess.",
+    "Neet_f\u00f6r ESS",
+    "Sgiten",
+    "Sgten",
+    "Sgtten",
+    "Support SyHten",
+    "Support Syftem",
+    "Support Syften",
+    "Support System",
+    "Support Syten",
+    "Support Syytem",
+    "Support Syyten",
+    "Support Sy\u043den",
+    "Support Sy\u043dten",
+    "Supporti\u1ea0Siyftem",
+    "Supporti\u1ea0Siyften",
+    "Supporti\u1ea0SyHten",
+    "Supporti\u1ea0Syften",
+    "Supporti\u1ea1\u1ea0Siyftem",
+    "Support\u00bf\u1ea0S\u1ed7yytem",
+    "Support\u00bf\u1ea0S\u1ed7yyten",
+    "Support\u1ed7\u1ea0S\u1ed7yytem",
+    "Trend analyis",
+    "Trendanalng",
+    "Trendanalns",
+    "Trendanalyis",
+    "Trendanalyns",
+    "Trendanalys",
+    "giten",
+    "nces",
+    "npes"
+   ],
+   "frames_with_text": 50,
+   "ignored_noise_boxes": 226,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.077,
+     0.1747,
+     0.4296
+    ],
+    [
+     0.0,
+     0.4375,
+     0.1966,
+     0.6311
+    ],
+    [
+     0.2894,
+     0.0883,
+     0.3434,
+     0.195
+    ],
+    [
+     0.2925,
+     0.3383,
+     0.345,
+     0.4144
+    ],
+    [
+     0.9659,
+     0.8939,
+     1.0,
+     0.9867
+    ]
+   ],
+   "cover": 0.1126,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_c936667ed9a5": {
+   "text_found": true,
+   "texts": [
+    "(23",
+    "(23]",
+    "(23]|",
+    "33",
+    "[33"
+   ],
+   "frames_with_text": 7,
+   "ignored_noise_boxes": 2,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.455,
+     0.0497,
+     0.5256
+    ]
+   ],
+   "cover": 0.0035,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_dd8a6d9c1d0c": {
+   "text_found": true,
+   "texts": [
+    "33]"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 4,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0,
+     0.0712,
+     0.5117
+    ]
+   ],
+   "cover": 0.0364,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_c8e8cb6f74b1": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 1,
+   "action": "none"
+  },
+  "c_f276f945f10d": {
+   "text_found": true,
+   "texts": [
+    "1ime",
+    "23",
+    "Fime",
+    "Hime",
+    "MAPS",
+    "NAPS",
+    "PrOCONsing",
+    "PrOcONsig",
+    "PrOcOssig",
+    "PrOcOssin",
+    "PrOcOssing",
+    "PrOcossig",
+    "ProcoNsig",
+    "ProcoNsing",
+    "Procorsicg",
+    "Procorsig",
+    "Procorsing",
+    "Procosig",
+    "Procosing",
+    "Procossig",
+    "Procossing",
+    "Proco\u043dig",
+    "Proco\u043dsig",
+    "Time",
+    "fime",
+    "pime",
+    "procorsig",
+    "procorsing",
+    "procossig",
+    "procossing",
+    "procoving",
+    "time",
+    "\u0454\u2264"
+   ],
+   "frames_with_text": 85,
+   "ignored_noise_boxes": 82,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1538,
+     0.1213,
+     0.259
+    ],
+    [
+     0.0,
+     0.3661,
+     0.0934,
+     0.5697
+    ],
+    [
+     0.2409,
+     0.3328,
+     0.2966,
+     0.545
+    ],
+    [
+     0.2456,
+     0.5606,
+     0.2966,
+     0.62
+    ],
+    [
+     0.7425,
+     0.1059,
+     0.7992,
+     0.5978
+    ]
+   ],
+   "cover": 0.0745,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_5c0f755a3420": {
+   "text_found": true,
+   "texts": [
+    "33]"
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 1,
+   "action": "blurred",
+   "regions": [
+    [
+     0.005,
+     0.4494,
+     0.0575,
+     0.5144
+    ]
+   ],
+   "cover": 0.0034,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_2f4b4dcb8ea0": {
+   "text_found": true,
+   "texts": [
+    "-C",
+    "-c",
+    "/20",
+    "22",
+    "220",
+    "5.",
+    "72",
+    "Busvosond",
+    "Fime",
+    "MAPE",
+    "MAPS",
+    "PHOCONig",
+    "PHOCONing",
+    "PHOCONsig",
+    "PHOCeNsig",
+    "PHoCeNsig",
+    "PrOCONig",
+    "PrOCONsig",
+    "PrOCONsing",
+    "PrOCoNsigg",
+    "PrOcONsig",
+    "PrOcONsing",
+    "PrOcoNsig",
+    "PrOcoNsing",
+    "ProceNing",
+    "ProceNsig",
+    "Procesing",
+    "ProcoNig\"",
+    "ProcoNing",
+    "ProcoNsig",
+    "ProcoNsig\"",
+    "ProcoNsing",
+    "Procorsig.",
+    "Procorsing",
+    "Procovsing",
+    "Time",
+    "proceNsing",
+    "procoNing",
+    "procoNsing",
+    "\u0410\u0490\u00e7",
+    "\u041c\u0410PE"
+   ],
+   "frames_with_text": 87,
+   "ignored_noise_boxes": 67,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1538,
+     0.1299,
+     0.3117
+    ],
+    [
+     0.0,
+     0.3698,
+     0.0959,
+     0.5682
+    ],
+    [
+     0.2415,
+     0.437,
+     0.3008,
+     0.544
+    ],
+    [
+     0.2425,
+     0.1022,
+     0.3013,
+     0.2144
+    ],
+    [
+     0.2441,
+     0.3356,
+     0.2997,
+     0.4339
+    ],
+    [
+     0.2456,
+     0.555,
+     0.2997,
+     0.62
+    ],
+    [
+     0.7467,
+     0.0393,
+     0.8033,
+     0.5533
+    ]
+   ],
+   "cover": 0.0906,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_a805f6251cf6": {
+   "text_found": true,
+   "texts": [
+    "# (7o)+ (3)+ 2(30)(7o)(BXe)",
+    "(EXCBD) (OL) (oE)t + (E) +(OLi) +",
+    "(EXCBD) (OL) (oE)t + (Ed) +(OLi) +",
+    "+ (70)+ (3)+ 2(30)(70)(1BX)",
+    "+ (70)+ (3)+ 2(30)(70)(1BX9",
+    "+ (70)+ (3)+2(30)(70)(1BX)",
+    "+ (70)+(3)+ 2(30)(70)(1BX)",
+    "+ (7o)+ (3)+ 2(30)(70)(1BX)",
+    "+ (7o)+ (3)+ 2(30)(70)(BX)",
+    "+ (7o)+ (3)+ 2(30)(7o)(1BX)",
+    "+ (7o)+ (3)+ 2(30)(7o)(BX)",
+    "+ (7o)+ (3)+2(30)(70)(BX)",
+    "+ (7o)+(23)+2(3o)(To)(BXe)",
+    "+ (7o)+(23)+2(3o)(To)(BX\u00e9)",
+    "+ (7o)+(3)+ 2(30)(70)(BX)",
+    "+ (7o)+(3)+ 2(30)(7o)(BX)",
+    "+ (7o)+(3)+2(30)(70)(BX)",
+    "+ 259.21+173.88 YAB",
+    "+ 259.21+175.88 YAB",
+    "+ 259.21+175.88YAB",
+    "+(\u0442\u043e+(\u0437)+2(\u0437\u043e)(\u0442\u043e)(\u0432\u0445\u00e9\u044d",
+    "+259.21+173.88 YAB\u0142",
+    "+259.21+175.88 YAB",
+    "+259.21+175.88YAB",
+    "5\u0437\u0430\u0442\u0456",
+    "9.214 172-88x1)]2",
+    "9.214 173-88x1)]2",
+    "9.214 173-8\u20acx1)\u1eca\u1ed3",
+    "9.214 173.88x\u0456)]2",
+    "9\u201a2\u0406\u00b7 173.88x\u0406)]\"\u00bd",
+    "9\u201a2\u0406\u00b7 17\u0417.88x\u0456)]\"\u00bd",
+    "9\u201a2\u0406\u00b7\u04067\u00bd-8\u0454\u0445\u0456)]\u00bd",
+    "CALB",
+    "CAOB",
+    "Y AB ]*",
+    "Y AB ]\u2154",
+    "Y AS ]",
+    "YAB]\"",
+    "YAB]\"\u00aa",
+    "\u00b7 (70)+ (23)+ 2(30)(70)(1BX)",
+    "\u00b7 (70)+ (3)+ 2(30)(70)(1BX)",
+    "\u00b7 (70)+ (3)+ 2(30)(70)(BX)",
+    "\u00b7 (70)+(3)+ 2(30)(70)(1BX)",
+    "\u00b7 (7o)+ (3)+2(30)(7o)(0BX\u00e9)",
+    "\u00b7 (7o)+(23)+2(3o)(To)(BXe)"
+   ],
+   "frames_with_text": 76,
+   "ignored_noise_boxes": 257,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1744,
+     0.1559,
+     0.268
+    ],
+    [
+     0.0,
+     0.2867,
+     0.1751,
+     0.5764
+    ],
+    [
+     0.2831,
+     0.33,
+     0.3419,
+     0.4811
+    ]
+   ],
+   "cover": 0.0742,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_45f42910e403": {
+   "text_found": true,
+   "texts": [
+    "23",
+    "265.",
+    "285.",
+    "\u20b405."
+   ],
+   "frames_with_text": 4,
+   "ignored_noise_boxes": 18,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0112,
+     0.3244,
+     0.0675,
+     0.4899
+    ],
+    [
+     0.0159,
+     0.5328,
+     0.0684,
+     0.595
+    ]
+   ],
+   "cover": 0.0126,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_dd4f47307cf6": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 47,
+   "action": "none"
+  },
+  "c_126c5e3e9f07": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_fa63650d314a": {
+   "text_found": true,
+   "texts": [
+    "0 5.",
+    "05."
+   ],
+   "frames_with_text": 7,
+   "ignored_noise_boxes": 24,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2286,
+     0.3316,
+     0.2874,
+     0.4597
+    ],
+    [
+     0.2331,
+     0.5272,
+     0.2856,
+     0.5922
+    ],
+    [
+     0.705,
+     0.0393,
+     0.7617,
+     0.5163
+    ]
+   ],
+   "cover": 0.038,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_d1071272c9f4": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 3,
+   "action": "none"
+  },
+  "c_45802f8fac49": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 15,
+   "action": "none"
+  },
+  "c_103ee3f5a577": {
+   "text_found": true,
+   "texts": [
+    "(EXBD) (OL) (OS)t +(Ed) +(OL) +",
+    "+ (70)+ (3)+ 2(30)(To) (83E)",
+    "+ (70)+ (3)+ 2(30)(To) (BX\u00e9)",
+    "+ (70)+ (3)+2(30)(70)(BXBY",
+    "+ (7o)+(23)+2(3o)(To)(BX\u00e9)",
+    "+ (To)+ (3)+ 2(30)(To)(BXBY",
+    "+ 259.21+175.88 YAB",
+    "+ 259.21+175.88YAB",
+    "+259.21+173,88 YAB",
+    "+259.21+173.88 YAB",
+    "+259.21+173.88 YAB\u0142",
+    "+259.21+175.88 YAB",
+    "+259.21+175.88 YAB\u0142",
+    "+259.21+175.88YAB",
+    "5\u0437\u0430\u0442\u0456",
+    "9.21+ 173-88\u00d71)]2",
+    "9.214 172-88 x1)\u1eca\u1ed3\u1ecai",
+    "9.214 172-88x1)]2",
+    "9.214 173-88\u00d71)]2",
+    "9.214 \u040672-88\u0445\u0131)]\u00bd",
+    "9.214 \u04067\u00bd-88\u0445\u0131)]\u00bd",
+    "CALB",
+    "CAOB",
+    "Y AB ]",
+    "Y AB ]\"",
+    "YAB]\"",
+    "YAB]\"a",
+    "YAB]\"\u00aa",
+    "\u00b7 (70)+ (23)+ 2(30)(70)(1BX)",
+    "\u00b7 (70)+ (23)+ 2(30)(70)(BX)",
+    "\u00b7 (70)+ (3)+ 2(30)(70)(1BX)",
+    "\u00b7 (70)+ (3)+ 2(30)(70)(BX)",
+    "\u00b7 (70)+ (3)+2(30)(70)(BX)",
+    "\u00b7 (70)+ (3)+2(30)(7o)(BX)",
+    "\u00b7 (70)+(23)+2(30)(T0)(B)ER)",
+    "\u00b7 (70)+(3)+2(30)(70)(BX)",
+    "\u00b7 (7o)+(23)+2(3o)(To)(BX\u00e9)",
+    "\u0431\u0410\u0431\u0440",
+    "\u1ea3B e + 22, 78 no ng"
+   ],
+   "frames_with_text": 95,
+   "ignored_noise_boxes": 370,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.174,
+     0.156,
+     0.2704
+    ],
+    [
+     0.0,
+     0.2865,
+     0.175,
+     0.5767
+    ],
+    [
+     0.2878,
+     0.4883,
+     0.3403,
+     0.5506
+    ]
+   ],
+   "cover": 0.0691,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_7db8b461ccdd": {
+   "text_found": true,
+   "texts": [
+    ") Neef for Ess",
+    ") Neeg for Ess.",
+    "1553 120 10-6",
+    "1553 120 1016",
+    "1553 120 1076",
+    "1553 120 10\u043a6",
+    "1553 120 10\u043d6",
+    "1553 120 10\u04456",
+    "1553 120 1206",
+    "1553 120 120\u043a6",
+    "1553 120 120\u043d6",
+    "1553 120 120\u04456",
+    "155\u0437 120 120\u043a\u0440",
+    "Executiive Infotmati\u015b\u0105",
+    "Executiive Infotuati\u015b\u0105",
+    "Executive Infotmatin",
+    "Executive Infotmatinn",
+    "Executive Infotmati\u0142\u0105",
+    "Executive Infotmati\u015b\u0105",
+    "Executive Infotuatim",
+    "Executive Infotuatin",
+    "Executive Infotuatinn",
+    "Executive Infotuati\u015b\u0105",
+    "Nee for ESS,",
+    "Need for ESS,",
+    "Need for ESSe",
+    "Need for Ess.",
+    "Neef for Ess",
+    "Neeg for ESS",
+    "Neeg for EsS",
+    "Neeg for Ess",
+    "Neei_for ESS",
+    "Neei_for ESSJ",
+    "Nees for ESS",
+    "Nees for ESS,",
+    "Nees for EsS,",
+    "Nees for Ess",
+    "Nees for Ess.",
+    "Nees f\u00fcr ESS",
+    "Nees f\u00fcr ESS.",
+    "Nees_for ESS",
+    "Nees_for ESS,",
+    "Neet for ESS",
+    "Sapport Syrtem",
+    "Sgiten",
+    "Siepport Syftem",
+    "Siepport Syften",
+    "Sipporti\u1ea0Siyftem",
+    "Sispport Syftem",
+    "Sispporti\u1ea0Siystem",
+    "Sispporti\u1ea0Syftem",
+    "Sispport\u00bf\u1ea0S\u1ed7yytem",
+    "Suepport Syftem",
+    "Support Syftem",
+    "Support Syften",
+    "Supporti\u1ea0Siyftem",
+    "Syiten",
+    "Syten",
+    "Trend analyis",
+    "Trendanalyis",
+    "Trendanalyns",
+    "Trendanalys",
+    "nces",
+    "nues"
+   ],
+   "frames_with_text": 37,
+   "ignored_noise_boxes": 173,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0769,
+     0.171,
+     0.3995
+    ],
+    [
+     0.0,
+     0.4352,
+     0.1967,
+     0.6339
+    ],
+    [
+     0.9659,
+     0.8939,
+     1.0,
+     0.9867
+    ]
+   ],
+   "cover": 0.0974,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_96ad3e0cbd2b": {
+   "text_found": true,
+   "texts": [
+    "23]|"
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 3,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0769,
+     0.5022,
+     0.1294,
+     0.5644
+    ]
+   ],
+   "cover": 0.0033,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_8b719ff70af8": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 14,
+   "action": "none"
+  },
+  "c_2ebf55167236": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 2,
+   "action": "none"
+  },
+  "c_fa3832542a55": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 6,
+   "action": "none"
+  },
+  "c_9f6695296fce": {
+   "text_found": true,
+   "texts": [
+    "33",
+    "83"
+   ],
+   "frames_with_text": 3,
+   "ignored_noise_boxes": 3,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2284,
+     0.53,
+     0.2809,
+     0.5922
+    ],
+    [
+     0.7769,
+     0.53,
+     0.8294,
+     0.595
+    ]
+   ],
+   "cover": 0.0067,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_5a836c400152": {
+   "text_found": true,
+   "texts": [
+    "(23 ][",
+    "(23 ]|",
+    "(23]",
+    "52\u0142\u0105\u0142",
+    "E72",
+    "F2",
+    "F\u20b4",
+    "Your",
+    "[23]",
+    "your"
+   ],
+   "frames_with_text": 10,
+   "ignored_noise_boxes": 39,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0804,
+     0.0748,
+     0.2369
+    ],
+    [
+     0.2909,
+     0.3328,
+     0.3481,
+     0.4894
+    ],
+    [
+     0.7922,
+     0.3314,
+     0.8515,
+     0.5283
+    ]
+   ],
+   "cover": 0.0323,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_6c46a1fcd98c": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 2,
+   "action": "none"
+  },
+  "c_d6278060ddde": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_36433ffbae94": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 5,
+   "action": "none"
+  },
+  "c_937982b6f0fe": {
+   "text_found": true,
+   "texts": [
+    "205",
+    "295."
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 1,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2222,
+     0.305,
+     0.2794,
+     0.4867
+    ]
+   ],
+   "cover": 0.0104,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_5223ca736d7f": {
+   "text_found": true,
+   "texts": [
+    "RFEI",
+    "RJE",
+    "[23]|",
+    "you",
+    "your"
+   ],
+   "frames_with_text": 7,
+   "ignored_noise_boxes": 30,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0806,
+     0.075,
+     0.2395
+    ],
+    [
+     0.2909,
+     0.3296,
+     0.3515,
+     0.4922
+    ],
+    [
+     0.7925,
+     0.4606,
+     0.845,
+     0.5283
+    ]
+   ],
+   "cover": 0.0253,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_fb7a63c151e5": {
+   "text_found": true,
+   "texts": [
+    "[23",
+    "[23]"
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 13,
+   "action": "blurred",
+   "regions": [
+    [
+     0.7237,
+     0.4994,
+     0.7762,
+     0.5672
+    ]
+   ],
+   "cover": 0.0036,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_68b5e7793475": {
+   "text_found": true,
+   "texts": [
+    "0 5",
+    "05",
+    "105",
+    "205",
+    "\u20ac 5",
+    "\u20b405"
+   ],
+   "frames_with_text": 10,
+   "ignored_noise_boxes": 1,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0058,
+     0.3328,
+     0.0629,
+     0.4978
+    ]
+   ],
+   "cover": 0.0094,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_91f77598dbda": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_dcebf7b76051": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 14,
+   "action": "none"
+  },
+  "c_5176c5bf71c5": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 1,
+   "action": "none"
+  },
+  "c_28ae79690dde": {
+   "text_found": true,
+   "texts": [
+    "0 5."
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 2,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2275,
+     0.3308,
+     0.2847,
+     0.4545
+    ]
+   ],
+   "cover": 0.0071,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_143d50d7b581": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "33]",
+    "5",
+    "5)"
+   ],
+   "frames_with_text": 4,
+   "ignored_noise_boxes": 18,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2237,
+     0.3022,
+     0.2778,
+     0.3756
+    ],
+    [
+     0.7222,
+     0.4967,
+     0.7747,
+     0.5644
+    ]
+   ],
+   "cover": 0.0075,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_ab8c4d550f2a": {
+   "text_found": true,
+   "texts": [
+    ") Need for Ess",
+    ") Neef for Ess",
+    ") Neef for Ess.",
+    ") Nees for Ess.",
+    "1553 120 10 x1",
+    "1553 120 10 \u04450",
+    "1553 120 1016",
+    "1553 120 10x6",
+    "1553 120 10\u043a6",
+    "1553 120 10\u043d6",
+    "1553 120 10\u0445",
+    "1553 120 10\u04450",
+    "1553 120 10\u04456",
+    "1553 120 120 \u043a\u0440",
+    "1553 120 120-6",
+    "1553 120 120\u043a6",
+    "1553 120 120\u043d6",
+    "1553 120 120\u04456",
+    "1553 120 120\u0445\u0440",
+    "CUnsE vEWAvy",
+    "Executive Infotmatinn",
+    "Executive Infotmation",
+    "Executive Infotuatin",
+    "Executive Infotuatinn",
+    "Executive Infotvatin",
+    "J",
+    "Need for ESS",
+    "Need for Ess",
+    "Need for Ess.",
+    "Neef for EsS",
+    "Neef for Ess",
+    "Neeg for ESS",
+    "Neeg for Ess",
+    "Neel for Ess.",
+    "Nees for ESS",
+    "Nees for ESS,",
+    "Nees for ESS.",
+    "Nees for Ess.",
+    "Nees f\u00fcr Ess.",
+    "Nees_for ESS",
+    "Nees_for ESSJ",
+    "Neet for ESS",
+    "Neet for ESS,",
+    "Neet for ESS.",
+    "Neet_for ESS,",
+    "Neet_for ESSJ",
+    "Sapport Syftem",
+    "Sapport Syften",
+    "Sapport System",
+    "Sapport Syytem",
+    "Sapport\u1ed7\u1ea0S\u1ed7yHtem",
+    "Scapport Syftem",
+    "Scapport Syften",
+    "Scapport Syytem",
+    "Seapport Syftem",
+    "Seapport Syften",
+    "Sepport System",
+    "Sgiten",
+    "Sgten",
+    "Siapport Syftem",
+    "Siapport Syften",
+    "Siepport Syftem",
+    "Suapport SyHten",
+    "Suapport Syftem",
+    "Suapport Syften",
+    "Suapport Syytem",
+    "Suepport Syftem",
+    "Suepport Syften",
+    "Support SyHtem",
+    "Support SyHten",
+    "Support Syftem",
+    "Support Syften",
+    "Support Syyten",
+    "Supporti\u1ea0Siyften",
+    "Supporti\u1ea0Syftem",
+    "Supporti\u1ea0System",
+    "Supporti\u1ea0Systen",
+    "Support\u1ed7\u1ea0S\u1ed7yHtem",
+    "Syiten",
+    "Syten",
+    "Trendanalng",
+    "Trendanalyg",
+    "Trendanalyis",
+    "Trendanalyng",
+    "Trendanalyns",
+    "Trendanalys",
+    "Trendanlyg",
+    "Trendanlys",
+    "nces",
+    "n\u00e7es"
+   ],
+   "frames_with_text": 46,
+   "ignored_noise_boxes": 210,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.077,
+     0.1731,
+     0.4295
+    ],
+    [
+     0.0,
+     0.4383,
+     0.1966,
+     0.6311
+    ],
+    [
+     0.2894,
+     0.3328,
+     0.345,
+     0.4644
+    ],
+    [
+     0.2925,
+     0.5383,
+     0.345,
+     0.6006
+    ],
+    [
+     0.9659,
+     0.8939,
+     1.0,
+     0.9867
+    ]
+   ],
+   "cover": 0.1127,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_aaf3674be76e": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 8,
+   "action": "none"
+  },
+  "c_6e44b31af11a": {
+   "text_found": true,
+   "texts": [
+    "702",
+    "\u0454\u2264"
+   ],
+   "frames_with_text": 8,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0758,
+     0.0,
+     0.1367,
+     0.5607
+    ]
+   ],
+   "cover": 0.0341,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_b5d995dfcaae": {
+   "text_found": true,
+   "texts": [
+    "23",
+    "23]|",
+    "[233"
+   ],
+   "frames_with_text": 3,
+   "ignored_noise_boxes": 8,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2253,
+     0.4911,
+     0.2778,
+     0.5561
+    ],
+    [
+     0.7222,
+     0.5022,
+     0.7747,
+     0.5644
+    ]
+   ],
+   "cover": 0.0067,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_8dd360ad649f": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 3,
+   "action": "none"
+  },
+  "c_c6ecead98040": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_5baae894d027": {
+   "text_found": true,
+   "texts": [
+    "(EDXBI) (OL) (OE)E +(Ed) +(OL) +",
+    "(GXCE) (OL) (OE)E + (E) +(OL) +",
+    "+ (70)+ (23)+ 2(30) (70) (1Bxe)",
+    "+ (70)+ (23)+ 2(30) (70) (Bxe)",
+    "+ (70)+ (23)+ 2(30) (70)(1Bxe",
+    "+ (70)+ (23)+ 2(30)(70) (18Xe))",
+    "+ (70)+ (23)+ 2(30)(70)(8X29)",
+    "+ (70)+ (23)+-2(30) (70)(18)Xg)",
+    "+ (70)+ (23)+-2(30)(70)(8Xe)",
+    "+ (70)+ (23)+2(30) (70)(18)X6S)",
+    "+ (70)+ (23)+2(30)(70) (18Xe)",
+    "+ (70)+ (23)+2(30)(70) (18Xe))",
+    "+ (70)+ (23)+2(30)(70) (8Xe)",
+    "+ (70)+ (23)+2(30)(70) (8Xe))",
+    "+ (70)+ (23+ 2(30)(70) (18Xe)",
+    "+ (70)+ (23+2(30)(70)(18Xe)",
+    "+ (70)+ (25+ 2(30)(70)(8Xe))",
+    "+ (70)+ (25+ 2(30)(70)08X2",
+    "+ (70)+ (3) +2(30) (70)(18X9)",
+    "+ (70)+ (3)+ 2(30) (70) (Bxe)",
+    "+ (70)+ (3)+ 2(30) (70)(18)6)",
+    "+ (70)+ (3)+ 2(30) (70)(Bxe)",
+    "+ (70)+ (3)+2(30) (70) (18Xe9)",
+    "+ (70)+ (3)+2(30) (70)(13X69)",
+    "+ (70)+ (3)+2(30) (70)(18)2",
+    "+ (70)+ (3)+2(30)(70)(13)69)",
+    "+ (70)+ (3)+2(30)(70)(18)69)",
+    "+ (70)+ (3)+2(30)(70)(18X69)",
+    "+ (70)+(3)+2(30) (70)(18)",
+    "+ (70)+(3)+2(30) (70)(18)0)",
+    "+ (70)+(3)+2(30) (70)(18)2",
+    "+ (70)+(3)+2(30) (70)(18)29)",
+    "+ (70)+(3)+2(30) (70)(18)9",
+    "+ (70+ (3)+ 2(30) (70)(Bxe)",
+    "+ (\u043b\u043e)+(\u0437+2(\u0437\u043e)(7\u043e)(\u0432xe\u044d)",
+    "+ (\u0442\u043e)+(\u0437)+2(3o)(7\u043e)(\u0432)",
+    "+ 259.21+173.88 YAB",
+    "+ 259.21+173.88 YAS",
+    "+ 259.21+175.88 YAB",
+    "+ 259.21+175.88 YAS",
+    "+259.21+173.88 YAB",
+    "+259.21+173.88 YAS",
+    "+259.21+175.88 YAB",
+    "+259.21+175.88 YAS",
+    "5\u0437\u0430\u0442\u0456",
+    "7 (70)+ (3)+ 2(30) (70) (12)x9)",
+    "7 (70)+ (3)+2(30) (70)(13)69)",
+    "7 (70)+ (3)+2(30) (70)(8X9)",
+    "7 (70)+ (3)+2(30)(70)(13X69)",
+    "7 (70)+ (3)+2(30)(70)(18X3)",
+    "7 (70)+ (3)+2(30)(70)(18X9)",
+    "7 (70)+(3)+2(30)(70)(18)2)",
+    "Y AB JS",
+    "YAB]"
+   ],
+   "frames_with_text": 65,
+   "ignored_noise_boxes": 251,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.2834,
+     0.1769,
+     0.5768
+    ],
+    [
+     0.2842,
+     0.335,
+     0.342,
+     0.4787
+    ],
+    [
+     0.7878,
+     0.48,
+     0.8388,
+     0.5422
+    ]
+   ],
+   "cover": 0.0634,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_984fb9cfccf2": {
+   "text_found": true,
+   "texts": [
+    "EF2",
+    "your"
+   ],
+   "frames_with_text": 3,
+   "ignored_noise_boxes": 17,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0828,
+     0.0731,
+     0.2408
+    ],
+    [
+     0.2909,
+     0.2467,
+     0.3481,
+     0.4894
+    ]
+   ],
+   "cover": 0.0254,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_e87467450be8": {
+   "text_found": true,
+   "texts": [
+    "05.",
+    "F205."
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 9,
+   "action": "blurred",
+   "regions": [
+    [
+     0.23,
+     0.3328,
+     0.2856,
+     0.5228
+    ]
+   ],
+   "cover": 0.0106,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_b701986cd3e1": {
+   "text_found": true,
+   "texts": [
+    "na!",
+    "na/",
+    "nai",
+    "olal",
+    "\u043d\u0430i"
+   ],
+   "frames_with_text": 44,
+   "ignored_noise_boxes": 27,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1856,
+     0.0762,
+     0.2811
+    ],
+    [
+     0.7581,
+     0.055,
+     0.8122,
+     0.1561
+    ]
+   ],
+   "cover": 0.0127,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_e4d73e9e9a05": {
+   "text_found": true,
+   "texts": [
+    "ma/",
+    "ma?",
+    "mai",
+    "mal",
+    "na/",
+    "nai",
+    "nal",
+    "\u0442a/"
+   ],
+   "frames_with_text": 52,
+   "ignored_noise_boxes": 47,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1792,
+     0.083,
+     0.2886
+    ]
+   ],
+   "cover": 0.0091,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_135a26ed1500": {
+   "text_found": true,
+   "texts": [
+    "+ (70)+ (23)+ 2(30)(7o)(8)X2aD)",
+    "+ (70)+ (23)+ 2(30)(7o)(8X2)",
+    "+ (70)+ (23)+ 2(30)(7o)(8XE)",
+    "+ (70)+ (23)+ 2(30)(7o)(BXE)",
+    "+ (70)+ (23)+ 2(30)(7o)(BXe)",
+    "+ (70)+ (3)+ 2(30)(7o)(8)(P)",
+    "+ (70)+ (3)+ 2(30)(7o)(8)(R)",
+    "+ (70)+ (3)+ 2(30)(7o)(8X(R)",
+    "+ (70)+ (3)+ 2(30)(7o)(B)(R)",
+    "+ (70)+ (3)+ 2(30)(To)(8XR)",
+    "+ (70+ (3)+ 2(30)(7o)(8)(\u00ae)",
+    "+ (70+ (3)+ 2(30)(7o)(B)(e\u00ae)",
+    "+ (70+ (3)+ 2(30)(To) (8)(eP)",
+    "+ (70+ (3)+ 2(30)(To) (8)(e\u00ae)",
+    "+ (70+ (3)+ 2(30)(To) (8)R)",
+    "+ (70+ (3)+ 2(30)(To) (8XeB)",
+    "+ (70+ (3)+ 2(30)(To) (8XeP)",
+    "+ (70+ (3)+ 2(30)(To)(8)(e\u00ae)",
+    "+ (70+ (3)+2(30)(To) (B)e\u00bb)",
+    "+ (7o)+ (23)+ 2(30)(7o)(8XE)",
+    "+ (7o)+ (23)+ 2(30)(7o)(8Xe)",
+    "+ (7o)+ (3)+ 2(30)(7o)(8X(P)",
+    "+ (7o)+ (3)+2(30)(7o)(8)(eP)",
+    "+ (7o+ (3)+ 2(3o)(\u0442o)(8)(e\u00ae)",
+    "+ 259.21 + 173.88 YA8",
+    "+ 259.21 + 173.88 YAB",
+    "+ 259.21 +173.88 YAB",
+    "+ 259.21+ 173.88 YAB",
+    "+ 259.21+173.88 YAB",
+    "+ 259.21+173.88 YAB\u00cd",
+    "+259.21+173,88 YAB",
+    "+259.21+173.88 YAB",
+    "+259.21+175.88 YAB",
+    "5\u0437\u0430\u0442\u0456",
+    "5\u0437\u043e\u0442\u0456",
+    "9.2\u04064 17\u0417-88x\u0456)]\u00bd",
+    "9.2\u0406\u00b7 17\u0417-88x\u0456)]\u00bd",
+    "CACB",
+    "CAUB",
+    "GAOB",
+    "Y AB ]",
+    "Y AB ]\"",
+    "YAB ]\"a",
+    "YA\u0412]\"",
+    "\u00b7 (7o)+ (3)+2(30)(7o)(8)R)"
+   ],
+   "frames_with_text": 72,
+   "ignored_noise_boxes": 249,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1744,
+     0.1544,
+     0.2647
+    ],
+    [
+     0.0,
+     0.2829,
+     0.1748,
+     0.5706
+    ]
+   ],
+   "cover": 0.0642,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_bdab9061b115": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 6,
+   "action": "none"
+  },
+  "c_8d95691a480e": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 40,
+   "action": "none"
+  },
+  "c_5dec68f32f75": {
+   "text_found": true,
+   "texts": [
+    "\u00b7OL",
+    "\u0454\u2264"
+   ],
+   "frames_with_text": 3,
+   "ignored_noise_boxes": 7,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0758,
+     0.0,
+     0.1325,
+     0.1237
+    ],
+    [
+     0.0758,
+     0.143,
+     0.1325,
+     0.5681
+    ]
+   ],
+   "cover": 0.0311,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_7412c84790a4": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 7,
+   "action": "none"
+  },
+  "c_3ec9831adaed": {
+   "text_found": true,
+   "texts": [
+    "133"
+   ],
+   "frames_with_text": 3,
+   "ignored_noise_boxes": 12,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0769,
+     0.5022,
+     0.1294,
+     0.5644
+    ]
+   ],
+   "cover": 0.0033,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_eec9a77ba6a7": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 2,
+   "action": "none"
+  },
+  "c_be63a23cc43d": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 13,
+   "action": "none"
+  },
+  "c_5916632eec20": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "33]"
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 3,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.4578,
+     0.0497,
+     0.5228
+    ]
+   ],
+   "cover": 0.0032,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_2993b01411b4": {
+   "text_found": true,
+   "texts": [
+    "123",
+    "133",
+    "23"
+   ],
+   "frames_with_text": 4,
+   "ignored_noise_boxes": 1,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0769,
+     0.4994,
+     0.1294,
+     0.5644
+    ]
+   ],
+   "cover": 0.0034,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_44bdec36f7bb": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "0 5",
+    "827205",
+    "837205.",
+    "857205",
+    "857205.",
+    "[23]"
+   ],
+   "frames_with_text": 8,
+   "ignored_noise_boxes": 26,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2908,
+     0.2378,
+     0.3526,
+     0.5151
+    ],
+    [
+     0.7925,
+     0.4578,
+     0.845,
+     0.5256
+    ]
+   ],
+   "cover": 0.0207,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_5ab962d02fca": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 4,
+   "action": "none"
+  },
+  "c_ed824d75c467": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_09ec81a5c043": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_98768908e34c": {
+   "text_found": true,
+   "texts": [
+    "857205",
+    "You\u0431"
+   ],
+   "frames_with_text": 3,
+   "ignored_noise_boxes": 8,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1011,
+     0.0725,
+     0.2078
+    ],
+    [
+     0.2909,
+     0.2489,
+     0.3527,
+     0.5151
+    ],
+    [
+     0.7941,
+     0.4606,
+     0.845,
+     0.5228
+    ]
+   ],
+   "cover": 0.0274,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_c17400609c96": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_8d14752ff8db": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "+ 139",
+    "+62.25 prorasc",
+    "- /18",
+    "- 118",
+    "- 18",
+    "-/18",
+    "-18",
+    "0 137",
+    "0 138",
+    "0 139",
+    "138",
+    "21.5 Cibjoso",
+    "21.5 Cibjosto",
+    "21.5 Cobiodo",
+    "33",
+    "33]",
+    "39",
+    "462.25 prefare",
+    "462.25 profarc",
+    "462.25 profare",
+    "462.25 proparc",
+    "462.25 propare",
+    "462.25 propare\u0105",
+    "462.25 propar\u0441",
+    "462.25 propas\u0105",
+    "462.25 proprre",
+    "462.25 prop\u0430r",
+    "462.25 prorarc",
+    "462.25 prorare",
+    "462.25 pro\u0440\u0430r\u0441",
+    "93",
+    "Ceam on wod,",
+    "Geam on wod,",
+    "Honest",
+    "STIUMA",
+    "Seam on wad,",
+    "Seam on wod,",
+    "am on wau,",
+    "cam on wad",
+    "cam on wod,",
+    "eam on wod,",
+    "eam on wor,",
+    "eam on wou,",
+    "fam 1o te 1 po",
+    "fam 1o te 1po",
+    "fam 1o to 1 po",
+    "fam 1o to 1 pro",
+    "fem 10 1o 1 pn",
+    "femro te 1 po",
+    "fom 1o do 1 po",
+    "fom1o do 1 po",
+    "on wad",
+    "on wad,",
+    "on wad.",
+    "on war.",
+    "on wod",
+    "on wod,",
+    "sam on wad,",
+    "sam on wod,",
+    "seam on wod,",
+    "we need fu",
+    "we need te",
+    "we need ti",
+    "we need tu",
+    "zam on wod,",
+    "\u00b7 alli",
+    "\u0413",
+    "\u2022 137",
+    "\u2022 138",
+    "\u2022 139"
+   ],
+   "frames_with_text": 53,
+   "ignored_noise_boxes": 175,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0113,
+     0.1705,
+     0.5144
+    ],
+    [
+     0.2831,
+     0.0467,
+     0.3387,
+     0.1144
+    ],
+    [
+     0.7644,
+     0.4883,
+     0.8169,
+     0.5533
+    ],
+    [
+     0.9237,
+     0.8328,
+     1.0,
+     0.9533
+    ]
+   ],
+   "cover": 0.1021,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_3e6b76267888": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "23] |",
+    "33"
+   ],
+   "frames_with_text": 3,
+   "ignored_noise_boxes": 4,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0,
+     0.0492,
+     0.4496
+    ],
+    [
+     0.0,
+     0.455,
+     0.0481,
+     0.52
+    ]
+   ],
+   "cover": 0.0252,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_2fe1cfce4920": {
+   "text_found": true,
+   "texts": [
+    "na/",
+    "nai",
+    "n\u0430",
+    "n\u0430,",
+    "n\u0430i",
+    "\u043d\u0430,"
+   ],
+   "frames_with_text": 34,
+   "ignored_noise_boxes": 28,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1828,
+     0.0762,
+     0.2867
+    ]
+   ],
+   "cover": 0.0079,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_680405588745": {
+   "text_found": true,
+   "texts": [
+    "ma/",
+    "mal",
+    "\u0442a/"
+   ],
+   "frames_with_text": 51,
+   "ignored_noise_boxes": 74,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1813,
+     0.0836,
+     0.2871
+    ]
+   ],
+   "cover": 0.0088,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_2ed6faeec4f5": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 22,
+   "action": "none"
+  },
+  "c_8df09fd3cbc7": {
+   "text_found": true,
+   "texts": [
+    "\u0454\u2264"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 4,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0758,
+     0.1281,
+     0.1325,
+     0.5681
+    ]
+   ],
+   "cover": 0.0249,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_630d44b4fc75": {
+   "text_found": true,
+   "texts": [
+    "- Collaga",
+    "- Cotlaga",
+    "- Cotleg\u00e0",
+    "- School",
+    "33J|",
+    "33]|",
+    "= Scheol",
+    "COSVE PIRI",
+    "Collaga",
+    "Collega",
+    "Cotlaga",
+    "Cotlega",
+    "JMLOS",
+    "JMLOU",
+    "MLO-",
+    "MLOO",
+    "MLOS",
+    "Ordar",
+    "Orde:",
+    "Order",
+    "Ordes",
+    "Ordet",
+    "Ordey",
+    "Oxdey",
+    "Scheof",
+    "Scheol",
+    "Scheot",
+    "School",
+    "Schoot",
+    "Semise",
+    "Semist",
+    "Semis\u0131",
+    "Semrise",
+    "Sensise",
+    "USVE PIA",
+    "USVE PIAE",
+    "USVE PIAI",
+    "USVIE PIAI",
+    "USVIE PIRI",
+    "VMLOO",
+    "VMLOS",
+    "VMLOU",
+    "WOSVE PIAI",
+    "WOSVE PIAS",
+    "WSVE PIA",
+    "WSVE PIAI",
+    "WSVE PIAR",
+    "WSVE PIAS",
+    "WSVE PIAY",
+    "WSVE PIRI",
+    "_ Collaga",
+    "_ Collage",
+    "_ Cotlaga",
+    "_ Cotlega",
+    "emise",
+    "emist",
+    "emis\u0131",
+    "ensis",
+    "jatem",
+    "jstem",
+    "jztem",
+    "jztems",
+    "jz\u0142em",
+    "order",
+    "ystens",
+    "\u00a1stem",
+    "\u2022 Cotlega",
+    "\u2022 Scheol"
+   ],
+   "frames_with_text": 44,
+   "ignored_noise_boxes": 45,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0811,
+     0.1028,
+     0.2533
+    ],
+    [
+     0.0,
+     0.2661,
+     0.0955,
+     0.5582
+    ],
+    [
+     0.7284,
+     0.5133,
+     0.7809,
+     0.5756
+    ]
+   ],
+   "cover": 0.0489,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_a0d1e2a1c3ed": {
+   "text_found": true,
+   "texts": [
+    "-o",
+    "22",
+    "220",
+    "5 .",
+    "72",
+    "Fime",
+    "MAPE",
+    "MAPS",
+    "MARS",
+    "PHOCONsig",
+    "PHOCONsing",
+    "PrOCONsig",
+    "PrOCONsing",
+    "PrOCoNsing",
+    "PrOcONsing",
+    "PrOcoNsing",
+    "ProcoNig",
+    "ProcoNsig",
+    "ProcoNsing",
+    "Procorsing",
+    "Procossing",
+    "Time",
+    "procossing"
+   ],
+   "frames_with_text": 74,
+   "ignored_noise_boxes": 28,
+   "action": "drop: text still readable after blurring",
+   "regions": [
+    [
+     0.0,
+     0.1536,
+     0.1232,
+     0.2588
+    ],
+    [
+     0.0,
+     0.3698,
+     0.0948,
+     0.5688
+    ],
+    [
+     0.2441,
+     0.3383,
+     0.2997,
+     0.4339
+    ],
+    [
+     0.2441,
+     0.4467,
+     0.2981,
+     0.5089
+    ],
+    [
+     0.2456,
+     0.555,
+     0.2997,
+     0.62
+    ],
+    [
+     0.7425,
+     0.0319,
+     0.8033,
+     0.62
+    ]
+   ],
+   "cover": 0.0798,
+   "rounds": 3,
+   "recheck_texts": [
+    "isleunCG"
+   ]
+  },
+  "c_f40ec4efc488": {
+   "text_found": true,
+   "texts": [
+    "33",
+    "33||",
+    "Fime",
+    "MAPS",
+    "NAPS",
+    "ProcoNsig",
+    "Proco\u043csig",
+    "Time",
+    "fime",
+    "pime",
+    "procersing",
+    "processing",
+    "procorsing",
+    "procossig",
+    "procossing",
+    "time",
+    "\u041c\u0410\u0420\u0430"
+   ],
+   "frames_with_text": 79,
+   "ignored_noise_boxes": 53,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1538,
+     0.1214,
+     0.2588
+    ],
+    [
+     0.0,
+     0.3689,
+     0.0936,
+     0.5702
+    ],
+    [
+     0.2395,
+     0.2602,
+     0.2989,
+     0.5507
+    ],
+    [
+     0.2441,
+     0.5578,
+     0.2966,
+     0.6228
+    ],
+    [
+     0.7425,
+     0.0393,
+     0.8033,
+     0.62
+    ]
+   ],
+   "cover": 0.0876,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_59996d1be667": {
+   "text_found": true,
+   "texts": [
+    "85720"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 4,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2219,
+     0.3352,
+     0.2815,
+     0.5566
+    ],
+    [
+     0.7206,
+     0.305,
+     0.7794,
+     0.4894
+    ],
+    [
+     0.7222,
+     0.4994,
+     0.7747,
+     0.5644
+    ]
+   ],
+   "cover": 0.0275,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_e446ae900590": {
+   "text_found": true,
+   "texts": [
+    "- Cotlaga",
+    "- Cotlage",
+    "- Scheol",
+    "- School",
+    "-Cotlage",
+    ": Scheol",
+    "= Scheol",
+    "= School",
+    "Collaga",
+    "Collage",
+    "Collega",
+    "College",
+    "Cotiaga",
+    "Cotiage",
+    "Cotlag\"",
+    "Cotlaga",
+    "Cotlega",
+    "Cotlege",
+    "Cotleg\u00ae",
+    "Cottaga",
+    "Cottega",
+    "Order",
+    "Ordernist",
+    "Ordet",
+    "Scheol",
+    "School",
+    "VMLON",
+    "VMLor",
+    "WSME PIACE",
+    "WSME PIALE",
+    "WSME PIAU",
+    "WSVE PIACE",
+    "WSVE PIALE",
+    "WSVE PIALe",
+    "WUVE PIALE",
+    "_ Cotlage",
+    "_Cotlaga",
+    "jatem",
+    "jz\u0142em",
+    "order",
+    "ordet",
+    "yatems",
+    "yztams",
+    "yztem",
+    "yztems",
+    "yz\u0142em",
+    "\u2022 Scheol"
+   ],
+   "frames_with_text": 62,
+   "ignored_noise_boxes": 136,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0795,
+     0.1076,
+     0.2561
+    ],
+    [
+     0.0,
+     0.2641,
+     0.1,
+     0.5586
+    ],
+    [
+     0.9222,
+     0.8939,
+     0.9762,
+     0.9867
+    ]
+   ],
+   "cover": 0.0535,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_b89100787c6b": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 20,
+   "action": "none"
+  },
+  "c_6217630acdd4": {
+   "text_found": true,
+   "texts": [
+    "23]"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0097,
+     0.5356,
+     0.0637,
+     0.6006
+    ]
+   ],
+   "cover": 0.0035,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_a98b5c0c1daa": {
+   "text_found": true,
+   "texts": [
+    "\u0454\u2264"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 1,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0758,
+     0.0911,
+     0.1325,
+     0.5681
+    ]
+   ],
+   "cover": 0.027,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_f56897b828ea": {
+   "text_found": true,
+   "texts": [
+    "2 Scheol",
+    "2 School",
+    "2, School",
+    "27 School",
+    "2; Scheot",
+    "2= Scheol",
+    "2= Scheot",
+    "2= School",
+    "2= Schoot",
+    "33 |",
+    "33 ||",
+    "= Scheol",
+    "= Scheot",
+    "= School",
+    "Cotlaga",
+    "Cotlag\u00ae",
+    "Cotlega",
+    "Cotleg\u00ae",
+    "Cottaga",
+    "Cotteg\u00ae",
+    "Order",
+    "Ordet",
+    "School",
+    "Semise",
+    "Semist",
+    "Sencist",
+    "Senist",
+    "Sensist",
+    "System",
+    "Syztem",
+    "VMLOO",
+    "WSME PIAL",
+    "WSME PIALE",
+    "WSVE PIACE",
+    "WSVE PIAL",
+    "WSVE PIALE",
+    "WSVE PIALe",
+    "WUVE PIACE",
+    "order",
+    "system"
+   ],
+   "frames_with_text": 50,
+   "ignored_noise_boxes": 90,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.07,
+     0.1169,
+     0.2422
+    ],
+    [
+     0.0,
+     0.2578,
+     0.1077,
+     0.5474
+    ],
+    [
+     0.23,
+     0.3328,
+     0.2872,
+     0.445
+    ],
+    [
+     0.2347,
+     0.4911,
+     0.2872,
+     0.5533
+    ],
+    [
+     0.7394,
+     0.505,
+     0.7919,
+     0.57
+    ]
+   ],
+   "cover": 0.0644,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_4aea549078cc": {
+   "text_found": true,
+   "texts": [
+    ") Need for Ess.",
+    ") Neef for Ess",
+    ") Neef for Ess.",
+    ") Neeg for Ess",
+    ") Neeg for Ess.",
+    "1553 120 10 \u04456",
+    "1553 120 10-6",
+    "1553 120 1016",
+    "1553 120 1076",
+    "1553 120 10\u043a6",
+    "1553 120 10\u04456",
+    "1553 120 120 x0",
+    "1553 120 120 x1",
+    "1553 120 120 x1\u00cd\u0161\u015a",
+    "1553 120 120 x6",
+    "1553 120 120 \u0445\u0440",
+    "1553 120 120x0",
+    "1553 120 120\u04456",
+    "1553 120 120\u0445\u0440",
+    "1553 120 20\u04456",
+    "1556140",
+    "2\u00b05.",
+    "CUnDE UEWAU",
+    "Executiive Infotuation",
+    "Executive Infotmatin",
+    "Executive Infotmatinn",
+    "Executive Infotmation",
+    "Executive Infotratin",
+    "Executive Infotratinn",
+    "Executive Infotration",
+    "Executive Infotuatin",
+    "Executive Infotuatinn",
+    "Executive Infotuation",
+    "Nee for ESS.",
+    "Neef for Ess",
+    "Neeg for Ess",
+    "Neeg for Ess.",
+    "Nees for Ess",
+    "Scapporti\u1ea1\u1ea0Syftem",
+    "Sgiten",
+    "Sgsten",
+    "Suapporti\u1ea1\u1ea0Syten",
+    "Suepport SyHten",
+    "Support SyHten",
+    "Support Syften",
+    "Support Systen",
+    "Support Sy\u043dten",
+    "Support&\u1ea1\u1ea0S\u1ed7yHten",
+    "Supporti\u1ea0SyHten",
+    "Supporti\u1ea0Syftem",
+    "Supporti\u1ea1SyHtem",
+    "Supporti\u1ea1SyHten",
+    "Supporti\u1ea1\u1ea0SyHten",
+    "Support\u00bf\u1ea0S\u1ed7yHten",
+    "Support\u00bf\u1ea0S\u1ed7yyten",
+    "Support\u1ea1SyHten",
+    "Support\u1ed7\u1ea0S\u1ed7yHtem",
+    "Support\u1ed7\u1ea0S\u1ed7yytem",
+    "Support\u1ed7\u1ea0\u1ed7yHten",
+    "Support\u1ed7\u1ea1\u1ea0S\u1ed7yHtem",
+    "Support\u1ed7\u1ea1\u1ea0S\u1ed7yHten",
+    "Suupport SyHten",
+    "Syiten",
+    "Sytten",
+    "Trend analys",
+    "Trendanalnis",
+    "Trendanalyis",
+    "Trendanalys",
+    "Trendanalyus",
+    "Trendanlns",
+    "Trendanlys",
+    "inal l00 100",
+    "nces",
+    "nes",
+    "npes",
+    "n\u00e7es"
+   ],
+   "frames_with_text": 46,
+   "ignored_noise_boxes": 199,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.077,
+     0.1982,
+     0.6311
+    ],
+    [
+     0.2865,
+     0.3312,
+     0.3469,
+     0.4934
+    ],
+    [
+     0.9659,
+     0.8939,
+     1.0,
+     0.9867
+    ]
+   ],
+   "cover": 0.1228,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_3fd8024ec92c": {
+   "text_found": true,
+   "texts": [
+    "23] |",
+    "23]|",
+    "[23]"
+   ],
+   "frames_with_text": 3,
+   "ignored_noise_boxes": 14,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2253,
+     0.4939,
+     0.2778,
+     0.5561
+    ],
+    [
+     0.7206,
+     0.2967,
+     0.7794,
+     0.5644
+    ]
+   ],
+   "cover": 0.019,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_fe1bd08c07cd": {
+   "text_found": true,
+   "texts": [
+    "227265",
+    "327265"
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 15,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0003,
+     0.2633,
+     0.0575,
+     0.5228
+    ]
+   ],
+   "cover": 0.0148,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_7f390621ee4e": {
+   "text_found": true,
+   "texts": [
+    "your"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 24,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0796,
+     0.074,
+     0.2381
+    ],
+    [
+     0.2909,
+     0.3328,
+     0.3481,
+     0.4839
+    ],
+    [
+     0.7925,
+     0.4606,
+     0.845,
+     0.5283
+    ]
+   ],
+   "cover": 0.0239,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_410db2ac1cc2": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 19,
+   "action": "none"
+  },
+  "c_6cc734ff26d0": {
+   "text_found": true,
+   "texts": [
+    "0 5.",
+    "05."
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 38,
+   "action": "blurred",
+   "regions": [
+    [
+     0.23,
+     0.3328,
+     0.2856,
+     0.4589
+    ]
+   ],
+   "cover": 0.007,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_935265d2970a": {
+   "text_found": true,
+   "texts": [
+    "(23)",
+    "0 5"
+   ],
+   "frames_with_text": 3,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0034,
+     0.3328,
+     0.0575,
+     0.4506
+    ],
+    [
+     0.0081,
+     0.5356,
+     0.0606,
+     0.6006
+    ]
+   ],
+   "cover": 0.0098,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_ac9bf9d69f44": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_4656c96af659": {
+   "text_found": true,
+   "texts": [
+    "- Collaga",
+    "- Cotlaga",
+    "Collaga",
+    "Coltaga",
+    "Cotlaga",
+    "Cotlag\u00ae",
+    "Cotleg\u00ae",
+    "Cottaga",
+    "Ordel",
+    "Order",
+    "Ordes",
+    "Ordet",
+    "Ordey",
+    "Samise",
+    "Samist",
+    "Samrist",
+    "Schel",
+    "Scheof",
+    "Scheol",
+    "Scheot",
+    "Schesl",
+    "Schest",
+    "School",
+    "Schoot",
+    "Semise",
+    "Semist",
+    "Semsist",
+    "USVE PIA",
+    "USVE PIR",
+    "VMLOO",
+    "VMLOU",
+    "WSVE PIA",
+    "WSVE PIAI",
+    "WSVE PIAR",
+    "WSVE PIAS",
+    "WSVE PIAY",
+    "WSVE PIRI",
+    "WSVIE PIA",
+    "_ Collaga",
+    "_ Cotlaga",
+    "_ Cotlega",
+    "_ Cottaga",
+    "emist",
+    "emrist",
+    "emsisl",
+    "emsist",
+    "enist",
+    "jatem",
+    "jstem",
+    "jztem",
+    "order",
+    "ystem",
+    "ysten",
+    "ystens"
+   ],
+   "frames_with_text": 48,
+   "ignored_noise_boxes": 74,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0706,
+     0.1028,
+     0.2533
+    ],
+    [
+     0.0,
+     0.2661,
+     0.0966,
+     0.5588
+    ]
+   ],
+   "cover": 0.0471,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_275f505f6a0e": {
+   "text_found": true,
+   "texts": [
+    "+ (70)+ (3)+2(0)(70)(BX)",
+    "+ (70)+(3)+2(30)(70)(1BXe)",
+    "+ (70)+(3)+2(30)(70)(BX)",
+    "+ (70)+(3)+2(30)(70)(BXe)",
+    "+ (70)+(3)+2(30)(7o)(1BX)",
+    "+ (70)+(3)+2(30)(7o)(BX)",
+    "+ (70+ (3)+2(30)(70)(0BX\u00e9",
+    "+ (7o)+(23)+2(3o)(To)(BXE)",
+    "+ (7o)+(23)+2(3o)(To)(Bxe)",
+    "+ 259.21+175.88 YAB",
+    "+ 259.21+175.88YAB",
+    "+259.21+173.88 YAB",
+    "+259.21+173.88 YAB\u0105",
+    "+259.21+173.88 YAB\u0142",
+    "+259.21+175.88 YAB",
+    "+259.21+175.88YAB",
+    "5\u0437\u0430\u0442\u0456",
+    "5\u0437\u043e\u0442\u0438",
+    "5\u0437\u043e\u0442\u0456",
+    "9.214 112-88x1)]2",
+    "9.214 112.88x1)]2",
+    "9.214 12-88x1)]2",
+    "9.214 172-88x1)]2",
+    "9.214 172-8\u20acx1)]2",
+    "9.214 173-88x1)]2",
+    "9.214 173-88x1)i2",
+    "9.214 173-88\u00d71)]2",
+    "9.214 173-8\u20acx1)\u1eca\u1ed3",
+    "9.214 173.88x1)]2",
+    "9\u201a2\u04064 \u0406\u0442\u00bd-8\u0454x\u0456)]\u00bd",
+    "Y 4B ]\"",
+    "Y AB ]\"",
+    "YAB",
+    "YAB]\"",
+    "YAB]\"a",
+    "YAB]\"\u00aa",
+    "\u00b7 (70)+ (3)+2(30)(7o)(BX)",
+    "\u00b7 (70)+(23)+2(30)(To)(BxE)",
+    "\u00b7 (70)+(23)+2(30)(To)(Bxe)",
+    "\u00b7 (70)+(3)+2(30)(70)(1BX)",
+    "\u00b7 (70)+(3)+2(30)(70)(BX)",
+    "\u00b7 (70)+(3)+2(30)(7o)(BX)",
+    "\u00b7 (7o)+(23)+2(30)(To)(BxE)",
+    "\u00b7 (7o)+(23)+2(3o)(To)(BXe)",
+    "\u00b7 (7o)+(23)+2(3o)(To)(BxE)",
+    "\u00b7 (7o)+(23)+2(3o)(To)(Bxe)"
+   ],
+   "frames_with_text": 69,
+   "ignored_noise_boxes": 255,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1817,
+     0.1325,
+     0.2683
+    ],
+    [
+     0.0,
+     0.2865,
+     0.1751,
+     0.5812
+    ],
+    [
+     0.2847,
+     0.3328,
+     0.3403,
+     0.4506
+    ]
+   ],
+   "cover": 0.0696,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_7af14c539c3f": {
+   "text_found": true,
+   "texts": [
+    ") Need for Ess.",
+    ") Neef for Ess",
+    ") Neeg for ESS",
+    ") Neeg for ESS.",
+    ") Neeg for EsS",
+    ") Neeg for Ess",
+    ") Neeg for Ess.",
+    "1553 120 10-6",
+    "1553 120 1016",
+    "1553 120 1026",
+    "1553 120 1076",
+    "1553 120 10\u04454)",
+    "1553 120 120 x0",
+    "1553 120 120 \u043a\u0440",
+    "1553 120 120 \u0445k",
+    "1553 120 120 \u0445\u0440",
+    "1553 120 120x",
+    "1553 120 120x0",
+    "1553 120 120x6",
+    "1553 120 120xm",
+    "1553 120 120\u0445",
+    "1553 120 120\u04456",
+    "1553 120 19-6",
+    "1553 120 20\u04456",
+    "1556/40",
+    "155\u0437 120 120\u043a6",
+    "Executiive Infotuation",
+    "Executive Infotmatinn",
+    "Executive Infotmation",
+    "Executive Infotuatin",
+    "Executive Infotuatinn",
+    "Executive Infotuatio",
+    "Executive Infotuation",
+    "Sapport Sy\u043dten",
+    "Sgiten",
+    "Sgtten",
+    "Suapport Syften",
+    "Support SyHten",
+    "Support Syftem",
+    "Support Syften",
+    "Support System",
+    "Support Syttem",
+    "Support Sy\u043den",
+    "Support Sy\u043dtem",
+    "Support Sy\u043dten",
+    "Supporti\u1ea0SyHtem",
+    "Supporti\u1ea0SyHten",
+    "Supporti\u1ea0Sy\u043den",
+    "Supporti\u1ea1\u1ea0SyHten",
+    "Syiten",
+    "Syten",
+    "Sytten",
+    "Trendanalyis",
+    "Trendanalyns",
+    "Trendanalys",
+    "Trendanlyis",
+    "nces"
+   ],
+   "frames_with_text": 47,
+   "ignored_noise_boxes": 208,
+   "action": "drop: text still readable after blurring",
+   "regions": [
+    [
+     0.0,
+     0.077,
+     0.1983,
+     0.6311
+    ],
+    [
+     0.2925,
+     0.5383,
+     0.345,
+     0.6033
+    ]
+   ],
+   "cover": 0.1133,
+   "rounds": 3,
+   "recheck_texts": [
+    "0 5.",
+    "07",
+    "0708",
+    "7205.19",
+    "F205.",
+    "F205.19"
+   ]
+  },
+  "c_dbf26c5fb3f2": {
+   "text_found": true,
+   "texts": [
+    "na!",
+    "na/",
+    "na?",
+    "nai",
+    "nal"
+   ],
+   "frames_with_text": 48,
+   "ignored_noise_boxes": 33,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1818,
+     0.079,
+     0.2867
+    ]
+   ],
+   "cover": 0.0083,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_9aa6d3b0902d": {
+   "text_found": true,
+   "texts": [
+    "- Collaga",
+    "- Scheol",
+    ". Scheol",
+    ": Scheol",
+    "= Scheol",
+    "= Scheot",
+    "= Schesl",
+    "= Schoo1",
+    "= Schoof",
+    "= School",
+    "= Sch\u00e6l",
+    "COSME PIACE",
+    "COSVE PIALE",
+    "COUME PIACE",
+    "COUVE PIALE",
+    "CSVE PIALE",
+    "CUVE PIALE",
+    "Collaga",
+    "Collage",
+    "Collega",
+    "College",
+    "Coltaga",
+    "Coltega",
+    "Cotlaga",
+    "Cotlag\u00ae",
+    "Cotlega",
+    "Cottag\u00ae",
+    "Cottega",
+    "OY!",
+    "Ordei",
+    "Ordenise\u00e0",
+    "Order",
+    "Order.",
+    "Ordes",
+    "Ordet",
+    "Ordetist",
+    "Ordetst",
+    "Ordetvist",
+    "Ordey",
+    "Scheol",
+    "Scheot",
+    "Schooi",
+    "School",
+    "WOSVE PIALE",
+    "WSME PIAG",
+    "WSME PIAGE",
+    "WSME PIAS",
+    "WSNE PIAG",
+    "WSVE PIACE",
+    "WSVE PIAG",
+    "WSVE PIAGE",
+    "WSVE PIALE",
+    "WSVE PIAS",
+    "WUSME PIACE",
+    "WUVE PIALE",
+    "WUVE PIALe",
+    "_ Collaga",
+    "jatem",
+    "jsteng",
+    "jztem",
+    "jzteng",
+    "jz\u0142em",
+    "order",
+    "orderist",
+    "ordes",
+    "ordet",
+    "ordetist",
+    "ordetvist",
+    "ordey",
+    "yatem",
+    "yztem",
+    "yz\u0142em",
+    "\u2022 Scheol",
+    "\u2022Scheol",
+    "\u2192 Scheol"
+   ],
+   "frames_with_text": 63,
+   "ignored_noise_boxes": 124,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0809,
+     0.1076,
+     0.2543
+    ],
+    [
+     0.0,
+     0.2633,
+     0.1011,
+     0.5615
+    ],
+    [
+     0.2237,
+     0.0,
+     0.2809,
+     0.1644
+    ],
+    [
+     0.2237,
+     0.2994,
+     0.2794,
+     0.4867
+    ],
+    [
+     0.9222,
+     0.8939,
+     0.9762,
+     0.9839
+    ]
+   ],
+   "cover": 0.0735,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_36572580b511": {
+   "text_found": true,
+   "texts": [
+    "ma/",
+    "\u0442a/",
+    "\u0442\u0430,",
+    "\u0442\u0430/",
+    "\u0442\u0430i"
+   ],
+   "frames_with_text": 29,
+   "ignored_noise_boxes": 64,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1836,
+     0.0812,
+     0.2867
+    ]
+   ],
+   "cover": 0.0084,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_52550b457146": {
+   "text_found": true,
+   "texts": [
+    "(83]",
+    "- School",
+    "-= School",
+    "123",
+    "2, Scheol",
+    "2. Scheol",
+    "2. School",
+    "27 Scheol",
+    "27 School",
+    "2: Schoof",
+    "2: School",
+    "2= Scheol",
+    "2= Schoof",
+    "2= School",
+    "2= Schoot",
+    "= School",
+    "Collaga",
+    "Collage",
+    "Cotlaga",
+    "Cotlage",
+    "Cotlega",
+    "Order",
+    "Ordet",
+    "Oxder",
+    "Oxdet",
+    "Semeist",
+    "Semise",
+    "Semisi",
+    "Semist",
+    "Semist\u00e0",
+    "Semsist",
+    "Senist",
+    "Senist\u00e0",
+    "Senrist",
+    "Sensist",
+    "Senust",
+    "System",
+    "Syztem",
+    "VML",
+    "VMLOE",
+    "VMLOO",
+    "VMLOS",
+    "VMLOr",
+    "VMLos",
+    "WSME PIAE",
+    "WSME PIAGE",
+    "WSME PIALE",
+    "WSME PIARE",
+    "WSME PIAY",
+    "WSME PIRLE",
+    "WSVE PIAE",
+    "WSVE PIALE",
+    "WSVE PIALe",
+    "WSVE PIAu",
+    "WUSVE PIALE",
+    "order",
+    "ordet",
+    "system",
+    "syztem",
+    "sy\u015b\u0142em"
+   ],
+   "frames_with_text": 71,
+   "ignored_noise_boxes": 133,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0698,
+     0.1153,
+     0.2422
+    ],
+    [
+     0.0,
+     0.2577,
+     0.1077,
+     0.5529
+    ],
+    [
+     0.2347,
+     0.4883,
+     0.2872,
+     0.5533
+    ],
+    [
+     0.7394,
+     0.33,
+     0.7981,
+     0.57
+    ]
+   ],
+   "cover": 0.0692,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_45dc7689add4": {
+   "text_found": true,
+   "texts": [
+    "0 5",
+    "205"
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 6,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0066,
+     0.3328,
+     0.0622,
+     0.4867
+    ]
+   ],
+   "cover": 0.0086,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_a725b8f16d9e": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 7,
+   "action": "none"
+  },
+  "c_45b5a930673e": {
+   "text_found": true,
+   "texts": [
+    "0 5.",
+    "05",
+    "05.",
+    "F205"
+   ],
+   "frames_with_text": 10,
+   "ignored_noise_boxes": 18,
+   "action": "blurred",
+   "regions": [
+    [
+     0.23,
+     0.3328,
+     0.2856,
+     0.5228
+    ]
+   ],
+   "cover": 0.0106,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_cd472eb207c8": {
+   "text_found": true,
+   "texts": [
+    "(33]",
+    "23",
+    "23]|"
+   ],
+   "frames_with_text": 6,
+   "ignored_noise_boxes": 1,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.4578,
+     0.0481,
+     0.5283
+    ]
+   ],
+   "cover": 0.0034,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_2a26510b31cb": {
+   "text_found": true,
+   "texts": [
+    "0 5",
+    "027205",
+    "1205",
+    "627205",
+    "7205",
+    "B27205",
+    "F205"
+   ],
+   "frames_with_text": 9,
+   "ignored_noise_boxes": 11,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0062,
+     0.3378,
+     0.0656,
+     0.601
+    ]
+   ],
+   "cover": 0.0156,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_f33406278910": {
+   "text_found": true,
+   "texts": [
+    "23"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2316,
+     0.5328,
+     0.2825,
+     0.5922
+    ]
+   ],
+   "cover": 0.003,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_d437454296a1": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 4,
+   "action": "none"
+  },
+  "c_dc81735552e4": {
+   "text_found": true,
+   "texts": [
+    ") Neeg for ESS e",
+    ") Neeg for ESSJe",
+    ") Neeg for ESSue",
+    ") Neei for ESSue",
+    ") Nees for ESS e",
+    "149/ 100 100",
+    "1553 120 10 \u043a6",
+    "1553 120 10 \u043a\u0440",
+    "1553 120 10 \u04456",
+    "1553 120 10 \u0445\u0440",
+    "1553 120 10-6",
+    "1553 120 10x6",
+    "1553 120 10\u043d6",
+    "1553 120 10\u04456",
+    "1553 120 10\u0445\u0440",
+    "1553 120 120 \u043a\u0440",
+    "1553 120 120 \u04456",
+    "1553 120 120 \u0445\u0440",
+    "155\u0437 120 10 \u043a\u0440",
+    "155\u0437 120 10\u043a\u0440",
+    "155\u0437 120 10\u0445\u0440",
+    "> Neeg for ESS e",
+    "> Neen for ESS e",
+    "> Nees for ESSe",
+    "Cunbe vAwAvy",
+    "Cunbe vawAvy",
+    "Cunsd vewAvy",
+    "Executiive Infotmatin",
+    "Executiive Infotuatin",
+    "Executive Infotmatin",
+    "Executive Infotmatinn",
+    "Executive Infotratin",
+    "Executive Infotratinn",
+    "Executive Infotuatim",
+    "Executive Infotuatin",
+    "Executive Infotuatinn",
+    "Executive Infotuati\u0105",
+    "Executive Infotvatin",
+    "Frendanalys",
+    "J",
+    "Need for ESS e",
+    "Neef for ESS e",
+    "Neeg for ESS e",
+    "Neeg for ESSJe",
+    "Neeg for ESSSe",
+    "Neeg for ESSe",
+    "Neeg for ESSse",
+    "Neeg for ESSue",
+    "Neei_for ESSJe",
+    "Nees for ESS",
+    "Nees for ESS e",
+    "Nees for ESS x",
+    "Nees for ESSJe",
+    "Nees for ESSe",
+    "Nees for Ess",
+    "Neesfor ESSDe",
+    "Neet for ESS e",
+    "Neet for ESSe",
+    "Sapport Syften",
+    "Sapport Syitem",
+    "Sapport Syjen",
+    "Sapport yitem",
+    "Sapporti\u1ea1\u1ea0Systen",
+    "Scapport Syftem",
+    "Scapport System",
+    "Seapport Syftem",
+    "Seapport Syften",
+    "Sgitem",
+    "Sgiten",
+    "Siapport Syftem",
+    "Siapport Systen",
+    "Sispporti\u1ea1\u1ea0System",
+    "Suapport Syftem",
+    "Suapport Syften",
+    "Suapporti\u1ea1\u1ea0Syftem",
+    "Support Syftem",
+    "Support Syften",
+    "Support yftem",
+    "Support yitem",
+    "Support ysten",
+    "Supporti\u1ea0Syften",
+    "Supporti\u1ea1\u1ea0Syftem",
+    "Supporti\u1ea1\u1ea0System",
+    "Supporti\u1ea1\u1ea0Systen",
+    "Support\u1ea0\u1ea0yHem",
+    "Support\u1ed7\u1ea0S\u1ed7ystem",
+    "Suupport Syften",
+    "Trendanalns",
+    "Trendanalyis",
+    "Trendanalys",
+    "Trendanalyss",
+    "Trendanlns",
+    "Trendanlys",
+    "Trendaralnis",
+    "Trendaralns",
+    "Trendaralys",
+    "nces",
+    "n\u00e7es"
+   ],
+   "frames_with_text": 52,
+   "ignored_noise_boxes": 214,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.079,
+     0.1732,
+     0.4642
+    ],
+    [
+     0.0,
+     0.4726,
+     0.1761,
+     0.6311
+    ],
+    [
+     0.9659,
+     0.8967,
+     1.0,
+     0.9867
+    ]
+   ],
+   "cover": 0.0977,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_d381ab962269": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 24,
+   "action": "none"
+  },
+  "c_f4368a8aad4d": {
+   "text_found": true,
+   "texts": [
+    "'AB",
+    "+ (1o)+ (3)+ 2(30)(70) (8)9)",
+    "+ (7)+ (3)+ 2(30)(70)(8)e9)",
+    "+ (70)+ (3) + 2(30)(70)(18)6)",
+    "+ (70)+ (3) + 2(30)(70)(18)6))",
+    "+ (70)+ (3)+ 2(30)(70) (8)?)",
+    "+ (70)+ (3)+ 2(30)(70) (8)e\u00ae)",
+    "+ (To)+ (3)+ 2(30)(70) (18XD)",
+    "+ (To)+ (3)+ 2(30)(70) (18XS)",
+    "+ (To+ (23)+ 2(30)(70) (8)9)",
+    "+ 259.21 + 173.88 YAB",
+    "+ 259.21 +173.88 YAB",
+    "+ 259.21+173,88 YAB",
+    "+ 259.21+173,88 YA\u0161\u00ee\u00cd",
+    "+ 259.21+173.88 YA8",
+    "+ 259.21+173.88 YAB",
+    "+ 259.21+175.88 YAB",
+    "+(\u0442\u043e+(\u0437}+2(\u043e)(\u0442\u043e)(\u0432)\u044d\u0443",
+    "+259.21 +173.88 YAB",
+    "+259.21+173,88 YAB",
+    "+259.21+173.88 YAB",
+    "+259.21+175.88 YAB",
+    "5\u0437\u0430\u0442\u0456",
+    "5\u0437\u043e\u0442\u0456",
+    "9.214 (73-88x1)]2",
+    "9.214 173-8\u20ac\u00d7\u0456)]\u00bd",
+    "9.2\u04064 173-8\u20b4x\u0456)]\"2",
+    "AB",
+    "AS",
+    "CAOB",
+    "SAGB",
+    "TAB",
+    "Y AB ]\"",
+    "Y AB]\"",
+    "Y AB\u1ed3i",
+    "Y AB\u1ed3\u1eca\u1ed3\u1ecai",
+    "YAB ]\"",
+    "YAB]\"",
+    "\u00b7 (To+ (3)+ 2(30)(70) (8)?)",
+    "\u2021(\u0442\u043e+(\u0437}+2(\u043e)(\u0442\u043e)(\u0432)\u044d)"
+   ],
+   "frames_with_text": 70,
+   "ignored_noise_boxes": 333,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1744,
+     0.1544,
+     0.2688
+    ],
+    [
+     0.0,
+     0.2812,
+     0.1738,
+     0.5758
+    ],
+    [
+     0.7847,
+     0.48,
+     0.8387,
+     0.545
+    ]
+   ],
+   "cover": 0.0693,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_1469b17a9cb2": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 35,
+   "action": "none"
+  },
+  "c_0e38a8034f00": {
+   "text_found": true,
+   "texts": [
+    "205",
+    "23",
+    "265."
+   ],
+   "frames_with_text": 4,
+   "ignored_noise_boxes": 10,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0112,
+     0.3328,
+     0.0669,
+     0.5006
+    ],
+    [
+     0.0159,
+     0.5328,
+     0.0684,
+     0.5978
+    ]
+   ],
+   "cover": 0.0128,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_3e9195ff6481": {
+   "text_found": true,
+   "texts": [
+    ") Neef for ESS",
+    ") Neeg for ESS",
+    ") Neeg for ESSe",
+    ") Neeg for Ess.",
+    ") Nees for ESS e",
+    ") Nees for Ess.",
+    "1553 120 10 \u04456",
+    "1553 120 1016",
+    "1553 120 106",
+    "1553 120 10\u043a6",
+    "1553 120 10\u043a\u044c",
+    "1553 120 10\u043d6",
+    "1553 120 10\u043d\u044c",
+    "1553 120 10\u04456",
+    "1553 120 120 \u043a6",
+    "1553 120 120-6",
+    "1553 120 18-6",
+    "1553 120 1876",
+    "> Need for ESS e",
+    "> Neeg for ESS e",
+    "Executiive Infotuatin",
+    "Executive Infotmatin",
+    "Executive Infotmatinn",
+    "Executive Infotmation",
+    "Executive Infotmati\u015b\u0105",
+    "Executive Infotuatin",
+    "J",
+    "Need for ESS",
+    "Need for ESSe",
+    "Neeg for ESS e",
+    "Neel for ESS",
+    "Neel for ESSe",
+    "Nees for ESS",
+    "Nees for ESS e",
+    "Nees for ESS,",
+    "Nees for ESSe",
+    "Nees for EsS",
+    "Nees for EsS,",
+    "Nees for EsS.",
+    "Nees for Ess",
+    "Nees for Ess,",
+    "Nees for Ess.",
+    "Scepport Syrtem",
+    "Seapporti\u1ea0\u1ea1Syftem",
+    "Seepport Syftem",
+    "Sepport Syftem",
+    "Sepport Syften",
+    "Sgiten",
+    "Siapport Syftem",
+    "Siapporti\u1ea1\u1ea0Syftem",
+    "Siepport Syftem",
+    "Siepporti\u1ea1\u1ea0System",
+    "Siupporti\u1ea1\u1ea0System",
+    "Suapporti\u1ea1\u1ea0Syftem",
+    "Suepport Syftem",
+    "Suepport System",
+    "Suepport Systen",
+    "Support Syftem",
+    "Support Syften",
+    "Supporti\u1ea1Syftem",
+    "Supporti\u1ea1System",
+    "Suupporti\u1ea1\u1ea0System",
+    "Syiten",
+    "Syten",
+    "Sytten",
+    "Trend analyis",
+    "Trend analyns",
+    "Trendanalns",
+    "Trendanalyns",
+    "Trendanalys",
+    "nces",
+    "n\u00e7es"
+   ],
+   "frames_with_text": 39,
+   "ignored_noise_boxes": 186,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0773,
+     0.171,
+     0.4002
+    ],
+    [
+     0.0,
+     0.4697,
+     0.1744,
+     0.6311
+    ],
+    [
+     0.9659,
+     0.8939,
+     1.0,
+     0.9867
+    ]
+   ],
+   "cover": 0.0865,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_b656239c6d0d": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_ade1eae8ec7e": {
+   "text_found": true,
+   "texts": [
+    ") Nee for Ess",
+    ") Neeg for Ess",
+    ") Neeg for Ess.",
+    ") Nees for Ess",
+    "1553 120 10 \u04456",
+    "1553 120 10-6",
+    "1553 120 1026",
+    "1553 120 10x6",
+    "1553 120 10\u043a6",
+    "1553 120 10\u04451",
+    "1553 120 10\u04456",
+    "1553 120 120-6",
+    "1553 120 120\u0445",
+    "1553 120 1\u043e\u043d\u044c",
+    "1553 120 \u041a\u043e\u043d\u044c",
+    "1953 120 10\u04456",
+    "Executiive Infotatim",
+    "Executiive Infotmatim",
+    "Executive Infetmatio",
+    "Executive Infetmation",
+    "Executive Infotmatim",
+    "Executive Infotmatin",
+    "Executive Infotuatim",
+    "Executive Infotuatin",
+    "Executive Infotuatio",
+    "Executive Infotuation",
+    "Executive Infotwatim",
+    "Frendanalys",
+    "Nee for Ess",
+    "Neeg for Ess",
+    "Nees for ESS",
+    "Nees for Ess",
+    "Nees for Ess.",
+    "Neet for EsS",
+    "Seepport Syftem",
+    "Sepport SyHtem",
+    "Sepport Syfem",
+    "Sepport Syftem",
+    "Sgiten",
+    "Siepport Syftem",
+    "Siepport Systen",
+    "Siepporti\u1ea0Systen",
+    "Sispport Syftem",
+    "Sispport Sytten",
+    "Sispporti\u1ea1Syftem",
+    "Sispporti\u1ea1\u1ea0Systen",
+    "Suepporti\u1ea1\u1ea0Systen",
+    "Support Syfem",
+    "Support Syftem",
+    "Support Systen",
+    "Supporti\u1ea0Systen",
+    "Suupporti\u1ea1\u1ea0Systen",
+    "Syiten",
+    "Trend analis",
+    "Trend analnis",
+    "Trend analns",
+    "Trend analyg",
+    "Trend analyis",
+    "Trend analyns",
+    "Trend analys",
+    "Trend aralnis",
+    "Trend aralns",
+    "Trendanalyg",
+    "nces"
+   ],
+   "frames_with_text": 39,
+   "ignored_noise_boxes": 170,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0774,
+     0.1724,
+     0.4002
+    ],
+    [
+     0.0,
+     0.4347,
+     0.1984,
+     0.6311
+    ],
+    [
+     0.2901,
+     0.33,
+     0.3472,
+     0.4141
+    ]
+   ],
+   "cover": 0.0994,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_efd9d0281c56": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_2b21773d6e7c": {
+   "text_found": true,
+   "texts": [
+    ") Nee for Ess",
+    ") Need for Ess",
+    ") Need for Ess.",
+    ") Neef for Ess",
+    ") Neeg for ESS",
+    ") Neeg for EsS",
+    ") Neeg for Ess",
+    ") Neeg for Ess.",
+    ") Neeg f\u00fcr ESS",
+    ") Nees for Ess",
+    ") Nleeg for Ess",
+    "1553 120 10x6",
+    "1553 120 10\u04456",
+    "1553 120 120 -6",
+    "1553 120 120 x",
+    "1553 120 120 x0",
+    "1553 120 120 x1",
+    "1553 120 120 x6",
+    "1553 120 120 \u0445",
+    "1553 120 120 \u04450",
+    "1553 120 120-0",
+    "1553 120 120x",
+    "1553 120 120x0",
+    "1553 120 120x6",
+    "1553 120 120\u043a6",
+    "1553 120 120\u04456",
+    "1553 120 1x6",
+    "1553 120 1\u04456",
+    "Executiive Infotmation",
+    "Executiive Infotuation",
+    "Executive Infotmatin",
+    "Executive Infotmatinn",
+    "Executive Infotmation",
+    "Executive Infotuatin",
+    "Executive Infotuatinn",
+    "Executive Infotuatio",
+    "Executive Infotuation",
+    "Executive Infotvation",
+    "Executve Infotuation",
+    "Need for ESS",
+    "Need for Ess",
+    "Need for Ess.",
+    "Neef for Ess",
+    "Neef for Ess.",
+    "Neeg for ESS",
+    "Neeg for ESSe",
+    "Neeg for EsS.",
+    "Neeg for Ess",
+    "Neeg for Ess.",
+    "Nees for EsS",
+    "Nees for Ess",
+    "Nees for Ess.",
+    "Neet for Ess",
+    "Sapport Sy\u043dten",
+    "Sapporti\u1ea0Siyftem",
+    "Sapporti\u1ea0Sy\u043dten",
+    "Sapporti\u1ea1\u1ea0Sy\u043dten",
+    "Scapport Sy\u043dtem",
+    "Scapport Sy\u043dten",
+    "Scapport\u00bf\u1ea1\u1ea0S\u1ed7yHten",
+    "Scepport Syyten",
+    "Scepport Sy\u043dten",
+    "Scepporti\u1ea1\u1ea0SyHten",
+    "Scepport\u1ed7\u1ea0S\u1ed7yytem",
+    "Seepport Sy\u043dtem",
+    "Seepport S\u0443\u043d\u0435n",
+    "Seepporti\u1ea1\u1ea0SyHten",
+    "Seepport\u1ed7\u1ea0S\u1ed7yHten",
+    "Seepport\u1ed7\u1ea1\u1ea0S\u1ed7yHten",
+    "Sepporti\u1ea0Siyftem",
+    "Sepporti\u1ea0Siyften",
+    "Sepporti\u1ea0Sy\u043dten",
+    "Sepport\u00bf\u1ea0S\u1ed7yyten",
+    "Sepport\u1ed7\u1ea0S\u1ed7yytem",
+    "Sepport\u1ed7\u1ea0S\u1ed7yyten",
+    "Sgiten",
+    "Sgite\u0442",
+    "Sgrten",
+    "Sgsten",
+    "Sgtten",
+    "Suapport Sy\u043dtem",
+    "Suapport Sy\u043dten",
+    "Suapporti\u1ea1\u1ea0SyHten",
+    "Suapporti\u1ea1\u1ea0Syften",
+    "Suepport SyHtem",
+    "Suepport Sy\u043den",
+    "Suepport Sy\u043dtem",
+    "Suepport Sy\u043dten",
+    "Suepporti\u1ea0SyHten",
+    "Suepporti\u1ea1\u1ea0SyHten",
+    "Suepport\u1ed7\u1ea1\u1ea0S\u1ed7yHten",
+    "Support Syften",
+    "Support Systen",
+    "Support Syyten",
+    "Support Sy\u043den",
+    "Support Sy\u043dten",
+    "Supporti\u1ea0Siyften",
+    "Supporti\u1ea0SyHten",
+    "Supporti\u1ea0Syften",
+    "Supporti\u1ea0Sy\u043den",
+    "Supporti\u1ea0Sy\u043dten",
+    "Supporti\u1ea1\u1ea0SyHten",
+    "Supporti\u1ea1\u1ea0Sy\u043den",
+    "Supporti\u1ea1\u1ea0Sy\u043dten",
+    "Support\u00bf\u1ea0S\u1ed7yHten",
+    "Support\u00bf\u1ea0S\u1ed7yyten",
+    "Support\u1ea1SyHten",
+    "Support\u1ed7\u1ea0S\u1ed7yHten",
+    "Support\u1ed7\u1ea1\u1ea0S\u1ed7yHten",
+    "Suupport Sy\u043dten",
+    "Suupporti\u1ea0SyHten",
+    "Suupport\u00bf\u1ea0S\u1ed7yHten",
+    "Suupport\u00bf\u1ea1\u1ea0S\u1ed7yHten",
+    "Syiten",
+    "Sytten",
+    "Trendanalyes",
+    "Trendanalyis",
+    "Trendanalys",
+    "Trendanalyss",
+    "Trendanalyus",
+    "Trendanlyg",
+    "Trendanlys",
+    "Trendanlyss",
+    "Trerdunlns",
+    "giten",
+    "nces",
+    "npes"
+   ],
+   "frames_with_text": 97,
+   "ignored_noise_boxes": 452,
+   "action": "drop: text still readable after blurring",
+   "regions": [
+    [
+     0.0,
+     0.0736,
+     0.1967,
+     0.6311
+    ],
+    [
+     0.2877,
+     0.2491,
+     0.3467,
+     0.6065
+    ]
+   ],
+   "cover": 0.1307,
+   "rounds": 3,
+   "recheck_texts": [
+    "00070",
+    "708",
+    "J"
+   ]
+  },
+  "c_04190317daff": {
+   "text_found": true,
+   "texts": [
+    "(23]"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 5,
+   "action": "blurred",
+   "regions": [
+    [
+     0.7237,
+     0.4994,
+     0.7762,
+     0.5672
+    ]
+   ],
+   "cover": 0.0036,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_6e8e0195a344": {
+   "text_found": true,
+   "texts": [
+    "na/",
+    "nat"
+   ],
+   "frames_with_text": 44,
+   "ignored_noise_boxes": 49,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1856,
+     0.0762,
+     0.2783
+    ]
+   ],
+   "cover": 0.0071,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_fee03dd94d83": {
+   "text_found": true,
+   "texts": [
+    "ma/",
+    "na?",
+    "\u0442a/",
+    "\u0442a?",
+    "\u0442\u0430",
+    "\u0442\u0430 \u0456",
+    "\u0442\u0430i",
+    "\u0442\u0430\u0456"
+   ],
+   "frames_with_text": 41,
+   "ignored_noise_boxes": 86,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1795,
+     0.0828,
+     0.2872
+    ]
+   ],
+   "cover": 0.0089,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_09b0ec594cf5": {
+   "text_found": true,
+   "texts": [
+    "23",
+    "33 j|"
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 30,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0159,
+     0.5328,
+     0.0684,
+     0.5978
+    ]
+   ],
+   "cover": 0.0034,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_fc8364cb9f2e": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 24,
+   "action": "none"
+  },
+  "c_4c3687f4d51d": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "(23]|",
+    "[23]|"
+   ],
+   "frames_with_text": 4,
+   "ignored_noise_boxes": 26,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0826,
+     0.0751,
+     0.2409
+    ],
+    [
+     0.7925,
+     0.4578,
+     0.8466,
+     0.5283
+    ]
+   ],
+   "cover": 0.0157,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_073ae4385dee": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 34,
+   "action": "none"
+  },
+  "c_23c6a85665cc": {
+   "text_found": true,
+   "texts": [
+    "(23]|",
+    "33",
+    "33]",
+    "33] |"
+   ],
+   "frames_with_text": 6,
+   "ignored_noise_boxes": 4,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0081,
+     0.4522,
+     0.0622,
+     0.52
+    ]
+   ],
+   "cover": 0.0037,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_dbd459ab3e5e": {
+   "text_found": true,
+   "texts": [
+    ") Need for Ess",
+    ") Neef for Ess",
+    ") Neeg for Ess",
+    ") Neel for ESS",
+    ") Neet for EsS",
+    ") Neet for Ess",
+    "1553 120 10 \u0445\u0440",
+    "1553 120 10-1",
+    "1553 120 10-6",
+    "1553 120 106",
+    "1553 120 10\u043a6",
+    "1553 120 10\u043d6",
+    "1553 120 10\u04456",
+    "1553 120 120-6",
+    "1553 120 120\u043a6",
+    "1553 120 120\u04456",
+    "155\u0437 120 10\u043a\u0440",
+    "155\u0437 120 10\u04456",
+    "> Need for ESS e",
+    "Executive Infotmatin",
+    "Executive Infotuatim",
+    "Executive Infotuatin",
+    "Executive Infotuati\u015b\u0105",
+    "Frendanalys",
+    "Need for Ess",
+    "Neef for Ess",
+    "Neef for Ess.",
+    "Nees for ESS",
+    "Nees for ESS,",
+    "Nees for Ess",
+    "Nees for Ess.",
+    "Nees_for ESS",
+    "Neet for ESS",
+    "Neet for Ess",
+    "Seepporti\u1ea0Syften",
+    "Sgiten",
+    "Siepport Syftem",
+    "Siepport Syften",
+    "Siepporti\u1ea0Syften",
+    "Siepporti\u1ea0Systen",
+    "Siepporti\u1ea1\u1ea0Syftem",
+    "Siepporti\u1ea1\u1ea0Syften",
+    "Siepport\u1ed7\u1ea0S\u1ed7yytem",
+    "Sipporti\u1ea0Syften",
+    "Sispporti\u1ea0Syften",
+    "Sispporti\u1ea1\u1ea0System",
+    "Sispport\u00bf\u1ea0S\u1ed7ystem",
+    "Sispport\u00bf\u1ea0S\u1ed7yytem",
+    "Sispport\u1ed7\u1ea1\u1ea0S\u1ed7ystem",
+    "Suapport Syften",
+    "Suapporti\u1ea1\u1ea0Syftem",
+    "Suapport\u1ea1\u1ea0Syftem",
+    "Suepport\u1ed7\u1ea0S\u1ed7yytem",
+    "Support&\u1ea0\u1ea1\u1ea0\u1ea0yyem",
+    "Support&\u1ea0\u1ea1\u1ea0\u1ea0yyen",
+    "Supporti\u1ea0Syften",
+    "Supporti\u1ea1\u1ea0Syftem",
+    "Supporti\u1ea1\u1ea0iyftem",
+    "Supporti\u1ea1\u1ea0iyitem",
+    "Supporti\u1ea1\u1ea0i\u1ecayftem",
+    "Support\u00bf\u1ea0S\u1ed7yytem",
+    "Syten",
+    "Sytten",
+    "Trendanalns",
+    "Trendanalyis",
+    "Trendanalyns",
+    "Trendanalys",
+    "Trendanlys",
+    "nces",
+    "npes",
+    "n\u00e7es"
+   ],
+   "frames_with_text": 38,
+   "ignored_noise_boxes": 176,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0772,
+     0.1967,
+     0.6311
+    ],
+    [
+     0.9659,
+     0.8939,
+     1.0,
+     0.9867
+    ]
+   ],
+   "cover": 0.1121,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_8e4a237037fe": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 2,
+   "action": "none"
+  },
+  "c_ad223222f881": {
+   "text_found": true,
+   "texts": [
+    "1205",
+    "205",
+    "205.",
+    "F205"
+   ],
+   "frames_with_text": 4,
+   "ignored_noise_boxes": 2,
+   "action": "blurred",
+   "regions": [
+    [
+     0.002,
+     0.332,
+     0.06,
+     0.5152
+    ]
+   ],
+   "cover": 0.0106,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_0012ed2f8148": {
+   "text_found": true,
+   "texts": [
+    "827205",
+    "857205",
+    "857265",
+    "D"
+   ],
+   "frames_with_text": 6,
+   "ignored_noise_boxes": 31,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2224,
+     0.2989,
+     0.2823,
+     0.5567
+    ],
+    [
+     0.2253,
+     0.08,
+     0.2778,
+     0.1478
+    ]
+   ],
+   "cover": 0.019,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_beae5fa9890c": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 2,
+   "action": "none"
+  },
+  "c_a4d3231f0c5d": {
+   "text_found": true,
+   "texts": [
+    ") Neef for ESS.e",
+    ") Neef for Ess",
+    ") Neeg for ESS",
+    ") Neeg for ESS e",
+    ") Neeg for ESS.",
+    ") Neeg for ESSJe",
+    ") Neeg for ESSe",
+    ") Neeg for ESSue",
+    ") Neeg for EsSue",
+    ") Neeg for Ess",
+    ") Neeg for Ess.",
+    ") Neeg por ESSse",
+    ") Nees for Ess.",
+    "1553 120 10x6",
+    "1553 120 10\u043a6",
+    "1553 120 10\u043a\u044c",
+    "1553 120 10\u04456",
+    "1553 120 120 \u043a\u0440",
+    "1553 120 120x0",
+    "1553 120 120\u043a1",
+    "1553 120 120\u043a6",
+    "1553 120 120\u043a\u044c",
+    "1553 120 120\u04450",
+    "1553 120 120\u04456",
+    "1556/40",
+    "1556140",
+    "155\u0437 120 10\u043a\u044c",
+    "155\u0437 120 120\u043a\u044c",
+    "1583 120 10\u043a6",
+    "1583 120 10\u043a\u044c",
+    "1583 120 120\u043a1",
+    "1583 120 120\u043a6",
+    "1583 120 120\u043a\u044c",
+    "1593 120 120\u043a\u044c",
+    "> Neeg for ESSse",
+    "CUREE UEWAUS",
+    "Executiive Infetuatin",
+    "Executiive Infotratin",
+    "Executiive Infotuatin",
+    "Executiive Infotuatinn",
+    "Executiive Infotuation",
+    "Executive Infotnatio",
+    "Executive Infotratim",
+    "Executive Infotratin",
+    "Executive Infotratinn",
+    "Executive Infotratio",
+    "Executive Infotration",
+    "Executive Infotuatim",
+    "Executive Infotuatin",
+    "Executive Infotuatinn",
+    "Executive Infotuation",
+    "Executve Infotrati\u0142\u0105",
+    "Neef for Ess",
+    "Neeg for ESS e",
+    "Neeg for ESSue",
+    "Neeg for Ess",
+    "Nees for EsS",
+    "Nees for Ess",
+    "Sapport Sy\u043dten",
+    "Scapport Sy\u043dten",
+    "Scepport Sy\u043dten",
+    "Sepport Syften",
+    "Sepport Syttem",
+    "Sepport Syyten",
+    "Sepport Sy\u043dten",
+    "Sgiten",
+    "Suapport Sy\u043dten",
+    "Suepport Sy\u043dten",
+    "Support Syftem",
+    "Support Syften",
+    "Support Systen",
+    "Support Syten",
+    "Support Sytten",
+    "Support Sy\u043dtem",
+    "Support Sy\u043dten",
+    "Supporti\u1ea0Siyften",
+    "Supporti\u1ea0SyHten",
+    "Supporti\u1ea1\u1ea0Siyftem",
+    "Supporti\u1ea1\u1ea0SyHten",
+    "Support\u1ed7\u1ea0S\u1ed7yytem",
+    "Syiten",
+    "Systen",
+    "Trend analyis",
+    "Trend analyns",
+    "Trend analys",
+    "Trendanalyes",
+    "Trendanalyg",
+    "Trendanalyis",
+    "Trendanalyns",
+    "Trendanalys",
+    "Trendanalyss",
+    "Trendanlyis",
+    "nces",
+    "npes"
+   ],
+   "frames_with_text": 55,
+   "ignored_noise_boxes": 238,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0771,
+     0.1724,
+     0.4295
+    ],
+    [
+     0.0,
+     0.4383,
+     0.1981,
+     0.6311
+    ],
+    [
+     0.2883,
+     0.3303,
+     0.3473,
+     0.4221
+    ],
+    [
+     0.2925,
+     0.5383,
+     0.345,
+     0.6033
+    ],
+    [
+     0.9675,
+     0.8967,
+     1.0,
+     0.9839
+    ]
+   ],
+   "cover": 0.1106,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_34999a37ae99": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 1,
+   "action": "none"
+  },
+  "c_c43e24eea118": {
+   "text_found": true,
+   "texts": [
+    "F205."
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 22,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2258,
+     0.0393,
+     0.2908,
+     0.2719
+    ],
+    [
+     0.229,
+     0.3322,
+     0.2873,
+     0.5231
+    ],
+    [
+     0.7031,
+     0.3321,
+     0.7631,
+     0.5208
+    ]
+   ],
+   "cover": 0.0376,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_5ad73d89b6fa": {
+   "text_found": true,
+   "texts": [
+    "# (7o)+ (23) + 2(30) (70) (BXe)",
+    "+ (70)+ (23) + 2(30) (70) (BXe)",
+    "+ (70)+ (23)+2(30) (70)(18X09)",
+    "+ (70)+ (23)+2(30)(70) (18XED)",
+    "+ (70)+ (23)+2(30)(70) (18Xe)",
+    "+ (70)+ (23)+2(30)(70) (18XeD)",
+    "+ (70)+ (23)+2(30)(70) (8XeD)",
+    "+ (70)+ (3)+ 2(30) (70)(18Xe)",
+    "+ (70)+(23) + 2(30) (70) (BXe)",
+    "+ (70)+(23)+ 2(30) (70) (8Xe)",
+    "+ (70)+(23)+ 2(30) (70) (BXe)",
+    "+ (70)+(23)+ 2(30) (70)(8Xe)",
+    "+ (70)+(23)+ 2(30) (7o) (BXe)",
+    "+ (70)+(23)+ 2(30) (7o) (Bxe)",
+    "+ (7o)+ (23) + 2(30) (70) (BXe)",
+    "+ (7o)+ (23)+ 2(30) (70) (BXe)",
+    "+ (7o)+(23) + 2(30) (70) (BXe)",
+    "+ (7o)+(23) + 2(30) (70) (Bxe)",
+    "+ (7o)+(23)+ 2(30) (70) (8Xe)",
+    "+ (7o)+(23)+ 2(30) (70) (BXe)",
+    "+ (7o)+(23)+ 2(30) (70)(8Xe)",
+    "+ (7o)+(23)+ 2(30) (70)(BXe)",
+    "+ (7o)+(23)+ 2(30) (7o) (8Xe)",
+    "+ (7o)+(23)+ 2(30) (7o) (BXe)",
+    "+ (7o)+(23)+ 2(30) (7o) (Bxe)",
+    "+ (To)+ (23)+ 2(30) (70) (8Xe)",
+    "+ (To)+ (23)+ 2(30) (70) (BXe)",
+    "+ (To)+ (23)+ 2(30) (7o) (8Xe)",
+    "+ (To)+ (23)+ 2(30) (7o) (BXe)",
+    "+ (To)+ (23)+ 2(30) (7o) (Bxe)",
+    "+ (To)+(23)+ 2(30) (70) (8Xe)",
+    "+ (To)+(23)+ 2(30) (70) (BXe)",
+    "+ (To)+(23)+ 2(30) (70) (Bxe)",
+    "+ (To)+(23)+ 2(30) (7o) (BXe)",
+    "+ 259.21+175,88 YAB",
+    "+ 259.21+175.88 KAB",
+    "+ 259.21+175.88 YAB",
+    "+ 25921+ 175,88 YAB",
+    "+259.21+ 175,88 YAB",
+    "+259.21+173.88 YAB",
+    "+259.21+175,88 YAB",
+    "+259.21+175.88 KAB",
+    "+259.21+175.88 YAB",
+    "+259.21+175.88 YAB\u00cd",
+    "39,-214 173.86x1)]2",
+    "39.-214 173.86x1i\u1ecai",
+    "59.-214 (73.86x1i\u1ed3\u1ea0i",
+    "59.214 173.86x1i\u1ed3\u1ea0i",
+    "59.214 173.88x1)\u1ecai2",
+    "7 (70)+ (23)+ 2(30) (70)(i8Xe)",
+    "7 (70)+ (3)+2(30) (70)(18Xe)",
+    "7 (7o)+ (3)+2(3o) (70) (Bxe)",
+    "CACB",
+    "CALB",
+    "Y AB ]%",
+    "Y AB ]s"
+   ],
+   "frames_with_text": 75,
+   "ignored_noise_boxes": 288,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1744,
+     0.1591,
+     0.2679
+    ],
+    [
+     0.0,
+     0.2855,
+     0.1767,
+     0.5359
+    ],
+    [
+     0.2823,
+     0.3009,
+     0.3438,
+     0.474
+    ],
+    [
+     0.2878,
+     0.48,
+     0.3419,
+     0.5506
+    ]
+   ],
+   "cover": 0.0736,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_0ec8faa6bd25": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_4c1d984763e7": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 5,
+   "action": "none"
+  },
+  "c_0a4b7e2ce62e": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "mar",
+    "nar",
+    "\u041b\u0430\u043c\u0431",
+    "\u043b\u043e\u043c\u0431"
+   ],
+   "frames_with_text": 7,
+   "ignored_noise_boxes": 26,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1029,
+     0.0682,
+     0.2033
+    ],
+    [
+     0.2896,
+     0.1517,
+     0.3527,
+     0.5172
+    ],
+    [
+     0.7925,
+     0.4606,
+     0.845,
+     0.5256
+    ]
+   ],
+   "cover": 0.0333,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_223e39af0368": {
+   "text_found": true,
+   "texts": [
+    "(23][",
+    "152",
+    "23 ||",
+    "F\u20b4",
+    "your"
+   ],
+   "frames_with_text": 5,
+   "ignored_noise_boxes": 26,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0831,
+     0.0748,
+     0.2369
+    ],
+    [
+     0.2899,
+     0.3338,
+     0.3507,
+     0.4548
+    ],
+    [
+     0.7925,
+     0.4606,
+     0.845,
+     0.5283
+    ]
+   ],
+   "cover": 0.0224,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_c08f598abe6d": {
+   "text_found": true,
+   "texts": [
+    "\u0454\u2264"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 1,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0758,
+     0.1356,
+     0.1325,
+     0.5681
+    ]
+   ],
+   "cover": 0.0245,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_c45805e6089f": {
+   "text_found": true,
+   "texts": [
+    "L",
+    "SI"
+   ],
+   "frames_with_text": 3,
+   "ignored_noise_boxes": 27,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2237,
+     0.0439,
+     0.2778,
+     0.1089
+    ],
+    [
+     0.2253,
+     0.305,
+     0.2778,
+     0.3672
+    ]
+   ],
+   "cover": 0.0068,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_1d6f75597e7d": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 7,
+   "action": "none"
+  },
+  "c_d3f2f8518794": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "23]",
+    "23]|",
+    "33] |"
+   ],
+   "frames_with_text": 10,
+   "ignored_noise_boxes": 14,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2253,
+     0.4911,
+     0.2794,
+     0.5561
+    ],
+    [
+     0.7206,
+     0.305,
+     0.7809,
+     0.5644
+    ]
+   ],
+   "cover": 0.0192,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_52ef9655d99f": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 5,
+   "action": "none"
+  },
+  "c_5fdde3ed4b45": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "23]",
+    "827205"
+   ],
+   "frames_with_text": 6,
+   "ignored_noise_boxes": 12,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2909,
+     0.249,
+     0.3526,
+     0.5151
+    ],
+    [
+     0.7925,
+     0.4606,
+     0.845,
+     0.5256
+    ]
+   ],
+   "cover": 0.0198,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_da2148b81e86": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_6c7d6989321a": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_ecfede879b20": {
+   "text_found": true,
+   "texts": [
+    "0 5",
+    "1205",
+    "205",
+    "23 ]",
+    "33 ]|",
+    "33 ||",
+    "33] |"
+   ],
+   "frames_with_text": 8,
+   "ignored_noise_boxes": 5,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0081,
+     0.3411,
+     0.0638,
+     0.4978
+    ],
+    [
+     0.0112,
+     0.5356,
+     0.0637,
+     0.6006
+    ]
+   ],
+   "cover": 0.0121,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_278be59eb470": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_3b6dabfa933f": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 14,
+   "action": "none"
+  },
+  "c_1e9c0eaebf92": {
+   "text_found": true,
+   "texts": [
+    "[23]|"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 3,
+   "action": "blurred",
+   "regions": [
+    [
+     0.1997,
+     0.329,
+     0.2626,
+     0.4823
+    ],
+    [
+     0.2066,
+     0.5022,
+     0.2606,
+     0.5728
+    ]
+   ],
+   "cover": 0.0135,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_3424c9166621": {
+   "text_found": true,
+   "texts": [
+    "1205",
+    "33 |",
+    "33] |",
+    "F205",
+    "\u0413\u20b405"
+   ],
+   "frames_with_text": 11,
+   "ignored_noise_boxes": 16,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2186,
+     0.3309,
+     0.2812,
+     0.5922
+    ]
+   ],
+   "cover": 0.0164,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_2a8aa8e04d87": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_99644d33f1fb": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_0712add84c06": {
+   "text_found": true,
+   "texts": [
+    ") Need for ESS e",
+    ") Need for ESSe",
+    ") Need for Ess.",
+    ") Neeg for ESS",
+    ") Nees for Ess",
+    ") Nees for Ess.",
+    "1553 120 10 6",
+    "1553 120 10-6",
+    "1553 120 106",
+    "1553 120 10\u043a6",
+    "1553 120 10\u043a\u0440",
+    "1553 120 10\u043d6",
+    "1553 120 10\u043d\u044c",
+    "1553 120 10\u04456",
+    "1553 120 12016",
+    "1553 120 120\u043a\u0440",
+    "1553 120 19\u04456",
+    "> Need for ESSe",
+    "> Neet for ESSe",
+    "Executiive Infotmation",
+    "Executiive Infotuatim",
+    "Executiive Infotwatim",
+    "Executiive Infotwation",
+    "Executive Infotmatin",
+    "Executive Infotmatinn",
+    "Executive Infotmati\u015b\u0105",
+    "Executive Infotuatin",
+    "Executive Infotuatinn",
+    "Executive Infotuation",
+    "Executive Infotvatinn",
+    "Frendanalys",
+    "J",
+    "Nee for ESSe",
+    "Nee for ESSse",
+    "Nee for Ess.",
+    "Need for ESS e",
+    "Need for ESSe",
+    "Need for Ess",
+    "Need for Esse",
+    "Neef for Ess.",
+    "Neeg for ESSe",
+    "Neeg for Ess",
+    "Neel for ESSe",
+    "Neel for ESs.",
+    "Nees for ESS",
+    "Nees for ESS,",
+    "Nees for ESSse",
+    "Nees for Ess",
+    "Nees for Ess,",
+    "Nees for Ess.",
+    "Neet for ESS",
+    "Neet for ESS e",
+    "Neet for ESSe",
+    "Neet for Ess.",
+    "Sapport Syften",
+    "Scapport Syftem",
+    "Seepport Syftem",
+    "Seepport System",
+    "Seepport yfem",
+    "Sepport Syfen",
+    "Sepport Syftem",
+    "Sgiten",
+    "Siapport Syftem",
+    "Siapport Syften",
+    "Siapport Systen",
+    "Siapporti\u1ea1\u1ea0Syften",
+    "Siepport Syftem",
+    "Siepport Syften",
+    "Siepporti\u1ea0Syften",
+    "Sipport Syftem",
+    "Sispport Syftem",
+    "Sispport Systen",
+    "Sispporti\u1ea0Syftem",
+    "Sispporti\u1ea0Syften",
+    "Sispporti\u1ea0System",
+    "Siupport Syften",
+    "Siupport Systen",
+    "Siupporti\u1ea0Syften",
+    "Siupporti\u1ea0System",
+    "Siupporti\u1ea1\u1ea0System",
+    "Support Syftem",
+    "Support Syften",
+    "Support Systen",
+    "Supporti\u1ea1\u1ea0i\u1ecayften",
+    "Support\u1ea0\u1ea1\u00bfHem",
+    "Syiten",
+    "Trend analnis",
+    "Trend analyns",
+    "Trend analyus",
+    "Trendanalnis",
+    "Trendanalns",
+    "Trendanalyis",
+    "Trendanalyns",
+    "Trendanalys",
+    "Trendanlys",
+    "Trendunalns",
+    "Trendunlys",
+    "nces"
+   ],
+   "frames_with_text": 57,
+   "ignored_noise_boxes": 237,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.077,
+     0.171,
+     0.4004
+    ],
+    [
+     0.0,
+     0.4352,
+     0.1967,
+     0.6311
+    ],
+    [
+     0.9659,
+     0.8967,
+     1.0,
+     0.9894
+    ]
+   ],
+   "cover": 0.097,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_a8dda5da014d": {
+   "text_found": true,
+   "texts": [
+    "na/",
+    "na?"
+   ],
+   "frames_with_text": 43,
+   "ignored_noise_boxes": 44,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.18,
+     0.0778,
+     0.2867
+    ]
+   ],
+   "cover": 0.0083,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_c6a1be829239": {
+   "text_found": true,
+   "texts": [
+    "33 ||",
+    "na"
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 8,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1174,
+     0.0603,
+     0.1921
+    ],
+    [
+     0.7925,
+     0.4633,
+     0.845,
+     0.5256
+    ]
+   ],
+   "cover": 0.0078,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_2ae7f0022e2b": {
+   "text_found": true,
+   "texts": [
+    "33",
+    "827265",
+    "F205",
+    "F205.",
+    "F205\u0142",
+    "[23]",
+    "\u0413285"
+   ],
+   "frames_with_text": 8,
+   "ignored_noise_boxes": 5,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0731,
+     0.2994,
+     0.1319,
+     0.5714
+    ]
+   ],
+   "cover": 0.016,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_f0f0c608c686": {
+   "text_found": true,
+   "texts": [
+    "138",
+    "20m1o te 1 po",
+    "333] |",
+    "62.25 prefare",
+    "62.25 prerarc",
+    "62.25 pre\u0433ar\u0441",
+    "62.25 pre\u0440ar\u0441",
+    "62.25 profare",
+    "62.25 profase",
+    "62.25 profere",
+    "62.25 propare",
+    "62.25 propar\u0441",
+    "62.25 propa\u0447el\u043c\u043d\u0439",
+    "62.25 propotee",
+    "62.25 proprre",
+    "62.25 propz\u044f\u0441",
+    "62.25 prorare",
+    "62.25 pr\u043e\u0440\u0430\u044f\u0441",
+    "62.25 \u0440ro\u0440r\u0441",
+    "8",
+    "Ceam on wod",
+    "Ceam on wod,",
+    "Ceam on wod.",
+    "Ceam on wou,",
+    "Cerm on wod,",
+    "Geam on wod",
+    "Geam on wod,",
+    "Geam on wou,",
+    "Honest",
+    "Ram 1o te 1 po",
+    "Ram-1o te 1pro",
+    "Ram1o te 1 po",
+    "Rom1o te 1 po",
+    "Rom1o to 1 po",
+    "all ?",
+    "all' 139",
+    "all8",
+    "all?",
+    "all? 139",
+    "alle",
+    "alli",
+    "alll",
+    "alll 139",
+    "fom1o te 1 po",
+    "fom1o to 1 po",
+    "tonest",
+    "we need t",
+    "we need te",
+    "we need ti",
+    "we need tu"
+   ],
+   "frames_with_text": 48,
+   "ignored_noise_boxes": 141,
+   "action": "drop: text still readable after blurring",
+   "regions": [
+    [
+     0.0,
+     0.0103,
+     0.1595,
+     0.26
+    ],
+    [
+     0.0,
+     0.2717,
+     0.1156,
+     0.5006
+    ],
+    [
+     0.269,
+     0.2824,
+     0.3292,
+     0.5455
+    ],
+    [
+     0.7519,
+     0.4883,
+     0.8044,
+     0.5506
+    ],
+    [
+     0.9112,
+     0.8244,
+     0.9903,
+     0.945
+    ]
+   ],
+   "cover": 0.0949,
+   "rounds": 3,
+   "recheck_texts": [
+    "57205",
+    "7205",
+    "F265."
+   ]
+  },
+  "c_c11c181ffd76": {
+   "text_found": true,
+   "texts": [
+    "ma/",
+    "mal",
+    "\u0442a/"
+   ],
+   "frames_with_text": 43,
+   "ignored_noise_boxes": 49,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1832,
+     0.0831,
+     0.2871
+    ]
+   ],
+   "cover": 0.0086,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_892bf357198d": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_ad0b6e989948": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 1,
+   "action": "none"
+  },
+  "c_83a4ed492f8e": {
+   "text_found": true,
+   "texts": [
+    "na/",
+    "na?",
+    "nai",
+    "n\u0430/"
+   ],
+   "frames_with_text": 49,
+   "ignored_noise_boxes": 84,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1828,
+     0.0778,
+     0.2811
+    ]
+   ],
+   "cover": 0.0076,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_bcbce1c1308d": {
+   "text_found": true,
+   "texts": [
+    "1:10",
+    "ma/",
+    "mal",
+    "tlale",
+    "\u0442a/"
+   ],
+   "frames_with_text": 44,
+   "ignored_noise_boxes": 64,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1816,
+     0.0833,
+     0.2869
+    ],
+    [
+     0.1831,
+     0.5772,
+     0.2403,
+     0.6922
+    ],
+    [
+     0.7597,
+     0.0522,
+     0.8153,
+     0.1839
+    ]
+   ],
+   "cover": 0.0227,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_3e6d9a147f9a": {
+   "text_found": true,
+   "texts": [
+    "205",
+    "F205",
+    "n\u00e3"
+   ],
+   "frames_with_text": 3,
+   "ignored_noise_boxes": 6,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1175,
+     0.0609,
+     0.1933
+    ],
+    [
+     0.2909,
+     0.2548,
+     0.3513,
+     0.4533
+    ]
+   ],
+   "cover": 0.0166,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_a5e7c80f3911": {
+   "text_found": true,
+   "texts": [
+    "704",
+    "857205",
+    "87205",
+    "D",
+    "L"
+   ],
+   "frames_with_text": 4,
+   "ignored_noise_boxes": 49,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2231,
+     0.2967,
+     0.2819,
+     0.5565
+    ],
+    [
+     0.2237,
+     0.0,
+     0.2794,
+     0.1478
+    ]
+   ],
+   "cover": 0.0235,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_1ee3b2c33eff": {
+   "text_found": true,
+   "texts": [
+    "(233",
+    "33]",
+    "33] ("
+   ],
+   "frames_with_text": 4,
+   "ignored_noise_boxes": 2,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0034,
+     0.4606,
+     0.0575,
+     0.5256
+    ]
+   ],
+   "cover": 0.0035,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_0ac3c8ebd1b7": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "(33]",
+    "D",
+    "L",
+    "SI"
+   ],
+   "frames_with_text": 8,
+   "ignored_noise_boxes": 72,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2218,
+     0.305,
+     0.2838,
+     0.557
+    ],
+    [
+     0.2237,
+     0.0439,
+     0.2794,
+     0.1478
+    ],
+    [
+     0.7206,
+     0.305,
+     0.7794,
+     0.5644
+    ]
+   ],
+   "cover": 0.0367,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_784b7f24a25e": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 2,
+   "action": "none"
+  },
+  "c_63e4b08887c0": {
+   "text_found": true,
+   "texts": [
+    "F205."
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 24,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2301,
+     0.3322,
+     0.2874,
+     0.5205
+    ]
+   ],
+   "cover": 0.0108,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_7ce08e37575e": {
+   "text_found": true,
+   "texts": [
+    "23]"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 12,
+   "action": "blurred",
+   "regions": [
+    [
+     0.7237,
+     0.5022,
+     0.7762,
+     0.5644
+    ]
+   ],
+   "cover": 0.0033,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_8e3f57ee676f": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "8372",
+    "[23]",
+    "your",
+    "you\u0442"
+   ],
+   "frames_with_text": 8,
+   "ignored_noise_boxes": 48,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0867,
+     0.0719,
+     0.2325
+    ],
+    [
+     0.7898,
+     0.3318,
+     0.8508,
+     0.5283
+    ]
+   ],
+   "cover": 0.0225,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_e01e09499a4e": {
+   "text_found": true,
+   "texts": [
+    "23"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2316,
+     0.5328,
+     0.2825,
+     0.5922
+    ]
+   ],
+   "cover": 0.003,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_9ed39103e39b": {
+   "text_found": true,
+   "texts": [
+    "# (7o)+ (23)+ 2(30) (70) (18Xe)",
+    "+ (70)+ (23) + 2(30) (70)(8xe)",
+    "+ (70)+ (23)+ 2(30) (70) (18Xe)",
+    "+ (70)+ (23)+ 2(30) (70)(8xe)",
+    "+ (7o)+ (23) + 2(30) (70) (8Xe)",
+    "+ (7o)+ (23) + 2(30) (70) (8xe)",
+    "+ (7o)+ (23) + 2(30) (70)(8xe)",
+    "+ (7o)+ (23)+ 2(30) (70) (18Xe)",
+    "+ (7o)+ (23)+ 2(30) (70) (18Xea)",
+    "+ (7o)+ (23)+ 2(30) (70) (1BXe)",
+    "+ (7o)+ (23)+ 2(30) (70) (8Xe)",
+    "+ (7o)+ (23)+ 2(30) (70) (8xe)",
+    "+ (7o)+ (23)+ 2(30) (70)(8)e)",
+    "+ (7o)+ (23)+ 2(30) (70)(8xe)",
+    "+ (7o)+ (23)+ 2(30) (7o) (8Xea)",
+    "+ (To)+ (23) + 2(30) (70) (8xe)",
+    "+ (To)+ (23)+ 2(30) (7o) (8xe)",
+    "+ 259.21 + 173.88 YAB",
+    "+ 259.21 + 175.88 KAB",
+    "+ 259.21+ 173.88 YAB",
+    "+ 259.21+ 175,88 KAB",
+    "+ 259.21+ 175,88 YAB",
+    "+ 259.21+173,88 YAB",
+    "+ 259.21+173,88 YAB\u0142",
+    "+ 259.21+173,88 YAB\u015a",
+    "+ 259.21+173.88 YAB",
+    "+ 259.21+173.88 YAB\u0142",
+    "+ 259.21+173.88 YAB\u015a",
+    "+ 259.21+175.88 KAB",
+    "+ 259.21+175.88 YAB",
+    "+259.21+173.88 YAB",
+    "59,211 173.88\u00d71)]2",
+    "59,211) 173.88\u00d71)]2",
+    "59.2(4 173-88\u00d71)i2",
+    "59.2(4 173.88x1)]2",
+    "59.2(4 173.88x1)i2",
+    "59.211 173.88\u00d71)]2",
+    "59.214 (73-88x1)]2",
+    "59.214 (73.88x1)]2",
+    "59.214 173-88x1)]2",
+    "59.214 173.88x1)]2",
+    "59.214 173.88\u00d71)]2",
+    "59.214 173.88\u00d71)i2",
+    "59.21J 173.88x1)]2",
+    "7 (7o)+ (23) + 2(30) (70) (8xe)",
+    "7 (7o)+ (23) + 2(30) (7o) (8Xea)",
+    "Y AB ]",
+    "Y AB ]a",
+    "Y AB]\"",
+    "Y AB]\"a",
+    "Y AB]Ya"
+   ],
+   "frames_with_text": 75,
+   "ignored_noise_boxes": 292,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1755,
+     0.1611,
+     0.2722
+    ],
+    [
+     0.0,
+     0.2868,
+     0.1767,
+     0.5331
+    ],
+    [
+     0.2845,
+     0.3322,
+     0.3424,
+     0.4923
+    ]
+   ],
+   "cover": 0.0684,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_f1095d112f05": {
+   "text_found": true,
+   "texts": [
+    "0 5",
+    "1205",
+    "205",
+    "33] |",
+    "F205",
+    "\u0413205",
+    "\u20ac 5"
+   ],
+   "frames_with_text": 11,
+   "ignored_noise_boxes": 5,
+   "action": "blurred",
+   "regions": [
+    [
+     0.005,
+     0.0022,
+     0.07,
+     0.5144
+    ],
+    [
+     0.0112,
+     0.5328,
+     0.0637,
+     0.595
+    ]
+   ],
+   "cover": 0.0366,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_2ed83937a883": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_9f7f7b044784": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_c94dffbabcb6": {
+   "text_found": true,
+   "texts": [
+    "05.",
+    "333] |"
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 4,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0066,
+     0.3328,
+     0.0622,
+     0.4506
+    ],
+    [
+     0.0112,
+     0.5356,
+     0.0637,
+     0.5978
+    ]
+   ],
+   "cover": 0.0098,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_3c636fe712c3": {
+   "text_found": true,
+   "texts": [
+    ") Nee for Ess.",
+    ") Need for Ess",
+    ") Neef for ESS",
+    ") Neef for Ess",
+    ") Neef for Ess.",
+    ") Nees for ESS",
+    ") Nees for Ess",
+    "155 120 10\u043d6",
+    "1553 120 10x0",
+    "1553 120 10\u043a6",
+    "1553 120 10\u043d6",
+    "1553 120 10\u043d\u044c",
+    "1553 120 10\u04456",
+    "1553 120 120 -6",
+    "1553 120 120 x0",
+    "1553 120 120 \u043a6",
+    "1553 120 120\u043a6",
+    "1553 120 120\u043a\u0440",
+    "1553 120 120\u043d6",
+    "1553 120 120\u043d\u044c",
+    "1553 120 20\u043a6",
+    "155\u0437 120 10 \u043a\u0440",
+    "155\u0437 120 10\u043d6",
+    "155\u0437 120 10\u043d\u044c",
+    "155\u0437 120 1\u043e\u043d\u044c",
+    "158\u0437 120 10\u043d\u044c",
+    "CUnsE VEWAU",
+    "Executiive Infotuatin",
+    "Executiive Infotuatinn",
+    "Executiive Infotuation",
+    "Executiive Infotuati\u0105",
+    "Executiive Infotuati\u0142\u0105",
+    "Executiive Infotvatin",
+    "Executiive Infotvation",
+    "Executive Infotuatin",
+    "Executive Infotuatinn",
+    "Executive Infotuation",
+    "Executive Infotuati\u0105",
+    "Executive Infotvatin",
+    "Executive Infotvatinn",
+    "Executve Infotuatin",
+    "Frendanalys",
+    "Frendunlys",
+    "J",
+    "Nee for Ess",
+    "Neef for Ess",
+    "Neef for Ess.",
+    "Neel for Ess.",
+    "Nees for Ess",
+    "Sapport Syften",
+    "Sapporti\u1ea0Syftem",
+    "Sapporti\u1ea0Syften",
+    "Sepport Syften",
+    "Sepporti\u1ea0Syftem",
+    "Sepporti\u1ea0System",
+    "Sepport\u1ed7\u1ea0S\u1ed7yHtem",
+    "Sgiten",
+    "Siapport Syften",
+    "Siapporti\u1ea0Syften",
+    "Siapporti\u1ea1Syftem",
+    "Siapporti\u1ea1\u1ea0Syften",
+    "Siepporti\u1ea0SyHten",
+    "Siepporti\u1ea0Syften",
+    "Siepporti\u1ea1\u1ea0Syften",
+    "Suapport Syften",
+    "Suapport&\u1ea1\u1ea0S\u1ed7yHten",
+    "Suapporti\u1ea1\u1ea0Syften",
+    "Suepport&\u1ea1\u1ea0S\u1ed7yHten",
+    "Support Syftem",
+    "Support Syften",
+    "Support System",
+    "Support Systen",
+    "Supporti\u1ea0System",
+    "Supporti\u1ea1\u1ea0Syften",
+    "Support\u1ed7\u1ea0S\u1ed7yytem",
+    "Support\u1ed7\u1ea1\u1ea0S\u1ed7yyten",
+    "Suupport Syften",
+    "Trendanalng",
+    "Trendanalns",
+    "Trendanalyg",
+    "Trendanalyns",
+    "Trendanalys",
+    "Trendanelys",
+    "Trendanlns",
+    "Trendanlyg",
+    "Trendanlys",
+    "Trerdunlns",
+    "j",
+    "nces",
+    "nes",
+    "npes",
+    "n\u00e7es"
+   ],
+   "frames_with_text": 64,
+   "ignored_noise_boxes": 283,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0768,
+     0.1724,
+     0.429
+    ],
+    [
+     0.0,
+     0.4356,
+     0.1966,
+     0.6311
+    ],
+    [
+     0.2878,
+     0.3322,
+     0.3467,
+     0.6006
+    ],
+    [
+     0.9659,
+     0.8911,
+     1.0,
+     0.9839
+    ]
+   ],
+   "cover": 0.1181,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_2687fca21806": {
+   "text_found": true,
+   "texts": [
+    "ma/",
+    "na/",
+    "\u0442a/"
+   ],
+   "frames_with_text": 36,
+   "ignored_noise_boxes": 56,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1818,
+     0.0826,
+     0.2873
+    ]
+   ],
+   "cover": 0.0087,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_48e394253837": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 19,
+   "action": "none"
+  },
+  "c_dd698eb344b2": {
+   "text_found": true,
+   "texts": [
+    "na/",
+    "na?",
+    "n\u0430",
+    "olal",
+    "\u043d\u0430\u0456"
+   ],
+   "frames_with_text": 46,
+   "ignored_noise_boxes": 68,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.18,
+     0.0794,
+     0.2867
+    ],
+    [
+     0.1816,
+     0.0467,
+     0.2341,
+     0.1617
+    ],
+    [
+     0.7597,
+     0.055,
+     0.8122,
+     0.145
+    ]
+   ],
+   "cover": 0.0192,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_03e032d39cf3": {
+   "text_found": true,
+   "texts": [
+    ") Neeg for ESS e",
+    ") Neei for ESS e",
+    ") Nees for Essse",
+    "1553 120 10 \u04451",
+    "1553 120 10 \u04456",
+    "1553 120 10-6",
+    "1553 120 1016",
+    "1553 120 1076",
+    "1553 120 10\u043a6",
+    "1553 120 10\u04456",
+    "1553 120 120-6",
+    "1553 120 12076",
+    "1553 120 120x6",
+    "1553 120 120\u043a6",
+    "1553 120 1\u043e\u04456",
+    "> Nees for ESS e",
+    "Executive Infotiuation",
+    "Executive Infotmatin",
+    "Executive Infotmatinn",
+    "Executive Infotmation",
+    "Executive Infotnatinn",
+    "Executive Infotuatin",
+    "Executive Infotuatinn",
+    "Executive Infotuation",
+    "Executive Infotvatin",
+    "Executive Infotvatinn",
+    "Executive Infotvatio",
+    "Executive Infotvation",
+    "Need for ESS",
+    "Need for ESSJe",
+    "Need for ESSSe",
+    "Need for ESSe",
+    "Neeg for ESS e",
+    "Neei for ESS e",
+    "Neei for ESSJe",
+    "Neei for ESSe",
+    "Neel for ESS e",
+    "Neel for ESSe",
+    "Neer for ESS",
+    "Neer for ESS e",
+    "Neer for ESSe",
+    "Nees for ESS",
+    "Nees for ESS e",
+    "Nees for ESS,",
+    "Nees for ESSJe",
+    "Nees for ESSe",
+    "Nees for ESSse",
+    "Neet for ESSe",
+    "Sapport Syftem",
+    "Sapport Syrtem",
+    "Sapport System",
+    "Sapporti\u1ea1\u1ea0Syftem",
+    "Sapporti\u1ea1\u1ea0System",
+    "Sapport\u1ed7\u1ea1\u1ea0S\u1ed7yytem",
+    "Scepport\u00bf\u1ea1\u1ea0S\u1ed7yHtem",
+    "Seapport Syytem",
+    "Seepport Syftem",
+    "Seepport Syften",
+    "Seepport System",
+    "Seepport Systen",
+    "Seepporti\u1ea0System",
+    "Sepport Syftem",
+    "Sepport\u1ed7\u1ea0S\u1ed7ystem",
+    "Sgiten",
+    "Siapport Syftem",
+    "Siapport Syften",
+    "Siapport Syitem",
+    "Siapporti\u1ea1\u1ea0Syftem",
+    "Siapporti\u1ea1\u1ea0Syften",
+    "Siapporti\u1ea1\u1ea0System",
+    "Siapport\u00bf\u1ea1\u1ea0S\u1ed7ysten",
+    "Siapport\u1ed7\u1ea1\u1ea0S\u1ed7ystem",
+    "Siepport Syftem",
+    "Siepport Syitem",
+    "Siepport Systen",
+    "Siepporti\u1ea0System",
+    "Siepporti\u1ea0Systen",
+    "Siepporti\u1ea1\u1ea0Syftem",
+    "Siepport\u1ed7\u1ea0S\u1ed7ystem",
+    "Siepport\u1ed7\u1ea0S\u1ed7ytem",
+    "Siepport\u1ed7\u1ea0S\u1ed7yytem",
+    "Siepport\u1ed7\u1ea1\u1ea0S\u1ed7yytem",
+    "Sispport Syftem",
+    "Sispporti\u1ea1\u1ea0Syftem",
+    "Sispport\u1ed7\u1ea0S\u1ed7yftem",
+    "Sispport\u1ed7\u1ea0S\u1ed7yytem",
+    "Support Syftem",
+    "Syiten",
+    "Trend analnis",
+    "Trend analns",
+    "Trend analyis",
+    "Trend analyns",
+    "Trend analys",
+    "Trend aralinis",
+    "Trend aralnis",
+    "Trendanalins",
+    "Trendanalis",
+    "Trendanalns",
+    "Trendanalyis",
+    "Trendanalyns",
+    "Trendanalys",
+    "nces"
+   ],
+   "frames_with_text": 51,
+   "ignored_noise_boxes": 236,
+   "action": "drop: text still readable after blurring",
+   "regions": [
+    [
+     0.0,
+     0.0776,
+     0.1967,
+     0.6311
+    ],
+    [
+     0.7842,
+     0.0319,
+     0.8408,
+     0.5756
+    ],
+    [
+     0.9659,
+     0.8939,
+     1.0,
+     0.9894
+    ]
+   ],
+   "cover": 0.1429,
+   "rounds": 3,
+   "recheck_texts": [
+    "0070"
+   ]
+  },
+  "c_fe83de9c3e09": {
+   "text_found": true,
+   "texts": [
+    "00"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 14,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0034,
+     0.0828,
+     0.0559,
+     0.2006
+    ],
+    [
+     0.005,
+     0.2383,
+     0.0606,
+     0.4867
+    ]
+   ],
+   "cover": 0.02,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_6ab97fccf5ed": {
+   "text_found": true,
+   "texts": [
+    ") Need for Ess",
+    ") Neef for ESSe",
+    ") Neef for Ess",
+    ") Neef for Ess.",
+    ") Neeg for Ess",
+    ") Neel for Ess.",
+    ") Neet for Ess",
+    ") Neet for Ess.",
+    "1553 120 10 \u04456",
+    "1553 120 10-6",
+    "1553 120 1016",
+    "1553 120 1076",
+    "1553 120 10x0",
+    "1553 120 10x6",
+    "1553 120 10\u043a6",
+    "1553 120 10\u04456",
+    "1553 120 120 x0",
+    "1553 120 120 x1",
+    "1553 120 120 xm",
+    "1553 120 120x",
+    "1553 120 120x0",
+    "1553 120 120x6",
+    "1553 120 120\u043a6",
+    "1553 120 120\u0445",
+    "1553 120 120\u04456",
+    "1553 120 20-6",
+    "1S53 120 100 xK",
+    "> Neef for ESSSe",
+    "> Neei for ESSe",
+    "> Neet for ESS",
+    "> Neet for ESSe",
+    "CUnBE VEWANg",
+    "CUnbE vEWAvy",
+    "Executiive Infotuatin",
+    "Executive Infotmatin",
+    "Executive Infotmatinn",
+    "Executive Infotmatio",
+    "Executive Infotmation",
+    "Executive Infotnatio",
+    "Executive Infotnation",
+    "Executive Infotuatinn",
+    "Executive Infotuation",
+    "Nee for Ess",
+    "Nee for Ess.",
+    "Nee_for ESS",
+    "Need for ESS",
+    "Neef for ESS",
+    "Nees for Ess.",
+    "Sapport Syftem",
+    "Sapport Syften",
+    "Sapport Syrten",
+    "Sapport Sy\u043dten",
+    "Sapporti\u1ea0Siyftem",
+    "Sapporti\u1ea0Siyften",
+    "Scepporti\u1ea0Siyften",
+    "Sgiten",
+    "Sgtten",
+    "Suapport Syften",
+    "Suapporti\u1ea1SyHtem",
+    "Support Syften",
+    "Support Sy\u043den",
+    "Support Sy\u043dten",
+    "Supporti\u1ea0Siyftem",
+    "Supporti\u1ea1\u1ea0SyHten",
+    "Suupporti\u1ea1\u1ea0SyHten",
+    "Suupporti\u1ea1\u1ea0Sy\u043dten",
+    "Syiten",
+    "Sytten",
+    "Trendanalns",
+    "Trendanalyg",
+    "Trendanalyis",
+    "Trendanalyns",
+    "Trendanalys",
+    "Trendanlyns",
+    "Trendanlys",
+    "Trendaralyg",
+    "Trendunalng",
+    "inal loo 100",
+    "nces",
+    "npes"
+   ],
+   "frames_with_text": 61,
+   "ignored_noise_boxes": 287,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0732,
+     0.1747,
+     0.4595
+    ],
+    [
+     0.0,
+     0.4695,
+     0.1762,
+     0.6311
+    ],
+    [
+     0.9659,
+     0.8967,
+     1.0,
+     0.9839
+    ]
+   ],
+   "cover": 0.0989,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_ecc9b0840072": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_c7c547c1f98d": {
+   "text_found": true,
+   "texts": [
+    "1.25 prejare",
+    "1.25 profarc",
+    "1.25 profare",
+    "1.25 projarc",
+    "1.25 proparc",
+    "1.25 propare",
+    "1.25 proprc",
+    "1.25 pro\u0440\u044f\u0441",
+    "1.25 \u0440ro\u0440\u044f\u0441",
+    "1.25 \u0440r\u043e\u0440\u044f\u0441",
+    "138",
+    "139",
+    "2.25 prepare",
+    "2.25 proparc",
+    "2.25 propare",
+    "2.25 proprc",
+    "2.25 propr\u0441",
+    "2.25 prop\u0430r\u0441",
+    "2om.10 to 1 pro",
+    "507-10",
+    "57:10",
+    "E bjasto",
+    "EBjosto",
+    "Ebjosso",
+    "Ebjosto",
+    "HaPP",
+    "HaPp",
+    "HaP\u0159",
+    "HapP",
+    "Happ",
+    "Hap\u0159",
+    "ICHUMA",
+    "Lom 10",
+    "Lom 10 10 1 po",
+    "Lom 10 1o 1 po",
+    "Lom-10 10 1 po",
+    "Pleased =",
+    "Pleased=",
+    "Pleaset=",
+    "aps",
+    "cam on wad,",
+    "eam on wod,",
+    "eam on wor,",
+    "eam on wor.",
+    "eam on wou",
+    "eam on wou,",
+    "eam on wou.",
+    "noi exactly",
+    "not cxactly",
+    "not exaclly",
+    "not exactl",
+    "not exactly",
+    "not exaelly",
+    "on wad",
+    "on war",
+    "on war,",
+    "on wod",
+    "on woo",
+    "on wor",
+    "on wor,",
+    "onest",
+    "sam on wor",
+    "sam on wor,",
+    "sam on wou",
+    "sam on wou,",
+    "sam on.wou",
+    "tonest",
+    "we need te",
+    "we need ti",
+    "we need to",
+    "we need tu",
+    "zam on wod,",
+    "zam on wor,",
+    "zam on wor.",
+    "zam on wou",
+    "zam on wou,"
+   ],
+   "frames_with_text": 60,
+   "ignored_noise_boxes": 148,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0214,
+     0.1458,
+     0.3672
+    ],
+    [
+     0.0,
+     0.3744,
+     0.1549,
+     0.6333
+    ]
+   ],
+   "cover": 0.0905,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_e93c52167667": {
+   "text_found": true,
+   "texts": [
+    "DIOIC",
+    "OF",
+    "eractly",
+    "exaci",
+    "exactl",
+    "exactlu",
+    "exactly",
+    "exactu",
+    "ractl",
+    "\u0435r\u0430\u0441\u0456",
+    "\u043a\u0430\u0441\u0456"
+   ],
+   "frames_with_text": 57,
+   "ignored_noise_boxes": 39,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.3408,
+     0.0872,
+     0.4838
+    ],
+    [
+     0.0128,
+     0.055,
+     0.0669,
+     0.1172
+    ],
+    [
+     0.3862,
+     0.6244,
+     0.4872,
+     0.6922
+    ]
+   ],
+   "cover": 0.0227,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_128eeb0804d0": {
+   "text_found": true,
+   "texts": [
+    "- Collaga",
+    "- Cotlaga",
+    "- Cotlega",
+    "- Cotlege",
+    "- Scheol",
+    "= Scheof",
+    "= Scheol",
+    "= Scheot",
+    "= School",
+    "COSME PIAL",
+    "COSME PIALE",
+    "COSVE PIALE",
+    "COSVE PIALe",
+    "CUVE PIALE",
+    "Collaga",
+    "Collega",
+    "College\u00e0",
+    "Coltega",
+    "Cotlaga",
+    "Cotlage",
+    "Cotlega",
+    "Cotlege",
+    "Cottaga",
+    "Cottega",
+    "OSME PIALE",
+    "Order",
+    "Ordes",
+    "Ordet",
+    "Ordetvis t",
+    "Ordetvist",
+    "Ordey",
+    "Oxder",
+    "Oxdes",
+    "Oxdey",
+    "Scheof",
+    "Scheol",
+    "Semist",
+    "VMLOO",
+    "WOSME PIALE",
+    "WSME PIALE",
+    "WSME PIALO",
+    "WSVE PIACE",
+    "WSVE PIALE",
+    "WSVE PIALO",
+    "WSVE PIALe",
+    "WSVIE PIALE",
+    "WUME PIALE",
+    "WUVE PIACE",
+    "WUVE PIALE",
+    "_ Collega",
+    "_ Cotlaga",
+    "_ Cotlega",
+    "_ Cotlege",
+    "_ Cotlege\u00e0",
+    "_Cotlega",
+    "emsis t",
+    "emvist",
+    "jatem",
+    "jztem",
+    "jz\u0142em",
+    "mise",
+    "mist",
+    "orde",
+    "order",
+    "orderisi",
+    "orderist",
+    "ordetisi",
+    "ordetist",
+    "ordey",
+    "yztem",
+    "yz\u0142em",
+    "\u2192 Scheol",
+    "\u2192 School"
+   ],
+   "frames_with_text": 83,
+   "ignored_noise_boxes": 147,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0793,
+     0.1077,
+     0.2536
+    ],
+    [
+     0.0,
+     0.2689,
+     0.0981,
+     0.5617
+    ],
+    [
+     0.2253,
+     0.4967,
+     0.2794,
+     0.5617
+    ]
+   ],
+   "cover": 0.051,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_4a5ce28ce48d": {
+   "text_found": true,
+   "texts": [
+    "123",
+    "23",
+    "33||"
+   ],
+   "frames_with_text": 7,
+   "ignored_noise_boxes": 3,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2284,
+     0.53,
+     0.2809,
+     0.595
+    ],
+    [
+     0.7769,
+     0.53,
+     0.8294,
+     0.595
+    ]
+   ],
+   "cover": 0.0068,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_43a43737707e": {
+   "text_found": true,
+   "texts": [
+    "- Collaga",
+    "- Collega",
+    "- College",
+    "- Cotlaga",
+    "- Cotlage",
+    "- Cotlega",
+    "- Scheof",
+    "- Scheol",
+    "- Scheot",
+    "- School",
+    "-Collaga",
+    "-OTW",
+    "23]|",
+    "33]|",
+    "= Scheol",
+    "= Scheot",
+    "= School",
+    "> Scheol",
+    "CUSVIE PIA",
+    "Collaga",
+    "Collag\u00ae",
+    "Collega",
+    "Cotlaga",
+    "Cotlag\u00ae",
+    "Cottaga",
+    "Cottag\u00ae",
+    "JMLOS",
+    "MLON",
+    "MLOS",
+    "Or!",
+    "Ordar",
+    "Ordat",
+    "Ordatis",
+    "Orde",
+    "Orde:",
+    "Ordel..s",
+    "Order",
+    "Order...i",
+    "Ordes",
+    "Ordet",
+    "Ordet..st",
+    "Ordetnist",
+    "Ordey",
+    "Oxdet",
+    "Oxdey",
+    "Schel",
+    "Scheol",
+    "Scheot",
+    "School",
+    "Semise",
+    "Semist",
+    "Semsise",
+    "Semsist",
+    "Senist\u00e0",
+    "USVE PH",
+    "USVE PIA",
+    "USVE PIAI",
+    "USVE PII",
+    "USVE PIa",
+    "USVIE PIA",
+    "USVIE PIAI",
+    "VMILON",
+    "VMLON",
+    "VMLOO",
+    "VMLOS",
+    "WSVIE PIA",
+    "WUSVE PIA",
+    "WUSVE PIAI",
+    "WUSVIE PIA",
+    "_ Collaga",
+    "_ Collega",
+    "_ Cotlaga",
+    "_ Cotlega",
+    "emsise",
+    "emsist",
+    "jstem",
+    "jsteng",
+    "jstens",
+    "jtem",
+    "jztam",
+    "jztem",
+    "jztems",
+    "jztens",
+    "ordar",
+    "ordatis",
+    "orde",
+    "ordel...t",
+    "order",
+    "order..\u203a",
+    "order:s",
+    "orders",
+    "ystem",
+    "ystens",
+    "\u2022 Scheol",
+    "\u2022 Scheot",
+    "\u2022Cotlaga",
+    "\u2022Scheol"
+   ],
+   "frames_with_text": 91,
+   "ignored_noise_boxes": 143,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0792,
+     0.1001,
+     0.5612
+    ],
+    [
+     0.7284,
+     0.5133,
+     0.7809,
+     0.5756
+    ],
+    [
+     0.9003,
+     0.8911,
+     0.9763,
+     0.9839
+    ]
+   ],
+   "cover": 0.0586,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_a3d280072d26": {
+   "text_found": true,
+   "texts": [
+    "23",
+    "23 |",
+    "23J",
+    "\u0454\u2264"
+   ],
+   "frames_with_text": 9,
+   "ignored_noise_boxes": 4,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2217,
+     0.0,
+     0.2783,
+     0.5015
+    ],
+    [
+     0.7753,
+     0.53,
+     0.8294,
+     0.595
+    ]
+   ],
+   "cover": 0.0319,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_78aac9981821": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 27,
+   "action": "none"
+  },
+  "c_9d0b612395bf": {
+   "text_found": true,
+   "texts": [
+    "205.",
+    "33]",
+    "33]|",
+    "F\u20b405",
+    "\u0413205."
+   ],
+   "frames_with_text": 5,
+   "ignored_noise_boxes": 17,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0097,
+     0.3133,
+     0.0669,
+     0.52
+    ],
+    [
+     0.0144,
+     0.5356,
+     0.0669,
+     0.5978
+    ]
+   ],
+   "cover": 0.0151,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_14f7081a4a99": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 2,
+   "action": "none"
+  },
+  "c_f4f4e4ed2c05": {
+   "text_found": true,
+   "texts": [
+    "23"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 7,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2284,
+     0.53,
+     0.2809,
+     0.5922
+    ],
+    [
+     0.7769,
+     0.53,
+     0.8294,
+     0.595
+    ]
+   ],
+   "cover": 0.0067,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_21fdbf392604": {
+   "text_found": true,
+   "texts": [
+    "- Scheol",
+    "123",
+    "2, Scheol",
+    "2. Scheol",
+    "27 Scheol",
+    "27 Scheot",
+    "2: Scheol",
+    "2: Scheot",
+    "2: Schoof",
+    "2; Scheof",
+    "2; Scheol",
+    "2= Scheof",
+    "2= Scheol",
+    "2= Scheot",
+    "2= Schoof",
+    "2= School",
+    "2= Schoot",
+    "33 ]",
+    "33 ][",
+    "83",
+    "= Scheol",
+    "Collaga",
+    "Cotlaga",
+    "Cotlage",
+    "Cottage",
+    "Order",
+    "Ordet",
+    "Oxder",
+    "Scheol",
+    "Semise",
+    "Semisi",
+    "Semist",
+    "Semsist",
+    "Sencist",
+    "Seneist",
+    "Senist",
+    "Senrist",
+    "Sensist",
+    "Sensist\u00e0",
+    "System",
+    "Syztem",
+    "WSME PIALE",
+    "WSME PIALe",
+    "WSVE PIALE",
+    "WUME PIALE",
+    "WUNE PIALE",
+    "WUVE PIALE",
+    "order",
+    "system",
+    "syztem"
+   ],
+   "frames_with_text": 77,
+   "ignored_noise_boxes": 152,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0695,
+     0.1169,
+     0.2422
+    ],
+    [
+     0.0,
+     0.2578,
+     0.1076,
+     0.5555
+    ],
+    [
+     0.2316,
+     0.3328,
+     0.2872,
+     0.445
+    ],
+    [
+     0.2347,
+     0.4883,
+     0.2872,
+     0.5533
+    ],
+    [
+     0.7394,
+     0.505,
+     0.7919,
+     0.57
+    ]
+   ],
+   "cover": 0.0653,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_888970b0d9e6": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 3,
+   "action": "none"
+  },
+  "c_3280d48a1cc4": {
+   "text_found": true,
+   "texts": [
+    ") Neeg for ESS",
+    ") Neeg for Ess.",
+    ") Nees for Ess",
+    ") Nees for Ess.",
+    ") Neet for Ess.",
+    "1553 120 10-6",
+    "1553 120 1076",
+    "1553 120 10\u043d6",
+    "1553 120 10\u043d\u044c",
+    "1553 120 10\u04456",
+    "1553 120 120-6",
+    "1553 120 120\u043d6",
+    "1553 120 120\u04456",
+    "> Neeg for ESSJe",
+    "Executiive Infotuation",
+    "Executive Infotmatinn",
+    "Executive Infotmati\u0105",
+    "Executive Infotmati\u015b\u0105",
+    "Executive Infotuatin",
+    "Executive Infotuatinn",
+    "Executive Infotuati\u0105",
+    "Executive Infotuati\u015b\u0105",
+    "Executive Infotvatin",
+    "Executive Infotvatinn",
+    "J",
+    "Need for ESSSe",
+    "Need for Ess",
+    "Need for Ess.",
+    "Neef for Ess.",
+    "Neeg for Ess",
+    "Neel for ESS",
+    "Neel for ESSe",
+    "Nees for ESS",
+    "Nees for ESS,",
+    "Nees for ESSSe",
+    "Nees for ESSe",
+    "Nees for EsS",
+    "Nees for EsS,",
+    "Nees for EsS.",
+    "Nees for Ess",
+    "Nees for Ess.",
+    "Neet for ESS e",
+    "Neet for ESSe",
+    "Sepport Syftem",
+    "Sepport Syften",
+    "Sgiten",
+    "Siapport Syften",
+    "Siepport Syften",
+    "Suapport Syftem",
+    "Suapport Syften",
+    "Suepport Syftem",
+    "Suepport Syften",
+    "Suepport System",
+    "Suepport Systen",
+    "Support Syftem",
+    "Support Syften",
+    "Support Syrtem",
+    "Support Syxtem",
+    "Suupport Syftem",
+    "Suupport System",
+    "Suupport Systen",
+    "Syiten",
+    "Trendanalns",
+    "Trendanalyns",
+    "Trendanalys",
+    "Trendanlyg",
+    "Trendanlys",
+    "nces"
+   ],
+   "frames_with_text": 38,
+   "ignored_noise_boxes": 173,
+   "action": "drop: text still readable after blurring",
+   "regions": [
+    [
+     0.0,
+     0.0772,
+     0.1967,
+     0.6311
+    ],
+    [
+     0.9659,
+     0.8939,
+     1.0,
+     0.9894
+    ]
+   ],
+   "cover": 0.1122,
+   "rounds": 3,
+   "recheck_texts": [
+    "EF2Q5."
+   ]
+  },
+  "c_e61a70340e4a": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 35,
+   "action": "none"
+  },
+  "c_a79446f56e80": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_2344ab1d1bee": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 58,
+   "action": "none"
+  },
+  "c_52eb01a7cfe9": {
+   "text_found": true,
+   "texts": [
+    ") Need for ESSe",
+    ") Neeg for Ess",
+    ") Nees for ESS",
+    ") Nees for ESSJe",
+    ") Nees for ESSe",
+    ") Nees for Ess",
+    "1553 120 10-6",
+    "1553 120 106",
+    "1553 120 10\u043d6",
+    "1553 120 10\u04456",
+    "1553 120 120 \u043a\u0440",
+    "1553 120 120 \u04456",
+    "1553 120 1206",
+    "1553 120 120\u04456",
+    "1553 120 120\u0445\u0440",
+    "1553 120 19\u043a6",
+    "1553 120 20\u04456",
+    "> Nees for ESSJe",
+    "> Neet for ESSJe",
+    "CUnBE UAWAU",
+    "Executiive Infotmatim",
+    "Executiive Infotuatim",
+    "Executiive Infotwatim",
+    "Executive Infotmatin",
+    "Executive Infotmatinn",
+    "Executive Infotmation",
+    "Executive Infotuatin",
+    "Executive Infotuatinn",
+    "J",
+    "Neef for ESS",
+    "Neef for ESSe",
+    "Neeg for ESSJe",
+    "Neeg for ESSe",
+    "Neeg for Ess",
+    "Nees for ESS",
+    "Nees for ESS,",
+    "Nees for ESSJe",
+    "Nees for ESSe",
+    "Nees for EsS",
+    "Nees for Ess",
+    "Nees for Ess,",
+    "Sapport Syften",
+    "Sapport Systen",
+    "Seapport Syften",
+    "Seepporti\u1ea1\u1ea0iiyytem",
+    "Sgiten",
+    "Siepport Syften",
+    "Suapport Syften",
+    "Suapporti\u1ea0Syften",
+    "Support Syfem",
+    "Support Syftem",
+    "Support Syften",
+    "Support Syiten",
+    "Support Syrtem",
+    "Support Syrten",
+    "Support yitem",
+    "Support yiten",
+    "Support yyten",
+    "Supporti\u1ea0Syften",
+    "Supporti\u1ea1\u1ea0SyHten",
+    "Suupport Syften",
+    "Syiten",
+    "Trendanalyeg",
+    "Trendanalyes",
+    "Trendanalyis",
+    "Trendanalyng",
+    "Trendanalyns",
+    "Trendanalys",
+    "Trendanlyis",
+    "Trendanlys",
+    "jAAl l00 100",
+    "nces"
+   ],
+   "frames_with_text": 43,
+   "ignored_noise_boxes": 190,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0776,
+     0.171,
+     0.4624
+    ],
+    [
+     0.0,
+     0.4752,
+     0.1744,
+     0.6311
+    ],
+    [
+     0.9659,
+     0.8967,
+     1.0,
+     0.9867
+    ]
+   ],
+   "cover": 0.0961,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_463c31e41f15": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 5,
+   "action": "none"
+  },
+  "c_b7a6252d143f": {
+   "text_found": true,
+   "texts": [
+    ") Neeg for ESS",
+    ") Neeg for Ess",
+    ") Nees for ESS",
+    ") Nees for Ess.",
+    "1553 120 10-6",
+    "1553 120 1016",
+    "1553 120 1076",
+    "1553 120 10x0",
+    "1553 120 10\u043a6",
+    "1553 120 10\u04426",
+    "1553 120 10\u04456",
+    "1553 120 120-6",
+    "1553 120 12016",
+    "1553 120 120\u043a6",
+    "1553 120 1\u043e\u043d6",
+    "1553 120 1\u043e\u04456",
+    "155\u0437 120 10\u043a6",
+    "155\u0437 120 10\u04456",
+    "155\u0437 120 120\u043a6",
+    "5.",
+    "> Neeg for ESS e",
+    "> Nees for ESS e",
+    "Executiive Infotmatim",
+    "Executive Infotmatim",
+    "Executive Infotmatio",
+    "Executive Infotuatim",
+    "Executive Infotuatims",
+    "Executive Infotuatin",
+    "Executive Infotvatin",
+    "Frendanalyg",
+    "Frendanalys",
+    "Neeg for ESS e",
+    "Neeg for ESSe",
+    "Neer for Ess",
+    "Nees for ESS",
+    "Nees for ESS e",
+    "Nees for ESS,",
+    "Nees for EsS",
+    "Nees for EsS,",
+    "Nees for EsS.",
+    "Nees for Ess",
+    "Nees for Ess.",
+    "Nees f\u00f6r EsS",
+    "Neet for ESS",
+    "Sapport Syftem",
+    "Sapport Syften",
+    "Sapport Syiten",
+    "Sapport Syrten",
+    "Sapporti\u1ea1\u1ea0System",
+    "Seapport Syftem",
+    "Seapport Syften",
+    "Seapport yftem",
+    "Seepport Syftem",
+    "Sepport Syftem",
+    "Sepport Syften",
+    "Sepport System",
+    "Sepport Syttem",
+    "Sepport ytten",
+    "Sepporti\u1ea1\u1ea0System",
+    "Sgiten",
+    "Siapport Syftem",
+    "Siapport Syften",
+    "Siapport Syrten",
+    "Siepport Syftem",
+    "Siepport Systen",
+    "Siepporti\u1ea1\u1ea0Syften",
+    "Sipport Syften",
+    "Sispport Syftem",
+    "Sispport Syitem",
+    "Sispport yften",
+    "Suapport Syften",
+    "Suepport Syftem",
+    "Support Syftem",
+    "Support Syften",
+    "Support System",
+    "Supporti\u1ea1\u1ea0Systen",
+    "Suupporti\u1ea1\u1ea0Systen",
+    "Suupport\u00bf\u1ea0S\u00bfysten",
+    "Syiten",
+    "Sytten",
+    "Trend analnis",
+    "Trend analns",
+    "Trend analyns",
+    "Trend aralis",
+    "Trendanalyg",
+    "Trendanalys",
+    "nces"
+   ],
+   "frames_with_text": 44,
+   "ignored_noise_boxes": 199,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0781,
+     0.171,
+     0.4002
+    ],
+    [
+     0.0,
+     0.4352,
+     0.1967,
+     0.6311
+    ],
+    [
+     0.2884,
+     0.3302,
+     0.3471,
+     0.4192
+    ],
+    [
+     0.2925,
+     0.5383,
+     0.345,
+     0.6006
+    ]
+   ],
+   "cover": 0.1021,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_710bcb692bf6": {
+   "text_found": true,
+   "texts": [
+    "0 5",
+    "33] |",
+    "F205"
+   ],
+   "frames_with_text": 4,
+   "ignored_noise_boxes": 3,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0081,
+     0.3411,
+     0.0622,
+     0.5172
+    ],
+    [
+     0.0112,
+     0.5356,
+     0.0637,
+     0.5978
+    ]
+   ],
+   "cover": 0.0128,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_d25ca6e3c9d7": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "(33]"
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 5,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.2467,
+     0.0513,
+     0.4533
+    ],
+    [
+     0.0,
+     0.455,
+     0.0497,
+     0.5228
+    ]
+   ],
+   "cover": 0.014,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_8587db347e8e": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_5f371554e8df": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_af5c0edddf85": {
+   "text_found": true,
+   "texts": [
+    "+205.",
+    "205",
+    "205.",
+    "205.1",
+    "205\u0158\u015a\u0161",
+    "F205.",
+    "\u0413205",
+    "\u0413205.\u0413",
+    "\u0433205.1"
+   ],
+   "frames_with_text": 14,
+   "ignored_noise_boxes": 15,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2194,
+     0.2411,
+     0.2787,
+     0.5061
+    ],
+    [
+     0.2214,
+     0.107,
+     0.2769,
+     0.2264
+    ],
+    [
+     0.7717,
+     0.0096,
+     0.8283,
+     0.5089
+    ],
+    [
+     0.7737,
+     0.53,
+     0.8262,
+     0.5922
+    ]
+   ],
+   "cover": 0.0539,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_24d267ea411a": {
+   "text_found": true,
+   "texts": [
+    "05.",
+    "F205."
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 57,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2301,
+     0.3317,
+     0.2874,
+     0.5228
+    ],
+    [
+     0.7038,
+     0.3399,
+     0.7636,
+     0.499
+    ]
+   ],
+   "cover": 0.0205,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_da3aa5c881e3": {
+   "text_found": true,
+   "texts": [
+    "+ (70)+ (03)+ 2(30)(7T0) (18)6)",
+    "+ (70)+ (03)+ 2(30)(7T0) (18)69)",
+    "+ (70)+ (23) + 2(30) (70)(18))",
+    "+ (70)+ (23) + 2(30) (7o)(18))",
+    "+ (70)+ (23)+ 2(30)(70)(8)E)",
+    "+ (70)+ (23)+ 2(30)(70)(8)ED)",
+    "+ (70)+ (23)+ 2(30)(70)(8BXED)",
+    "+ (70)+ (23)+ 2(30)(70)(8XED)",
+    "+ (70)+ (3) + 2(30) (70)(18)0)",
+    "+ (70)+ (3) + 2(30) (70)(18)20)",
+    "+ (70)+ (3) + 2(30) (7o)(13)0)",
+    "+ (70)+ (3) + 2(30) (7o)(18))",
+    "+ (70)+ (3) + 2(30)(70)(13)0)",
+    "+ (70)+ (3) + 2(30)(70)(18))",
+    "+ (70)+(23)+ 2(30) (70) (8)E)",
+    "+ (70)+(23)+ 2(30)(70) (8)E)",
+    "+ (70)+(23)+ 2(30)(70)(8)E)",
+    "+ (70)+(23)+ 2(30)(T0) (8)E)",
+    "+ (7o)+ (03)+ 2(30) (70) (18)69)",
+    "+ (7o)+ (3) + 2(30) (7o)(8)0)",
+    "+ (T)+ (03)+ 2(30)(7T0) (18)D)",
+    "+ (T)+ (3+ 2(30) (70) (18)\u20ac9)",
+    "+ (T0)+ (3)+ 2(30)(70) (8)\u0110)",
+    "+ (To)+ (23)+ 2(30) (7T0) (18)\u0110)",
+    "+ (To)+ (23)+ 2(30)(70) (18)eD)",
+    "+ (To)+ (23)+ 2(30)(70) (8)eD)",
+    "+ (To)+ (23)+2(30)(7T0) (18X6)",
+    "+ (To)+ (23)+2(30)(T0) (18)X6D)",
+    "+ (To)+(23)+ 2(30)(T0) (8)(D)",
+    "+ (To)+(23)+ 2(30)(T0) (8)\u00e93)",
+    "+ (ro)+ (23)+ 2(30)(T0) (8)\u00e93)",
+    "+ 259.21 + 173.88 YAB",
+    "+ 259.21 + 175.88 YAB",
+    "+ 259.21 +173.88 YAB",
+    "+ 259.21+173,88 YA8",
+    "+ 259.21+173,88 YAB",
+    "+ 259.21+173.88 YA8",
+    "+ 259.21+173.88 YAB",
+    "+ 259.21+175.88 YAB",
+    "+259.21 +173.88 YAB",
+    "+259.21 +173.88 YAS",
+    "+259.21+173.88 YAB",
+    "+259.21+173.88 YAS",
+    "9.2(\u00b7 173-88x1)]\"\u00bd",
+    "9.2(\u00b7 173-88x1)]2",
+    "9.2(\u00b7 173-8\u20b4\u0445\u0131)]2",
+    "9.21\u00b7 173-88x1)]\"2",
+    "9.2\u0406\u00b7 173-88\u0445\u0131)]2",
+    "9.2\u0406\u00b7 173-8\u20b4\u0445\u0131)]2",
+    "9.2\u0406\u00b7 173.8\u20b4\u0445\u0131)]2",
+    "9.2\u0406\u00b7 178-8\u20b4x\u0131)]\u00bd",
+    "9.2\u0406\u00b7 178-8\u20b4\u00d7\u0131)]\u00bd",
+    "9.2\u0406\u00b7 178-8\u20b4\u0445\u0131)]2",
+    "9.2\u0406\u00b7 178-8\u20b4\u0445\u0131)]\u00bd",
+    "9.2\u0406\u00b7 178.8\u20b4x\u0131)]\u00bd",
+    "9.2\u0406\u00b7 178.8\u20b4\u00d7\u0131)]\u00bd",
+    "AB",
+    "AS",
+    "CACB",
+    "CAOB",
+    "GAOB",
+    "Y AB ]\"",
+    "Y AB ]*",
+    "Y AB]\"",
+    "Y AB]*",
+    "YAB",
+    "\u00b7 (70)+(3)+ 2(30)(T0) (8)(?)",
+    "\u00b7 (To)+(23)+ 2(30)(T0) (18)(D)"
+   ],
+   "frames_with_text": 75,
+   "ignored_noise_boxes": 271,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1772,
+     0.1559,
+     0.2672
+    ],
+    [
+     0.0,
+     0.2847,
+     0.1737,
+     0.5308
+    ]
+   ],
+   "cover": 0.0568,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_ccdb16e5d543": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 5,
+   "action": "none"
+  },
+  "c_3990c7c964b6": {
+   "text_found": true,
+   "texts": [
+    "na",
+    "na/",
+    "na?",
+    "nai",
+    "n\u0430",
+    "n\u0430!",
+    "n\u0430,",
+    "\u043d\u0430,"
+   ],
+   "frames_with_text": 35,
+   "ignored_noise_boxes": 69,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1828,
+     0.0762,
+     0.2839
+    ]
+   ],
+   "cover": 0.0077,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_955b05f41fe3": {
+   "text_found": true,
+   "texts": [
+    "\u0454\u2264"
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0758,
+     0.1356,
+     0.1325,
+     0.5681
+    ]
+   ],
+   "cover": 0.0245,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_f8e3700e3e08": {
+   "text_found": true,
+   "texts": [
+    ") Neef for Ess",
+    ") Neeg for ESS",
+    ") Neeg for Ess",
+    ") Neeg for Ess.",
+    ") Nees for ESS",
+    ") Nees for Ess",
+    "1553 120 10 \u04456",
+    "1553 120 10-0",
+    "1553 120 10-6",
+    "1553 120 1016",
+    "1553 120 106",
+    "1553 120 1076",
+    "1553 120 10x6",
+    "1553 120 10\u043a6",
+    "1553 120 10\u043d6",
+    "1553 120 10\u04456",
+    "1553 120 10\u0445\u0440",
+    "1553 120 12016",
+    "1553 120 120\u0445\u0440",
+    "1553 120 20\u04456",
+    "155\u0437 120 10 \u0445\u0440",
+    "155\u0437 120 10\u043a6",
+    "155\u0437 120 10\u04456",
+    "Executiive Infotmatim",
+    "Executiive Infotmatin",
+    "Executiive Infotuatim",
+    "Executiive Infotuatin",
+    "Executiive Infotwatin",
+    "Executiive Infotwation",
+    "Executive Infostraner",
+    "Executive Infotmatim",
+    "Executive Infotmatin",
+    "Executive Infotmati\u015b\u0105",
+    "Executive Infotuatim",
+    "Executive Infotuation",
+    "Frendanalys",
+    "Frendanlns",
+    "Frendanlys",
+    "Nee for Ess",
+    "Nee for Ess.",
+    "Neef for ESS",
+    "Neef for Ess",
+    "Neeg for Ess",
+    "Neer for Ess.",
+    "Nees for ESS",
+    "Nees for ESS,",
+    "Nees for EsS.",
+    "Nees for Ess",
+    "Nees for Ess.",
+    "Neet for ESS,",
+    "Sapport Syftem",
+    "Sapport Syften",
+    "Sapport Syitem",
+    "Sapport Syttem",
+    "Sapport Sytten",
+    "Sapporti\u1ea1\u1ea0System",
+    "Scapport Syftem",
+    "Scapport Systen",
+    "Scepporti\u1ea1\u1ea0System",
+    "Seapport Syftem",
+    "Seapporti\u1ea1\u1ea0Syften",
+    "Seepport Syftem",
+    "Seepport\u1ea0\u1ea1\u1ea0\u1ea0yyem",
+    "Seepport\u1ed7\u1ea1\u1ea0S\u1ed7ystem",
+    "Seepport\u1ed7\u1ea1\u1ea0\u1ea0yyem",
+    "Sepport Syftem",
+    "Sepport Syttem",
+    "Sepport\u1ea0\u1ea0yyem",
+    "Sepport\u1ed7\u1ea1\u1ea0\u1ed7yyem",
+    "Sgiten",
+    "Siapport Syftem",
+    "Siapport Syften",
+    "Siepporti\u1ea1\u1ea0SyHten",
+    "Siepporti\u1ea1\u1ea0System",
+    "Siupport\u1ed7\u1ea0S\u1ed7yHten",
+    "Suapport Syftem",
+    "Suapporti\u1ea0Syftem",
+    "Suapporti\u1ea1\u1ea0Syften",
+    "Support Syftem",
+    "Support Syften",
+    "Support Syttem",
+    "Supporti\u1ea0Syften",
+    "Suupporti\u1ea1\u1ea0System",
+    "Syiten",
+    "Trend analiis",
+    "Trend analnis",
+    "Trend analns",
+    "Trend analyns",
+    "Trend analys",
+    "Trendanalnis",
+    "Trendanalns",
+    "Trendanalys",
+    "Trendanlyg",
+    "Trendanlys",
+    "nces",
+    "n\u00e7es"
+   ],
+   "frames_with_text": 56,
+   "ignored_noise_boxes": 246,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0772,
+     0.1967,
+     0.6311
+    ]
+   ],
+   "cover": 0.109,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_8a314d176d65": {
+   "text_found": true,
+   "texts": [
+    "F28S"
+   ],
+   "frames_with_text": 1,
+   "ignored_noise_boxes": 9,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0097,
+     0.3494,
+     0.0653,
+     0.5172
+    ]
+   ],
+   "cover": 0.0093,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_16f3e3315257": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 49,
+   "action": "none"
+  },
+  "c_89b70aefac76": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 1,
+   "action": "none"
+  },
+  "c_4b61f715c105": {
+   "text_found": true,
+   "texts": [
+    "ma/",
+    "mal",
+    "na/",
+    "\u0442ai"
+   ],
+   "frames_with_text": 48,
+   "ignored_noise_boxes": 53,
+   "action": "drop: text still readable after blurring",
+   "regions": [
+    [
+     0.0,
+     0.1852,
+     0.0812,
+     0.2854
+    ],
+    [
+     0.7551,
+     0.0522,
+     0.8153,
+     0.3267
+    ]
+   ],
+   "cover": 0.0247,
+   "rounds": 3,
+   "recheck_texts": [
+    "aielzizi"
+   ]
+  },
+  "c_ecd39cbb1a05": {
+   "text_found": true,
+   "texts": [
+    "L"
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 24,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2237,
+     0.0439,
+     0.2778,
+     0.1089
+    ]
+   ],
+   "cover": 0.0035,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_da4908b9fc8f": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "\u0413 2"
+   ],
+   "frames_with_text": 2,
+   "ignored_noise_boxes": 34,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0837,
+     0.0733,
+     0.2395
+    ],
+    [
+     0.2898,
+     0.2494,
+     0.349,
+     0.4385
+    ],
+    [
+     0.7925,
+     0.4578,
+     0.8466,
+     0.5283
+    ]
+   ],
+   "cover": 0.0264,
+   "rounds": 2,
+   "recheck_texts": []
+  },
+  "c_43ff5fec49f0": {
+   "text_found": true,
+   "texts": [
+    "(23]",
+    "(33]",
+    "0 5.",
+    "827265",
+    "n\u00e2r",
+    "n\u0169",
+    "\u20ac 5."
+   ],
+   "frames_with_text": 6,
+   "ignored_noise_boxes": 15,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.1181,
+     0.0585,
+     0.1958
+    ],
+    [
+     0.2902,
+     0.2467,
+     0.3533,
+     0.5153
+    ],
+    [
+     0.7925,
+     0.4578,
+     0.845,
+     0.5256
+    ]
+   ],
+   "cover": 0.0251,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_616a79f58f6f": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_8fd3fb761d91": {
+   "text_found": false,
+   "texts": [],
+   "frames_with_text": 0,
+   "ignored_noise_boxes": 0,
+   "action": "none"
+  },
+  "c_6e31f02c9cf2": {
+   "text_found": true,
+   "texts": [
+    ") Neeg for ESS",
+    ") Neeg for Ess",
+    ") Neeg for Ess.",
+    "1553 120 10-6",
+    "1553 120 106",
+    "1553 120 10\u043a6",
+    "1553 120 10\u043d6",
+    "1553 120 10\u04456",
+    "1553 120 10\u0445\u0142\u0105",
+    "1553 120 120-8",
+    "1553 120 120.6",
+    "1553 120 12076",
+    "1553 120 120\u04456",
+    "1553 120 120\u0445\u0142",
+    "155\u0437 120 106",
+    "155\u0437 120 10\u043a6",
+    "> Nees for ESS e",
+    "Executiive Infotatim",
+    "Executiive Infotmatim",
+    "Executiive Infotmatin",
+    "Executive Infotmatin",
+    "Executive Infotmatinn",
+    "Executive Infotuatim",
+    "Executive Infotuatin",
+    "Executive Infotuatinn",
+    "Executive Infotuatio",
+    "Executive Infotvatin",
+    "Executive Infotwatim",
+    "J",
+    "Need for ESS",
+    "Need for ESS e",
+    "Need for Ess",
+    "Neeg for Ess",
+    "Neeg for Ess.",
+    "Neel for ESSe",
+    "Neer for EsS",
+    "Nees for ESS",
+    "Nees for ESS e",
+    "Nees for ESS,",
+    "Nees for EsS",
+    "Nees for EsS,",
+    "Nees for Ess",
+    "Nees for Ess.",
+    "Neet for ESS",
+    "Neet for Ess.",
+    "Sapport Syften",
+    "Sepporti\u1ea1\u1ea0Syften",
+    "Sgiten",
+    "Siapport Syftem",
+    "Siapport Syften",
+    "Siepport Syftem",
+    "Sispport Syftem",
+    "Suapport Syften",
+    "Suapport Syrtem",
+    "Suepport Syrtem",
+    "Suepport Systen",
+    "Support Syftem",
+    "Support Syften",
+    "Support Syrten",
+    "Support Systen",
+    "Supporti\u1ea0System",
+    "Suupporti\u1ea0System",
+    "Suupporti\u1ea1\u1ea0Systen",
+    "Syiten",
+    "Trend analns",
+    "Trendanalns",
+    "Trendanalys",
+    "Trendanlyg",
+    "Trendanlys",
+    "nces"
+   ],
+   "frames_with_text": 46,
+   "ignored_noise_boxes": 219,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0771,
+     0.171,
+     0.4004
+    ],
+    [
+     0.0,
+     0.4383,
+     0.1966,
+     0.6311
+    ],
+    [
+     0.7847,
+     0.5383,
+     0.8372,
+     0.6006
+    ],
+    [
+     0.9659,
+     0.8939,
+     1.0,
+     0.9894
+    ]
+   ],
+   "cover": 0.0997,
+   "rounds": 3,
+   "recheck_texts": []
+  },
+  "c_ce5b136931e1": {
+   "text_found": true,
+   "texts": [
+    "Hello"
+   ],
+   "frames_with_text": 70,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.3642,
+     0.8633,
+     0.6358,
+     0.9506
+    ]
+   ],
+   "cover": 0.0237,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_b1cd15394011": {
+   "text_found": true,
+   "texts": [
+    "Hello"
+   ],
+   "frames_with_text": 48,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.3592,
+     0.8633,
+     0.6363,
+     0.9506
+    ]
+   ],
+   "cover": 0.0242,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_9242b82b4997": {
+   "text_found": true,
+   "texts": [
+    "No fenet",
+    "eractly",
+    "exacti",
+    "exactl",
+    "exactly",
+    "exactu",
+    "i eractla",
+    "i exactla",
+    "i exactli",
+    "i exactly",
+    "iexactly",
+    "\u0435\u0445\u0430\u0441\u0456",
+    "\u044f\u0441"
+   ],
+   "frames_with_text": 44,
+   "ignored_noise_boxes": 43,
+   "action": "blurred",
+   "regions": [
+    [
+     0.0,
+     0.0,
+     0.0863,
+     0.126
+    ],
+    [
+     0.0,
+     0.3392,
+     0.0896,
+     0.4808
+    ]
+   ],
+   "cover": 0.0236,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_7195e10b935d": {
+   "text_found": true,
+   "texts": [
+    "Hello"
+   ],
+   "frames_with_text": 75,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.3642,
+     0.8633,
+     0.6358,
+     0.9506
+    ]
+   ],
+   "cover": 0.0237,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_b852731f6feb": {
+   "text_found": true,
+   "texts": [
+    "Thank you",
+    "Thanks"
+   ],
+   "frames_with_text": 61,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2741,
+     0.8681,
+     0.7258,
+     0.9548
+    ]
+   ],
+   "cover": 0.0392,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_f44e32b0f528": {
+   "text_found": true,
+   "texts": [
+    "Thank you",
+    "Thank you very much"
+   ],
+   "frames_with_text": 96,
+   "ignored_noise_boxes": 1,
+   "action": "blurred",
+   "regions": [
+    [
+     0.1376,
+     0.8685,
+     0.8624,
+     0.9544
+    ]
+   ],
+   "cover": 0.0623,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_baea7335a4e1": {
+   "text_found": true,
+   "texts": [
+    "A1OS",
+    "AIOS",
+    "AMOS",
+    "Namaste",
+    "Please",
+    "Sorry",
+    "please"
+   ],
+   "frames_with_text": 71,
+   "ignored_noise_boxes": 2,
+   "action": "blurred",
+   "regions": [
+    [
+     0.3145,
+     0.8695,
+     0.6954,
+     0.9555
+    ]
+   ],
+   "cover": 0.0328,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_a586f697faae": {
+   "text_found": true,
+   "texts": [
+    "A1OS",
+    "AIOS",
+    "AMOS",
+    "Sorry"
+   ],
+   "frames_with_text": 81,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.3697,
+     0.8695,
+     0.6336,
+     0.9555
+    ]
+   ],
+   "cover": 0.0227,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_8e86a9a1f412": {
+   "text_found": true,
+   "texts": [
+    "Hello"
+   ],
+   "frames_with_text": 75,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.4237,
+     0.7633,
+     0.5762,
+     0.8617
+    ]
+   ],
+   "cover": 0.015,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_bca179cda8f7": {
+   "text_found": true,
+   "texts": [
+    "NO",
+    "No"
+   ],
+   "frames_with_text": 98,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.4283,
+     0.8744,
+     0.5767,
+     0.9495
+    ]
+   ],
+   "cover": 0.0111,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_cfa8b95c3c6f": {
+   "text_found": true,
+   "texts": [
+    "Morning"
+   ],
+   "frames_with_text": 71,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.3384,
+     0.8723,
+     0.6716,
+     0.9522
+    ]
+   ],
+   "cover": 0.0266,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_563930bc7514": {
+   "text_found": true,
+   "texts": [
+    "Hello",
+    "Morn"
+   ],
+   "frames_with_text": 78,
+   "ignored_noise_boxes": 1,
+   "action": "blurred",
+   "regions": [
+    [
+     0.4237,
+     0.7633,
+     0.62,
+     0.8617
+    ]
+   ],
+   "cover": 0.0193,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_39915d95413c": {
+   "text_found": true,
+   "texts": [
+    "Yes"
+   ],
+   "frames_with_text": 120,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.4133,
+     0.8742,
+     0.5914,
+     0.9481
+    ]
+   ],
+   "cover": 0.0132,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_63047f7ad20c": {
+   "text_found": true,
+   "texts": [
+    "PHIN DEAF",
+    "Yes"
+   ],
+   "frames_with_text": 57,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.039,
+     0.2078,
+     0.2566,
+     0.395
+    ],
+    [
+     0.8722,
+     0.2328,
+     0.9934,
+     0.2978
+    ]
+   ],
+   "cover": 0.0486,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_5141eda0269f": {
+   "text_found": true,
+   "texts": [
+    "GiobarData",
+    "MobarDat:",
+    "NO",
+    "No",
+    "PHIN DEAF"
+   ],
+   "frames_with_text": 49,
+   "ignored_noise_boxes": 2,
+   "action": "blurred",
+   "regions": [
+    [
+     0.1019,
+     0.2383,
+     0.2716,
+     0.4228
+    ],
+    [
+     0.5191,
+     0.6467,
+     0.5997,
+     0.7144
+    ],
+    [
+     0.8722,
+     0.2328,
+     0.9934,
+     0.2978
+    ]
+   ],
+   "cover": 0.0446,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_881b3d3f7a07": {
+   "text_found": true,
+   "texts": [
+    "PHIN DEAF",
+    "Today"
+   ],
+   "frames_with_text": 60,
+   "ignored_noise_boxes": 1,
+   "action": "blurred",
+   "regions": [
+    [
+     0.3512,
+     0.8126,
+     0.6523,
+     1.0
+    ],
+    [
+     0.8628,
+     0.2606,
+     1.0,
+     0.3311
+    ]
+   ],
+   "cover": 0.0661,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_9495fbd58aa8": {
+   "text_found": true,
+   "texts": [
+    "Evening",
+    "O GROR",
+    "PHIN DEAF"
+   ],
+   "frames_with_text": 68,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.3171,
+     0.8099,
+     0.6921,
+     1.0
+    ],
+    [
+     0.3667,
+     0.4487,
+     0.4352,
+     0.5135
+    ],
+    [
+     0.8628,
+     0.2606,
+     1.0,
+     0.3311
+    ]
+   ],
+   "cover": 0.0854,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_6507d40e7159": {
+   "text_found": true,
+   "texts": [
+    "PHIN DEAF",
+    "Tomorrow"
+   ],
+   "frames_with_text": 75,
+   "ignored_noise_boxes": 0,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2706,
+     0.844,
+     0.7385,
+     1.0
+    ],
+    [
+     0.8628,
+     0.2606,
+     1.0,
+     0.3311
+    ]
+   ],
+   "cover": 0.0827,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_dd2cdf02cbd1": {
+   "text_found": true,
+   "texts": [
+    "PHIN DEAF"
+   ],
+   "frames_with_text": 39,
+   "ignored_noise_boxes": 2,
+   "action": "blurred",
+   "regions": [
+    [
+     0.73,
+     0.2633,
+     0.97,
+     0.3339
+    ]
+   ],
+   "cover": 0.0169,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_10a90e786da4": {
+   "text_found": true,
+   "texts": [
+    "Afternoon",
+    "PHIN DEAF"
+   ],
+   "frames_with_text": 73,
+   "ignored_noise_boxes": 1,
+   "action": "blurred",
+   "regions": [
+    [
+     0.2777,
+     0.8268,
+     0.736,
+     1.0
+    ],
+    [
+     0.8628,
+     0.2606,
+     1.0,
+     0.3311
+    ]
+   ],
+   "cover": 0.0891,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_7bfaf4643392": {
+   "text_found": true,
+   "texts": [
+    "PHIN DEAF",
+    "baiDota.",
+    "balData.",
+    "balDota",
+    "balDota.",
+    "paiDota.",
+    "parDeta",
+    "pciDeta",
+    "porDeta",
+    "salDota."
+   ],
+   "frames_with_text": 85,
+   "ignored_noise_boxes": 1,
+   "action": "blurred",
+   "regions": [
+    [
+     0.3627,
+     0.6356,
+     0.4567,
+     0.7006
+    ],
+    [
+     0.7859,
+     0.2411,
+     0.993,
+     0.3117
+    ]
+   ],
+   "cover": 0.0207,
+   "rounds": 1,
+   "recheck_texts": []
+  },
+  "c_486b2e6eb802": {
+   "text_found": true,
+   "texts": [
+    "D GloDolo",
+    "Morning",
+    "PHIN DEAF"
+   ],
+   "frames_with_text": 80,
+   "ignored_noise_boxes": 1,
+   "action": "blurred",
+   "regions": [
+    [
+     0.3072,
+     0.8173,
+     0.6905,
+     1.0
+    ],
+    [
+     0.3753,
+     0.43,
+     0.4528,
+     0.4839
+    ],
+    [
+     0.8644,
+     0.2606,
+     1.0,
+     0.3311
+    ]
+   ],
+   "cover": 0.0838,
+   "rounds": 1,
+   "recheck_texts": []
+  }
+ }
+}

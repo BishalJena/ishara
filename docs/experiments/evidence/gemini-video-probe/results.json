@@ -1,0 +1,1747 @@
+{
+ "words": 93,
+ "test_clips": 284,
+ "subsets": {
+  "all": {
+   "gemini": {
+    "clips": 284,
+    "correct": {
+     "n": 105,
+     "of": 284,
+     "rate": 0.37,
+     "ci95": [
+      0.316,
+      0.427
+     ]
+    },
+    "wrong": {
+     "n": 179,
+     "of": 284,
+     "rate": 0.63,
+     "ci95": [
+      0.573,
+      0.684
+     ]
+    },
+    "unsure": {
+     "n": 0,
+     "of": 284,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.013
+     ]
+    },
+    "error": {
+     "n": 0,
+     "of": 284,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.013
+     ]
+    }
+   },
+   "signclip_top1": {
+    "clips": 284,
+    "correct": {
+     "n": 35,
+     "of": 284,
+     "rate": 0.123,
+     "ci95": [
+      0.09,
+      0.167
+     ]
+    },
+    "wrong": {
+     "n": 249,
+     "of": 284,
+     "rate": 0.877,
+     "ci95": [
+      0.833,
+      0.91
+     ]
+    },
+    "unsure": {
+     "n": 0,
+     "of": 284,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.013
+     ]
+    },
+    "error": {
+     "n": 0,
+     "of": 284,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.013
+     ]
+    }
+   },
+   "signclip_cutoff": {
+    "clips": 284,
+    "correct": {
+     "n": 0,
+     "of": 284,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.013
+     ]
+    },
+    "wrong": {
+     "n": 0,
+     "of": 284,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.013
+     ]
+    },
+    "unsure": {
+     "n": 284,
+     "of": 284,
+     "rate": 1.0,
+     "ci95": [
+      0.987,
+      1.0
+     ]
+    },
+    "error": {
+     "n": 0,
+     "of": 284,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.013
+     ]
+    }
+   },
+   "gemini_confidence_cuts": {
+    "0.5": {
+     "clips": 284,
+     "correct": {
+      "n": 105,
+      "of": 284,
+      "rate": 0.37,
+      "ci95": [
+       0.316,
+       0.427
+      ]
+     },
+     "wrong": {
+      "n": 179,
+      "of": 284,
+      "rate": 0.63,
+      "ci95": [
+       0.573,
+       0.684
+      ]
+     },
+     "unsure": {
+      "n": 0,
+      "of": 284,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.013
+      ]
+     },
+     "error": {
+      "n": 0,
+      "of": 284,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.013
+      ]
+     }
+    },
+    "0.7": {
+     "clips": 284,
+     "correct": {
+      "n": 103,
+      "of": 284,
+      "rate": 0.363,
+      "ci95": [
+       0.309,
+       0.42
+      ]
+     },
+     "wrong": {
+      "n": 170,
+      "of": 284,
+      "rate": 0.599,
+      "ci95": [
+       0.541,
+       0.654
+      ]
+     },
+     "unsure": {
+      "n": 11,
+      "of": 284,
+      "rate": 0.039,
+      "ci95": [
+       0.022,
+       0.068
+      ]
+     },
+     "error": {
+      "n": 0,
+      "of": 284,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.013
+      ]
+     }
+    },
+    "0.9": {
+     "clips": 284,
+     "correct": {
+      "n": 103,
+      "of": 284,
+      "rate": 0.363,
+      "ci95": [
+       0.309,
+       0.42
+      ]
+     },
+     "wrong": {
+      "n": 168,
+      "of": 284,
+      "rate": 0.592,
+      "ci95": [
+       0.534,
+       0.647
+      ]
+     },
+     "unsure": {
+      "n": 13,
+      "of": 284,
+      "rate": 0.046,
+      "ci95": [
+       0.027,
+       0.077
+      ]
+     },
+     "error": {
+      "n": 0,
+      "of": 284,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.013
+      ]
+     }
+    }
+   },
+   "words": 93
+  },
+  "demo12": {
+   "gemini": {
+    "clips": 47,
+    "correct": {
+     "n": 25,
+     "of": 47,
+     "rate": 0.532,
+     "ci95": [
+      0.392,
+      0.667
+     ]
+    },
+    "wrong": {
+     "n": 22,
+     "of": 47,
+     "rate": 0.468,
+     "ci95": [
+      0.333,
+      0.608
+     ]
+    },
+    "unsure": {
+     "n": 0,
+     "of": 47,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.076
+     ]
+    },
+    "error": {
+     "n": 0,
+     "of": 47,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.076
+     ]
+    }
+   },
+   "signclip_top1": {
+    "clips": 47,
+    "correct": {
+     "n": 2,
+     "of": 47,
+     "rate": 0.043,
+     "ci95": [
+      0.012,
+      0.142
+     ]
+    },
+    "wrong": {
+     "n": 45,
+     "of": 47,
+     "rate": 0.957,
+     "ci95": [
+      0.858,
+      0.988
+     ]
+    },
+    "unsure": {
+     "n": 0,
+     "of": 47,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.076
+     ]
+    },
+    "error": {
+     "n": 0,
+     "of": 47,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.076
+     ]
+    }
+   },
+   "signclip_cutoff": {
+    "clips": 47,
+    "correct": {
+     "n": 0,
+     "of": 47,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.076
+     ]
+    },
+    "wrong": {
+     "n": 0,
+     "of": 47,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.076
+     ]
+    },
+    "unsure": {
+     "n": 47,
+     "of": 47,
+     "rate": 1.0,
+     "ci95": [
+      0.924,
+      1.0
+     ]
+    },
+    "error": {
+     "n": 0,
+     "of": 47,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.076
+     ]
+    }
+   },
+   "gemini_confidence_cuts": {
+    "0.5": {
+     "clips": 47,
+     "correct": {
+      "n": 25,
+      "of": 47,
+      "rate": 0.532,
+      "ci95": [
+       0.392,
+       0.667
+      ]
+     },
+     "wrong": {
+      "n": 22,
+      "of": 47,
+      "rate": 0.468,
+      "ci95": [
+       0.333,
+       0.608
+      ]
+     },
+     "unsure": {
+      "n": 0,
+      "of": 47,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.076
+      ]
+     },
+     "error": {
+      "n": 0,
+      "of": 47,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.076
+      ]
+     }
+    },
+    "0.7": {
+     "clips": 47,
+     "correct": {
+      "n": 25,
+      "of": 47,
+      "rate": 0.532,
+      "ci95": [
+       0.392,
+       0.667
+      ]
+     },
+     "wrong": {
+      "n": 21,
+      "of": 47,
+      "rate": 0.447,
+      "ci95": [
+       0.314,
+       0.588
+      ]
+     },
+     "unsure": {
+      "n": 1,
+      "of": 47,
+      "rate": 0.021,
+      "ci95": [
+       0.004,
+       0.111
+      ]
+     },
+     "error": {
+      "n": 0,
+      "of": 47,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.076
+      ]
+     }
+    },
+    "0.9": {
+     "clips": 47,
+     "correct": {
+      "n": 25,
+      "of": 47,
+      "rate": 0.532,
+      "ci95": [
+       0.392,
+       0.667
+      ]
+     },
+     "wrong": {
+      "n": 21,
+      "of": 47,
+      "rate": 0.447,
+      "ci95": [
+       0.314,
+       0.588
+      ]
+     },
+     "unsure": {
+      "n": 1,
+      "of": 47,
+      "rate": 0.021,
+      "ci95": [
+       0.004,
+       0.111
+      ]
+     },
+     "error": {
+      "n": 0,
+      "of": 47,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.076
+      ]
+     }
+    }
+   },
+   "words": 12
+  },
+  "dataset:include": {
+   "gemini": {
+    "clips": 263,
+    "correct": {
+     "n": 91,
+     "of": 263,
+     "rate": 0.346,
+     "ci95": [
+      0.291,
+      0.405
+     ]
+    },
+    "wrong": {
+     "n": 172,
+     "of": 263,
+     "rate": 0.654,
+     "ci95": [
+      0.595,
+      0.709
+     ]
+    },
+    "unsure": {
+     "n": 0,
+     "of": 263,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.014
+     ]
+    },
+    "error": {
+     "n": 0,
+     "of": 263,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.014
+     ]
+    }
+   },
+   "signclip_top1": {
+    "clips": 263,
+    "correct": {
+     "n": 33,
+     "of": 263,
+     "rate": 0.125,
+     "ci95": [
+      0.091,
+      0.171
+     ]
+    },
+    "wrong": {
+     "n": 230,
+     "of": 263,
+     "rate": 0.875,
+     "ci95": [
+      0.829,
+      0.909
+     ]
+    },
+    "unsure": {
+     "n": 0,
+     "of": 263,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.014
+     ]
+    },
+    "error": {
+     "n": 0,
+     "of": 263,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.014
+     ]
+    }
+   },
+   "signclip_cutoff": {
+    "clips": 263,
+    "correct": {
+     "n": 0,
+     "of": 263,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.014
+     ]
+    },
+    "wrong": {
+     "n": 0,
+     "of": 263,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.014
+     ]
+    },
+    "unsure": {
+     "n": 263,
+     "of": 263,
+     "rate": 1.0,
+     "ci95": [
+      0.986,
+      1.0
+     ]
+    },
+    "error": {
+     "n": 0,
+     "of": 263,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.014
+     ]
+    }
+   },
+   "gemini_confidence_cuts": {
+    "0.5": {
+     "clips": 263,
+     "correct": {
+      "n": 91,
+      "of": 263,
+      "rate": 0.346,
+      "ci95": [
+       0.291,
+       0.405
+      ]
+     },
+     "wrong": {
+      "n": 172,
+      "of": 263,
+      "rate": 0.654,
+      "ci95": [
+       0.595,
+       0.709
+      ]
+     },
+     "unsure": {
+      "n": 0,
+      "of": 263,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.014
+      ]
+     },
+     "error": {
+      "n": 0,
+      "of": 263,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.014
+      ]
+     }
+    },
+    "0.7": {
+     "clips": 263,
+     "correct": {
+      "n": 89,
+      "of": 263,
+      "rate": 0.338,
+      "ci95": [
+       0.284,
+       0.398
+      ]
+     },
+     "wrong": {
+      "n": 164,
+      "of": 263,
+      "rate": 0.624,
+      "ci95": [
+       0.564,
+       0.68
+      ]
+     },
+     "unsure": {
+      "n": 10,
+      "of": 263,
+      "rate": 0.038,
+      "ci95": [
+       0.021,
+       0.069
+      ]
+     },
+     "error": {
+      "n": 0,
+      "of": 263,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.014
+      ]
+     }
+    },
+    "0.9": {
+     "clips": 263,
+     "correct": {
+      "n": 89,
+      "of": 263,
+      "rate": 0.338,
+      "ci95": [
+       0.284,
+       0.398
+      ]
+     },
+     "wrong": {
+      "n": 162,
+      "of": 263,
+      "rate": 0.616,
+      "ci95": [
+       0.556,
+       0.673
+      ]
+     },
+     "unsure": {
+      "n": 12,
+      "of": 263,
+      "rate": 0.046,
+      "ci95": [
+       0.026,
+       0.078
+      ]
+     },
+     "error": {
+      "n": 0,
+      "of": 263,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.014
+      ]
+     }
+    }
+   },
+   "words": 90
+  },
+  "dataset:youtube": {
+   "gemini": {
+    "clips": 21,
+    "correct": {
+     "n": 14,
+     "of": 21,
+     "rate": 0.667,
+     "ci95": [
+      0.454,
+      0.828
+     ]
+    },
+    "wrong": {
+     "n": 7,
+     "of": 21,
+     "rate": 0.333,
+     "ci95": [
+      0.172,
+      0.546
+     ]
+    },
+    "unsure": {
+     "n": 0,
+     "of": 21,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.155
+     ]
+    },
+    "error": {
+     "n": 0,
+     "of": 21,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.155
+     ]
+    }
+   },
+   "signclip_top1": {
+    "clips": 21,
+    "correct": {
+     "n": 2,
+     "of": 21,
+     "rate": 0.095,
+     "ci95": [
+      0.027,
+      0.289
+     ]
+    },
+    "wrong": {
+     "n": 19,
+     "of": 21,
+     "rate": 0.905,
+     "ci95": [
+      0.711,
+      0.973
+     ]
+    },
+    "unsure": {
+     "n": 0,
+     "of": 21,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.155
+     ]
+    },
+    "error": {
+     "n": 0,
+     "of": 21,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.155
+     ]
+    }
+   },
+   "signclip_cutoff": {
+    "clips": 21,
+    "correct": {
+     "n": 0,
+     "of": 21,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.155
+     ]
+    },
+    "wrong": {
+     "n": 0,
+     "of": 21,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.155
+     ]
+    },
+    "unsure": {
+     "n": 21,
+     "of": 21,
+     "rate": 1.0,
+     "ci95": [
+      0.845,
+      1.0
+     ]
+    },
+    "error": {
+     "n": 0,
+     "of": 21,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.155
+     ]
+    }
+   },
+   "gemini_confidence_cuts": {
+    "0.5": {
+     "clips": 21,
+     "correct": {
+      "n": 14,
+      "of": 21,
+      "rate": 0.667,
+      "ci95": [
+       0.454,
+       0.828
+      ]
+     },
+     "wrong": {
+      "n": 7,
+      "of": 21,
+      "rate": 0.333,
+      "ci95": [
+       0.172,
+       0.546
+      ]
+     },
+     "unsure": {
+      "n": 0,
+      "of": 21,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.155
+      ]
+     },
+     "error": {
+      "n": 0,
+      "of": 21,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.155
+      ]
+     }
+    },
+    "0.7": {
+     "clips": 21,
+     "correct": {
+      "n": 14,
+      "of": 21,
+      "rate": 0.667,
+      "ci95": [
+       0.454,
+       0.828
+      ]
+     },
+     "wrong": {
+      "n": 6,
+      "of": 21,
+      "rate": 0.286,
+      "ci95": [
+       0.138,
+       0.5
+      ]
+     },
+     "unsure": {
+      "n": 1,
+      "of": 21,
+      "rate": 0.048,
+      "ci95": [
+       0.008,
+       0.227
+      ]
+     },
+     "error": {
+      "n": 0,
+      "of": 21,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.155
+      ]
+     }
+    },
+    "0.9": {
+     "clips": 21,
+     "correct": {
+      "n": 14,
+      "of": 21,
+      "rate": 0.667,
+      "ci95": [
+       0.454,
+       0.828
+      ]
+     },
+     "wrong": {
+      "n": 6,
+      "of": 21,
+      "rate": 0.286,
+      "ci95": [
+       0.138,
+       0.5
+      ]
+     },
+     "unsure": {
+      "n": 1,
+      "of": 21,
+      "rate": 0.048,
+      "ci95": [
+       0.008,
+       0.227
+      ]
+     },
+     "error": {
+      "n": 0,
+      "of": 21,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.155
+      ]
+     }
+    }
+   },
+   "words": 12
+  }
+ },
+ "per_word": {
+  "afternoon": {
+   "clips": 4,
+   "gemini_correct": 1,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 4,
+   "signclip_top1_correct": 1,
+   "signclip_top1_wrong": 3
+  },
+  "attack": {
+   "clips": 3,
+   "gemini_correct": 1,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "baby": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "bag": {
+   "clips": 3,
+   "gemini_correct": 1,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_correct": 3
+  },
+  "ball": {
+   "clips": 3,
+   "gemini_correct": 2,
+   "gemini_wrong": 1,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "beautiful": {
+   "clips": 3,
+   "gemini_correct": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "black": {
+   "clips": 3,
+   "gemini_correct": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "blue": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "boat": {
+   "clips": 3,
+   "gemini_correct": 1,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_correct": 1,
+   "signclip_top1_wrong": 2
+  },
+  "book": {
+   "clips": 3,
+   "gemini_correct": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_correct": 3
+  },
+  "boy": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "chair": {
+   "clips": 3,
+   "gemini_correct": 1,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "city": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "cold": {
+   "clips": 3,
+   "gemini_correct": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "cow": {
+   "clips": 3,
+   "gemini_correct": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_correct": 3
+  },
+  "daughter": {
+   "clips": 3,
+   "gemini_correct": 1,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "deaf": {
+   "clips": 3,
+   "gemini_correct": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "doctor": {
+   "clips": 4,
+   "gemini_wrong": 4,
+   "signclip_cutoff_unsure": 4,
+   "signclip_top1_wrong": 4
+  },
+  "dog": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "door": {
+   "clips": 3,
+   "gemini_correct": 1,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "dream": {
+   "clips": 3,
+   "gemini_correct": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_correct": 2,
+   "signclip_top1_wrong": 1
+  },
+  "evening": {
+   "clips": 4,
+   "gemini_wrong": 4,
+   "signclip_cutoff_unsure": 4,
+   "signclip_top1_wrong": 4
+  },
+  "expensive": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "family": {
+   "clips": 3,
+   "gemini_correct": 2,
+   "gemini_wrong": 1,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "famous": {
+   "clips": 3,
+   "gemini_correct": 1,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "father": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "female": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "friday": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "friend": {
+   "clips": 3,
+   "gemini_correct": 2,
+   "gemini_wrong": 1,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "gift": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "girl": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "god": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "good": {
+   "clips": 3,
+   "gemini_correct": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "grandfather": {
+   "clips": 3,
+   "gemini_correct": 1,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "green": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "grey": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "heavy": {
+   "clips": 3,
+   "gemini_correct": 2,
+   "gemini_wrong": 1,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "hello": {
+   "clips": 8,
+   "gemini_correct": 8,
+   "signclip_cutoff_unsure": 8,
+   "signclip_top1_wrong": 8
+  },
+  "horse": {
+   "clips": 2,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 2,
+   "signclip_top1_wrong": 2
+  },
+  "hot": {
+   "clips": 3,
+   "gemini_correct": 1,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "husband": {
+   "clips": 3,
+   "gemini_correct": 1,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "india": {
+   "clips": 3,
+   "gemini_correct": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "job": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "king": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "kitchen": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_correct": 1,
+   "signclip_top1_wrong": 2
+  },
+  "lawyer": {
+   "clips": 2,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 2,
+   "signclip_top1_wrong": 2
+  },
+  "location": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "long": {
+   "clips": 3,
+   "gemini_correct": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "manager": {
+   "clips": 2,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 2,
+   "signclip_top1_wrong": 2
+  },
+  "medicine": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "monday": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_correct": 1,
+   "signclip_top1_wrong": 2
+  },
+  "month": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "morning": {
+   "clips": 5,
+   "gemini_wrong": 5,
+   "signclip_cutoff_unsure": 5,
+   "signclip_top1_wrong": 5
+  },
+  "mother": {
+   "clips": 3,
+   "gemini_correct": 1,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "new": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "night": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "no": {
+   "clips": 2,
+   "gemini_correct": 2,
+   "signclip_cutoff_unsure": 2,
+   "signclip_top1_wrong": 2
+  },
+  "paper": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "patient": {
+   "clips": 3,
+   "gemini_correct": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "pink": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "poor": {
+   "clips": 3,
+   "gemini_correct": 2,
+   "gemini_wrong": 1,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "queen": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "red": {
+   "clips": 3,
+   "gemini_correct": 2,
+   "gemini_wrong": 1,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "rich": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "sad": {
+   "clips": 3,
+   "gemini_correct": 2,
+   "gemini_wrong": 1,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_correct": 3
+  },
+  "saturday": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "she": {
+   "clips": 2,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 2,
+   "signclip_top1_wrong": 2
+  },
+  "shirt": {
+   "clips": 3,
+   "gemini_correct": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "short": {
+   "clips": 3,
+   "gemini_correct": 2,
+   "gemini_wrong": 1,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "sick": {
+   "clips": 3,
+   "gemini_correct": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "skirt": {
+   "clips": 3,
+   "gemini_correct": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_correct": 3
+  },
+  "soap": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_correct": 1,
+   "signclip_top1_wrong": 2
+  },
+  "son": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_correct": 3
+  },
+  "sorry": {
+   "clips": 2,
+   "gemini_correct": 1,
+   "gemini_wrong": 1,
+   "signclip_cutoff_unsure": 2,
+   "signclip_top1_wrong": 2
+  },
+  "summer": {
+   "clips": 3,
+   "gemini_correct": 1,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_correct": 3
+  },
+  "sunday": {
+   "clips": 2,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 2,
+   "signclip_top1_wrong": 2
+  },
+  "tall": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_correct": 3
+  },
+  "teacher": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_correct": 2,
+   "signclip_top1_wrong": 1
+  },
+  "temple": {
+   "clips": 3,
+   "gemini_correct": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "thank you": {
+   "clips": 5,
+   "gemini_correct": 5,
+   "signclip_cutoff_unsure": 5,
+   "signclip_top1_wrong": 5
+  },
+  "thin": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "time": {
+   "clips": 3,
+   "gemini_correct": 2,
+   "gemini_wrong": 1,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "today": {
+   "clips": 4,
+   "gemini_correct": 4,
+   "signclip_cutoff_unsure": 4,
+   "signclip_top1_wrong": 4
+  },
+  "tomorrow": {
+   "clips": 4,
+   "gemini_wrong": 4,
+   "signclip_cutoff_unsure": 4,
+   "signclip_top1_correct": 1,
+   "signclip_top1_wrong": 3
+  },
+  "ugly": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "war": {
+   "clips": 3,
+   "gemini_correct": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "wednesday": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "wet": {
+   "clips": 2,
+   "gemini_correct": 1,
+   "gemini_wrong": 1,
+   "signclip_cutoff_unsure": 2,
+   "signclip_top1_wrong": 2
+  },
+  "wife": {
+   "clips": 3,
+   "gemini_correct": 1,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "year": {
+   "clips": 3,
+   "gemini_wrong": 3,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_correct": 1,
+   "signclip_top1_wrong": 2
+  },
+  "yellow": {
+   "clips": 3,
+   "gemini_correct": 1,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  },
+  "yes": {
+   "clips": 2,
+   "gemini_correct": 2,
+   "signclip_cutoff_unsure": 2,
+   "signclip_top1_wrong": 2
+  },
+  "you": {
+   "clips": 3,
+   "gemini_correct": 1,
+   "gemini_wrong": 2,
+   "signclip_cutoff_unsure": 3,
+   "signclip_top1_wrong": 3
+  }
+ },
+ "confusions": {
+  "gemini": [
+   {
+    "truth": "doctor",
+    "predicted": "time",
+    "count": 3
+   },
+   {
+    "truth": "location",
+    "predicted": "medicine",
+    "count": 3
+   },
+   {
+    "truth": "father",
+    "predicted": "mother",
+    "count": 3
+   },
+   {
+    "truth": "son",
+    "predicted": "daughter",
+    "count": 3
+   },
+   {
+    "truth": "pink",
+    "predicted": "red",
+    "count": 2
+   },
+   {
+    "truth": "saturday",
+    "predicted": "dream",
+    "count": 2
+   },
+   {
+    "truth": "morning",
+    "predicted": "hello",
+    "count": 2
+   },
+   {
+    "truth": "baby",
+    "predicted": "short",
+    "count": 2
+   },
+   {
+    "truth": "chair",
+    "predicted": "bag",
+    "count": 2
+   },
+   {
+    "truth": "soap",
+    "predicted": "green",
+    "count": 2
+   },
+   {
+    "truth": "tall",
+    "predicted": "god",
+    "count": 2
+   },
+   {
+    "truth": "grey",
+    "predicted": "dream",
+    "count": 2
+   },
+   {
+    "truth": "dog",
+    "predicted": "ball",
+    "count": 2
+   },
+   {
+    "truth": "female",
+    "predicted": "mother",
+    "count": 2
+   },
+   {
+    "truth": "summer",
+    "predicted": "hot",
+    "count": 2
+   }
+  ],
+  "signclip_top1": [
+   {
+    "truth": "pink",
+    "predicted": "medicine",
+    "count": 3
+   },
+   {
+    "truth": "hello",
+    "predicted": "god",
+    "count": 3
+   },
+   {
+    "truth": "shirt",
+    "predicted": "bag",
+    "count": 3
+   },
+   {
+    "truth": "expensive",
+    "predicted": "yes",
+    "count": 3
+   },
+   {
+    "truth": "beautiful",
+    "predicted": "pink",
+    "count": 3
+   },
+   {
+    "truth": "blue",
+    "predicted": "pink",
+    "count": 3
+   },
+   {
+    "truth": "rich",
+    "predicted": "bag",
+    "count": 3
+   },
+   {
+    "truth": "black",
+    "predicted": "god",
+    "count": 3
+   },
+   {
+    "truth": "attack",
+    "predicted": "dream",
+    "count": 3
+   },
+   {
+    "truth": "grey",
+    "predicted": "god",
+    "count": 3
+   },
+   {
+    "truth": "doctor",
+    "predicted": "teacher",
+    "count": 3
+   },
+   {
+    "truth": "famous",
+    "predicted": "tall",
+    "count": 3
+   },
+   {
+    "truth": "hot",
+    "predicted": "wet",
+    "count": 3
+   },
+   {
+    "truth": "female",
+    "predicted": "medicine",
+    "count": 3
+   },
+   {
+    "truth": "afternoon",
+    "predicted": "tall",
+    "count": 3
+   }
+  ],
+  "signclip_cutoff": []
+ },
+ "latency_s": {
+  "gemini_request": {
+   "count": 284,
+   "p50": 5.428,
+   "p95": 15.784,
+   "mean": 7.17,
+   "max": 65.845
+  },
+  "signclip_cpu": {
+   "count": 284,
+   "p50": 1.629,
+   "p95": 2.3,
+   "mean": 1.677,
+   "max": 3.169
+  }
+ },
+ "gemini_cost_usd": {
+  "total": 3.6838,
+  "clips": 284,
+  "per_clip_mean": 0.01297,
+  "per_clip_max": 0.023698
+ },
+ "agreement": {
+  "cross": {
+   "gemini_not+signclip_not": 159,
+   "gemini_right+signclip_not": 90,
+   "gemini_right+signclip_right": 15,
+   "gemini_not+signclip_right": 20
+  },
+  "same_answer": 18,
+  "same_answer_correct": 15
+ }
+}
