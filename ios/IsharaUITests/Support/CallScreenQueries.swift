@@ -27,15 +27,36 @@ extension XCUIApplication {
     }
 
     /// Taps SEND, then expects Delivered, the sentence as the user's caption and the
-    /// draft wiped.
+    /// draft wiped. The draft must be readable right above SEND when it is tapped.
     func sendAndExpectDelivered(_ sentence: String, file: StaticString = #filePath, line: UInt = #line) {
         let send = buttons["call.send"]
         XCTAssertTrue(send.isEnabled, "SEND was disabled with a draft", file: file, line: line)
+        assertFullyVisible("call.draft", above: "call.send", file: file, line: line)
         send.tap()
         waitFor(element("call.deliveryBanner"), labelContains: "Delivered", file: file, line: line)
         waitFor(element("caption.you"), labelContains: sentence, file: file, line: line)
         XCTAssertFalse(element("call.draft").label.contains(sentence),
                        "the spoken draft was not wiped", file: file, line: line)
+    }
+
+    /// The sentence a button acts on (the draft for SEND, the spoken sentence for STOP)
+    /// must be wholly on screen above that button, with no action-bar control over it.
+    func assertFullyVisible(_ sentenceIdentifier: String, above buttonIdentifier: String,
+                            file: StaticString = #filePath, line: UInt = #line) {
+        let sentence = element(sentenceIdentifier)
+        let button = buttons[buttonIdentifier]
+        XCTAssertTrue(sentence.exists, "\(sentenceIdentifier) is missing", file: file, line: line)
+        XCTAssertTrue(sentence.isHittable, "\(sentenceIdentifier) is not visible", file: file, line: line)
+        let frame = sentence.frame
+        XCTAssertTrue(windows.firstMatch.frame.contains(frame),
+                      "\(sentenceIdentifier) runs off screen: \(frame)", file: file, line: line)
+        XCTAssertLessThanOrEqual(frame.maxY, button.frame.minY,
+                                 "\(sentenceIdentifier) is not above \(buttonIdentifier)", file: file, line: line)
+        let controls = buttons.matching(NSPredicate(
+            format: "identifier BEGINSWITH 'quickReply.' OR identifier BEGINSWITH 'call.'"))
+        for control in controls.allElementsBoundByIndex where control.frame.intersects(frame) {
+            XCTFail("\(control.identifier) covers \(sentenceIdentifier)", file: file, line: line)
+        }
     }
 
     func waitForDraft(containing text: String, timeout: TimeInterval = 20,
