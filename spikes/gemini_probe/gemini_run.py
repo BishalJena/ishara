@@ -10,13 +10,14 @@ JSON schema that only allows a list word or "unsure". No file name, id, URL or c
 is sent; no examples. Every response's token usage is priced and logged; a call is only
 started when the money already spent plus the worst case of every call in flight stays
 under the cap. Uploaded files (only for clips above the inline limit) are deleted after use.
-The API key is read from the main checkout's .env into this process only and never printed.
+The API key is read from the repo's .env (or ISHARA_ENV_FILE) into this process only and never printed.
 """
 from __future__ import annotations
 
 import argparse
 import base64
 import json
+import os
 import random
 import threading
 import time
@@ -36,7 +37,8 @@ VIDEO_FPS = 8.0  # Gemini samples 1 fps by default, too sparse for a 2-3 s sign
 VIDEO_RESOLUTION = "high"  # 280 tokens per frame; docs call high optimal for most uses
 MAX_OUTPUT_TOKENS = 8192  # thinking + answer; a hard ceiling that also bounds the worst case
 INLINE_LIMIT = 15 * 1024 * 1024
-ENV_FILE = Path("/Users/ansuman/Documents/ishara/.env")
+# The repo root .env (gitignored); a worktree without one can point ISHARA_ENV_FILE at the main checkout's.
+ENV_FILE = Path(os.environ.get("ISHARA_ENV_FILE") or Path(__file__).resolve().parents[2] / ".env")
 MANIFEST = ARTIFACTS / "manifest.json"
 CANDIDATES = ARTIFACTS / "candidates.json"
 FORBIDDEN_KEYS = {"label", "word", "answer", "source_id", "url", "title", "dataset"}

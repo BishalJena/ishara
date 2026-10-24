@@ -40,10 +40,12 @@ OCR uses Apple Vision, so `prepare.py` needs macOS.
 python3 score.py --out-dir ../../docs/experiments/evidence/gemini-video-probe
 ```
 
-`gemini_run.py` reads `GEMINI_API_KEY` from the main checkout's `.env` into its own
-process only. It refuses to start a call when spent money plus the worst case of the
-calls in flight would pass `--cap-usd`, and the cap counts earlier runs in the same
-`--out-dir` (from `cost_log.jsonl`).
+`gemini_run.py` reads `GEMINI_API_KEY` from the repo root `.env` (in a worktree without
+one, set `ISHARA_ENV_FILE` to the main checkout's) into its own process only. It
+refuses to start a call when spent money plus the worst case of the calls in flight
+would pass `--cap-usd`, and the cap counts earlier runs in the same `--out-dir` (from
+`cost_log.jsonl`). The cap is per `--out-dir`: a pilot in another folder (e.g.
+`--thinking high --out-dir .../runs/pilot_high`) needs its own small cap.
 
 ## Leakage rules (enforced in code)
 
