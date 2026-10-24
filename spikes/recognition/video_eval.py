@@ -375,7 +375,7 @@ def score(results: Sequence[dict[str, Any]], labels: dict[str, str]) -> dict[str
 
 
 def table(summary: dict[str, Any]) -> str:
-    lines = ["| Sign | Clips | Correct accepted | Wrong accepted | Unsure (?) | No segment | Repeated |",
+    lines = ["| Sign | Clips | Correct accepted | Wrong accepted | Unsure (?) | No accepted segment | Repeated |",
              "|---|---:|---:|---:|---:|---:|---:|"]
     for sign, c in summary["per_sign"].items():
         lines.append(f"| {sign} | {c['clips']} | {c.get('correct', 0)} | {c.get('wrong', 0)} | "
