@@ -18,6 +18,11 @@ ScriptedBolna answers the "call", so nothing is dialled), plus:
   words (captions), so drafts can be checked against any reply. `/silence` fires
   Bolna's silence repeat (the holding line).
 
+Like Bolna, the scripted call also repeats the listen node after 15 s with nobody
+talking (scaled by --delay), so the holding line is said then too. The app (or the
+Mac bridge) gets the disclosure, every holding line and the goodbye as agent
+captions, apart from the receptionist's words.
+
 Keys come only from the repo-root .env (or --env-file), and only for the flags that
 need them. Exported variables are ignored, and no Bolna key is ever set.
 """
@@ -313,7 +318,8 @@ def banner(base_url: str, args: argparse.Namespace, keys: LabKeys) -> str:
         lines += [
             "",
             "Costs: each chip change is one Groq draft (a fraction of a paisa); each spoken "
-            "line is one Sarvam request (about ₹0.1-0.5). Run free with " + FREE_FLAGS + ".",
+            "line is one Sarvam request (about ₹0.1-0.5), including the holding line after "
+            "each long silence. Run free with " + FREE_FLAGS + ".",
         ]
     lines += [
         "",
@@ -323,7 +329,8 @@ def banner(base_url: str, args: argparse.Namespace, keys: LabKeys) -> str:
         f"--base-url {base_url} --contact {DEFAULT_CONTACT} --confirm-cost --live --camera 0",
         "",
         "Events: 'receptionist says', 'chips', 'groq answered', 'draft (llm|template)',",
-        "'  fallback: <why>', 'approved (SEND)', 'agent says', 'voice: playing / done'.",
+        "'  fallback: <why>', 'approved (SEND)', 'agent says', 'voice: playing / done',",
+        "'N s of silence' (the holding line follows).",
     ]
     return "\n".join(lines)
 
@@ -352,7 +359,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="where --composer groq and --voice sarvam read their keys (default: %(default)s)",
     )
     parser.add_argument(
-        "--delay", type=_non_negative, default=1.0, help="scale the ring and receptionist pauses"
+        "--delay",
+        type=_non_negative,
+        default=1.0,
+        help="scale the ring, receptionist and silence-repeat pauses",
     )
     return parser
 

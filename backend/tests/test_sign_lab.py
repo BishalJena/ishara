@@ -32,7 +32,7 @@ from scripts.sign_lab import (
     read_lab_keys,
     running_lab,
 )
-from tools.app_client import AppSession
+from tools.app_client import AppSession, is_receptionist
 from tools.call_runner import live_call
 from tools.connection import auth_headers, open_call_socket
 
@@ -242,6 +242,15 @@ async def test_the_lab_drafts_with_the_given_composer() -> None:
     assert run.spoken[1] == text
 
 
+def _captions(session: AppSession, *, receptionist: bool) -> list[str]:
+    """Caption texts the app got, the receptionist's or the voice's own (agent) lines."""
+    return [
+        m.text
+        for m in session.history
+        if isinstance(m, CaptionMessage) and is_receptionist(m) == receptionist
+    ]
+
+
 async def test_manual_receptionist_lines_become_captions_and_the_script_stays_quiet() -> None:
     logs: list[str] = []
     lines = LineFeed()
@@ -258,7 +267,7 @@ async def test_manual_receptionist_lines_become_captions_and_the_script_stays_qu
         async with call_on(base_url, lab) as (session, run):
             await send_chips(session, ["hello", "doctor", "tomorrow"])
             await asyncio.sleep(FAST.reply_s * 4)
-            assert not any(isinstance(m, CaptionMessage) for m in session.history)
+            assert _captions(session, receptionist=True) == []
 
             await lines.queue.put("  We only have Friday at 5. Is that okay?  \n")
             caption = await session.wait_for_caption(since=0, timeout=WAIT_S)
@@ -271,14 +280,20 @@ async def test_manual_receptionist_lines_become_captions_and_the_script_stays_qu
 
             await lines.queue.put("/silence\n")
             await until(lambda: HOLDING_LINE in run.spoken)
+            await session.wait_for(
+                lambda m: isinstance(m, CaptionMessage) and m.text == HOLDING_LINE,
+                since=0,
+                timeout=WAIT_S,
+            )
+            agent_lines = _captions(session, receptionist=False)
 
     assert "receptionist says: We only have Friday at 5. Is that okay?" in logs
     assert "receptionist stays silent (Bolna's silence repeat)" in logs
     assert any(
         'receptionist last said: "We only have Friday at 5. Is that okay?"' in line for line in logs
     )
-    captions = [m.text for m in session.history if isinstance(m, CaptionMessage)]
-    assert captions == ["We only have Friday at 5. Is that okay?"]
+    assert _captions(session, receptionist=True) == ["We only have Friday at 5. Is that okay?"]
+    assert agent_lines == [DISCLOSURE, HOLDING_LINE], "the lab app sees the voice's own lines"
 
 
 async def test_manual_receptionist_after_the_call_ended_says_so() -> None:
