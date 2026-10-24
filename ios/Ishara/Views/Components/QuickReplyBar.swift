@@ -13,10 +13,17 @@ struct QuickReplyBar: View {
 
     private var buttons: some View {
         ForEach(QuickReply.allCases) { reply in
-            Button(reply.label) { onChoose(reply) }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .frame(maxWidth: .infinity)
+            Button { onChoose(reply) } label: {
+                // Fixed to one line: an even 4-way split is narrower than "Repeat"
+                // needs, and a wrapped label turns the button into a tall blob.
+                // When the labels can't fit, ViewThatFits switches to the grid.
+                Text(reply.label)
+                    .lineLimit(1)
+                    .fixedSize()
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
                 .accessibilityHint("Puts \u{201C}\(reply.sentence)\u{201D} in the draft")
         }
     }
