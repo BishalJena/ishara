@@ -20,6 +20,7 @@ import random
 import subprocess
 import sys
 from collections.abc import Sequence
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import ocr
@@ -99,7 +100,7 @@ def assert_disjoint(references: Sequence[dict], tests: Sequence[dict]) -> None:
             raise ValueError(f"Leakage: test and reference clips share {key} {sorted(shared)[:5]}")
 
 
-def prepare(spec_path: Path, seed: int) -> int:
+def prepare(spec_path: Path, seed: int, workers: int = 1) -> int:
     spec = json.loads(spec_path.read_text())
     sources = {s["source_id"]: s for s in spec["sources"]}
     CLIPS.mkdir(parents=True, exist_ok=True)
@@ -126,10 +127,15 @@ def prepare(spec_path: Path, seed: int) -> int:
         print(f"{clip_id} {cut['split']}", flush=True)
     audit = {}
     words = sorted({cut["label"] for cut in spec["clips"]})
-    for row in (r for r in rows if r["split"] == "test"):
-        audit[row["id"]] = ocr.clean(ARTIFACTS / row["path"], ENCODE_ARGS, FPS, words)
-        check_probe(probe(ARTIFACTS / row["path"]))
-        print(f"ocr {row['id']}: {audit[row['id']]['action']}", flush=True)
+    test_rows = [r for r in rows if r["split"] == "test"]
+    # Clips are independent, so every frame is still read; only the clips run side by side.
+    with ProcessPoolExecutor(max_workers=workers) as pool:
+        jobs = {pool.submit(ocr.clean, ARTIFACTS / r["path"], ENCODE_ARGS, FPS, words): r for r in test_rows}
+        for job in as_completed(jobs):
+            row = jobs[job]
+            audit[row["id"]] = job.result()
+            check_probe(probe(ARTIFACTS / row["path"]))
+            print(f"ocr {row['id']}: {audit[row['id']]['action']}", flush=True)
     for row in rows:
         row["sha256"] = sha256(ARTIFACTS / row["path"])
     tests = [r for r in rows if r["split"] == "test" and not audit[r["id"]]["action"].startswith("drop")]
@@ -161,8 +167,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--spec", type=Path, default=ARTIFACTS / "spec.json")
     parser.add_argument("--seed", type=int, default=20261025)
+    parser.add_argument("--workers", type=int, default=6, help="clips OCR'd in parallel processes")
     args = parser.parse_args(argv)
-    return prepare(args.spec, args.seed)
+    return prepare(args.spec, args.seed, args.workers)
 
 
 if __name__ == "__main__":
