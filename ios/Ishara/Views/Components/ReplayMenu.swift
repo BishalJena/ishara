@@ -19,6 +19,7 @@ struct ReplayMenu: View {
                     .background(.thinMaterial, in: Capsule())
             }
             .accessibilityHint("Plays a saved sign through recognition, since the simulator has no camera")
+            .accessibilityIdentifier("replayMenu")
         }
     }
 }
