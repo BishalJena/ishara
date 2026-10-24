@@ -57,6 +57,7 @@ struct SourceBadge: View {
         case .template: .blue
         case .quickReply: .teal
         case .notDelivered: .orange
+        case .stopped: .gray
         }
     }
 }

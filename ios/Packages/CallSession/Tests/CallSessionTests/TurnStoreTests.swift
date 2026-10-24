@@ -634,6 +634,41 @@ final class TurnStoreTests: XCTestCase {
         XCTAssertFalse(store.isStopRequested)
     }
 
+    func testUnspokenReplyAfterStopIsStoppedNotAFailure() {
+        store.useQuickReply(.yes)
+        store.send()
+        store.stop()
+
+        store.receive(.notDelivered(turnID: turn(2), reason: "stopped"))
+
+        XCTAssertEqual(store.sending, .stopped(text: "Yes."))
+        XCTAssertEqual(store.captions, [], "nothing was spoken")
+    }
+
+    func testNotDeliveredWithoutStopStaysAFailure() {
+        store.useQuickReply(.yes)
+        store.send()
+
+        store.receive(.notDelivered(turnID: turn(2), reason: "stopped"))
+
+        XCTAssertEqual(store.sending, .notDelivered(text: "Yes."))
+    }
+
+    func testStoppedReplyIsOnlyResentOnATapWithANewTurnID() {
+        store.useQuickReply(.yes)
+        store.send()
+        store.stop()
+        let sentBefore = sink.sent
+        store.receive(.notDelivered(turnID: turn(2), reason: "stopped"))
+        XCTAssertEqual(sink.sent, sentBefore, "never resend automatically")
+        XCTAssertTrue(store.canResend)
+
+        store.resend()
+
+        XCTAssertEqual(sink.approvals.last, .approve(turnID: turn(4), text: "Yes."))
+        XCTAssertEqual(store.sending, .speaking(turnID: turn(4), text: "Yes."))
+    }
+
     func testStopCanBeSentAgainForTheNextReply() {
         store.useQuickReply(.yes)
         store.send()

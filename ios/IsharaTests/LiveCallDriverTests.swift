@@ -89,7 +89,7 @@ final class LiveCallDriverTests: XCTestCase {
         let sent2 = await waitForFrames(3)
         XCTAssertTrue(sent2)
         await transport.push(#"{"type":"not_delivered","turn_id":"turn1","reason":"stopped"}"#)
-        let offered = await eventually { model.delivery == .notDelivered(text: "Hello.") }
+        let offered = await eventually { model.delivery == .stopped(text: "Hello.") }
         XCTAssertTrue(offered)
 
         model.send()

@@ -20,6 +20,8 @@ enum DraftBadge: Equatable, Sendable {
     case llm, template, quickReply
     /// The last reply wasn't spoken; SEND offers it again on a new turn.
     case notDelivered
+    /// The user stopped the last reply before it was spoken; SEND offers it again.
+    case stopped
 
     init(_ origin: Draft.Origin) {
         switch origin {
@@ -35,6 +37,7 @@ enum DraftBadge: Equatable, Sendable {
         case .template: "Template"
         case .quickReply: "Quick reply"
         case .notDelivered: "Not delivered"
+        case .stopped: "Stopped"
         }
     }
 }

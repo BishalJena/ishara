@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Result of the last SEND: delivered, or not delivered with a manual retry.
+/// Result of the last SEND: delivered, not delivered with a manual retry, or stopped by
+/// the user before it was spoken.
 struct DeliveryBanner: View {
     let delivery: ActiveCallViewModel.Delivery
 
@@ -19,6 +20,13 @@ struct DeliveryBanner: View {
                 title: "Not delivered — tap SEND again",
                 detail: "Your last reply was not spoken. Nothing is resent unless you tap SEND.",
                 color: .orange
+            )
+        case .stopped:
+            // A deliberate STOP is not a failure: say so, without urging a resend.
+            banner(
+                title: "Stopped. Nothing was spoken.",
+                detail: "Tap SEND to send it anyway, or Clear.",
+                color: .gray
             )
         case .idle, .speaking:
             EmptyView()
@@ -47,6 +55,7 @@ struct DeliveryBanner: View {
     VStack {
         DeliveryBanner(delivery: .delivered)
         DeliveryBanner(delivery: .notDelivered(text: "No, sorry. Is tomorrow morning possible?"))
+        DeliveryBanner(delivery: .stopped(text: "No, sorry. Is tomorrow morning possible?"))
     }
     .padding()
 }

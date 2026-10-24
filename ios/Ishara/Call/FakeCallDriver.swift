@@ -73,7 +73,7 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         case .stop:
             guard let turnID = speakingTurn else { return }
             speakingTask?.cancel()
-            speakingTask = schedule(after: 0.3) { $0.finishSpeaking(turnID: turnID, delivered: false) }
+            speakingTask = schedule(after: 0.3) { $0.finishSpeaking(turnID: turnID, delivered: false, reason: "stopped") }
         case .end:
             // The store has already ended itself; the backend would only confirm it.
             finish()
@@ -98,10 +98,10 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         }
     }
 
-    private func finishSpeaking(turnID: TurnID, delivered: Bool) {
+    private func finishSpeaking(turnID: TurnID, delivered: Bool, reason: String = "no_confirmation") {
         speakingTurn = nil
         speakingTask = nil
-        deliver(delivered ? .spoken(turnID: turnID) : .notDelivered(turnID: turnID, reason: "no_confirmation"))
+        deliver(delivered ? .spoken(turnID: turnID) : .notDelivered(turnID: turnID, reason: reason))
         deliver(.status(.inCall))
         if delivered {
             schedule(after: 2) { $0.playNextStage() }

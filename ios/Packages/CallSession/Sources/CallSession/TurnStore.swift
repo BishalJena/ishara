@@ -84,6 +84,9 @@ public enum SendingPhase: Equatable, Sendable {
     case delivered
     /// No confirmation arrived; the user may re-SEND `text`. Never resent automatically.
     case notDelivered(text: String)
+    /// The user tapped STOP and the reply was not spoken. SEND may offer `text` again,
+    /// only on a tap.
+    case stopped(text: String)
 }
 
 public struct ServerError: Equatable, Sendable {
@@ -140,10 +143,17 @@ public final class TurnStore {
         return Self.isSendable(draft.text)
     }
 
-    /// True when `resend()` would approve the not-delivered text again.
+    /// True when `resend()` would approve the unspoken text again.
     public var canResend: Bool {
-        guard isLive, case .notDelivered = sending else { return false }
-        return true
+        isLive && unspokenText != nil
+    }
+
+    /// The last approved sentence when it was not spoken (not delivered, or stopped).
+    public var unspokenText: String? {
+        switch sending {
+        case let .notDelivered(text), let .stopped(text): text
+        case .idle, .speaking, .delivered: nil
+        }
     }
 
     // MARK: User actions
@@ -185,9 +195,9 @@ public final class TurnStore {
         approve(draft.text, turnID: currentTurnID)
     }
 
-    /// After "not delivered", approves the same text again on a new turn id.
+    /// After "not delivered" or a stop, approves the same text again on a new turn id.
     public func resend() {
-        guard canResend, case let .notDelivered(text) = sending else { return }
+        guard canResend, let text = unspokenText else { return }
         approve(text, turnID: makeTurnID())
     }
 
@@ -235,7 +245,9 @@ public final class TurnStore {
             }
         case let .notDelivered(turnID, _):
             if case let .speaking(speakingTurn, text) = sending, speakingTurn == turnID {
-                settle(.notDelivered(text: text))
+                // After a STOP the reply went unspoken because the user asked; that isn't
+                // a failure to report.
+                settle(isStopRequested ? .stopped(text: text) : .notDelivered(text: text))
             }
         case let .error(code, message):
             lastError = ServerError(code: code, message: message)

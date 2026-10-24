@@ -33,6 +33,8 @@ final class ActiveCallViewModel {
         case speaking(text: String)
         case delivered
         case notDelivered(text: String)
+        /// The user stopped it before it was spoken.
+        case stopped(text: String)
     }
 
     static let connectionLostTitle = "Connection lost"
@@ -93,6 +95,7 @@ final class ActiveCallViewModel {
         case .speaking(_, let text): .speaking(text: text)
         case .delivered: .delivered
         case .notDelivered(let text): .notDelivered(text: text)
+        case .stopped(let text): .stopped(text: text)
         }
     }
 
@@ -100,18 +103,18 @@ final class ActiveCallViewModel {
         if case .speaking = delivery { true } else { false }
     }
 
-    /// The not-delivered sentence SEND would offer again: only while the user hasn't
-    /// started a new reply, so SEND never resends old text over new chips.
+    /// The unspoken sentence (not delivered, or stopped) SEND would offer again: only
+    /// while the user hasn't started a new reply, so SEND never resends old text over new chips.
     var retryText: String? {
-        guard let store, store.canResend, store.chips.isEmpty, store.draft == nil,
-              case .notDelivered(let text) = store.sending
-        else { return nil }
-        return text
+        guard let store, store.canResend, store.chips.isEmpty, store.draft == nil else { return nil }
+        return store.unspokenText
     }
 
     var draft: DraftDisplay? {
         if let draft = store?.draft { return DraftDisplay(text: draft.text, badge: DraftBadge(draft.origin)) }
-        return retryText.map { DraftDisplay(text: $0, badge: .notDelivered) }
+        guard let retryText else { return nil }
+        if case .stopped = delivery { return DraftDisplay(text: retryText, badge: .stopped) }
+        return DraftDisplay(text: retryText, badge: .notDelivered)
     }
 
     var canSend: Bool {

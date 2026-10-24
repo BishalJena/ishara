@@ -381,6 +381,21 @@ final class ActiveCallViewModelTests: XCTestCase {
         XCTAssertEqual(sink.approvals.count, 1, "old text is never resent over new chips")
     }
 
+    func testStopBeforeSpeakingShowsStoppedAndOffersSendOnlyOnTap() {
+        model.choose(.yes)
+        model.send()
+        model.stop()
+
+        store.receive(.notDelivered(turnID: turn(2), reason: "stopped"))
+
+        XCTAssertEqual(model.delivery, .stopped(text: "Yes."))
+        XCTAssertEqual(model.draft, DraftDisplay(text: "Yes.", badge: .stopped))
+        XCTAssertTrue(model.canSend)
+        XCTAssertEqual(sink.approvals.count, 1, "Must never resend by itself")
+        model.send()
+        XCTAssertEqual(sink.approvals.last, .approve(turnID: turn(4), text: "Yes."))
+    }
+
     func testStopAsksOnceWhileSpeaking() {
         model.stop()
         XCTAssertEqual(sink.stops, 0)
