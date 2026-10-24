@@ -647,7 +647,7 @@ final class TurnStoreTests: XCTestCase {
         XCTAssertEqual(sink.sent.filter { $0 == .stop }.count, 2)
     }
 
-    func testEndDropsPendingThenSendsEndAndWipesEverything() {
+    func testEndDropsPendingThenSendsEndAndWipesWhatCouldBeSent() {
         store.receive(.caption(text: "Hello?", at: 1))
         showDraft("Hello.")
         store.add(.unsure())
@@ -659,8 +659,35 @@ final class TurnStoreTests: XCTestCase {
         XCTAssertEqual(store.state, .ended)
         XCTAssertEqual(store.chips, [])
         XCTAssertNil(store.draft)
-        XCTAssertEqual(store.captions, [])
         XCTAssertEqual(store.sending, .idle)
+    }
+
+    func testEndKeepsTheCaptionsAsATranscript() {
+        store.receive(.caption(text: "City Clinic, how can I help?", at: 1))
+        showDraft("Hello.")
+        store.send()
+        store.receive(.spoken(turnID: turn(1)))
+
+        store.end()
+
+        XCTAssertEqual(store.captions.map(\.text), ["City Clinic, how can I help?", "Hello."])
+        XCTAssertEqual(store.captions.map(\.speaker), [.receptionist, .user])
+    }
+
+    func testBackendEndKeepsTheCaptionsAsATranscript() {
+        store.receive(.caption(text: "City Clinic, how can I help?", at: 1))
+
+        store.receive(.status(.ended))
+
+        XCTAssertEqual(store.captions.map(\.text), ["City Clinic, how can I help?"])
+    }
+
+    func testConnectionLostKeepsTheCaptions() {
+        store.receive(.caption(text: "City Clinic, how can I help?", at: 1))
+
+        store.connectionLost()
+
+        XCTAssertEqual(store.captions.map(\.text), ["City Clinic, how can I help?"])
     }
 
     func testEndWhileSpeakingClearsThePhase() {
@@ -689,15 +716,17 @@ final class TurnStoreTests: XCTestCase {
     }
 
     func testBackendEventsAreIgnoredAfterEnd() {
+        store.receive(.caption(text: "City Clinic, how can I help?", at: 1))
         store.end()
 
         store.receive(.status(.inCall))
-        store.receive(.caption(text: "Hello?", at: 1))
+        store.receive(.caption(text: "Hello?", at: 2))
+        store.receive(.caption(text: "Goodbye.", at: 3, speaker: .agent))
         store.receive(.draft(turnID: store.currentTurnID, text: "Hello.", source: .llm))
         store.connectionLost()
 
         XCTAssertEqual(store.state, .ended)
-        XCTAssertEqual(store.captions, [])
+        XCTAssertEqual(store.captions.map(\.text), ["City Clinic, how can I help?"], "no caption is added after End")
         XCTAssertNil(store.draft)
         XCTAssertNil(store.notice)
     }

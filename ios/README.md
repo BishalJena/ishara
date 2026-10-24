@@ -21,7 +21,8 @@ Views ─▶ ActiveCallViewModel ─▶ TurnStore (CallSession: every SEND safet
 
 The SEND rules live in one place, `TurnStore` in [CallSession](Packages/CallSession/README.md):
 single-use SEND tied to a turn id, stale drafts ignored, `?` never sent, re-SEND only on
-an explicit tap with a new turn id, everything wiped on End or a lost connection.
+an explicit tap with a new turn id, and chips, drafts and pending approvals wiped on End or a
+lost connection. The captions stay on screen as a read-only transcript of the call.
 
 ## Open
 

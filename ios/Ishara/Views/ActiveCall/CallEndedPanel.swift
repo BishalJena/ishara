@@ -13,7 +13,7 @@ struct CallEndedPanel: View {
             Text(title)
                 .font(.title2.bold())
                 .multilineTextAlignment(.center)
-            Text("Nothing will be sent. Any pending draft was wiped, so the next call starts clean.")
+            Text("Nothing more will be sent. Any unsent draft was wiped.")
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)

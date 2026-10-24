@@ -312,9 +312,10 @@ public final class TurnStore {
         beginNewTurn()
     }
 
+    /// Captions stay as a read-only transcript of the call; everything that could still be
+    /// sent (chips, draft, a pending approval) is wiped.
     private func finish() {
         state = .ended
-        captions = []
         settle(.idle)
         notice = nil
         beginNewTurn()

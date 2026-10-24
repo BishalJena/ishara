@@ -73,6 +73,15 @@ final class ActiveCallViewModel {
         if case .ended = phase { true } else { false }
     }
 
+    /// The call is over for good (ended, or the connection won't come back); the
+    /// captions are what's left of it.
+    var isCallOver: Bool {
+        switch phase {
+        case .ended, .disconnected: true
+        case .connecting, .live, .interrupted: false
+        }
+    }
+
     var connectedAt: Date? { store?.connectedAt }
     var captions: [Caption] { store?.captions ?? [] }
     var chips: [Chip] { store?.chips ?? [] }

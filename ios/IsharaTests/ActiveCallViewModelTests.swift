@@ -420,16 +420,39 @@ final class ActiveCallViewModelTests: XCTestCase {
     }
 
     func testLateEventsCannotReviveEndedCall() {
+        store.receive(.caption(text: "City Clinic, how can I help?", at: 1))
         model.end()
 
         store.receive(.status(.inCall))
-        store.receive(.caption(text: "Hello?", at: 1))
+        store.receive(.caption(text: "Hello?", at: 2))
         model.choose(.yes)
         model.send()
 
         XCTAssertEqual(model.phase, .ended(.userEnded))
-        XCTAssertTrue(model.captions.isEmpty)
+        XCTAssertEqual(model.captions.map(\.text), ["City Clinic, how can I help?"], "no caption is added after End")
         XCTAssertEqual(sink.approvals, [])
+    }
+
+    func testEndKeepsTheTranscript() {
+        store.receive(.caption(text: "City Clinic, how can I help?", at: 1))
+        model.choose(.yes)
+        model.send()
+        store.receive(.spoken(turnID: turn(2)))
+
+        model.end()
+
+        XCTAssertEqual(model.captions.map(\.text), ["City Clinic, how can I help?", "Yes."])
+        XCTAssertTrue(model.isCallOver)
+    }
+
+    func testCallIsOverOnlyOnceItCannotComeBack() {
+        XCTAssertFalse(model.isCallOver)
+        store.connectionLost()
+        XCTAssertFalse(model.isCallOver, "a reconnect may still bring the call back")
+
+        driver.onReconnectStopped?(.attemptsUsedUp)
+
+        XCTAssertTrue(model.isCallOver)
     }
 
     func testRemoteEndWipesPendingReply() {

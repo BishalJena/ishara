@@ -3,17 +3,22 @@ import SwiftUI
 
 /// The receptionist's words, the call agent's fixed lines and the user's delivered
 /// replies, newest at the bottom.
+/// Captions are kept after the call as a read-only transcript.
 struct CaptionHistory: View {
     let captions: [Caption]
+    /// True once the call is over, so an empty feed says there was nothing rather than
+    /// promising words that won't come.
+    var isCallOver = false
 
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 10) {
                     if captions.isEmpty {
-                        Text("The receptionist's words will appear here.")
+                        Text(isCallOver ? "No captions in this call." : "The receptionist's words will appear here.")
                             .font(.callout)
                             .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("caption.placeholder")
                     }
                     // Captions are only appended (or all wiped), so the position is a stable id.
                     ForEach(Array(captions.enumerated()), id: \.offset) { index, entry in

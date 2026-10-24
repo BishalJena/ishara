@@ -52,6 +52,9 @@ final class DemoCallUITests: XCTestCase {
         app.buttons["call.end"].tap()
         app.waitFor(app.element("call.endedPanel"), labelContains: "You ended the call")
         XCTAssertFalse(app.buttons["call.send"].exists)
+        // The captions stay as a read-only transcript of the call.
+        XCTAssertTrue(app.element("caption.you").label.contains(turn5), "the transcript was wiped on End")
+        XCTAssertTrue(app.element("caption.receptionist").label.contains("Yes, 10:30 tomorrow morning."))
         app.buttons["call.backHome"].tap()
         XCTAssertTrue(app.buttons["home.call"].waitForExistence(timeout: 5))
     }
