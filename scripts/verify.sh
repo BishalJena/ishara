@@ -124,7 +124,7 @@ check_recognition_light() {
       "&& uv pip install --python .venv-light/bin/python -r requirements-light.txt"
     skip "no spikes/recognition/.venv or .venv-light"
   fi
-  step "$python" -m unittest test_retrieval
+  step "$python" -m unittest test_retrieval test_detector test_detect_clips test_mac_bridge test_live_source
 }
 
 check_shellcheck() {

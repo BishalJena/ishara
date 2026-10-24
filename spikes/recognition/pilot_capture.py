@@ -205,7 +205,7 @@ def verify(args):
     print("Recorded your explicit label verification; tracking alone does not verify ISL meaning.")
 
 
-def main():
+def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=data.Path, default=data.DATASET)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -214,7 +214,10 @@ def main():
     record.add_argument("--signer", required=True, help="Local pseudonym, not a person's name")
     record.add_argument("--session", required=True, help="Keep the same ID throughout one recording session")
     record.add_argument("--split", choices=data.SPLITS, required=True)
-    record.add_argument("--concept", choices=data.VOCABULARY + data.NEGATIVES, required=True)
+    record.add_argument("--concept", choices=data.VOCABULARY + data.NEGATIVES, required=True,
+                        metavar="CONCEPT", help="One of the demo signs ("
+                        + ", ".join(data.VOCABULARY) + ") or a negative kind ("
+                        + ", ".join(data.NEGATIVES) + ")")
     record.add_argument("--takes", type=int, default=3)
     record.add_argument("--note", default="Sign form not yet checked")
     for command in ("review", "verify"):
@@ -224,6 +227,11 @@ def main():
             child.add_argument("--headless", action="store_true")
         else:
             child.add_argument("--note", required=True, help="Your sign-form review/reference evidence")
+    return parser
+
+
+def main():
+    parser = build_parser()
     args = parser.parse_args()
     if args.command == "capture" and not 1 <= args.takes <= 50:
         parser.error("--takes must be between 1 and 50")
