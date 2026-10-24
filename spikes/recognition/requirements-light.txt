@@ -1,0 +1,6 @@
+# Minimal set for the recognition tests that need no models: `python -m unittest test_retrieval`.
+# Used by CI. Versions match requirements.txt; the headless OpenCV build avoids the GUI/libGL
+# runtime on Linux runners. Install it in its own venv, never alongside requirements.txt
+# (two cv2 providers in one venv conflict). test_mini needs torch/transformers and is not covered.
+numpy==1.26.4
+opencv-contrib-python-headless==4.11.0.86
