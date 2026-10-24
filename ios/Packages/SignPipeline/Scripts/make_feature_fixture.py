@@ -36,7 +36,7 @@ REVISION = "a819944093876443119f294a2c50c663cecd65b0"
 DEMO_URL = f"https://raw.githubusercontent.com/J22Melody/fairseq/{REVISION}/examples/MMPT/demo_sign.py"
 DEMO_SHA = "9e208dcf9ffbe2ef284d6c2bed3b4d461d95e6c254682e9c5c1c68d3fe2f9d8e"
 UPSTREAM_NAMES = {"FACEMESH_CONTOURS_POINTS", "pose_normalization_info", "pose_hide_legs", "preprocess_pose"}
-OUTPUT = Path(__file__).resolve().parent.parent / "Tests" / "SignPipelineTests" / "Resources" / "feature_fixture.json"
+OUTPUT = Path(__file__).resolve().parent.parent / "Tests" / "SignPipelineTests" / "Fixtures" / "feature_fixture.json"
 MIN_TRACKED_SHOULDER_VISIBILITY = 0.5  # signclip.py `pose_fraction`
 
 

@@ -46,6 +46,16 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test   # macOS ho
 swift build                                                            # Command Line Tools only
 ```
 
+On the iOS simulator (also runs the `VideoFileFrameSource` tests on clips made with
+AVAssetWriter):
+
+```sh
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+xcodebuild test -scheme SignPipeline -destination 'id=<simulator UDID>' -derivedDataPath .build/xcode
+```
+
+The Holistic tests live with the adapter in [SignPipelineMediaPipe](../SignPipelineMediaPipe/README.md#tests).
+
 The golden fixture comes from the Python reference path; regenerate it only if
 the pinned SignCLIP/pose-format versions change (instructions in the script header):
 

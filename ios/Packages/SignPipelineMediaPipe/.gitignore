@@ -1,3 +1,4 @@
 # Library package: the app resolves its own dependency graph.
 Package.resolved
 .swiftpm/
+TestAssets/

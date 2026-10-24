@@ -15,7 +15,7 @@ let package = Package(
         .testTarget(
             name: "SignPipelineTests",
             dependencies: ["SignPipeline"],
-            resources: [.copy("Resources")]
+            resources: [.copy("Fixtures")]
         ),
     ]
 )

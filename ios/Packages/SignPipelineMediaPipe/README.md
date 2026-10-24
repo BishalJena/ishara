@@ -22,6 +22,12 @@ let provider = try HolisticLandmarkProvider(modelPath: path)
 let landmarks = try provider.landmarks(for: frame)   // off the main thread, increasing timestamps
 ```
 
+MediaPipe's Holistic task only accepts upright images (`MPImage` orientation `.up`), so the
+provider rotates sideways or upside-down BGRA frames (portrait recordings are tagged `.right`)
+with vImage first and always passes `.up`. Upright camera frames pass through untouched, and
+landmarks are always normalized to the upright image. Other pixel formats throw
+`unsupportedPixelFormat`.
+
 Research notes (model sizes, lite pose model, parity risks) are in the
 [SignPipeline README](../SignPipeline/README.md#research-mediapipe-on-ios-checked-23-oct-2026).
 
@@ -31,4 +37,19 @@ Needs Xcode with an iOS simulator or device destination:
 
 ```sh
 xcodebuild -scheme SignPipelineMediaPipe -destination 'generic/platform=iOS Simulator' build
+```
+
+## Tests
+
+`SignPipelineMediaPipeTests` (iOS only) runs the real Holistic Landmarker on MediaPipe's own
+Holistic test photo (`male_full_height_hands.jpg`) and compares nose, shoulders and wrists with
+MediaPipe's published `male_full_height_hands_result_cpu.pbtxt` (tolerance 0.03), upright and
+on a sideways copy tagged `.right`. It also checks the vImage rotation in each direction.
+Fetch the model and photo into the gitignored `TestAssets/` first (hash-checked), or the
+Holistic tests skip and say why:
+
+```sh
+Scripts/download_holistic_test_assets.sh
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+xcodebuild test -scheme SignPipelineMediaPipe -destination 'id=<simulator UDID>' -derivedDataPath .build/xcode
 ```

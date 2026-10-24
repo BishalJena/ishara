@@ -33,5 +33,15 @@ let package = Package(
                 ),
             ]
         ),
+        // Reads the gitignored TestAssets/ from the source tree, so it runs on
+        // the iOS simulator (which shares the host file system) and skips when
+        // Scripts/download_holistic_test_assets.sh has not been run.
+        .testTarget(
+            name: "SignPipelineMediaPipeTests",
+            dependencies: [
+                "SignPipelineMediaPipe",
+                .product(name: "SignPipeline", package: "SignPipeline"),
+            ]
+        ),
     ]
 )

@@ -53,7 +53,7 @@ struct MissingResource: Error {
 }
 
 func XCTUnwrapResource(_ name: String, extension ext: String) throws -> URL {
-    guard let url = Bundle.module.url(forResource: name, withExtension: ext, subdirectory: "Resources")
+    guard let url = Bundle.module.url(forResource: name, withExtension: ext, subdirectory: "Fixtures")
     else { throw MissingResource(name: "\(name).\(ext)") }
     return url
 }
