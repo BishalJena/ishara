@@ -31,13 +31,21 @@ cd ios/Packages/RecognitionCore
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 ```
 
-`swift build` works with the Command Line Tools alone.
+`swift build` works with the Command Line Tools alone. To run the same tests on
+an iOS simulator (from this folder; `.build/` is ignored):
+
+```sh
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild test \
+  -scheme RecognitionCore -destination 'id=<simulator UDID>' -derivedDataPath .build/xcode
+```
 
 ## Shared detector fixtures
 
 `Tests/RecognitionCoreTests/Fixtures/detector/*.json` are run by
 `DetectorFixtureTests`; every JSON file in that folder is checked. The Python
-detector uses the same format, so its fixtures can be copied in unchanged:
+detector uses the same format, so its fixtures are copied in unchanged as
+`py_<name>.json` (from `spikes/recognition/fixtures/detector/`); the files
+without the prefix were written for this package:
 
 ```json
 {"name": "...", "params": {"pre_roll_s": 0.0},
