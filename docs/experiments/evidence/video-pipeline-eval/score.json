@@ -1,0 +1,143 @@
+{
+  "A": {
+    "per_sign": {
+      "hello": {
+        "clips": 5,
+        "unsure": 5
+      },
+      "thankyou": {
+        "clips": 2,
+        "unsure": 2
+      },
+      "yes": {
+        "clips": 2,
+        "unsure": 2
+      },
+      "no": {
+        "clips": 2,
+        "missed": 1,
+        "unsure": 1
+      },
+      "sorry": {
+        "clips": 2,
+        "unsure": 2
+      },
+      "doctor": {
+        "clips": 1,
+        "unsure": 1
+      },
+      "today": {
+        "clips": 1,
+        "unsure": 1
+      },
+      "tomorrow": {
+        "clips": 1,
+        "unsure": 1
+      },
+      "morning": {
+        "clips": 3,
+        "unsure": 3
+      },
+      "afternoon": {
+        "clips": 2,
+        "unsure": 2
+      },
+      "evening": {
+        "clips": 2,
+        "unsure": 2
+      },
+      "time": {
+        "clips": 1,
+        "missed": 1
+      }
+    },
+    "total": {
+      "clips": 24,
+      "unsure": 22,
+      "missed": 2
+    },
+    "accuracy": 0.0,
+    "confusion": [],
+    "top1": {
+      "segments": 22,
+      "top1_right": 14
+    },
+    "latency_ms": {
+      "count": 22,
+      "p50": 465.5,
+      "p95": 468.8,
+      "mean": 465.0
+    }
+  },
+  "B": {
+    "per_sign": {
+      "hello": {
+        "clips": 2,
+        "correct": 1,
+        "unsure": 1
+      },
+      "thankyou": {
+        "clips": 2,
+        "unsure": 2
+      },
+      "doctor": {
+        "clips": 2,
+        "unsure": 2
+      },
+      "today": {
+        "clips": 2,
+        "wrong": 1,
+        "unsure": 1
+      },
+      "tomorrow": {
+        "clips": 2,
+        "missed": 1,
+        "unsure": 1
+      },
+      "morning": {
+        "clips": 2,
+        "unsure": 1,
+        "correct": 1
+      },
+      "afternoon": {
+        "clips": 2,
+        "unsure": 1,
+        "correct": 1
+      },
+      "evening": {
+        "clips": 2,
+        "correct": 1,
+        "unsure": 1
+      },
+      "time": {
+        "clips": 2,
+        "unsure": 2
+      }
+    },
+    "total": {
+      "clips": 18,
+      "correct": 4,
+      "unsure": 12,
+      "wrong": 1,
+      "missed": 1
+    },
+    "accuracy": 0.2222222222222222,
+    "confusion": [
+      {
+        "truth": "today",
+        "accepted": "tomorrow",
+        "count": 1
+      }
+    ],
+    "top1": {
+      "segments": 17,
+      "top1_right": 13
+    },
+    "latency_ms": {
+      "count": 17,
+      "p50": 463.9,
+      "p95": 468.2,
+      "mean": 464.3529411764706
+    }
+  }
+}

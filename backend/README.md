@@ -42,6 +42,7 @@ Settings come from the environment or the repo-root `.env` (see `../.env.example
 | `fakes/` | `FakeBolna` (plays Bolna's graph runtime over HTTP), `ScriptedBolna` (adds the §1 receptionist) and an SSE reader |
 | `scripts/local_demo.py` | Free local backend for the whole §1 call; see [Local demo](#local-demo-no-bolna-no-cost) |
 | `scripts/sign_lab.py`, `scripts/lab_composer.py`, `scripts/lab_voice.py` | The local demo with the real composer and voice for webcam tests; see [Sign Lab](#sign-lab-webcam-tests-with-the-real-composer-and-voice) |
+| `scripts/compose_turns.py` | Evaluation turns from `spikes/recognition/video_eval.py`: recognised and ground-truth chips through the production composer, drafts to Sarvam WAVs, paid calls capped |
 | `tools/`, `scripts/fake_app.py`, `scripts/voice_spike.py` | App-side client, PLAN §1 demo script, guided V4 checks (`uv run python -m scripts.fake_app …`) |
 | `scripts/bolna_agent.py` | Render / register / create / update the Bolna agent (writes need `--yes`) |
 | `scripts/heroku_*.sh` | Heroku deploy and config push; see [HEROKU.md](HEROKU.md) |
