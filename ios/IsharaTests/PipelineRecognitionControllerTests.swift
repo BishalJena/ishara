@@ -1,3 +1,4 @@
+import AVFoundation
 import RecognitionCore
 import SignPipeline
 import XCTest
@@ -18,10 +19,12 @@ final class PipelineRecognitionControllerTests: XCTestCase {
         _ landmarks: [LandmarkFrame],
         extra: [FeedItem] = [],
         embedding: [Float] = [0.99, 0.05, 0, 0],
-        bundle: RecognitionBundle? = testBundle
+        bundle: RecognitionBundle? = testBundle,
+        camera: LiveCamera? = nil
     ) -> PipelineRecognitionController {
         let items = videoFrames(for: landmarks).map(FeedItem.frame) + extra
         let feed = ScriptedFeed(items)
+        feed.camera = camera
         let controller = PipelineRecognitionController(feed: feed) {
             PipelineComponents(
                 landmarks: ScriptedLandmarkProvider(landmarks),
@@ -108,6 +111,46 @@ final class PipelineRecognitionControllerTests: XCTestCase {
         XCTAssertEqual(results, [])
     }
 
+    func testPreviewShowsTheLatestTrackedBodyAndTheRestLine() async throws {
+        let camera = LiveCamera(session: AVCaptureSession())
+        let controller = makeController(Landmarks.calibratedStream { Landmarks.sign(from: $0) }, camera: camera)
+
+        controller.start()
+
+        let shown = await eventually { self.results == [.sign(.hello)] }
+        XCTAssertTrue(shown)
+        let overlay = try XCTUnwrap(camera.overlay)
+        XCTAssertEqual(overlay.imageSize, CGSize(width: 720, height: 1280))
+        XCTAssertEqual(overlay.wrists.map(\.y), [CGFloat(Landmarks.restY), CGFloat(Landmarks.restY)],
+                       "the last frame has both hands back at rest")
+        XCTAssertEqual(overlay.shoulders.count, 2)
+        XCTAssertNotNil(overlay.restY, "calibration finished, so the rest line is known")
+    }
+
+    func testOverlayHasNoRestLineUntilCalibrated() async {
+        let landmarks = Landmarks.calibratedStream { _ in [] }
+        let components = PipelineComponents(
+            landmarks: InOrderLandmarkProvider(landmarks),
+            classifier: SegmentClassifier(encoder: nil, matcher: nil))
+        let items = AsyncStream<FeedItem> { continuation in
+            videoFrames(for: landmarks).forEach { continuation.yield(.frame($0)) }
+            continuation.yield(.hold(seconds: 0.1))
+            continuation.finish()
+        }
+
+        let overlays = await Task.detached {
+            var overlays: [BodyOverlay] = []
+            await PipelineRecognitionController.process(items, with: components) { output in
+                if case .overlay(let overlay) = output { overlays.append(overlay) }
+            }
+            return overlays
+        }.value
+
+        XCTAssertEqual(overlays.count, landmarks.count, "one overlay per camera frame, none for held frames")
+        XCTAssertNil(overlays.first?.restY)
+        XCTAssertNotNil(overlays.last?.restY)
+    }
+
     func testHeldFramesRepeatTheLastFrameAt30fps() {
         let held = PipelineRecognitionController.held(after: Landmarks.frame(t: 1), for: 0.1)
 
@@ -157,5 +200,16 @@ final class PipelineRecognitionControllerTests: XCTestCase {
 
         XCTAssertEqual(controller.replayOptions, ["hello_01"])
         XCTAssertEqual(feed.replayed, ["hello_01"])
+    }
+}
+
+/// Hands out the prepared landmarks one per frame, whatever the frame's timestamp.
+private final class InOrderLandmarkProvider: LandmarkProvider {
+    private var remaining: ArraySlice<LandmarkFrame>
+
+    init(_ frames: [LandmarkFrame]) { remaining = frames[...] }
+
+    func landmarks(for frame: VideoFrame) throws -> LandmarkFrame {
+        try XCTUnwrap(remaining.popFirst())
     }
 }

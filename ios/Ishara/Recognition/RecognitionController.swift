@@ -30,6 +30,9 @@ protocol RecognitionController: AnyObject {
     /// Something the user should know that doesn't stop recognition, for example that no
     /// recognition bundle is installed so every sign will show [?].
     var notice: String? { get }
+    /// The live front camera to preview, when recognition watches it (pipeline on a
+    /// device). nil when there is nothing live to show: saved videos or replayed results.
+    var camera: LiveCamera? { get }
     /// Simulator only: things the user can replay by hand, since there is no camera.
     var replayOptions: [String] { get }
 

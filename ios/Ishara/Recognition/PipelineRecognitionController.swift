@@ -39,6 +39,7 @@ final class PipelineRecognitionController: RecognitionController {
     }
 
     var replayOptions: [String] { feed.replayOptions }
+    var camera: LiveCamera? { feed.camera }
 
     func start() {
         guard worker == nil else { return }
@@ -83,6 +84,8 @@ final class PipelineRecognitionController: RecognitionController {
     enum WorkerOutput: Sendable {
         case session(RecognitionSession.Output)
         case result(RecognitionResult)
+        /// What the preview draws for the latest camera or video frame.
+        case overlay(BodyOverlay)
     }
 
     /// Runs the whole pipeline over `items` until the feed finishes or the task is cancelled.
@@ -96,11 +99,13 @@ final class PipelineRecognitionController: RecognitionController {
         for await item in items {
             guard !Task.isCancelled else { return }
             let frames: [LandmarkFrame]
+            var tracked: LandmarkFrame?
             switch item {
             case .frame(let frame):
                 do {
                     let landmarks = try components.landmarks.landmarks(for: frame)
                     last = landmarks
+                    tracked = landmarks
                     frames = [landmarks]
                 } catch {
                     recognitionLog.info("frame skipped: \(String(describing: error), privacy: .public)")
@@ -118,6 +123,9 @@ final class PipelineRecognitionController: RecognitionController {
                         await emit(.session(output))
                     }
                 }
+            }
+            if let tracked {
+                await emit(.overlay(BodyOverlay(frame: tracked, restY: session.restY)))
             }
         }
     }
@@ -148,6 +156,8 @@ final class PipelineRecognitionController: RecognitionController {
             break  // classified in the worker
         case .result(let result):
             continuation?.yield(.result(result))
+        case .overlay(let overlay):
+            camera?.overlay = overlay
         }
     }
 
