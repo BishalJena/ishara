@@ -33,11 +33,12 @@ OCR uses Apple Vision, so `prepare.py` needs macOS.
 .venv/bin/python sources.py bridgeconn --words <json>   # streams ~5 GB once, keeps wanted words
 .venv/bin/python build_spec.py --tests-per-word 3 --max-words 500
 .venv/bin/python sources.py fetch                       # ISLRTC files + INCLUDE members (Zenodo is slow)
-.venv/bin/python prepare.py                             # cut, re-encode, OCR every frame, manifests
+.venv/bin/python prepare.py --workers 6                 # cut, re-encode, OCR every frame (~15 min), manifests
 ../recognition/artifacts/signclip/.venv/bin/python signclip_adapter.py   # free, ~1 s per clip
 .venv/bin/python gemini_run.py --limit 5 --cap-usd 10   # PAID pilot: read the cost log first
 .venv/bin/python gemini_run.py --cap-usd 10             # PAID full run, resumes after the pilot
 python3 score.py --out-dir ../../docs/experiments/evidence/gemini-video-probe
+python3 evidence.py --out ../../docs/experiments/evidence/gemini-video-probe   # our outputs only
 ```
 
 `gemini_run.py` reads `GEMINI_API_KEY` from the repo root `.env` (in a worktree without
@@ -65,7 +66,7 @@ would pass `--cap-usd`, and the cap counts earlier runs in the same `--out-dir` 
 ## Tests
 
 ```sh
-.venv/bin/python -m unittest test_prepare test_gemini_run test_score
+.venv/bin/python -m unittest test_prepare test_gemini_run test_score test_evidence
 .venv/bin/python -m unittest test_signclip_adapter
 ```
 
