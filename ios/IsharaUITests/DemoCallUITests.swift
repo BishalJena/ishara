@@ -98,6 +98,7 @@ final class DemoCallUITests: XCTestCase {
         app.waitForDraft(containing: "In the morning")
         let wrongChip = app.buttons["chip.afternoon"]
         XCTAssertTrue(wrongChip.exists)
+        app.waitUntilClearOfActionBar("chip.afternoon")
         wrongChip.tap()
         waitUntil("the afternoon chip to go away") { !wrongChip.exists }
         XCTAssertTrue(app.buttons["chip.no"].exists)

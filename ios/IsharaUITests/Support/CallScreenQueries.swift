@@ -70,6 +70,17 @@ extension XCUIApplication {
         }
     }
 
+    /// A chip sitting under the action bar can't be seen, and a tap on it lands on
+    /// the quick reply above it instead. Waits for it to be clear of the bar.
+    func waitUntilClearOfActionBar(_ identifier: String, file: StaticString = #filePath, line: UInt = #line) {
+        let target = element(identifier)
+        let barControls = buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'quickReply.'"))
+        waitUntil("\(identifier) to be clear of the action bar", timeout: 5, file: file, line: line) {
+            let topOfBar = barControls.allElementsBoundByIndex.map(\.frame.minY).min() ?? .greatestFiniteMagnitude
+            return target.exists && target.frame.maxY <= topOfBar
+        }
+    }
+
     func waitForDraft(containing text: String, timeout: TimeInterval = 20,
                       file: StaticString = #filePath, line: UInt = #line) {
         waitFor(element("call.draft"), labelContains: text, timeout: timeout, file: file, line: line)
