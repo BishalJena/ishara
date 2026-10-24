@@ -9,10 +9,14 @@ struct CameraPreviewPlaceholder: View {
 
     @Environment(\.dynamicTypeSize) private var typeSize
 
+    /// On the call screens (those with a pill) the figure sits beside the message
+    /// instead of above it, so the chips and draft fit above the action bar.
+    private var isCompact: Bool { state != nil }
+
     /// At accessibility text sizes the stand-in figure and message would push the
     /// caption, draft or spoken sentence off screen, so only the pill (which carries
     /// the camera state) is kept.
-    private var showsPillOnly: Bool { state != nil && typeSize.isAccessibilitySize }
+    private var showsPillOnly: Bool { isCompact && typeSize.isAccessibilitySize }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -26,26 +30,34 @@ struct CameraPreviewPlaceholder: View {
             }
         }
         .padding(10)
-        .frame(maxWidth: .infinity, minHeight: showsPillOnly ? nil : minHeight, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: isCompact ? nil : minHeight, alignment: .leading)
         .background(Color(white: 0.2), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 
+    @ViewBuilder
     private var placeholderContent: some View {
-        VStack(spacing: 8) {
+        let layout = isCompact
+            ? AnyLayout(HStackLayout(spacing: 12))
+            : AnyLayout(VStackLayout(spacing: 8))
+        layout {
             Image(systemName: "figure.stand")
-                .font(.system(size: 44))
+                .font(.system(size: isCompact ? 32 : 44))
                 .accessibilityHidden(true)
             Text(message)
                 .font(.callout)
-                .multilineTextAlignment(.center)
+                .multilineTextAlignment(isCompact ? .leading : .center)
         }
         .foregroundStyle(.white.opacity(0.8))
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: isCompact ? .leading : .center)
+        .padding(.horizontal, isCompact ? 8 : 0)
     }
 }
 
 #Preview {
-    CameraPreviewPlaceholder(state: .signing, message: "Camera (you signing)")
-        .padding()
+    VStack {
+        CameraPreviewPlaceholder(state: nil, message: "Camera preview")
+        CameraPreviewPlaceholder(state: .signing, message: "Camera (you signing)")
+    }
+    .padding()
 }

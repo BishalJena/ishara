@@ -11,8 +11,7 @@ struct SpeakingPanel: View {
         VStack(alignment: .leading, spacing: 14) {
             CameraPreviewPlaceholder(
                 state: cameraState,
-                message: "Camera keeps watching\n(you can sign the next thing)",
-                minHeight: 140
+                message: "Camera keeps watching\n(you can sign the next thing)"
             )
             SpeakingCard(text: text, isStopRequested: isStopRequested)
         }

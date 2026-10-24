@@ -7,8 +7,7 @@ struct SigningPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Kept short so chips and draft fit above the action bar without scrolling.
-            CameraPreviewPlaceholder(state: model.cameraState, message: "Camera (you signing)", minHeight: 130)
+            CameraPreviewPlaceholder(state: model.cameraState, message: "Camera (you signing)")
             DeliveryBanner(delivery: model.delivery)
             ChipRow(chips: model.chips, onRemove: model.removeChip)
             DraftCard(draft: model.draft)
