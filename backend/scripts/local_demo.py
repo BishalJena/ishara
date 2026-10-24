@@ -10,6 +10,10 @@ the receptionist: it rings, answers, says the §1 receptionist lines as captions
 fetches every approved reply from this server's own custom-LLM endpoint over HTTP, so
 the full backend path runs. What the agent "speaks" is printed to stdout.
 
+The app also gets the voice's own lines as agent captions: the disclosure when the
+call is answered, the holding line after 15 s with nobody talking (Bolna's silence
+repeat, scaled by --delay) and the goodbye after End.
+
 Settings are built here, explicitly: the repo `.env` is never read, and no API key is
 set, so nothing can reach a paid service.
 """

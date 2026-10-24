@@ -361,8 +361,9 @@ artifacts/bridge/.venv/bin/python -m unittest test_mac_bridge test_detector test
    the recognizer.
 
    Each sign prints the same per-sign line as step 5. Backend events (status,
-   receptionist captions, drafts with their `llm`/`template` source, SEND and
-   `Delivered`) carry a time. `--log` also appends every recognizer result and
+   receptionist captions, the voice's own lines as `Ishara (voice): …`
+   (disclosure, holding line, goodbye), drafts with their `llm`/`template`
+   source, SEND and `Delivered`) carry a time. `--log` also appends every recognizer result and
    every message sent or received to a JSONL file for review afterwards, by default
    `artifacts/lab/session-<date>-<time>.jsonl` (`--log PATH` must stay inside the
    gitignored `artifacts/`):
