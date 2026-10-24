@@ -101,18 +101,42 @@ final class MessagesTests: XCTestCase {
             .spoken(turnID: t1))
     }
 
-    func testNotDeliveredDecodes() throws {
+    func testNotDeliveredDecodesEveryBackendReason() throws {
         XCTAssertEqual(
             try WireCoding.decodeServerMessage(
                 #"{"type":"not_delivered","turn_id":"t1","reason":"no_confirmation"}"#),
             .notDelivered(turnID: t1, reason: "no_confirmation"))
-    }
-
-    func testErrorDecodes() throws {
         XCTAssertEqual(
             try WireCoding.decodeServerMessage(
-                #"{"type":"error","code":"stale_turn","message":"turn t0 is not current"}"#),
-            .error(code: "stale_turn", message: "turn t0 is not current"))
+                #"{"type":"not_delivered","turn_id":"t1","reason":"bolna_unreachable"}"#),
+            .notDelivered(turnID: t1, reason: "bolna_unreachable"))
+    }
+
+    /// Every code the backend sends today: the turn rejections of app/sessions.py and the
+    /// two from app/calls.py, each with its exact message.
+    func testErrorDecodesEveryBackendCode() throws {
+        let frames = [
+            #"{"type":"error","code":"stale_turn","message":"That turn is closed; start a new one."}"#,
+            #"{"type":"error","code":"already_approved","message":"That turn was already sent."}"#,
+            #"{"type":"error","code":"call_not_live","message":"The call is not connected yet."}"#,
+            #"{"type":"error","code":"call_ended","message":"The call has ended. Nothing will be sent."}"#,
+            #"{"type":"error","code":"cannot_interrupt","message":"Bolna is already speaking; it cannot be interrupted."}"#,
+            #"{"type":"error","code":"busy_speaking","message":"Wait until the current reply has been spoken."}"#,
+            #"{"type":"error","code":"bad_message","message":"Unrecognised message."}"#,
+            #"{"type":"error","code":"end_failed","message":"Could not reach Bolna to hang up."}"#,
+        ]
+        let codes = try frames.map { frame -> String in
+            guard case let .error(code, message) = try WireCoding.decodeServerMessage(frame) else {
+                XCTFail("not an error: \(frame)")
+                return ""
+            }
+            XCTAssertFalse(message.isEmpty)
+            return code
+        }
+        XCTAssertEqual(
+            codes,
+            ["stale_turn", "already_approved", "call_not_live", "call_ended", "cannot_interrupt",
+             "busy_speaking", "bad_message", "end_failed"])
     }
 
     func testUnknownTypeDecodesToUnknownInsteadOfThrowing() throws {
