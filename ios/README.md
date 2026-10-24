@@ -83,7 +83,7 @@ Other switches:
 |---|---|
 | `-IsharaFakeNotDelivered YES` | The first SEND of turn 2 comes back "not delivered", so you have to tap SEND again |
 | `-IsharaFakeTimeScale 0.5` | Runs the Get ready checks and the fake call twice as fast |
-| `-IsharaFixture <name>` | Debug builds only. Opens a prepared state: `home`, `getReady`, `signing`, `speaking`, `delivered`, `notDelivered`, `ended`, `connectionLost` |
+| `-IsharaFixture <name>` | Debug builds only. Opens a prepared state: `home`, `getReady`, `signing`, `speaking`, `delivered`, `notDelivered`, `ended`, `connectionLost`, `composing`, `stopped`, `stopTooLate`, `deliveredDespiteStop`, `backendError`, `endedNoCaptions`, `hangUpUnconfirmed` |
 
 Set them in the scheme (Run → Arguments) or pass them to `xcrun simctl launch`:
 
