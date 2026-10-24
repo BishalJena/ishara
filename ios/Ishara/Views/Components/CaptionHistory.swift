@@ -20,7 +20,7 @@ struct CaptionHistory: View {
                             .foregroundStyle(.secondary)
                             .accessibilityIdentifier("caption.placeholder")
                     }
-                    // Captions are only appended (or all wiped), so the position is a stable id.
+                    // Captions are only ever appended, so the position is a stable id.
                     ForEach(Array(captions.enumerated()), id: \.offset) { index, entry in
                         CaptionRow(entry: entry)
                             .id(index)
