@@ -1,0 +1,125 @@
+# XcodeGen spec for the Ishara demo app. Regenerate the committed project with
+# `xcodegen generate --spec ios/project.yml` after editing this file.
+name: Ishara
+
+options:
+  bundleIdPrefix: ai.ishara
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: false
+
+# Local Swift packages. SignPipelineMediaPipe pulls MediaPipe (pinned by revision);
+# the others have no dependencies.
+packages:
+  CallSession:
+    path: Packages/CallSession
+  RecognitionCore:
+    path: Packages/RecognitionCore
+  SignPipeline:
+    path: Packages/SignPipeline
+  SignPipelineMediaPipe:
+    path: Packages/SignPipelineMediaPipe
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    # Left empty on purpose: each teammate picks their own team locally in Xcode.
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    TARGETED_DEVICE_FAMILY: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  Ishara:
+    type: application
+    platform: iOS
+    sources:
+      - path: Ishara
+        excludes:
+          - LocalAssets
+          - LocalAssets/**
+          - Info.plist
+          - Config/*.xcconfig
+      # Untracked models and recordings (see Ishara/LocalAssets/README.md), copied as a folder.
+      - path: Ishara/LocalAssets
+        type: folder
+        buildPhase: resources
+    configFiles:
+      # Includes the untracked Config/Secrets.xcconfig (backend URL + app token) if present.
+      Debug: Ishara/Config/Ishara.xcconfig
+      Release: Ishara/Config/Ishara.xcconfig
+    dependencies:
+      - package: CallSession
+      - package: RecognitionCore
+      - package: SignPipeline
+      - package: SignPipelineMediaPipe
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.ishara.demo
+        PRODUCT_NAME: Ishara
+        GENERATE_INFOPLIST_FILE: YES
+        # Adds the IsharaBackendURL / IsharaAppToken keys filled from the xcconfig.
+        INFOPLIST_FILE: Ishara/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: Ishara
+        INFOPLIST_KEY_NSCameraUsageDescription: >-
+          Ishara watches your hands to recognise the signs you make. Video stays
+          on this iPhone and is never recorded.
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+
+  IsharaTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: IsharaTests
+    dependencies:
+      - target: Ishara
+      # The tests import these modules; the host app already links them.
+      - package: CallSession
+        link: false
+      - package: RecognitionCore
+        link: false
+      - package: SignPipeline
+        link: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.ishara.demo.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+  # Walks the PLAN §1 demo through the real UI against the fake call.
+  IsharaUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: IsharaUITests
+    dependencies:
+      - target: Ishara
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.ishara.demo.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Ishara
+
+schemes:
+  Ishara:
+    build:
+      targets:
+        Ishara: all
+        IsharaTests: [test]
+        IsharaUITests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - IsharaTests
+        - IsharaUITests
+    archive:
+      config: Release
