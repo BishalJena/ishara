@@ -23,6 +23,7 @@ in CI. Paid calls, recording sessions and the device are human runs with written
 | 3 Voice | exact text, SEND → first audio, double SEND, STOP, silence, B24, B25 on a real call | `backend/scripts/voice_spike.py` (Bolna side) + `backend/scripts/fake_app.py` (plays the app over WS) | `docs/experiments/voice.md` | ❌ human: V4 (paid, needs the go-ahead) | [Build + Mate] |
 | 3 Voice smoke (free) | the same FakeBolna steps against a running backend instead of ASGI | `FakeBolna(token, httpx.AsyncClient(base_url=...))` from a Python shell | `backend/fakes/fake_bolna.py` | ⚠️ manual, no Bolna cost | [Build] |
 | 4 Simulator end to end (free) | the whole §1 call from the iOS app (`-IsharaDriver live`) or the Mac bridge against a local backend; ScriptedBolna rings, answers and plays the receptionist, nothing is dialled. `--b24` checks talk-over → `not delivered` → re-SEND | `cd backend && uv run python -m scripts.local_demo` (prints URL + token for `Secrets.xcconfig`); the scripted path is CI-tested | `backend/scripts/local_demo.py`, `backend/tests/test_local_demo.py` | ✅ CI for the server; ⚠️ simulator run by hand, no cost | [Build] |
+| 4 Sign Lab (webcam, no call) | Mac webcam signs → bridge → local backend drafting with the real Groq composer (production validator and fallback) and speaking with the real Sarvam voice on the Mac speakers; scripted or typed receptionist lines. Checks recognition, draft wording against the receptionist's words, and the voice, without dialling | `scripts/sign_lab.sh` (paid: Groq per chip change, Sarvam per spoken line); `--free` for templates and no voice; manual receptionist: `--backend-only --receptionist manual` + `--bridge-only` | `backend/scripts/sign_lab.py`, `backend/tests/test_sign_lab*.py`, `test_lab_composer.py`, `test_lab_voice.py` | ✅ CI with fakes (no keys, no audio, fake venvs); ⚠️ webcam run by hand | [You] |
 | 4 Simulator | saved videos through the iOS pipeline vs the Mac (P3); full app flow with a real call (A3) | parity script in `ml/coreml/`; A3 by hand | `docs/experiments/recognition.md` | ⚠️ parity automated, A3 human (paid) | [Build] |
 | 5 Real iPhone | camera + voice + captions; edge-case run | by hand (T1, T2, T3) | `docs/experiments/device.md` | ❌ human | [Mate + You] |
 | 6 Demo | full script × 3, backup video | by hand (D2) | video file outside Git | ❌ human | [You + Mate] |
@@ -43,12 +44,12 @@ until then the rows above describe the target, not the current tree.
 
 | Test (`tests/e2e/test_demo_script.py`) | Safety rule it guards |
 |---|---|
-| `test_plan_demo_script_end_to_end` | §1 turns 0–6: disclosure, captions, 3b wrong chip removed, exact text, goodbye |
+| `test_plan_demo_script_end_to_end` | §1 turns 0–6: disclosure, captions, 3b wrong chip removed, exact text, goodbye, and the whole transcript the app sees in order (agent and receptionist captions) |
 | `test_nothing_is_spoken_before_send` | Nothing is spoken unless the user taps SEND |
 | `test_double_send_speaks_once`, `test_duplicate_event_delivery_speaks_once` | Approval is single use (app side and Bolna side) |
 | `test_stale_turn_approval_is_not_spoken` | A new turn wipes the old approval |
 | `test_send_during_receptionist_speech_is_not_delivered_then_resent_once` | B24: no `spoken` → `not_delivered`; a dead turn never speaks later; re-SEND speaks once |
-| `test_silence_gets_the_holding_line_and_no_caption` | `[silence]` gets the holding line and is not a caption |
+| `test_each_silence_shows_the_holding_line_as_an_agent_caption` | Every `[silence]` gets the holding line, shown as an agent caption, never as the receptionist's words |
 | `test_end_while_reply_is_in_flight_is_not_spoken`, `test_approve_after_end_is_not_spoken` | Ended calls stay silent |
 | `test_unknown_contact_is_refused_and_never_dialled`, `test_start_call_without_app_token_is_refused` | Only allowlisted, authenticated calls |
 

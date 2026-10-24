@@ -1,0 +1,40 @@
+{
+ "turns": [
+  {
+   "turn": "T1",
+   "clips": [
+    "clip_018",
+    "clip_040",
+    "clip_044"
+   ]
+  },
+  {
+   "turn": "T3",
+   "clips": [
+    "clip_066",
+    "clip_025"
+   ]
+  },
+  {
+   "turn": "T5",
+   "clips": [
+    "clip_065",
+    "clip_032"
+   ]
+  },
+  {
+   "turn": "X1",
+   "clips": [
+    "clip_012",
+    "clip_008"
+   ]
+  },
+  {
+   "turn": "X2",
+   "clips": [
+    "clip_069",
+    "clip_003"
+   ]
+  }
+ ]
+}

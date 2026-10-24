@@ -72,4 +72,5 @@ struct DemoLaunchOptions {
 /// Prepared screen states for screenshots and quick visual checks.
 enum DemoFixture: String, CaseIterable {
     case home, getReady, signing, speaking, delivered, notDelivered, ended, connectionLost
+    case composing, stopped, stopTooLate, deliveredDespiteStop, backendError, endedNoCaptions, hangUpUnconfirmed
 }

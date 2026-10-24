@@ -5,6 +5,12 @@ Turn and approval rules live in app/sessions.py; this module does the I/O around
 (Bolna, the composer, the app socket and the delivery timer). Status messages are
 derived from state diffs, so every path that changes the state reports it.
 
+Lines the voice says without a SEND reach the app as `caption {speaker: "agent"}`: the
+disclosure once when the call goes live, the holding line whenever the custom LLM
+returns it, and the goodbye after a successful `end_call`. Approved replies are not
+echoed (the app shows them on `spoken`), and agent lines never touch turns, approvals
+or the receptionist caption the composer reads.
+
 Recipient numbers never leave this module: not in responses, messages or logs.
 """
 
@@ -90,6 +96,7 @@ class _AppLink:
 
 
 _Snapshot = tuple[CallState, Turn | None]
+_NOT_YET_LIVE = frozenset({CallState.DIALING, CallState.RINGING})
 
 
 class CallManager(CallLedger):
@@ -246,6 +253,9 @@ class CallManager(CallLedger):
                 session,
                 ErrorMessage(code="end_failed", message="Could not reach Bolna to hang up."),
             )
+            return
+        # end_call moves Bolna to its static goodbye node.
+        await self._send_agent_line(session, markers.GOODBYE)
 
     # ---- delivery timer ----
 
@@ -269,6 +279,12 @@ class CallManager(CallLedger):
         session.hear_caption(text)
         await self._publish(session, before)
         await self._send(session, CaptionMessage(text=text, at=time.time()))
+
+    async def record_agent_line(self, call_id: str, text: str) -> None:
+        session = self._sessions.get(call_id)
+        if session is None or session.finished:
+            return
+        await self._send_agent_line(session, text)
 
     async def claim_reply(self, call_id: str, turn_id: str, text: str) -> bool:
         session = self._sessions.get(call_id)
@@ -298,7 +314,14 @@ class CallManager(CallLedger):
         if session.state == state:
             return False
         await self._send(session, StatusMessage(state=session.state))
+        if state in _NOT_YET_LIVE and session.line is CallState.IN_CALL:
+            # Bolna plays its static welcome message (the disclosure) as the call
+            # connects. The line only moves forward, so this happens once per call.
+            await self._send_agent_line(session, markers.DISCLOSURE)
         return True
+
+    async def _send_agent_line(self, session: CallSession, text: str) -> None:
+        await self._send(session, CaptionMessage(text=text, at=time.time(), speaker="agent"))
 
     def _cancel_timer(self, call_id: str) -> None:
         timer = self._timers.pop(call_id, None)

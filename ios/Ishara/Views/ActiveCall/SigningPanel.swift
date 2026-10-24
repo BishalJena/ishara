@@ -11,11 +11,14 @@ struct SigningPanel: View {
                 .overlay(alignment: .bottomTrailing) {
                     ReplayMenu(recognition: model.recognition).padding(10)
                 }
+            if let message = model.errorMessage {
+                CallErrorBanner(message: message)
+            }
             if model.showsDeliveryResult {
                 DeliveryBanner(delivery: model.delivery)
             }
             ChipRow(chips: model.chips, onRemove: model.removeChip)
-            DraftCard(draft: model.draft)
+            DraftCard(draft: model.draft, isComposing: model.isComposing)
         }
     }
 }

@@ -3,6 +3,8 @@ import SwiftUI
 /// The sentence that SEND would speak, with a badge saying who wrote it.
 struct DraftCard: View {
     let draft: DraftDisplay?
+    /// Chips are on screen and their draft is on its way; don't ask the user to sign again.
+    var isComposing = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -19,6 +21,13 @@ struct DraftCard: View {
                 Text("\u{201C}\(draft.text)\u{201D}")
                     .font(.title3)
                     .fixedSize(horizontal: false, vertical: true)
+            } else if isComposing {
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text("Composing…")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                }
             } else {
                 Text("Sign your reply or pick a quick reply.")
                     .font(.body)
@@ -34,7 +43,7 @@ struct DraftCard: View {
     }
 
     private var accessibilityLabel: String {
-        guard let draft else { return "No draft yet" }
+        guard let draft else { return isComposing ? "Composing the draft" : "No draft yet" }
         return "Draft from \(draft.badge.title): \(draft.text)"
     }
 }
@@ -57,6 +66,7 @@ struct SourceBadge: View {
         case .template: .blue
         case .quickReply: .teal
         case .notDelivered: .orange
+        case .stopped: .gray
         }
     }
 }
@@ -65,6 +75,7 @@ struct SourceBadge: View {
     VStack {
         DraftCard(draft: DraftDisplay(text: "No, sorry, 4 pm doesn't work. Is there anything tomorrow morning?", badge: .llm))
         DraftCard(draft: DraftDisplay(text: "No. In the morning, please.", badge: .template))
+        DraftCard(draft: nil, isComposing: true)
         DraftCard(draft: nil)
     }
     .padding()

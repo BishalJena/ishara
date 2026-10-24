@@ -13,6 +13,13 @@ public enum CallState: String, Codable, CaseIterable, Sendable {
     case error
 }
 
+/// Who said a captioned line. `agent` lines are fixed lines the call agent says without a
+/// SEND (the opening disclosure, the holding line, the goodbye).
+public enum CaptionSpeaker: String, Codable, CaseIterable, Sendable {
+    case receptionist
+    case agent
+}
+
 /// Who wrote a backend draft.
 public enum DraftSource: String, Codable, CaseIterable, Sendable {
     case llm
@@ -99,8 +106,9 @@ extension AppMessage: Encodable {
 /// Messages the backend sends on the call WebSocket.
 public enum ServerMessage: Equatable, Sendable {
     case status(CallState)
-    /// The receptionist's words. `at` is unix time in seconds.
-    case caption(text: String, at: Double)
+    /// A line said on the call: the receptionist's words, or a fixed agent line. `at` is
+    /// unix time in seconds.
+    case caption(text: String, at: Double, speaker: CaptionSpeaker = .receptionist)
     case draft(turnID: TurnID, text: String, source: DraftSource)
     /// Bolna has spoken the approved reply for this turn.
     case spoken(turnID: TurnID)
@@ -118,6 +126,7 @@ extension ServerMessage: Decodable {
         case state
         case text
         case at
+        case speaker
         case turnID = "turn_id"
         case source
         case reason
@@ -132,9 +141,14 @@ extension ServerMessage: Decodable {
         case "status":
             self = .status(try container.decode(CallState.self, forKey: .state))
         case "caption":
+            // Older backends send no speaker; every caption was the receptionist's then.
+            // An unknown speaker from a newer backend is shown as the receptionist rather
+            // than dropping the line.
+            let speaker = try container.decodeIfPresent(String.self, forKey: .speaker)
             self = .caption(
                 text: try container.decode(String.self, forKey: .text),
-                at: try container.decode(Double.self, forKey: .at))
+                at: try container.decode(Double.self, forKey: .at),
+                speaker: speaker.flatMap(CaptionSpeaker.init(rawValue:)) ?? .receptionist)
         case "draft":
             self = .draft(
                 turnID: try container.decode(TurnID.self, forKey: .turnID),

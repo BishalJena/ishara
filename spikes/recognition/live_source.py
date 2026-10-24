@@ -10,6 +10,10 @@ recognition bundle decides with recognition_data.rank/decision and the frozen
 thresholds. The result is a sign or None (unsure, shown as "?"); rejected segments
 yield nothing. Without a bundle every segment is unsure: nothing is guessed.
 
+The window (camera or replayed clip) shows the detector pill and rest line, and for
+the latest sign a big green label or a red "?", its top-3 matches as bars against the
+similarity cut-off, the margin, tracking quality and latency. q in the window stops.
+
 mac_bridge.py --live runs this file in the SignCLIP venv as a child process: stdout
 carries one JSON line per accepted segment, and all logs go to stderr.
 """
@@ -34,7 +38,7 @@ import recognition_data as data
 from detect_clips import CALIBRATION_HELP, within
 from detector import CalibrationError, Params, Segment, SignDetector, State, calibrate
 from detector import Frame as DetectorFrame
-from mac_bridge import result_line
+from mac_bridge import PROVISIONAL_BANNER, describe_result, result_line, unsure_why
 
 DEFAULT_BUNDLE = data.ARTIFACTS / "evidence" / "recognition-bundle-signclip.json"
 LATENCY_BUDGET_S = 2.0  # G2: sign end to chip
@@ -64,25 +68,58 @@ class Observation:
 Clip = Iterable[Observation]  # one continuous recording; the camera is one endless clip
 Featurize = Callable[[Sequence[Observation]], "tuple[np.ndarray, dict[str, float]]"]
 Embed = Callable[[np.ndarray], np.ndarray]
-Show = Callable[[Any, str, "float | None", str], bool]  # image, status, rest_y, message -> keep going
+Show = Callable[[Any, "Overlay"], bool]  # image, what to draw on it -> keep going
+
+
+TOP_K = 3  # candidates shown per sign so a person can judge how close the runners-up were
+# Each check data.decision applies -> its cut-off's key in Match.thresholds.
+FAILED_CHECKS = {"similarity": "similarity", "margin": "margin", "pose": "min_pose_fraction",
+                 "hands": "min_hand_fraction"}
+
+
+@dataclass(frozen=True)
+class Candidate:
+    sign: str
+    similarity: float
 
 
 @dataclass(frozen=True)
 class Match:
+    """The decision plus the evidence behind it; only `sign` ever becomes a chip."""
     sign: str | None  # None = unsure, a "?" chip that is never sent
     reason: str | None  # why it is unsure
     similarity: float | None = None
     margin: float | None = None
+    top: tuple[Candidate, ...] = ()  # best reference per sign, highest first, at most TOP_K
+    quality: dict[str, float] | None = None  # pose_fraction, hand_fraction of the segment
+    thresholds: dict[str, float] | None = None  # bundle cut-offs plus data.QUALITY minimums
+    failed_checks: tuple[str, ...] = ()  # FAILED_CHECKS keys the frozen decision tripped on
+    provisional: bool = False  # the bundle says its thresholds are not calibrated yet
 
 
 @dataclass(frozen=True)
 class Recognition:
-    sign: str | None  # None = unsure, a "?" chip that is never sent
-    reason: str | None  # why it is unsure
+    match: Match
     latency_s: float  # hands back at rest (segment end) -> result
     segment: Segment
-    similarity: float | None = None
-    margin: float | None = None
+
+    @property
+    def sign(self) -> str | None:
+        return self.match.sign
+
+    @property
+    def reason(self) -> str | None:
+        return self.match.reason
+
+
+@dataclass(frozen=True)
+class Overlay:
+    """Everything the preview window draws over one frame."""
+    status: str  # detector pill: calibrating, watching, signing, cant_see
+    rest_y: float | None
+    message: str
+    last: Recognition | None = None  # the latest result stays up until the next one
+    provisional: bool = False
 
 
 @dataclass(frozen=True)
@@ -90,6 +127,18 @@ class Bundle:
     encoder: str
     thresholds: dict[str, float]
     references: list[dict[str, Any]]  # rows in the shape recognition_data.rank expects
+    provisional: bool = False
+
+
+def failed_checks(top: float, margin: float, quality: dict[str, float],
+                  thresholds: dict[str, float]) -> tuple[str, ...]:
+    """Which of data.decision's cut-offs a ranked segment misses, to explain a "?".
+
+    Explanation only: data.decision stays the one that decides.
+    """
+    measured = {"similarity": top, "margin": margin, "pose": quality.get("pose_fraction", 0),
+                "hands": quality.get("hand_fraction", 0)}
+    return tuple(check for check, value in measured.items() if value < thresholds[FAILED_CHECKS[check]])
 
 
 def load_bundle(path: Path | None, warn: Callable[[str], None] = log) -> Bundle | None:
@@ -115,10 +164,15 @@ def load_bundle(path: Path | None, warn: Callable[[str], None] = log) -> Bundle 
         raise ValueError(f"{path}: references must cover exactly {', '.join(data.VOCABULARY)}")
     if any(len(r["embedding"]) != document["embedding_dim"] for r in references):
         raise ValueError(f"{path}: every reference needs embedding_dim values")
+    provisional = document.get("provisional", False)
+    if type(provisional) is not bool:
+        raise ValueError(f"{path}: provisional must be true or false")
+    if provisional:
+        warn(f"WARNING: {PROVISIONAL_BANNER}. {path} was not calibrated on held-out takes.")
     # The bundle drops clip hashes; each reference stands for its own source.
     rows = [{"id": r["id"], "label": r["label"], "sha256": f"bundle:{r['id']}",
              "source_id": f"bundle:{r['id']}", "embedding": r["embedding"]} for r in references]
-    return Bundle(document["encoder"], thresholds, rows)
+    return Bundle(document["encoder"], thresholds, rows, provisional)
 
 
 @dataclass(frozen=True)
@@ -129,26 +183,37 @@ class Matcher:
     embed: Embed
     max_frames: int  # SignCLIP's limit: longer segments are refused, never truncated
 
+    @property
+    def thresholds(self) -> dict[str, float]:
+        return {**self.bundle.thresholds, **data.QUALITY}
+
     def __call__(self, observations: Sequence[Observation]) -> Match:
+        unsure = replace(Match(None, None), thresholds=self.thresholds,
+                         provisional=self.bundle.provisional)
         if len(observations) > self.max_frames:
-            return Match(None, f"{len(observations)} frames > {self.max_frames}; not truncated")
+            return replace(unsure, reason=f"{len(observations)} frames > {self.max_frames}; not truncated")
         try:
             features, quality = self.featurize(observations)
             embedding = self.embed(features)
         except ValueError as error:  # untrackable or too short for SignCLIP: unsure, not fatal
-            return Match(None, str(error))
+            return replace(unsure, reason=str(error))
         query = {"id": LIVE_ID, "sha256": LIVE_ID, "source_id": LIVE_ID, "embedding": embedding}
         result = data.rank(query, self.bundle.references)
         verdict = data.decision(result, quality, self.bundle.thresholds)
         best = result["ranking"][0] if result["ranking"] else None
         top, margin = (best["similarity"] if best else None), result["margin"]
+        evidence = replace(unsure, similarity=top, margin=margin,
+                           top=tuple(Candidate(r["concept"], r["similarity"]) for r in result["ranking"][:TOP_K]),
+                           quality={k: quality.get(k, 0) for k in ("pose_fraction", "hand_fraction")})
         if verdict["concept"] is not None:
-            return Match(verdict["concept"], None, top, margin)
+            return replace(evidence, sign=verdict["concept"])
         reason = verdict["reason"]
-        if best is not None and margin is not None:
-            reason += (f" (best {best['concept']} {top:.3f}, margin {margin:.3f}, pose "
-                       f"{quality.get('pose_fraction', 0):.2f}, hands {quality.get('hand_fraction', 0):.2f})")
-        return Match(None, reason, top, margin)
+        if best is None or margin is None:
+            return replace(evidence, reason=reason)
+        reason += (f" (best {best['concept']} {top:.3f}, margin {margin:.3f}, pose "
+                   f"{quality.get('pose_fraction', 0):.2f}, hands {quality.get('hand_fraction', 0):.2f})")
+        return replace(evidence, reason=reason,
+                       failed_checks=failed_checks(top, margin, quality, self.thresholds))
 
 
 class LiveSource:
@@ -166,6 +231,8 @@ class LiveSource:
         self.retry_calibration, self.clock, self.out, self.show = retry_calibration, clock, out, show
         self.latencies: list[float] = []
         self.count = 0
+        self._last: Recognition | None = None
+        self._provisional = matcher is not None and matcher.bundle.provisional
         self._stopped = False
         self._message = REST_PROMPT
 
@@ -184,8 +251,10 @@ class LiveSource:
                 f"max {worst:.2f} s ({verdict} the {LATENCY_BUDGET_S:g} s budget)")
 
     def _display(self, observation: Observation, status: str, rest_y: float | None) -> None:
-        if (self.show is not None and observation.image is not None
-                and not self.show(observation.image, status, rest_y, self._message)):
+        if self.show is None or observation.image is None:
+            return
+        overlay = Overlay(status, rest_y, self._message, self._last, self._provisional)
+        if not self.show(observation.image, overlay):
             self._stopped = True
 
     def _calibrate(self, frames: Iterator[Observation]) -> tuple[float, list[Observation]] | None:
@@ -247,27 +316,110 @@ class LiveSource:
         observations = [o for o in recent if within(o.frame.t, segment)]
         sign_end_wall = observations[-1].wall  # the first rest frame is the segment end
         match = Match(None, "no recognition bundle") if self.matcher is None else self.matcher(observations)
-        sign, reason = match.sign, match.reason
         latency = self.clock() - sign_end_wall
         self.latencies.append(latency)
         self.count += 1
         over = "  OVER the 2 s budget" if latency >= LATENCY_BUDGET_S else ""
-        shown = sign or f"? ({reason})"
-        self._message = f"#{self.count} {sign or '?'}  {latency:.2f} s"
-        self.out(f"#{self.count} {span} -> {shown}  latency {latency:.2f} s{over}")
-        return Recognition(sign, reason, latency, segment, match.similarity, match.margin)
+        recognition = self._last = Recognition(match, latency, segment)
+        self._message = f"#{self.count} {match.sign or '?'}  {latency:.2f} s"
+        self.out(f"#{self.count} {span}  {describe_result(result_details(recognition))}{over}")
+        return recognition
+
+
+def _rounded(value: float | None) -> float | None:
+    return None if value is None else round(value, 4)
+
+
+def result_details(recognition: Recognition) -> dict[str, Any]:
+    """Everything the bridge and the session log show about one sign; only "sign" is acted on."""
+    match, segment = recognition.match, recognition.segment
+    return {"sign": match.sign, "reason": match.reason,
+            "latency_ms": round(1000 * recognition.latency_s, 1),
+            "similarity": _rounded(match.similarity), "margin": _rounded(match.margin),
+            "segment": [round(segment.start, 3), round(segment.end, 3)],
+            "top": [{"sign": c.sign, "similarity": _rounded(c.similarity)} for c in match.top],
+            "quality": None if match.quality is None else {k: _rounded(v) for k, v in match.quality.items()},
+            "thresholds": match.thresholds, "failed_checks": list(match.failed_checks),
+            "provisional": match.provisional}
 
 
 def result_json(recognition: Recognition) -> str:
-    """The line mac_bridge reads; everything besides the sign is for logs and evidence."""
-    def rounded(value: float | None) -> float | None:
-        return None if value is None else round(value, 4)
+    """The line mac_bridge reads."""
+    details = result_details(recognition)
+    return result_line(details.pop("sign"), **details)
 
-    segment = recognition.segment
-    return result_line(recognition.sign, reason=recognition.reason,
-                       latency_ms=round(1000 * recognition.latency_s, 1),
-                       similarity=rounded(recognition.similarity), margin=rounded(recognition.margin),
-                       segment=[round(segment.start, 3), round(segment.end, 3)])
+
+@dataclass(frozen=True)
+class Panel:
+    """The preview's result box: big label, top-3 bars and the numbers behind the decision."""
+    label: str  # the sign, or "?"
+    accepted: bool
+    bars: tuple[tuple[str, float], ...]  # (sign, similarity), highest first
+    similarity_cut: float | None  # drawn as a tick on every bar
+    why: str | None  # why it is unsure
+    footer: tuple[str, ...]
+
+
+def result_panel(recognition: Recognition) -> Panel:
+    details = result_details(recognition)
+    thresholds, quality, margin = details["thresholds"] or {}, details["quality"], details["margin"]
+    first = f"{recognition.latency_s:.2f} s"
+    if margin is not None:
+        first = f"margin {margin:.2f} (min {thresholds['margin']:.2f})  {first}"
+    footer = [first]
+    if quality is not None:
+        footer.append(f"body {quality['pose_fraction']:.2f} (min {thresholds['min_pose_fraction']:.2f})  "
+                      f"hands {quality['hand_fraction']:.2f} (min {thresholds['min_hand_fraction']:.2f})")
+    return Panel(recognition.sign or "?", recognition.sign is not None,
+                 tuple((c["sign"], c["similarity"]) for c in details["top"]),
+                 thresholds.get("similarity"), unsure_why(details), tuple(footer))
+
+
+GREEN, RED, GREY, WHITE, YELLOW = (60, 200, 60), (40, 40, 230), (150, 150, 150), (255, 255, 255), (0, 220, 255)
+PANEL_WIDTH, BAR_WIDTH = 400, 170
+
+
+def draw_overlay(view: Any, overlay: Overlay) -> None:
+    """Detector pill, rest line and message, a loud banner for a provisional bundle and,
+    once a sign was cut, the result box at the top right. Draws in place (BGR)."""
+    import cv2
+
+    from detect_clips import draw
+
+    draw(view, overlay.status, overlay.rest_y, overlay.message)
+    font, width = cv2.FONT_HERSHEY_SIMPLEX, view.shape[1]
+    top = 10
+    if overlay.provisional:
+        cv2.rectangle(view, (0, 58), (width, 96), RED, -1)
+        cv2.putText(view, PROVISIONAL_BANNER.replace("—", "-"), (12, 86), font, 0.8, WHITE, 2)
+        top = 104
+    if overlay.last is None:
+        return
+    panel = result_panel(overlay.last)
+    left = max(width - PANEL_WIDTH - 10, 0)
+    box = 96 + 24 * bool(panel.why) + 32 * len(panel.bars) + 24 * len(panel.footer)
+    region = view[top:top + box, left:left + PANEL_WIDTH]
+    region[:] = region // 3  # darken behind the text
+    cv2.putText(view, panel.label, (left + 14, top + 66), font, 2.2, GREEN if panel.accepted else RED, 5)
+    y = top + 88
+    if panel.why:
+        y += 6
+        cv2.putText(view, panel.why[:40], (left + 14, y), font, 0.65, RED, 2)
+        y += 18
+    bar_left = left + 140
+    for index, (sign, similarity) in enumerate(panel.bars):
+        y += 32
+        cv2.putText(view, sign, (left + 14, y), font, 0.65, WHITE, 2)
+        length = int(BAR_WIDTH * min(max(similarity, 0.0), 1.0))
+        colour = GREEN if panel.accepted and index == 0 else GREY
+        cv2.rectangle(view, (bar_left, y - 18), (bar_left + length, y - 2), colour, -1)
+        if panel.similarity_cut is not None:
+            tick = bar_left + int(BAR_WIDTH * panel.similarity_cut)
+            cv2.line(view, (tick, y - 22), (tick, y + 2), YELLOW, 2)
+        cv2.putText(view, f"{similarity:.2f}", (bar_left + BAR_WIDTH + 10, y), font, 0.65, WHITE, 2)
+    for line in panel.footer:
+        y += 24
+        cv2.putText(view, line, (left + 14, y), font, 0.5, WHITE, 1)
 
 
 # ---- real camera, clips and model: these need the SignCLIP venv ----
@@ -331,11 +483,11 @@ def videos_in(directory: Path) -> list[Path]:
     return sorted(p for p in directory.iterdir() if p.suffix.lower() in VIDEO_SUFFIXES)
 
 
-def replay_clips(paths: Sequence[Path], realtime: bool) -> Iterator[Clip]:
+def replay_clips(paths: Sequence[Path], realtime: bool, keep_image: bool) -> Iterator[Clip]:
     """Each clip gets a fresh tracker, as signclip.extract gives each enrollment clip."""
     for path in paths:
         log(f"replaying {path.name}")
-        yield track(video_images(path, realtime), keep_image=False)
+        yield track(video_images(path, realtime), keep_image)
 
 
 def signclip_features(observations: Sequence[Observation]) -> tuple[np.ndarray, dict[str, float]]:
@@ -371,11 +523,9 @@ def signclip_matcher(bundle: Bundle) -> Matcher:
 def preview(mirror: bool) -> Show:
     import cv2
 
-    from detect_clips import draw
-
-    def show(image: Any, status: str, rest_y: float | None, message: str) -> bool:
+    def show(image: Any, overlay: Overlay) -> bool:
         view = cv2.flip(image, 1) if mirror else image.copy()
-        draw(view, status, rest_y, message)
+        draw_overlay(view, overlay)
         cv2.imshow("Ishara live recognizer", view)
         return (cv2.waitKey(1) & 0xFF) not in (ord("q"), 27)
 
@@ -408,8 +558,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--bundle", type=Path, default=DEFAULT_BUNDLE,
                         help="retrieval.py export-bundle output (default: %(default)s)")
     parser.add_argument("--rest-y", type=float, help="skip calibration and use this rest line (0-1)")
-    parser.add_argument("--no-preview", action="store_true", help="no camera window")
-    parser.add_argument("--no-mirror", action="store_true", help="the camera window is mirrored by default")
+    parser.add_argument("--no-preview", action="store_true",
+                        help="no window (by default it shows the camera or clip with the latest result)")
+    parser.add_argument("--no-mirror", action="store_true", help="the window is mirrored by default")
     parser.add_argument("--fast", action="store_true",
                         help="replay as fast as possible; latency then no longer means live latency")
     args = parser.parse_args(argv)
@@ -423,12 +574,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     results = result_stream()
     bundle = load_bundle(args.bundle)
     matcher = signclip_matcher(bundle) if bundle is not None else None
-    show = preview(not args.no_mirror) if args.camera is not None and not args.no_preview else None
+    show = None if args.no_preview else preview(not args.no_mirror)
     if args.camera is not None:
         clips: Iterable[Clip] = [track(camera_images(args.camera), keep_image=show is not None)]
         log(f"{REST_PROMPT}, then sign one at a time. q in the window (or Ctrl-C) stops.")
     else:
-        clips = replay_clips(paths, realtime=not args.fast)
+        clips = replay_clips(paths, realtime=not args.fast, keep_image=show is not None)
     live = LiveSource(clips, matcher, rest_y=args.rest_y, retry_calibration=args.camera is not None,
                       show=show)
     try:

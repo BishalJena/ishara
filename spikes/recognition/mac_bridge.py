@@ -18,6 +18,7 @@ import urllib.request
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, Protocol
@@ -25,6 +26,7 @@ from typing import Any, Protocol
 SIGNS = ("hello", "thankyou", "yes", "no", "sorry", "doctor",
          "today", "tomorrow", "morning", "afternoon", "evening", "time")
 MAX_CHIPS = 8  # backend ChipsMessage limit
+AGENT_LABEL = "Ishara (voice)"
 QUICK_REPLIES = {
     "yes": "Yes.",
     "no": "No.",
@@ -168,6 +170,33 @@ class TurnState:
         self.turn_id, self.chips, self.draft = self.new_id(), [], None
 
 
+class SessionLog:
+    """Timestamps event lines; with a path, also appends every event to a JSONL file so a
+    session can be reviewed later (recognizer results, chips, drafts, captions, spoken)."""
+
+    def __init__(self, out: Callable[[str], None] = print, path: Path | None = None,
+                 now: Callable[[], datetime] = datetime.now) -> None:
+        self.out, self.path, self.now = out, path, now
+        if path is not None:
+            path.parent.mkdir(parents=True, exist_ok=True)  # an unusable path fails before the call
+
+    def show(self, text: str) -> None:
+        self.out(f"{self.now():%H:%M:%S} {text}")
+
+    def record(self, source: str, message: Mapping[str, Any]) -> None:
+        """source: recognizer, backend (received) or bridge (sent)."""
+        if self.path is None:
+            return
+        entry = {"time": self.now().isoformat(timespec="milliseconds"), "from": source,
+                 "message": dict(message)}
+        try:
+            with self.path.open("a", encoding="utf-8") as stream:
+                stream.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        except OSError as error:  # a full disk must not end the call; the log just stops
+            self.path = None
+            self.out(f"! session log stopped: {error}")
+
+
 # ---- recognition sources ----
 
 
@@ -254,16 +283,61 @@ class BlockingSource:
             yield item
 
 
+PROVISIONAL_BANNER = "PROVISIONAL — uncalibrated, for trying only"
+
+
 def result_line(result: Result, **details: object) -> str:
     """One recognizer result as a JSON line: the wire format of `SubprocessSource`."""
     return json.dumps({"sign": result, **details})
 
 
-def parse_result_line(line: str) -> Result:
-    sign: object = json.loads(line)["sign"]
+def parse_result_details(line: str) -> dict[str, Any]:
+    """A whole result line; "sign" is checked, the rest is evidence to show and log."""
+    details: dict[str, Any] = json.loads(line)
+    sign = details["sign"]
     if sign is None or (isinstance(sign, str) and sign in SIGNS):
-        return sign
+        return details
     raise ValueError(f"recognizer sent unknown sign {sign!r}")
+
+
+def parse_result_line(line: str) -> Result:
+    sign: Result = parse_result_details(line)["sign"]
+    return sign
+
+
+CHECK_WORDS = {"similarity": "low similarity", "margin": "low margin",
+               "pose": "body seen in too few frames", "hands": "hands seen in too few frames"}
+
+
+def unsure_why(details: Mapping[str, Any]) -> str | None:
+    """Short words for a "?": the failed cut-offs, else the recognizer's reason."""
+    if details["sign"] is not None:
+        return None
+    if checks := details.get("failed_checks"):
+        return ", ".join(CHECK_WORDS.get(c, c) for c in checks)
+    reason: str | None = details.get("reason")
+    return reason
+
+
+def describe_result(details: Mapping[str, Any]) -> str:
+    """One readable line per sign, e.g. `✓ doctor  (doctor 0.83 | time 0.61 | no 0.55;
+    margin 0.22; 0.46 s)`. Lines from an older recognizer show what they carry."""
+    sign = details["sign"]
+    parts = []
+    if top := details.get("top"):
+        parts.append(" | ".join(f"{c['sign']} {c['similarity']:.2f}" for c in top))
+    if (margin := details.get("margin")) is not None:
+        parts.append(f"margin {margin:.2f}")
+    if (latency_ms := details.get("latency_ms")) is not None:
+        parts.append(f"{latency_ms / 1000:.2f} s")
+    if why := unsure_why(details):
+        parts.append(why)
+    line = f"✓ {sign}" if sign is not None else "? unsure"
+    if parts:
+        line += f"  ({'; '.join(parts)})"
+    if details.get("provisional"):
+        line += "  [PROVISIONAL]"
+    return line
 
 
 class SubprocessSource:
@@ -271,8 +345,10 @@ class SubprocessSource:
     this one does not). Its stdout carries `result_line`s; its stderr goes straight to the
     terminal; its stdin is closed so it never competes with typed commands."""
 
-    def __init__(self, argv: Sequence[str], out: Callable[[str], None] = print) -> None:
-        self.argv, self.out = tuple(argv), out
+    def __init__(self, argv: Sequence[str], out: Callable[[str], None] = print,
+                 log: SessionLog | None = None) -> None:
+        self.argv, self.out, self.log = tuple(argv), out, log or SessionLog(out)
+        self._warned_provisional = False
 
     async def results(self) -> AsyncIterator[Result]:
         process = await asyncio.create_subprocess_exec(
@@ -280,7 +356,13 @@ class SubprocessSource:
         try:
             assert process.stdout is not None  # requested as a pipe above
             async for raw in process.stdout:
-                yield parse_result_line(raw.decode())
+                details = parse_result_details(raw.decode())
+                if details.get("provisional") and not self._warned_provisional:
+                    self._warned_provisional = True
+                    self.log.show(f"!!! {PROVISIONAL_BANNER} !!!")
+                self.log.show(describe_result(details))
+                self.log.record("recognizer", details)
+                yield details["sign"]
             if code := await process.wait():
                 self.out(f"! live recognizer stopped (exit {code}); type signs instead")
         finally:
@@ -311,8 +393,8 @@ class Bridge:
     """Connects recognition sources and terminal commands to one call's WebSocket."""
 
     def __init__(self, transport: Transport, state: TurnState | None = None,
-                 out: Callable[[str], None] = print) -> None:
-        self.transport, self.out = transport, out
+                 out: Callable[[str], None] = print, log: SessionLog | None = None) -> None:
+        self.transport, self.out, self.log = transport, out, log or SessionLog(out)
         self.state = state or TurnState()
         self.manual = ManualSource()
         self._tasks: list[asyncio.Task[None]] = []
@@ -320,6 +402,7 @@ class Bridge:
     async def send(self, message: Message | None) -> None:
         if message is not None:
             await self.transport.send(json.dumps(message))
+            self.log.record("bridge", message)
 
     async def on_result(self, result: Result) -> None:
         try:
@@ -371,30 +454,34 @@ class Bridge:
 
     async def on_server(self, raw: str | bytes) -> None:
         message = json.loads(raw)
+        self.log.record("backend", message)
         kind = message["type"]
         if kind == "status":
-            self.out(f"[status] {message['state']}")
+            self.log.show(f"[status] {message['state']}")
             if message["state"] == "speaking":
-                self.out("Speaking now...")
+                self.log.show("Speaking now...")
             elif message["state"] == "ended":
                 self.state.on_ended()
-                self.out("call ended; nothing more will be sent")
+                self.log.show("call ended; nothing more will be sent")
         elif kind == "caption":
-            self.out(f"receptionist: {message['text']}")
+            # Agent captions are lines our own voice said without a SEND (disclosure,
+            # holding line, goodbye). Backends from before `speaker` existed omit it.
+            speaker = AGENT_LABEL if message.get("speaker") == "agent" else "receptionist"
+            self.log.show(f"{speaker}: {message['text']}")
         elif kind == "draft":
             draft = self.state.on_draft(message["turn_id"], message["text"], message["source"])
             if draft is not None:
-                self.out(f"draft ({draft.source}): {draft.text}   [s = SEND]")
+                self.log.show(f"draft ({draft.source}): {draft.text}   [s = SEND]")
         elif kind == "spoken":
             if (text := self.state.on_spoken(message["turn_id"])) is not None:
-                self.out(f"Delivered: {text}")
+                self.log.show(f"Delivered: {text}")
         elif kind == "not_delivered":
             if (text := self.state.on_not_delivered(message["turn_id"])) is not None:
-                self.out(f"! not delivered ({message['reason']}), tap SEND again (s): {text}")
+                self.log.show(f"! not delivered ({message['reason']}), tap SEND again (s): {text}")
         elif kind == "error":
-            self.out(f"! backend error {message['code']}: {message['message']}")
+            self.log.show(f"! backend error {message['code']}: {message['message']}")
         else:
-            self.out(f"(ignored unknown message type {kind!r})")
+            self.log.show(f"(ignored unknown message type {kind!r})")
 
     async def run(self, lines: AsyncIterator[str],
                   sources: tuple[RecognitionSource, ...] = ()) -> None:
@@ -414,7 +501,7 @@ class Bridge:
             self.out("nothing to send yet: wait for a draft" if not self.state.ended
                      else "call ended; nothing will be sent")
             return
-        self.out(f"SEND: {message['text']}")
+        self.log.show(f"SEND: {message['text']}")
         await self.send(message)
 
     def _show_chips(self) -> None:
@@ -451,7 +538,8 @@ class Bridge:
 # ---- command line ----
 
 ROOT = Path(__file__).resolve().parent
-RECOGNIZER_PYTHON = ROOT / "artifacts" / "signclip" / ".venv" / "bin" / "python"
+ARTIFACTS = ROOT / "artifacts"  # gitignored
+RECOGNIZER_PYTHON = ARTIFACTS / "signclip" / ".venv" / "bin" / "python"
 
 COST_HEADS_UP = ("Cost heads-up: starting a call makes Bolna dial a real phone from its default "
                  "number (about ₹5.5/min plus telephony). Only allowlisted, consenting numbers.")
@@ -573,6 +661,9 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--confirm-cost", action="store_true",
                         help="accept the cost of the call that --contact starts")
     parser.add_argument("--replay", type=Path, help="JSON list of results to play back")
+    parser.add_argument("--log", nargs="?", const="", metavar="PATH",
+                        help="append recognizer results, chips, drafts, captions and spoken "
+                             "confirmations as JSONL (default PATH: artifacts/lab/session-<time>.jsonl)")
     live = parser.add_argument_group(
         "live recognition", "runs live_source.py in the SignCLIP venv; its signs become chips")
     live.add_argument("--live", action="store_true", help="recognise signs from a webcam or clips")
@@ -588,7 +679,20 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     if not args.live and any(getattr(args, name) is not None
                              for name in ("camera", "replay_videos", "bundle", "rest_y")):
         parser.error("--camera, --replay-videos, --bundle and --rest-y need --live")
+    if args.log is not None:
+        try:
+            args.log = session_log_path(args.log)
+        except ValueError as error:
+            parser.error(str(error))
     return args
+
+
+def session_log_path(value: str, now: Callable[[], datetime] = datetime.now) -> Path:
+    """--log's file; captions and drafts stay inside the gitignored artifacts/ directory."""
+    path = Path(value) if value else ARTIFACTS / "lab" / f"session-{now():%Y%m%d-%H%M%S}.jsonl"
+    if not path.resolve().is_relative_to(ARTIFACTS.resolve()):
+        raise ValueError(f"--log must be inside {ARTIFACTS} so session logs stay out of Git")
+    return path
 
 
 def live_command(args: argparse.Namespace) -> list[str]:
@@ -610,13 +714,16 @@ def main(argv: list[str] | None = None, env: Mapping[str, str] = os.environ,
          lines: Callable[[], AsyncIterator[str]] = stdin_lines,
          out: Callable[[str], None] = print) -> int:
     args = parse_args(argv)
+    log = SessionLog(out, args.log)
+    if args.log is not None:
+        out(f"session log: {args.log}")
     sources: tuple[RecognitionSource, ...] = (
         (ReplaySource.from_json(args.replay.read_text()),) if args.replay else ())
     if args.live:
         if not args.recognizer_python.is_file():
             raise SystemExit(f"No SignCLIP venv at {args.recognizer_python}; set it up first "
                              "(README: Set up SignCLIP separately) or pass --recognizer-python.")
-        sources += (SubprocessSource(live_command(args), out),)
+        sources += (SubprocessSource(live_command(args), out, log),)
     token = env.get("APP_TOKEN")
     if not token:
         raise SystemExit("APP_TOKEN is not set in the environment.")
@@ -624,7 +731,8 @@ def main(argv: list[str] | None = None, env: Mapping[str, str] = os.environ,
     async def session(call_id: str) -> None:
         transport = await connect(ws_url(args.base_url, call_id), auth_headers(token))
         out(f"connected to call {call_id}")
-        await Bridge(transport, out=out).run(lines(), sources)
+        log.record("bridge", {"type": "connected", "call_id": call_id})
+        await Bridge(transport, out=out, log=log).run(lines(), sources)
 
     try:
         call_id = args.call_id or start_call(args.base_url, args.contact, token,

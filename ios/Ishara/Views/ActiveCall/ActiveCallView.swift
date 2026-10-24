@@ -18,7 +18,7 @@ struct ActiveCallView: View {
                 connectedAt: model.connectedAt,
                 onEnd: model.end
             )
-            CaptionHistory(captions: model.captions)
+            CaptionHistory(captions: model.captions, isCallOver: model.isCallOver)
                 .frame(height: min(captionHeight, 240))
 
             ScrollView {
@@ -49,7 +49,8 @@ struct ActiveCallView: View {
             ConnectionLostPanel(notice: reason, isReconnecting: false)
         } else if case .speaking(let text) = model.delivery {
             SpeakingPanel(text: text, cameraState: model.cameraState, camera: model.recognition.camera,
-                          isStopRequested: model.isStopRequested)
+                          isStopRequested: model.isStopRequested,
+                          isStopTooLate: model.isStopTooLate, errorMessage: model.errorMessage)
         } else {
             SigningPanel(model: model)
         }

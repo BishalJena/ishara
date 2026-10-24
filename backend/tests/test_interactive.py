@@ -149,7 +149,11 @@ def _label(turn_id: str) -> str:
         (StatusMessage(state=CallState.IN_CALL), "11:05:09.123  status        in_call"),
         (
             CaptionMessage(text="We have 4 pm.", at=1.0),
-            '11:05:09.123  caption       "We have 4 pm."',
+            '11:05:09.123  caption       [receptionist] "We have 4 pm."',
+        ),
+        (
+            CaptionMessage(text="Goodbye.", at=1.0, speaker="agent"),
+            '11:05:09.123  caption       [agent] "Goodbye."',
         ),
         (
             DraftMessage(turn_id="t1", text="No.", source=DraftSource.LLM),

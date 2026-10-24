@@ -117,12 +117,24 @@ class StatusMessage(_Message):
     state: CallState
 
 
+CaptionSpeaker = Literal["receptionist", "agent"]
+
+
 class CaptionMessage(_Message):
-    """The receptionist's words (Path B only). `at` is a unix timestamp in seconds."""
+    """A line said on the call (Path B only). `at` is a unix timestamp in seconds.
+
+    `speaker` is always serialised:
+    - "receptionist": the other person's words from Bolna's transcript.
+    - "agent": a fixed line the voice says without a SEND (the opening disclosure, the
+      holding line during a long pause, the goodbye after `end`), so the Deaf user
+      sees the whole conversation. Approved replies are not echoed as agent captions:
+      the app already shows them once `spoken` arrives.
+    """
 
     type: Literal["caption"] = "caption"
     text: str
     at: float
+    speaker: CaptionSpeaker = "receptionist"
 
 
 class DraftMessage(_Message):
