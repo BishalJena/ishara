@@ -2,10 +2,11 @@
 
 It follows what Bolna documents and what PLAN.md §3 expects (ledger B24, B25):
 
-- `start_call`: the callee answers at once and hears the static welcome (DISCLOSURE).
-  Like the agent-level webhook, the run reports `ringing` then `in-progress` to our
-  `/bolna/webhook/{secret}` (secret = BOLNA_WEBHOOK_SECRET; defaults to the custom-LLM token
-  for stand-alone use).
+- `start_call`: the callee answers and hears the static welcome (DISCLOSURE). Like the
+  agent-level webhook, the run reports `ringing` then, `ring_s` later (0 by default),
+  `in-progress` to our `/bolna/webhook/{secret}` (secret = BOLNA_WEBHOOK_SECRET; defaults
+  to the custom-LLM token for stand-alone use). A ring lets a test connect the app
+  socket before the call goes live, as the iPhone does.
 - listen node: each receptionist utterance, or the `[silence]` repeat, becomes a user
   message and Bolna asks our custom LLM for a reply using the listen prompt.
 - `user_reply` event: its properties merge into the call context, the node moves to
@@ -114,6 +115,7 @@ class FakeBolna:
         receptionist_mid_speech: bool = False,
         report_status: bool = True,
         webhook_secret: str | None = None,
+        ring_s: float = 0.0,
     ) -> None:
         self._token = custom_llm_token
         self._webhook_secret = webhook_secret or custom_llm_token
@@ -123,6 +125,7 @@ class FakeBolna:
         self.duplicate_events = duplicate_events
         self.receptionist_mid_speech = receptionist_mid_speech
         self.report_status = report_status
+        self.ring_s = ring_s
         self.statuses: list[tuple[str, str]] = []
         self.runs: dict[str, FakeRun] = {}
         self.recipients: list[str] = []
@@ -145,7 +148,7 @@ class FakeBolna:
         self._say(run, DISCLOSURE)
         if self.report_status:
             # Runs after the caller has stored the run id, like a webhook arriving later.
-            run.answered = self._spawn(self._report(run, *ANSWER_STATUSES))
+            run.answered = self._spawn(self._answer(run))
         return run_id
 
     async def send_event(self, run_id: str, event: str, properties: dict[str, str]) -> None:
@@ -236,6 +239,13 @@ class FakeBolna:
         if self._http is None:
             raise RuntimeError("FakeBolna has no HTTP client; call attach() first")
         return self._http
+
+    async def _answer(self, run: FakeRun) -> None:
+        ringing, answered = ANSWER_STATUSES
+        await self._report(run, ringing)
+        if self.ring_s:
+            await asyncio.sleep(self.ring_s)
+        await self._report(run, answered)
 
     async def _report(self, run: FakeRun, *statuses: str) -> None:
         """POST each execution status to the backend's webhook, in order."""
