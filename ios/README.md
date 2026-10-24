@@ -34,6 +34,10 @@ xcodebuild -project ios/Ishara.xcodeproj -scheme Ishara \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
+This runs the unit tests (`IsharaTests`) and the UI tests (`IsharaUITests`),
+which walk the whole PLAN §1 call on the fake driver at `-IsharaFakeTimeScale 0.5`
+(about a minute). Add `-only-testing:IsharaTests` for just the unit tests.
+
 If `xcode-select` points at the Command Line Tools, prefix the command with
 `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
 
@@ -63,3 +67,4 @@ xcrun simctl io booted screenshot /tmp/ishara-signing.png
 | `Ishara/Views` | Home, Get ready, Active call and shared components |
 | `Ishara/App` | App entry, navigation, launch options and Debug fixtures |
 | `IsharaTests` | XCTest for the view model, get-ready model and demo script |
+| `IsharaUITests` | XCUITest that clicks through the §1 demo call, plus the not-delivered retry |
