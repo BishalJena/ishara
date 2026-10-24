@@ -29,8 +29,12 @@ def video_writer(path, fps, shape):
     return writer
 
 
-def save_take(frames, timestamps, metadata, manifest=data.DATASET):
-    """Preserve measured frame rate and raw frames; never infer a verified label."""
+def save_take(frames, timestamps, metadata, manifest=data.DATASET, verification_note=""):
+    """Preserve measured frame rate and raw frames; never infer a verified label.
+
+    A take is verified only when the caller passes the signer's own confirmation
+    note (the guided session asks for it after replaying the take).
+    """
     if not 4 <= len(frames) <= MAX_FRAMES or len(timestamps) != len(frames):
         raise ValueError("A take needs 4–256 frames")
     intervals = np.diff(timestamps)
@@ -44,7 +48,8 @@ def save_take(frames, timestamps, metadata, manifest=data.DATASET):
     fps = float(1 / intervals.mean())
     row = {**metadata, "id": ident, "source_id": ident,
            "path": str(path.relative_to(data.ARTIFACTS)),
-           "verified": False, "verification_note": "", "sha256": "0" * 64,
+           "verified": bool(verification_note.strip()),
+           "verification_note": verification_note.strip(), "sha256": "0" * 64,
            "capture": {"frames": len(frames), "fps": fps,
                        "width": frames[0].shape[1], "height": frames[0].shape[0],
                        "frame_times_s": [float(t - timestamps[0]) for t in timestamps],
