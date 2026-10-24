@@ -65,6 +65,12 @@ for the simulator (including `rest.mov` for calibration).
 - The Core ML encoder always runs on CPU+GPU; the FP16 package is wrong on the Neural Engine.
 - In the simulator, a **Replay a sign** menu on the camera area plays a saved clip (pipeline)
   or injects a result (scripted + live call), since there is no camera.
+- On a device with the pipeline, Get ready, Signing and Speaking show a **live, mirrored
+  front-camera preview** on the same capture session recognition reads (one preview layer,
+  moved between screens), with tracking dots on shoulders and wrists and a dashed rest line
+  once calibrated (the eye button hides them). Camera permission is asked on Get ready; if
+  it's refused the card says so and offers **Open Settings**. Without a live camera
+  (simulator, scripted results, fixtures) the card shows a placeholder.
 
 ## Run
 
