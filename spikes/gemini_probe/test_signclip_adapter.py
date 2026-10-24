@@ -3,9 +3,10 @@ import unittest
 from typing import ClassVar
 
 import numpy as np
-import recognition_data as data
 
 import signclip_adapter as sa
+
+data = sa.data  # recognition_data, importable once the adapter has set up its path
 
 QUALITY = {"pose_fraction": 1.0, "hand_fraction": 1.0, "frames": 60, "landmark_ms": 500.0}
 
