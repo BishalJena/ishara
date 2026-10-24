@@ -28,6 +28,9 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     private var tasks: [Task<Void, Never>] = []
     private var isOver = false
 
+    /// The fake call never drops its connection, so this never runs.
+    var onReconnectStopped: ((ReconnectStop) -> Void)?
+
     init(
         options: Options = Options(),
         stages: [DemoScript.Stage] = DemoScript.stages,

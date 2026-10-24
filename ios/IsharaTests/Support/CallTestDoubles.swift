@@ -43,6 +43,7 @@ final class StubCallDriver: CallDriver {
     var startError: Error?
     private(set) var startedWith: [CallSetup] = []
     private(set) var closeCount = 0
+    var onReconnectStopped: ((ReconnectStop) -> Void)?
 
     init(initialState: CallState = .dialing) {
         let ids = SequentialTurnIDs()

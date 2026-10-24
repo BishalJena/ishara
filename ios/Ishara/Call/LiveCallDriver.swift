@@ -6,7 +6,8 @@ import Foundation
 ///
 /// When the socket drops, the store goes silent ("Nothing will be sent") and this driver
 /// reconnects a few times, waiting longer each time. Nothing from before the drop is
-/// resent; the store comes back when the backend reports the call status again.
+/// resent; the store comes back when the backend reports the call status again. A close
+/// the backend meant as a refusal (4401 / 4404 / 4409) is never reconnected.
 @MainActor
 final class LiveCallDriver: CallDriver {
     static let defaultReconnectDelays: [Duration] = [.seconds(1), .seconds(2), .seconds(4)]
@@ -18,6 +19,8 @@ final class LiveCallDriver: CallDriver {
     private var call: LiveCall?
     private var reconnectsUsed = 0
     private var reconnecting: Task<Void, Never>?
+
+    var onReconnectStopped: ((ReconnectStop) -> Void)?
 
     init(
         client: BackendClient,
@@ -53,16 +56,31 @@ final class LiveCallDriver: CallDriver {
     }
 
     private func connectionLost() {
-        guard reconnecting == nil, reconnectsUsed < reconnectDelays.count else { return }
-        let delay = reconnectDelays[reconnectsUsed]
-        reconnectsUsed += 1
+        guard reconnecting == nil, let call else { return }
         let sleep = sleep
         reconnecting = Task { [weak self] in
-            try? await sleep(delay)
+            let close = await call.lastClose
             guard !Task.isCancelled, let self else { return }
+            if let close, !close.allowsReconnect {
+                self.stopReconnecting(.refused(close))
+                return
+            }
+            guard self.reconnectsUsed < self.reconnectDelays.count else {
+                self.stopReconnecting(.attemptsUsedUp)
+                return
+            }
+            let delay = self.reconnectDelays[self.reconnectsUsed]
+            self.reconnectsUsed += 1
+            try? await sleep(delay)
+            guard !Task.isCancelled else { return }
             self.reconnecting = nil
-            guard let call = self.call, call.store.state == .error else { return }
+            guard self.call === call, call.store.state == .error else { return }
             await call.connect()
         }
+    }
+
+    private func stopReconnecting(_ reason: ReconnectStop) {
+        reconnecting = nil
+        onReconnectStopped?(reason)
     }
 }

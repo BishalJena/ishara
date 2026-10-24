@@ -14,6 +14,8 @@ private final class SilentSink: OutgoingMessageSink {
 final class FixtureCallDriver: CallDriver {
     let store = TurnStore(sink: SilentSink(), initialState: .dialing)
 
+    var onReconnectStopped: ((ReconnectStop) -> Void)?
+
     func start(_ setup: CallSetup) async throws -> TurnStore { store }
     func close() {}
 }
