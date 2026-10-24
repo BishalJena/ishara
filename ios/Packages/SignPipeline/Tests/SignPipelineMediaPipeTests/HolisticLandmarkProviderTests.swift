@@ -32,6 +32,20 @@ final class HolisticLandmarkProviderTests: XCTestCase {
         XCTAssertTrue((face + leftHand + rightHand).allSatisfy { $0.visibility == nil })
     }
 
+    func testRotatedFrameYieldsUprightCoordinates() throws {
+        let provider = try makeProvider()
+        // Stored sideways, as a portrait camera frame is; `.right` turns it upright.
+        let sideways = try rotatedCounterclockwise(try uprightPhoto())
+        let frame = try provider.landmarks(for: VideoFrame(pixelBuffer: sideways, timestamp: .zero, orientation: .right))
+
+        XCTAssertEqual(frame.imageSize, ImageSize(width: 638, height: 1000))
+        try assertMatchesExpectedResult(
+            pose: try XCTUnwrap(frame.pose, "pose not detected"),
+            leftHand: try XCTUnwrap(frame.leftHand, "left hand not detected"),
+            rightHand: try XCTUnwrap(frame.rightHand, "right hand not detected")
+        )
+    }
+
     func testRejectsTimestampsThatDoNotIncrease() throws {
         let provider = try makeProvider()
         let buffer = try uprightPhoto()
@@ -107,6 +121,29 @@ final class HolisticLandmarkProviderTests: XCTestCase {
         ))
         context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
         return buffer
+    }
+
+    /// Stored pixel (x, y) shows upright pixel (W - 1 - y, x).
+    private func rotatedCounterclockwise(_ upright: CVPixelBuffer) throws -> CVPixelBuffer {
+        let width = CVPixelBufferGetWidth(upright)
+        let height = CVPixelBufferGetHeight(upright)
+        let rotated = try makeBGRABuffer(width: height, height: width)
+        CVPixelBufferLockBaseAddress(upright, .readOnly)
+        CVPixelBufferLockBaseAddress(rotated, [])
+        defer {
+            CVPixelBufferUnlockBaseAddress(rotated, [])
+            CVPixelBufferUnlockBaseAddress(upright, .readOnly)
+        }
+        let source = try XCTUnwrap(CVPixelBufferGetBaseAddress(upright)).assumingMemoryBound(to: UInt32.self)
+        let target = try XCTUnwrap(CVPixelBufferGetBaseAddress(rotated)).assumingMemoryBound(to: UInt32.self)
+        let sourceStride = CVPixelBufferGetBytesPerRow(upright) / 4
+        let targetStride = CVPixelBufferGetBytesPerRow(rotated) / 4
+        for y in 0..<width {
+            for x in 0..<height {
+                target[y * targetStride + x] = source[x * sourceStride + (width - 1 - y)]
+            }
+        }
+        return rotated
     }
 
     private func makeBGRABuffer(width: Int, height: Int) throws -> CVPixelBuffer {
