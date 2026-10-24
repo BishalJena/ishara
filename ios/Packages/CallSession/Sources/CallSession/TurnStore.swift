@@ -27,11 +27,13 @@ public struct Chip: Identifiable, Equatable, Sendable {
     }
 }
 
-/// One line of the call transcript: the receptionist's words, or a reply of the user's
-/// that the backend confirmed as spoken.
+/// One line of the call transcript: the receptionist's words, a fixed line the call agent
+/// said without a SEND, or a reply of the user's that the backend confirmed as spoken.
 public struct Caption: Equatable, Sendable {
     public enum Speaker: Equatable, Sendable {
         case receptionist
+        /// The call agent's own fixed lines (disclosure, holding line, goodbye).
+        case agent
         case user
     }
 
@@ -218,8 +220,10 @@ public final class TurnStore {
             state = newState
             notice = nil
             if isLive, connectedAt == nil { connectedAt = Date() }
-        case let .caption(text, at, _):
-            captions.append(Caption(text: text, at: Date(timeIntervalSince1970: at)))
+        case let .caption(text, at, speaker):
+            captions.append(Caption(
+                text: text, at: Date(timeIntervalSince1970: at),
+                speaker: speaker == .agent ? .agent : .receptionist))
         case let .draft(turnID, text, source):
             // A draft for an older turn, or for chips the user has since removed, is stale.
             guard turnID == currentTurnID, !recognisedSigns.isEmpty else { return }

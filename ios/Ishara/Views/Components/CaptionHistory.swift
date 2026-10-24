@@ -1,7 +1,8 @@
 import CallSession
 import SwiftUI
 
-/// The receptionist's words and the user's delivered replies, newest at the bottom.
+/// The receptionist's words, the call agent's fixed lines and the user's delivered
+/// replies, newest at the bottom.
 struct CaptionHistory: View {
     let captions: [Caption]
 
@@ -40,22 +41,43 @@ private struct CaptionRow: View {
     let entry: Caption
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(entry.speaker == .receptionist ? "Receptionist" : "You")
+        switch entry.speaker {
+        case .receptionist:
+            line(label: "Receptionist", font: .title3.weight(.semibold), style: .primary)
+                .accessibilityIdentifier("caption.receptionist")
+        case .user:
+            line(label: "You", font: .body, style: .secondary)
+                .accessibilityIdentifier("caption.you")
+        case .agent:
+            // Said by the call agent without a SEND (disclosure, holding line, goodbye):
+            // set apart on the right in a quieter style so it never reads as a reply.
+            line(label: "Ishara (voice)", font: .callout.italic(), style: .secondary, alignment: .trailing)
+                .accessibilityLabel("Ishara voice, said automatically: \(entry.text)")
+                .accessibilityIdentifier("caption.agent")
+        }
+    }
+
+    private func line(label: String, font: Font, style: HierarchicalShapeStyle,
+                      alignment: HorizontalAlignment = .leading) -> some View {
+        VStack(alignment: alignment, spacing: 2) {
+            Text(label)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
             Text(entry.text)
-                .font(entry.speaker == .receptionist ? .title3.weight(.semibold) : .body)
-                .foregroundStyle(entry.speaker == .receptionist ? .primary : .secondary)
+                .font(font)
+                .foregroundStyle(style)
+                .multilineTextAlignment(alignment == .trailing ? .trailing : .leading)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(maxWidth: .infinity, alignment: alignment == .trailing ? .trailing : .leading)
+        .padding(.leading, alignment == .trailing ? 32 : 0)
         .accessibilityElement(children: .combine)
-        .accessibilityIdentifier(entry.speaker == .receptionist ? "caption.receptionist" : "caption.you")
     }
 }
 
 #Preview {
     CaptionHistory(captions: [
+        Caption(text: "Hello, I'm calling for a Deaf caller who is using Ishara.", at: .now, speaker: .agent),
         Caption(text: "Hello, I'd like a doctor's appointment tomorrow.", at: .now, speaker: .user),
         Caption(text: "We have 4 pm tomorrow. Does that work?", at: .now),
     ])

@@ -569,6 +569,24 @@ final class TurnStoreTests: XCTestCase {
              Caption(text: "Does that work?", at: Date(timeIntervalSince1970: 101.5))])
     }
 
+    func testAgentCaptionIsKeptAsTheAgentsLine() {
+        store.receive(.caption(text: "Hello, I'm calling for a Deaf caller.", at: 1, speaker: .agent))
+        store.receive(.caption(text: "City Clinic, how can I help?", at: 2, speaker: .receptionist))
+
+        XCTAssertEqual(store.captions.map(\.speaker), [.agent, .receptionist])
+    }
+
+    func testAgentCaptionSendsNothingAndKeepsTheDraft() {
+        showDraft("Hello.")
+        let sentBefore = sink.sent
+
+        store.receive(.caption(text: "One moment please, I'm signing my reply.", at: 1, speaker: .agent))
+
+        XCTAssertEqual(sink.sent, sentBefore)
+        XCTAssertEqual(store.draft?.text, "Hello.")
+        XCTAssertEqual(store.sending, .idle)
+    }
+
     func testCaptionKeepsTheDraft() {
         showDraft("Hello.")
 
