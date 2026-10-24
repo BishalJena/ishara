@@ -468,4 +468,48 @@ final class ActiveCallViewModelTests: XCTestCase {
         XCTAssertEqual(model.draft?.text, "No.")
         XCTAssertEqual(model.captions.map(\.text), ["Are you still there?"])
     }
+
+    // MARK: Call screen stage
+    // The whole call screen switches on this stage: the draft SEND speaks belongs to
+    // signing (including a not-delivered retry), the sentence STOP acts on to speaking.
+
+    func testSendableDraftShowsTheSigningStage() {
+        sign(.no)
+        draft("No.")
+
+        XCTAssertTrue(model.canSend)
+        XCTAssertEqual(ActiveCallStage(model), .signing)
+    }
+
+    func testNotDeliveredRetryShowsTheSigningStage() {
+        sign(.no)
+        draft("No.")
+        model.send()
+        store.receive(.notDelivered(turnID: turn(1), reason: "no_confirmation"))
+
+        XCTAssertTrue(model.canSend)
+        XCTAssertEqual(ActiveCallStage(model), .signing)
+    }
+
+    func testSpeakingStageCarriesTheExactSentence() {
+        sign(.no)
+        draft("No, sorry, 4 pm doesn't work.")
+        model.send()
+
+        XCTAssertEqual(ActiveCallStage(model), .speaking(text: "No, sorry, 4 pm doesn't work."))
+    }
+
+    func testLostConnectionShowsTheConnectionLostStage() {
+        sign(.no)
+        draft("No.")
+        store.connectionLost()
+
+        XCTAssertEqual(ActiveCallStage(model), .connectionLost(notice: "Nothing will be sent", isReconnecting: true))
+    }
+
+    func testEndedCallShowsTheEndedStage() {
+        model.end()
+
+        XCTAssertEqual(ActiveCallStage(model), .ended(.userEnded))
+    }
 }

@@ -1,5 +1,31 @@
 import SwiftUI
 
+/// What the call screen is showing, worked out once from the call phase and delivery
+/// so every part of the screen switches on the same answer.
+enum ActiveCallStage: Equatable {
+    /// Signing a reply; SEND acts on the draft.
+    case signing
+    /// An approved sentence is being spoken; STOP acts on it.
+    case speaking(text: String)
+    case connectionLost(notice: String, isReconnecting: Bool)
+    case ended(ActiveCallViewModel.EndReason)
+
+    @MainActor
+    init(_ model: ActiveCallViewModel) {
+        switch model.phase {
+        case .ended(let reason): self = .ended(reason)
+        case .interrupted(let notice): self = .connectionLost(notice: notice, isReconnecting: true)
+        case .disconnected(let reason): self = .connectionLost(notice: reason, isReconnecting: false)
+        case .connecting, .live:
+            if case .speaking(let text) = model.delivery {
+                self = .speaking(text: text)
+            } else {
+                self = .signing
+            }
+        }
+    }
+}
+
 /// Screens 3 and 4: signing a reply, then speaking it. Also shows the ended state.
 struct ActiveCallView: View {
     let model: ActiveCallViewModel
@@ -8,6 +34,8 @@ struct ActiveCallView: View {
     /// Grows with Dynamic Type so a whole caption still fits at large sizes, but is
     /// capped so the chips, draft and SEND keep most of the screen.
     @ScaledMetric(relativeTo: .body) private var captionHeight: CGFloat = 150
+
+    private var stage: ActiveCallStage { ActiveCallStage(model) }
 
     var body: some View {
         VStack(spacing: 12) {
@@ -41,16 +69,15 @@ struct ActiveCallView: View {
 
     @ViewBuilder
     private var content: some View {
-        if case .ended(let reason) = model.phase {
+        switch stage {
+        case .ended(let reason):
             CallEndedPanel(reason: reason)
-        } else if case .interrupted(let notice) = model.phase {
-            ConnectionLostPanel(notice: notice, isReconnecting: true)
-        } else if case .disconnected(let reason) = model.phase {
-            ConnectionLostPanel(notice: reason, isReconnecting: false)
-        } else if case .speaking(let text) = model.delivery {
+        case .connectionLost(let notice, let isReconnecting):
+            ConnectionLostPanel(notice: notice, isReconnecting: isReconnecting)
+        case .speaking(let text):
             SpeakingPanel(text: text, cameraState: model.cameraState,
                           isStopRequested: model.isStopRequested)
-        } else {
+        case .signing:
             SigningPanel(model: model)
         }
     }
