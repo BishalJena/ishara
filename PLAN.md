@@ -173,7 +173,7 @@ Captions (the app can't read them), so the composer gets chips only and no trans
 | app → backend (WS) | `approve {turn_id, text}` | User tapped SEND with exactly this text. **Single use** |
 | app → backend (WS) | `stop` / `end` | Cancel unspoken output / end the call |
 | backend → app (WS) | `status {state}` | dialing · ringing · in_call · speaking · ended · error |
-| backend → app (WS) | `caption {text, at}` | The receptionist's words (Path B only) |
+| backend → app (WS) | `caption {text, at, speaker}` | A line said on the call (Path B only). `speaker` is `receptionist` (her words) or `agent` (a fixed line the voice says without a SEND: the disclosure on connect, the holding line on a long pause, the goodbye after `end`). Approved replies are not echoed; they show on `spoken` |
 | backend → app (WS) | `draft {turn_id, text, source: llm\|template}` | Composer result for the latest chips |
 | backend → app (WS) | `spoken {turn_id}` | Bolna has spoken that reply |
 

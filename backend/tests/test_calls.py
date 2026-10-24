@@ -17,7 +17,7 @@ from app.bolna_client import HttpBolnaClient
 from app.calls import CallManager
 from app.contacts import InvalidContacts, parse_contacts
 from app.main import create_app
-from app.markers import EVENT_END_CALL, EVENT_USER_REPLY
+from app.markers import DISCLOSURE, EVENT_END_CALL, EVENT_USER_REPLY, GOODBYE, HOLDING_LINE
 from app.ports import BolnaClient, BolnaError
 from app.protocol import ComposeRequest, Draft
 from tests.conftest import APP_TOKEN, CUSTOM_LLM_TOKEN, WEBHOOK_SECRET, make_settings
@@ -207,6 +207,15 @@ def approve(ws, turn_id: str, text: str = TEXT) -> None:
 
 def without_message(message: dict) -> dict:
     return {key: value for key, value in message.items() if key != "message"}
+
+
+def caption(text: str, speaker: str = "receptionist") -> dict:
+    return {"type": "caption", "text": text, "speaker": speaker}
+
+
+def without_at(message: dict) -> dict:
+    assert isinstance(message.get("at"), float), message
+    return {key: value for key, value in message.items() if key != "at"}
 
 
 def test_manager_rejects_malformed_allowlist_at_startup() -> None:
@@ -447,9 +456,8 @@ def test_caption_forwarded_and_used_as_last_caption(harness: Harness) -> None:
         assert harness.receive(ws) == status("dialing")
         harness.run(harness.manager.record_caption, call_id, "We have 4 pm tomorrow.")
         assert harness.receive(ws) == status("in_call")
-        caption = harness.receive(ws)
-        assert caption["type"] == "caption" and caption["text"] == "We have 4 pm tomorrow."
-        assert isinstance(caption["at"], float)
+        assert without_at(harness.receive(ws)) == caption(DISCLOSURE, "agent")
+        assert without_at(harness.receive(ws)) == caption("We have 4 pm tomorrow.")
         ws.send_json({"type": "chips", "turn_id": "t1", "chips": ["no", "morning"]})
         harness.receive(ws)
     assert harness.composer.requests[0].last_caption == "We have 4 pm tomorrow."
@@ -523,6 +531,7 @@ def test_approval_after_end_rejected(harness: Harness) -> None:
         harness.receive(ws)
         ws.send_json({"type": "end"})
         assert harness.receive(ws) == status("ended")
+        assert without_at(harness.receive(ws)) == caption(GOODBYE, "agent")
         approve(ws, "t1")
         assert without_message(harness.receive(ws)) == error("call_ended")
     assert harness.bolna.replies() == []
@@ -555,6 +564,7 @@ def test_unknown_call_ids_are_ignored_by_the_ledger(harness: Harness) -> None:
     manager = harness.manager
     assert harness.run(manager.claim_reply, "nope", "t1", TEXT) is False
     assert harness.run(manager.record_caption, "nope", "Hi") is None
+    assert harness.run(manager.record_agent_line, "nope", HOLDING_LINE) is None
     assert harness.run(manager.mark_spoken, "nope", "t1") is None
 
 
@@ -760,6 +770,7 @@ def test_end_sends_end_call_and_wipes_state(harness: Harness) -> None:
         harness.receive(ws)
         ws.send_json({"type": "end"})
         assert harness.receive(ws) == status("ended")
+        assert without_at(harness.receive(ws)) == caption(GOODBYE, "agent")
         ws.send_json({"type": "chips", "turn_id": "t2", "chips": ["no"]})
         assert without_message(harness.receive(ws)) == error("call_ended")
         harness.run(harness.manager.record_caption, call_id, "Hello?")
@@ -774,9 +785,10 @@ def test_second_end_does_not_hang_up_twice(harness: Harness) -> None:
     with harness.socket(call_id) as ws:
         harness.receive(ws)
         ws.send_json({"type": "end"})
-        harness.receive(ws)
-        ws.send_json({"type": "end"})
         assert harness.receive(ws) == status("ended")
+        assert without_at(harness.receive(ws)) == caption(GOODBYE, "agent")
+        ws.send_json({"type": "end"})
+        assert harness.receive(ws) == status("ended"), "no second goodbye"
     assert [event for _, event, _ in harness.bolna.events] == [EVENT_END_CALL]
 
 
@@ -788,6 +800,140 @@ def test_end_failure_is_reported(harness: Harness) -> None:
         ws.send_json({"type": "end"})
         assert harness.receive(ws) == status("ended")
         assert without_message(harness.receive(ws)) == error("end_failed")
+        assert harness.probe(ws) == status("ended"), "no goodbye when Bolna was not reached"
+
+
+# ---- agent lines (said without a SEND) ----
+
+
+def test_disclosure_is_shown_once_when_the_call_goes_live(harness: Harness) -> None:
+    call_id = harness.start()
+    with harness.socket(call_id) as ws:
+        assert harness.receive(ws) == status("dialing")
+        harness.webhook("run-1", "ringing")
+        assert harness.receive(ws) == status("ringing")
+        harness.webhook("run-1", "in-progress")
+        assert harness.receive(ws) == status("in_call")
+        assert without_at(harness.receive(ws)) == caption(DISCLOSURE, "agent")
+        harness.webhook("run-1", "in-progress")
+        harness.webhook("run-1", "ringing")
+        harness.run(harness.manager.record_caption, call_id, "Hello?")
+        assert without_at(harness.receive(ws)) == caption("Hello?")
+        approve(ws, "t1")
+        assert harness.receive(ws) == status("speaking")
+        assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT)
+        harness.run(harness.manager.mark_spoken, call_id, "t1")
+        assert harness.receive(ws) == {"type": "spoken", "turn_id": "t1"}
+        assert harness.receive(ws) == status("in_call"), "speaking → in_call is not going live"
+        assert harness.probe(ws) == status("in_call")
+    with harness.socket(call_id) as again:
+        assert harness.receive(again) == status("in_call")
+        assert harness.probe(again) == status("in_call"), "a reconnect gets no second disclosure"
+    assert sum(DISCLOSURE in seen for seen in harness.seen) == 1
+
+
+@pytest.mark.parametrize("bolna_status", ["no-answer", "busy", "failed"])
+def test_no_disclosure_when_the_call_never_connects(harness: Harness, bolna_status: str) -> None:
+    call_id = harness.start()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        harness.webhook("run-1", "ringing")
+        harness.receive(ws)
+        harness.webhook("run-1", bolna_status)
+        harness.receive(ws)
+        harness.webhook("run-1", "in-progress")
+        assert harness.probe(ws)["type"] == "status"
+    assert not any(DISCLOSURE in seen for seen in harness.seen)
+
+
+def test_agent_line_is_an_agent_caption_and_changes_no_state(harness: Harness) -> None:
+    call_id = harness.start()
+    with harness.socket(call_id) as ws:
+        assert harness.receive(ws) == status("dialing")
+        harness.run(harness.manager.record_agent_line, call_id, HOLDING_LINE)
+        assert without_at(harness.receive(ws)) == caption(HOLDING_LINE, "agent")
+        assert harness.probe(ws) == status("dialing"), "an agent line doesn't prove the line"
+
+
+def test_agent_line_leaves_approvals_alone(harness: Harness) -> None:
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        approve(ws, "t1")
+        assert harness.receive(ws) == status("speaking")
+        harness.run(harness.manager.record_agent_line, call_id, HOLDING_LINE)
+        assert without_at(harness.receive(ws)) == caption(HOLDING_LINE, "agent")
+        assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT) is True
+        harness.run(harness.manager.mark_spoken, call_id, "t1")
+        assert harness.receive(ws) == {"type": "spoken", "turn_id": "t1"}
+
+
+def test_composer_context_stays_the_receptionist_caption(harness: Harness) -> None:
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        harness.run(harness.manager.record_caption, call_id, "We have 4 pm tomorrow.")
+        harness.receive(ws)
+        harness.run(harness.manager.record_agent_line, call_id, HOLDING_LINE)
+        harness.receive(ws)
+        ws.send_json({"type": "chips", "turn_id": "t1", "chips": ["no", "morning"]})
+        assert harness.receive(ws)["type"] == "draft"
+    assert harness.composer.requests[0].last_caption == "We have 4 pm tomorrow."
+
+
+def test_agent_line_with_no_receptionist_caption_leaves_composer_context_empty(
+    harness: Harness,
+) -> None:
+    call_id = harness.start()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        harness.webhook("run-1", "in-progress")
+        harness.receive(ws)
+        assert without_at(harness.receive(ws)) == caption(DISCLOSURE, "agent")
+        harness.run(harness.manager.record_agent_line, call_id, HOLDING_LINE)
+        harness.receive(ws)
+        ws.send_json({"type": "chips", "turn_id": "t1", "chips": ["hello"]})
+        assert harness.receive(ws)["type"] == "draft"
+    assert harness.composer.requests[0].last_caption is None
+
+
+def test_agent_line_after_the_call_ended_is_dropped(harness: Harness) -> None:
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        harness.webhook("run-1", "completed")
+        assert harness.receive(ws) == status("ended")
+        harness.run(harness.manager.record_agent_line, call_id, HOLDING_LINE)
+        assert harness.probe(ws) == status("ended")
+
+
+def test_no_goodbye_when_bolna_ends_the_call(harness: Harness) -> None:
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        harness.webhook("run-1", "call-disconnected")
+        assert harness.receive(ws) == status("ended")
+        assert harness.probe(ws) == status("ended")
+    assert not any(GOODBYE in seen for seen in harness.seen)
+
+
+def test_goodbye_is_sent_only_after_end_call_reached_bolna(harness: Harness) -> None:
+    order: list[str] = []
+    send_event = harness.bolna.send_event
+
+    async def recording_send_event(run_id: str, event: str, properties: dict[str, str]) -> None:
+        order.append(f"event {event}")
+        await send_event(run_id, event, properties)
+
+    harness.bolna.send_event = recording_send_event
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        ws.send_json({"type": "end"})
+        assert harness.receive(ws) == status("ended")
+        assert without_at(harness.receive(ws)) == caption(GOODBYE, "agent")
+        order.append("goodbye shown")
+    assert order == [f"event {EVENT_END_CALL}", "goodbye shown"]
 
 
 # ---- Bolna status webhook ----
@@ -802,6 +948,7 @@ def test_webhook_maps_bolna_statuses(harness: Harness) -> None:
         assert harness.receive(ws) == status("ringing")
         assert harness.webhook("run-1", "in-progress") == 204
         assert harness.receive(ws) == status("in_call")
+        assert without_at(harness.receive(ws)) == caption(DISCLOSURE, "agent")
         assert harness.webhook("run-1", "ringing") == 204
         assert harness.webhook("run-1", "completed") == 204
         assert harness.receive(ws) == status("ended")

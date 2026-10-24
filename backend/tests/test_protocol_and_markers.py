@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 from pydantic import ValidationError
 
@@ -11,6 +13,7 @@ from app.markers import (
 from app.protocol import (
     SIGNS,
     ApproveMessage,
+    CaptionMessage,
     ChipsMessage,
     DraftMessage,
     DraftSource,
@@ -54,6 +57,37 @@ def test_server_message_round_trip() -> None:
     draft = DraftMessage(turn_id="t1", text="Hello.", source=DraftSource.TEMPLATE)
     assert server_message_adapter.validate_json(draft.model_dump_json()) == draft
     assert draft.model_dump()["source"] == "template"
+
+
+def test_caption_speaker_defaults_to_receptionist_and_is_always_serialised() -> None:
+    caption = CaptionMessage(text="We have 4 pm.", at=1.5)
+
+    assert json.loads(caption.model_dump_json()) == {
+        "type": "caption",
+        "text": "We have 4 pm.",
+        "at": 1.5,
+        "speaker": "receptionist",
+    }
+
+
+def test_agent_caption_round_trips() -> None:
+    caption = CaptionMessage(text="Goodbye.", at=2.0, speaker="agent")
+
+    assert json.loads(caption.model_dump_json())["speaker"] == "agent"
+    assert server_message_adapter.validate_json(caption.model_dump_json()) == caption
+
+
+def test_caption_without_speaker_parses_as_receptionist() -> None:
+    raw = '{"type":"caption","text":"Hello?","at":1.0}'
+
+    assert server_message_adapter.validate_json(raw) == CaptionMessage(text="Hello?", at=1.0)
+
+
+@pytest.mark.parametrize("speaker", ["user", "Agent", "", None])
+def test_caption_rejects_unknown_speakers(speaker: str | None) -> None:
+    raw = {"type": "caption", "text": "Hi", "at": 1.0, "speaker": speaker}
+    with pytest.raises(ValidationError):
+        server_message_adapter.validate_python(raw)
 
 
 def _fill(template: str, **values: str) -> str:

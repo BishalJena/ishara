@@ -4,6 +4,8 @@ import SwiftUI
 /// Recognition drives both: from real frames, or on timers when it replays fixed results.
 struct GetReadyView: View {
     let recognition: any RecognitionController
+    /// Which call Start places (demo or live), shown with the calling-number note.
+    let modeDescription: String
     let onStart: () -> Void
     let onBack: () -> Void
 
@@ -16,14 +18,10 @@ struct GetReadyView: View {
                     Text("Prop the phone about an arm away.")
                         .font(.title3)
 
-                    CameraPreviewPlaceholder(
-                        state: nil,
-                        message: "Camera preview\nstick-figure overlay drawn on your body",
-                        minHeight: 240
-                    )
-                    .overlay(alignment: .bottomTrailing) {
-                        ReplayMenu(recognition: recognition).padding(10)
-                    }
+                    CameraCard(camera: recognition.camera, state: nil)
+                        .overlay(alignment: .bottomTrailing) {
+                            ReplayMenu(recognition: recognition).padding(10)
+                        }
 
                     if let failure = recognition.failure {
                         Label(failure, systemImage: "exclamationmark.triangle.fill")
@@ -45,12 +43,20 @@ struct GetReadyView: View {
                 }
             }
             .safeAreaInset(edge: .bottom) {
-                Button(action: onStart) {
-                    Label("I'm ready, start call", systemImage: "phone.arrow.up.right.fill")
+                VStack(spacing: 10) {
+                    Text(modeDescription)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    // Repeated from Home: this is where the call is actually placed.
+                    CallingNumberNote()
+                    Button(action: onStart) {
+                        Label("I'm ready, start call", systemImage: "phone.arrow.up.right.fill")
+                    }
+                    .buttonStyle(.bigAction(.green))
+                    .disabled(!model.isReady)
+                    .accessibilityIdentifier("getReady.start")
                 }
-                .buttonStyle(.bigAction(.green))
-                .disabled(!model.isReady)
-                .accessibilityIdentifier("getReady.start")
                 .padding()
                 .background(.bar)
             }
@@ -110,5 +116,7 @@ private struct CalibrationCard: View {
 }
 
 #Preview {
-    GetReadyView(recognition: ScriptedRecognitionController(), onStart: {}, onBack: {})
+    GetReadyView(recognition: ScriptedRecognitionController(),
+                 modeDescription: "Demo mode: a scripted call on this phone. Nothing is dialled.",
+                 onStart: {}, onBack: {})
 }

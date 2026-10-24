@@ -108,6 +108,7 @@ func videoFrames(for landmarks: [LandmarkFrame]) -> [VideoFrame] {
 /// Plays prepared items, then finishes.
 @MainActor
 final class ScriptedFeed: FrameFeed {
+    var camera: LiveCamera?
     var replayOptions: [String] = []
     var onFailure: ((Error) -> Void)?
     private let prepared: [FeedItem]

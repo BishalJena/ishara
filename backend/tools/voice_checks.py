@@ -14,6 +14,7 @@ from collections.abc import Awaitable, Callable, Sequence
 from contextlib import suppress
 from dataclasses import dataclass, field
 
+from app.markers import HOLDING_LINE
 from app.protocol import (
     CallState,
     CaptionMessage,
@@ -23,7 +24,7 @@ from app.protocol import (
     SpokenMessage,
     StatusMessage,
 )
-from tools.app_client import AppSession, SessionClosedError
+from tools.app_client import AppSession, SessionClosedError, is_receptionist
 from tools.results import CheckResult, Verdict
 
 Measured = tuple[tuple[str, str], ...]
@@ -104,7 +105,16 @@ def _count(session: AppSession, since: int, match: Callable[[ServerMessage], boo
 
 
 def _is_caption(message: ServerMessage) -> bool:
-    return isinstance(message, CaptionMessage)
+    """A receptionist caption; the voice's own lines are counted separately."""
+    return isinstance(message, CaptionMessage) and is_receptionist(message)
+
+
+def _is_holding_line(message: ServerMessage) -> bool:
+    return (
+        isinstance(message, CaptionMessage)
+        and message.speaker == "agent"
+        and message.text == HOLDING_LINE
+    )
 
 
 def _is_spoken(message: ServerMessage) -> bool:
@@ -158,6 +168,7 @@ async def _holding(ctx: CheckContext) -> Measured:
     await ctx.sleep(wait)
     return (
         ("captions during silence", str(_count(ctx.session, since, _is_caption))),
+        ("holding lines shown", str(_count(ctx.session, since, _is_holding_line))),
         ("spoken events", str(_count(ctx.session, since, _is_spoken))),
     )
 

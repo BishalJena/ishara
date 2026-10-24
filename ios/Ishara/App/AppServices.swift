@@ -6,6 +6,8 @@ import Foundation
 struct AppServices {
     let options: DemoLaunchOptions
     let config: Result<AppConfig, AppConfig.Problem>
+    /// The simulator has no camera, so the pipeline replays saved videos there.
+    var runsInSimulator = AppServices.isSimulator
 
     static func current(options: DemoLaunchOptions) -> AppServices {
         let config: Result<AppConfig, AppConfig.Problem>
@@ -23,7 +25,7 @@ struct AppServices {
         return problem.message
     }
 
-    /// One line on Home saying which call the CALL button places.
+    /// One line on Home and Get ready saying which call CALL and Start place.
     var modeDescription: String {
         switch options.driver {
         case .fake: "Demo mode: a scripted call on this phone. Nothing is dialled."
@@ -36,11 +38,11 @@ struct AppServices {
         case .scripted:
             return ScriptedRecognitionController(
                 script: options.replayScript,
-                offersReplay: options.driver == .live && Self.isSimulator,
+                offersReplay: options.driver == .live && runsInSimulator,
                 timeScale: options.fakeTimeScale)
         case .pipeline:
             let assets = RecognitionAssets.inMainBundle()
-            let feed: any FrameFeed = Self.isSimulator ? ClipFeed(clips: assets.sampleClips) : CameraFeed()
+            let feed: any FrameFeed = runsInSimulator ? ClipFeed(clips: assets.sampleClips) : CameraFeed()
             return PipelineRecognitionController(feed: feed, notice: assets.notice) {
                 try assets.makeComponents()
             }

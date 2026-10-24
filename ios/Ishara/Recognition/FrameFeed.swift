@@ -15,6 +15,8 @@ enum FeedItem: Sendable {
 /// Where frames come from: the front camera on a device, saved sign videos in the simulator.
 @MainActor
 protocol FrameFeed: AnyObject {
+    /// The live front camera to preview, when frames come from it; nil for saved videos.
+    var camera: LiveCamera? { get }
     var replayOptions: [String] { get }
     /// Called when frames stop for good, for example when camera access is refused.
     var onFailure: ((Error) -> Void)? { get set }
@@ -23,24 +25,46 @@ protocol FrameFeed: AnyObject {
     func stop()
 }
 
-/// The front camera, continuously. Needs camera permission before `items()`.
+/// The front camera, continuously. Asks for camera permission (the system prompt) the
+/// first time `items()` runs, which is on Get ready. Without permission no frames come
+/// and `camera.permission` says why; that is not reported as a failure, because the
+/// camera card explains it and offers Settings.
 @MainActor
 final class CameraFeed: FrameFeed {
     let replayOptions: [String] = []
     var onFailure: ((Error) -> Void)?
-    private let source = CameraFrameSource()
+    var camera: LiveCamera? { live }
+    private let live: LiveCamera
+    private let source: CameraFrameSource
+    private let access: CameraAccess
     private var pump: Task<Void, Never>?
+
+    init(source: CameraFrameSource = CameraFrameSource(), access: CameraAccess = .system) {
+        self.source = source
+        self.access = access
+        live = LiveCamera(session: source.captureSession, permission: CameraPermission(access.status()))
+    }
 
     func items() -> AsyncStream<FeedItem> {
         let (items, continuation) = AsyncStream<FeedItem>.makeStream(bufferingPolicy: .bufferingNewest(2))
         let source = source
+        let access = access
         pump = Task { [weak self] in
-            if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
-                _ = await AVCaptureDevice.requestAccess(for: .video)
+            if access.status() == .notDetermined {
+                await access.request()
+            }
+            let permission = CameraPermission(access.status())
+            self?.live.permission = permission
+            guard permission == .authorized else {
+                continuation.finish()
+                return
             }
             do {
                 for try await frame in source.frames() { continuation.yield(.frame(frame)) }
             } catch {
+                if error as? FrameSourceError == .cameraUnavailable {
+                    self?.live.isUnavailable = true
+                }
                 self?.onFailure?(error)
             }
             continuation.finish()
@@ -67,6 +91,8 @@ final class ClipFeed: FrameFeed {
     static let holdAfterClip = 0.8
 
     let clips: [URL]
+    /// Saved videos have no live picture to preview.
+    let camera: LiveCamera? = nil
     var onFailure: ((Error) -> Void)?
     private var continuation: AsyncStream<FeedItem>.Continuation?
     private var queue: [URL] = []

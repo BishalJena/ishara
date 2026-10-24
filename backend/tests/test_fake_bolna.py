@@ -134,6 +134,16 @@ async def test_answered_call_reports_ringing_then_in_progress_to_the_webhook(
     assert fake.statuses == [(run_id, "ringing"), (run_id, "in-progress")]
 
 
+async def test_ring_delays_only_the_answer(stub: StubLLM) -> None:
+    fake = FakeBolna(TOKEN, asgi_client(stub.app), ring_s=0.2)
+    run_id = await _start(fake)
+    await asyncio.sleep(0.1)
+
+    assert stub.webhooks == [{"id": run_id, "status": "ringing"}]
+    await fake.run_for_call(CALL_ID)
+    assert [hook["status"] for hook in stub.webhooks] == ["ringing", "in-progress"]
+
+
 async def test_status_reports_can_be_turned_off(stub: StubLLM) -> None:
     fake = FakeBolna(TOKEN, asgi_client(stub.app), report_status=False)
     run_id = await _start(fake)

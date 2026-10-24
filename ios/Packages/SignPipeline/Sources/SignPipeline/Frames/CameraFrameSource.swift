@@ -7,7 +7,8 @@ import AVFoundation
 /// The app must obtain camera permission before calling `frames()`. When the
 /// consumer falls behind, only the newest frames are kept.
 ///
-/// `@unchecked Sendable`: the session and continuation are only touched on `queue`.
+/// `@unchecked Sendable`: the session is only configured, started and stopped on
+/// `queue`, and the continuation is only touched there.
 public final class CameraFrameSource: NSObject, FrameSource, @unchecked Sendable {
     public static let framesPerSecond: Int32 = 30
 
@@ -18,6 +19,12 @@ public final class CameraFrameSource: NSObject, FrameSource, @unchecked Sendable
     public override init() {
         super.init()
     }
+
+    /// The one capture session behind `frames()`, for an `AVCaptureVideoPreviewLayer`
+    /// to show what the camera sees without opening the camera a second time. The
+    /// preview layer may mirror its own connection; frames stay unmirrored. Attach
+    /// a layer only; configuring, starting and stopping stay with this source.
+    public var captureSession: AVCaptureSession { session }
 
     public func frames() -> AsyncThrowingStream<VideoFrame, Error> {
         AsyncThrowingStream(bufferingPolicy: .bufferingNewest(2)) { continuation in

@@ -12,6 +12,11 @@ enum DemoScript {
         let signs: [RecognitionResult]
     }
 
+    /// The call agent's fixed lines, said without a SEND (backend/app/markers.py).
+    static let disclosure = "Hello, I'm calling for a Deaf caller who is using Ishara, a sign-language app. "
+        + "Their replies may take a few seconds."
+    static let goodbye = "Thank you for your time. Goodbye."
+
     static let stages: [Stage] = [
         // Turn 1: hello · doctor · tomorrow
         Stage(caption: nil, losesFraming: false,
