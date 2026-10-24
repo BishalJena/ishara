@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Stands in for the live camera until the sign pipeline is wired in. The
-/// simulator has no camera, so this is what the demo shows there.
+/// Stands in for the live camera when there is none to show: in the simulator, when
+/// recognition replays fixed results, or without a front camera. `CameraCard` picks it.
 struct CameraPreviewPlaceholder: View {
     let state: CameraState?
     let message: String
@@ -56,8 +56,8 @@ struct CameraPreviewPlaceholder: View {
 
 #Preview {
     VStack {
-        CameraPreviewPlaceholder(state: nil, message: "Camera preview")
-        CameraPreviewPlaceholder(state: .signing, message: "Camera (you signing)")
+        CameraPreviewPlaceholder(state: nil, message: CameraPlaceholder.simulator.message)
+        CameraPreviewPlaceholder(state: .signing, message: CameraPlaceholder.simulator.message)
     }
     .padding()
 }
