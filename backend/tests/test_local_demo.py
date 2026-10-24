@@ -10,6 +10,7 @@ import os
 import signal
 import subprocess
 import sys
+import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -264,11 +265,14 @@ def test_command_serves_health_and_stops_on_ctrl_c() -> None:
             process.kill()
 
 
-def _wait_for_health(url: str) -> dict[str, list[str]]:
+def _wait_for_health(url: str, timeout_s: float = 20.0) -> dict[str, list[str]]:
+    # A refused connection fails instantly, so poll against a deadline rather than a
+    # fixed number of tries; cold CI runners take seconds to import the app.
+    deadline = time.monotonic() + timeout_s
     with httpx.Client(timeout=0.5) as client:
-        for _ in range(50):
+        while time.monotonic() < deadline:
             try:
                 return client.get(url).json()
             except httpx.TransportError:
-                continue
+                time.sleep(0.1)
     pytest.fail("the local demo server never answered /health")
