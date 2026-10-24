@@ -1,0 +1,681 @@
+{
+ "thresholds": {
+  "similarity": 0.7133365869522095,
+  "margin": 0.19401097297668457
+ },
+ "leave_one_out": {
+  "method": "leave-one-out over enrollment takes: same-session references, no negatives",
+  "queries": 208,
+  "correct_accepted": 4,
+  "wrong_accepted": 0,
+  "abstentions": 204,
+  "fallback": false,
+  "per_concept": {
+   "afternoon": {
+    "total": 0,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 0
+   },
+   "attack": {
+    "total": 0,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 0
+   },
+   "baby": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "bag": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "ball": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "beautiful": {
+    "total": 3,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "black": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "blue": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "boat": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "book": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "boy": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "chair": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "city": {
+    "total": 3,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "cold": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "cow": {
+    "total": 3,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "daughter": {
+    "total": 3,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "deaf": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "doctor": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "dog": {
+    "total": 6,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 6
+   },
+   "door": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "dream": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "evening": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "expensive": {
+    "total": 3,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "family": {
+    "total": 4,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 4
+   },
+   "famous": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "father": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "female": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "friday": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "friend": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "gift": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "girl": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "god": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "good": {
+    "total": 6,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 6
+   },
+   "grandfather": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "green": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "grey": {
+    "total": 3,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "heavy": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "hello": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "horse": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "hot": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "husband": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "india": {
+    "total": 7,
+    "correct_accepted": 4,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "job": {
+    "total": 3,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "king": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "kitchen": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "lawyer": {
+    "total": 3,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "location": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "long": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "manager": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "medicine": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "monday": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "month": {
+    "total": 4,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 4
+   },
+   "morning": {
+    "total": 0,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 0
+   },
+   "mother": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "new": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "night": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "no": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "paper": {
+    "total": 3,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "patient": {
+    "total": 0,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 0
+   },
+   "pink": {
+    "total": 3,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "poor": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "queen": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "red": {
+    "total": 3,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "rich": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "sad": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "saturday": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "she": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "shirt": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "short": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "sick": {
+    "total": 3,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "skirt": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "soap": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "son": {
+    "total": 3,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "sorry": {
+    "total": 3,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "summer": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "sunday": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "tall": {
+    "total": 6,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 6
+   },
+   "teacher": {
+    "total": 3,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "temple": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "thank you": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "thin": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "time": {
+    "total": 0,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 0
+   },
+   "today": {
+    "total": 0,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 0
+   },
+   "tomorrow": {
+    "total": 0,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 0
+   },
+   "ugly": {
+    "total": 0,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 0
+   },
+   "war": {
+    "total": 3,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "wednesday": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "wet": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "wife": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "year": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "yellow": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   },
+   "yes": {
+    "total": 3,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 3
+   },
+   "you": {
+    "total": 2,
+    "correct_accepted": 0,
+    "wrong_accepted": 0,
+    "abstentions": 2
+   }
+  }
+ },
+ "frozen_at": "2026-10-25T02:14:57",
+ "references": 216,
+ "references_failed": [],
+ "words_with_reference": [
+  "afternoon",
+  "attack",
+  "baby",
+  "bag",
+  "ball",
+  "beautiful",
+  "black",
+  "blue",
+  "boat",
+  "book",
+  "boy",
+  "chair",
+  "city",
+  "cold",
+  "cow",
+  "daughter",
+  "deaf",
+  "doctor",
+  "dog",
+  "door",
+  "dream",
+  "evening",
+  "expensive",
+  "family",
+  "famous",
+  "father",
+  "female",
+  "friday",
+  "friend",
+  "gift",
+  "girl",
+  "god",
+  "good",
+  "grandfather",
+  "green",
+  "grey",
+  "heavy",
+  "hello",
+  "horse",
+  "hot",
+  "husband",
+  "india",
+  "job",
+  "king",
+  "kitchen",
+  "lawyer",
+  "location",
+  "long",
+  "manager",
+  "medicine",
+  "monday",
+  "month",
+  "morning",
+  "mother",
+  "new",
+  "night",
+  "no",
+  "paper",
+  "patient",
+  "pink",
+  "poor",
+  "queen",
+  "red",
+  "rich",
+  "sad",
+  "saturday",
+  "she",
+  "shirt",
+  "short",
+  "sick",
+  "skirt",
+  "soap",
+  "son",
+  "sorry",
+  "summer",
+  "sunday",
+  "tall",
+  "teacher",
+  "temple",
+  "thank you",
+  "thin",
+  "time",
+  "today",
+  "tomorrow",
+  "ugly",
+  "war",
+  "wednesday",
+  "wet",
+  "wife",
+  "year",
+  "yellow",
+  "yes",
+  "you"
+ ],
+ "contract": {
+  "encoder": "signclip",
+  "checkpoint": "a739751dd5b79a42f335725b4de4811c632f9f0cba616b74a8c8d87e55784df9",
+  "source": "a819944093876443119f294a2c50c663cecd65b0",
+  "input": "signclip-multilingual:pose-format0.9:holistic0.10.21:complexity1:native:v1",
+  "torch": "2.14.1",
+  "device": "cpu",
+  "threads": 4
+ }
+}

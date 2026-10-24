@@ -1,0 +1,1 @@
+{"what": "API smoke test: 2 s synthetic ffmpeg testsrc pattern, 3-word list", "usage": {"total_input_tokens": 4643, "total_output_tokens": 31, "total_thought_tokens": 0, "input_by_modality": {"text": 275, "video": 4368}}, "cost_usd": 0.009596, "latency_s": 4.99, "answer": "unsure"}

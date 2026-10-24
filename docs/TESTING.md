@@ -35,7 +35,7 @@ runs with written, dated results.
 | L6 | App ↔ local backend E2E | the iOS app's live driver against the real backend code (L3), nothing dialled | by hand, opt-in UI test | free | [Build] | 24 Oct (PR #27): **passed**, [evidence](experiments/evidence/app-backend-e2e-24oct/README.md). Re-run 24 Oct with `--delay 0.3`: **passed 1 / 1** after the holding-line fix ([issue #41](https://github.com/BishalJena/ishara/issues/41), [§2 L6](#app--local-backend-end-to-end)) |
 | L7 | iOS visual review | every screen and state in light, dark, large text and on the small phone | by hand (fixtures + screenshots) | free | [Build] | 24 Oct: 19 findings + 6 polish; **F1–F9 fixed** in #37–#40, [review](experiments/evidence/ios-visual-review-24oct/README.md), [fixes](experiments/evidence/ios-fixes-verified-24oct/README.md) |
 | L8 | Sign Lab | Mac webcam signs → real recognizer → real Groq drafts → real Sarvam voice on the Mac speakers; no call | by hand; its code is CI-tested with fakes | small (Groq per chip change, Sarvam ₹0.1–0.5 per line) | [You] | 24 Oct smoke (PR #30): 1 Groq draft in 0.23 s, passed the validator; Sarvam 1.82 s, `afplay` exit 0. **Webcam run with the founder's takes: not yet** |
-| L9 | Public-video pipeline eval | saved clips through the live recognizer, composer and voice, scored against hidden labels | by hand | small (17 Groq + 8 Sarvam requests last time) | [Build] | 24 Oct: cross-signer set A **0 / 24** chips (0 wrong), set B **4 / 18** correct, **1** wrong; 5 / 5 turns stayed silent; [report](experiments/video-pipeline-eval.md) |
+| L9 | Public-video pipeline eval | saved clips through the live recognizer, composer and voice, scored against hidden labels | by hand | small (17 Groq + 8 Sarvam requests last time) | [Build] | 24 Oct: cross-signer set A **0 / 24** chips (0 wrong), set B **4 / 18** correct, **1** wrong; 5 / 5 turns stayed silent; [report](experiments/video-pipeline-eval.md). 25 Oct, same clips to Gemini 4 Argon and SignCLIP (284 clips, 93 words, $3.81): top-1 **105 / 284** vs **35 / 284**, Gemini never unsure; [report](experiments/gemini-video-probe.md) |
 | L10 | Recognition sessions R1, R3, R4 | the founder's own signs: calibration sets the cut-off, the final session is scored once | by hand | free | [You] | not run |
 | L11 | Parity P1 / P3 | Core ML encoder vs PyTorch (P1); simulator pipeline vs Mac (P3) | by hand | free | [Build] | P1, 23 Oct (PR #21): **47 / 47** clips pass with `.cpuAndGPU`, **0 / 47** with the Neural Engine. P3: not run |
 | L12 | Live Bolna call V4, A3 | exact text spoken on a real call, timings, B24/B25 | by hand | paid (V4 about ₹20–30) + explicit go-ahead | [Build + Mate] | **not run**. Executed so far: Heroku `/health`, custom model registered, live `[silence]` → holding line, no token → 401 (23 Oct) |
@@ -223,6 +223,11 @@ cd ../../backend && uv run python -m scripts.compose_turns --help   # paid; cap 
 - Re-run it with the founder's own takes as references and a separate session as the
   test set; that is the number that matters (next step in
   [the report](experiments/video-pipeline-eval.md#next-steps)).
+
+**Gemini 4 Argon vs SignCLIP** on the same clips (paid, about $0.013 per clip; budget
+cap enforced in code): [runbook](../spikes/gemini_probe/README.md),
+[report](experiments/gemini-video-probe.md). Pass: the leakage checks in the report hold
+and both systems are scored by `score.py` only.
 
 ### L10 Recognition sessions (R1, R3, R4 → Gate 2)
 
