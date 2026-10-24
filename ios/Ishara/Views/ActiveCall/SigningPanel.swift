@@ -4,6 +4,9 @@ import SwiftUI
 /// quick replies and SEND live in the action bar below, so the draft always sits
 /// right above SEND.
 struct SigningPanel: View {
+    /// Lets the call screen scroll the chips into view.
+    static let chipRowID = "signingPanel.chips"
+
     let model: ActiveCallViewModel
 
     var body: some View {
@@ -19,6 +22,7 @@ struct SigningPanel: View {
                 DeliveryBanner(delivery: model.delivery)
             }
             ChipRow(chips: model.chips, onRemove: model.removeChip)
+                .id(Self.chipRowID)
         }
     }
 }

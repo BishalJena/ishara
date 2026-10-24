@@ -67,11 +67,18 @@ struct ActiveCallView: View {
             CaptionHistory(captions: model.captions, isCallOver: model.isCallOver)
                 .frame(height: captionBoxHeight)
 
-            ScrollView {
-                content
-                    .padding(.bottom, 8)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    content
+                        .padding(.bottom, 8)
+                }
+                .scrollBounceBehavior(.basedOnSize)
+                // At large text sizes the action bar leaves too little room for the camera
+                // and the chips together; keep the chips in view so a wrong one can be
+                // removed before SEND.
+                .onChange(of: model.chips) { proxy.scrollTo(SigningPanel.chipRowID, anchor: .bottom) }
+                .onChange(of: actionBarHeight) { proxy.scrollTo(SigningPanel.chipRowID, anchor: .bottom) }
             }
-            .scrollBounceBehavior(.basedOnSize)
         }
         .padding(.horizontal)
         .padding(.top, 8)
