@@ -5,13 +5,10 @@ struct ChipRow: View {
     let chips: [Chip]
     let onRemove: (Chip) -> Void
 
+    /// Shows nothing when empty: the draft card's "Sign your reply…" prompt already
+    /// says what to do, and an extra hint line pushed the draft below the action bar.
     var body: some View {
-        if chips.isEmpty {
-            Text("Signs you make appear here.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        } else {
+        if !chips.isEmpty {
             FlowLayout(spacing: 8) {
                 ForEach(chips) { chip in
                     ChipView(chip: chip) { onRemove(chip) }
