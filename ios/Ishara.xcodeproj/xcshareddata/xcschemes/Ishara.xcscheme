@@ -35,6 +35,20 @@
                ReferencedContainer = "container:Ishara.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "7C44DB089E2DDAF0FD5FBE73"
+               BuildableName = "IsharaUITests.xctest"
+               BlueprintName = "IsharaUITests"
+               ReferencedContainer = "container:Ishara.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -62,6 +76,17 @@
                BlueprintIdentifier = "89CF33995D7A28423BA55B0C"
                BuildableName = "IsharaTests.xctest"
                BlueprintName = "IsharaTests"
+               ReferencedContainer = "container:Ishara.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "7C44DB089E2DDAF0FD5FBE73"
+               BuildableName = "IsharaUITests.xctest"
+               BlueprintName = "IsharaUITests"
                ReferencedContainer = "container:Ishara.xcodeproj">
             </BuildableReference>
          </TestableReference>

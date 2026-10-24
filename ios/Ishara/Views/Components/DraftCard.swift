@@ -30,6 +30,7 @@ struct DraftCard: View {
         .background(.background.secondary, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
+        .accessibilityIdentifier("call.draft")
     }
 
     private var accessibilityLabel: String {

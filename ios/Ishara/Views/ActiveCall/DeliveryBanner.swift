@@ -12,10 +12,12 @@ struct DeliveryBanner: View {
                 detail: "Chips and draft were wiped, so old text can't replay.",
                 color: .green
             )
-        case .notDelivered(let text):
+        case .notDelivered:
+            // The sentence itself is not repeated here: the draft card below shows
+            // exactly what SEND will speak, and repeating it pushed that card off screen.
             banner(
                 title: "Not delivered — tap SEND again",
-                detail: "\u{201C}\(text)\u{201D} was not spoken. Nothing is resent unless you tap SEND.",
+                detail: "Your last reply was not spoken. Nothing is resent unless you tap SEND.",
                 color: .orange
             )
         case .idle, .speaking:
@@ -31,11 +33,13 @@ struct DeliveryBanner: View {
                 .font(.subheadline)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding()
+        .padding(.horizontal)
+        .padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(color.opacity(0.2), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(color, lineWidth: 1.5))
         .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("call.deliveryBanner")
     }
 }
 

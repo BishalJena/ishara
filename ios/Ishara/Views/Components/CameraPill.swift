@@ -18,6 +18,7 @@ struct CameraPill: View {
         .background(background, in: Capsule())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Camera: \(title)")
+        .accessibilityIdentifier("camera.pill")
     }
 
     private var title: String {

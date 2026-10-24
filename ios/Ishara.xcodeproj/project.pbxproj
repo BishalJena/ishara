@@ -23,6 +23,7 @@
 		291415339B0B6999B2620187 /* LiveCallDriverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED5AA94CFB93126FA96E9595 /* LiveCallDriverTests.swift */; };
 		2C07594C513658DAE7C6264E /* BigActionButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 427FDD4AA6696984B9946B5F /* BigActionButtonStyle.swift */; };
 		3127B8E90BC9E9625AC608BA /* RecognitionTestDoubles.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC0E078B86B76986063F3A6 /* RecognitionTestDoubles.swift */; };
+		345C25905130B05F5B3A2A8F /* DemoCallUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BFA99DED8B4501938E63F2B /* DemoCallUITests.swift */; };
 		36BC232A9FB9A3566DE51144 /* RecognitionCore in Frameworks */ = {isa = PBXBuildFile; productRef = B41FE5D1B2F901C84EE4E0DE /* RecognitionCore */; };
 		3B216E1616E508A0DE9F00F4 /* RecognitionAssets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FD97E6C3273FC9BF7E6458F /* RecognitionAssets.swift */; };
 		42F4E4EAF13E68FB55B017F5 /* ActiveCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AEDF6404417D0C8EBD70DBE /* ActiveCallView.swift */; };
@@ -67,6 +68,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		900ACFC2EB14C4A211B4D14B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 69CB4509D4D07EFB497498E1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 60A8BC7639833EECC580072B;
+			remoteInfo = Ishara;
+		};
 		D5E3ADF0B701B5F5528FE305 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 69CB4509D4D07EFB497498E1 /* Project object */;
@@ -113,6 +121,7 @@
 		9618B5BB3CCA97B1BEFC27E9 /* IsharaTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IsharaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		982A950789AC5BBB3D7DF110 /* CallModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallModels.swift; sourceTree = "<group>"; };
 		9A69CBC3EDAA16516D54C2FE /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		9BFA99DED8B4501938E63F2B /* DemoCallUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoCallUITests.swift; sourceTree = "<group>"; };
 		9DECB91C17E6E316E96B18B5 /* DemoScriptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoScriptTests.swift; sourceTree = "<group>"; };
 		A24F8808F2021141D9755528 /* PipelineRecognitionControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineRecognitionControllerTests.swift; sourceTree = "<group>"; };
 		A62AFEB7F1769111A6E9E761 /* Ishara.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Ishara.xcconfig; sourceTree = "<group>"; };
@@ -129,6 +138,7 @@
 		D9C4C66DDBC347DAEAAF68CB /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
 		DBBEF1F2F01D8A80C53914BA /* FakeCallDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeCallDriver.swift; sourceTree = "<group>"; };
 		DBF9D95F47AC58D27C65B272 /* ChipRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChipRow.swift; sourceTree = "<group>"; };
+		E2081128C63E44B37F9A2C28 /* IsharaUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IsharaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E33B72E0774F40615731CD8A /* QuickReplyBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickReplyBar.swift; sourceTree = "<group>"; };
 		E3CBA8973C3BC30E14064F5C /* LocalAssets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LocalAssets; path = Ishara/LocalAssets; sourceTree = SOURCE_ROOT; };
 		ECB2235642AAC063522C7C87 /* CameraPreviewPlaceholder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewPlaceholder.swift; sourceTree = "<group>"; };
@@ -196,6 +206,7 @@
 			children = (
 				927E13F46178F3C79C55469A /* Ishara.app */,
 				9618B5BB3CCA97B1BEFC27E9 /* IsharaTests.xctest */,
+				E2081128C63E44B37F9A2C28 /* IsharaUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -250,6 +261,7 @@
 			children = (
 				2CC81D0843D5C73B72441706 /* Ishara */,
 				894B1BD5A500EE23813C6A61 /* IsharaTests */,
+				9B469504D42C64C5FC642DEC /* IsharaUITests */,
 				832D859FA5B9D144A946FC57 /* Packages */,
 				2FAF1AEF582F7D60E94D877A /* Products */,
 			);
@@ -290,6 +302,14 @@
 				A62AFEB7F1769111A6E9E761 /* Ishara.xcconfig */,
 			);
 			path = Config;
+			sourceTree = "<group>";
+		};
+		9B469504D42C64C5FC642DEC /* IsharaUITests */ = {
+			isa = PBXGroup;
+			children = (
+				9BFA99DED8B4501938E63F2B /* DemoCallUITests.swift */,
+			);
+			path = IsharaUITests;
 			sourceTree = "<group>";
 		};
 		A2531C0C99B42378C5F27EA4 /* Home */ = {
@@ -374,6 +394,24 @@
 			productReference = 927E13F46178F3C79C55469A /* Ishara.app */;
 			productType = "com.apple.product-type.application";
 		};
+		7C44DB089E2DDAF0FD5FBE73 /* IsharaUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D1DD1EA7FE960C01E96CF557 /* Build configuration list for PBXNativeTarget "IsharaUITests" */;
+			buildPhases = (
+				1FD75DB0A1A349C3FA3BA14F /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8D836E1255E12A899A4CDAF7 /* PBXTargetDependency */,
+			);
+			name = IsharaUITests;
+			packageProductDependencies = (
+			);
+			productName = IsharaUITests;
+			productReference = E2081128C63E44B37F9A2C28 /* IsharaUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		89CF33995D7A28423BA55B0C /* IsharaTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 7E1D5CA076A8006E4BF5F39B /* Build configuration list for PBXNativeTarget "IsharaTests" */;
@@ -408,6 +446,11 @@
 						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
+					7C44DB089E2DDAF0FD5FBE73 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+						TestTargetID = 60A8BC7639833EECC580072B;
+					};
 					89CF33995D7A28423BA55B0C = {
 						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
@@ -436,6 +479,7 @@
 			targets = (
 				60A8BC7639833EECC580072B /* Ishara */,
 				89CF33995D7A28423BA55B0C /* IsharaTests */,
+				7C44DB089E2DDAF0FD5FBE73 /* IsharaUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -453,6 +497,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		1FD75DB0A1A349C3FA3BA14F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				345C25905130B05F5B3A2A8F /* DemoCallUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		BD5BE47ADF24D88589A1CC7D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -528,19 +580,41 @@
 		};
 		7CF04723B07381FB3529A877 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			productRef = "TEMP_E8D097C5-0A76-4836-8FF8-341872DE2B7D" /* RecognitionCore */;
+			productRef = "TEMP_A3B28ACF-6786-40B5-8D5A-93387BB73188" /* RecognitionCore */;
+		};
+		8D836E1255E12A899A4CDAF7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 60A8BC7639833EECC580072B /* Ishara */;
+			targetProxy = 900ACFC2EB14C4A211B4D14B /* PBXContainerItemProxy */;
 		};
 		ACA055A004290D6378457E19 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			productRef = "TEMP_4CCE13EB-EF5D-4290-9482-EFC84FA357F1" /* SignPipeline */;
+			productRef = "TEMP_F665AC01-F08E-412D-8574-7F7609F32901" /* SignPipeline */;
 		};
 		BF8921BFD98D75F37B982C09 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			productRef = "TEMP_BF4444A1-E270-44FB-BD01-B964D3FA0480" /* CallSession */;
+			productRef = "TEMP_E2BB16C7-D963-426F-A413-F0924CD63376" /* CallSession */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		34D13F292883B30BD96C0C3D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = ai.ishara.demo.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Ishara;
+			};
+			name = Release;
+		};
 		460D512A00D284E727F9A43E /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = A62AFEB7F1769111A6E9E761 /* Ishara.xcconfig */;
@@ -756,6 +830,23 @@
 			};
 			name = Debug;
 		};
+		E70FB193C09B1BE04B08A808 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = ai.ishara.demo.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Ishara;
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -782,6 +873,15 @@
 			buildConfigurations = (
 				E2C4BA7AC6A213700A1F5B0C /* Debug */,
 				5833F5985A7354DE8F228528 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D1DD1EA7FE960C01E96CF557 /* Build configuration list for PBXNativeTarget "IsharaUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E70FB193C09B1BE04B08A808 /* Debug */,
+				34D13F292883B30BD96C0C3D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -824,17 +924,17 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = SignPipelineMediaPipe;
 		};
-		"TEMP_4CCE13EB-EF5D-4290-9482-EFC84FA357F1" /* SignPipeline */ = {
+		"TEMP_A3B28ACF-6786-40B5-8D5A-93387BB73188" /* RecognitionCore */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = SignPipeline;
+			productName = RecognitionCore;
 		};
-		"TEMP_BF4444A1-E270-44FB-BD01-B964D3FA0480" /* CallSession */ = {
+		"TEMP_E2BB16C7-D963-426F-A413-F0924CD63376" /* CallSession */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = CallSession;
 		};
-		"TEMP_E8D097C5-0A76-4836-8FF8-341872DE2B7D" /* RecognitionCore */ = {
+		"TEMP_F665AC01-F08E-412D-8574-7F7609F32901" /* SignPipeline */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = RecognitionCore;
+			productName = SignPipeline;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

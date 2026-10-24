@@ -26,7 +26,8 @@ struct DemoLaunchOptions {
     var replayScript: [RecognitionResult] = []
     /// Make the fake call report the first reply of turn 2 as not delivered.
     var fakeNotDelivered = false
-    /// Speed up (below 1) or slow down the fake call's timers.
+    /// Speed up (below 1) or slow down the simulated timers: the Get ready
+    /// checklist and the fake call.
     var fakeTimeScale = 1.0
     /// Open straight on a prepared screen state for screenshots.
     var fixture: DemoFixture?

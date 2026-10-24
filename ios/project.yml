@@ -92,12 +92,27 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: ai.ishara.demo.tests
         GENERATE_INFOPLIST_FILE: YES
 
+  # Walks the PLAN §1 demo through the real UI against the fake call.
+  IsharaUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: IsharaUITests
+    dependencies:
+      - target: Ishara
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.ishara.demo.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Ishara
+
 schemes:
   Ishara:
     build:
       targets:
         Ishara: all
         IsharaTests: [test]
+        IsharaUITests: [test]
     run:
       config: Debug
     test:
@@ -105,5 +120,6 @@ schemes:
       gatherCoverageData: true
       targets:
         - IsharaTests
+        - IsharaUITests
     archive:
       config: Release

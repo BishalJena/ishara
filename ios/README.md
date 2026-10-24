@@ -81,7 +81,7 @@ Other switches:
 | Argument | Effect |
 |---|---|
 | `-IsharaFakeNotDelivered YES` | The first SEND of turn 2 comes back "not delivered", so you have to tap SEND again |
-| `-IsharaFakeTimeScale 0.5` | Runs the fake call twice as fast |
+| `-IsharaFakeTimeScale 0.5` | Runs the Get ready checks and the fake call twice as fast |
 | `-IsharaFixture <name>` | Debug builds only. Opens a prepared state: `home`, `getReady`, `signing`, `speaking`, `delivered`, `notDelivered`, `ended`, `connectionLost` |
 
 Set them in the scheme (Run → Arguments) or pass them to `xcrun simctl launch`:
@@ -112,6 +112,10 @@ xcodebuild -project ios/Ishara.xcodeproj -scheme Ishara \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
+This runs the unit tests (`IsharaTests`) and the UI tests (`IsharaUITests`),
+which walk the whole PLAN §1 call on the fake driver at `-IsharaFakeTimeScale 0.5`
+(about a minute). Add `-only-testing:IsharaTests` for just the unit tests.
+
 Packages (macOS host, no simulator needed):
 
 ```sh
@@ -139,6 +143,7 @@ low confidence → [?], no bundle → [?], rejected attempt → nothing).
 | `Ishara/Config` | `Ishara.xcconfig`, `Secrets.example.xcconfig` (copy to the gitignored `Secrets.xcconfig`) |
 | `Ishara/LocalAssets` | Untracked models and recordings |
 | `IsharaTests` | XCTest for the app |
+| `IsharaUITests` | XCUITest that clicks through the §1 demo call, plus the not-delivered retry |
 | `Packages/CallSession` | Wire messages, backend client, `TurnStore`, `LiveCall` |
 | `Packages/RecognitionCore` | Start/stop detector, calibration, recognition bundle, matcher |
 | `Packages/SignPipeline` | Frame sources, landmarks, SignCLIP features, Core ML encoder |

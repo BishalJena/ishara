@@ -50,6 +50,7 @@ struct GetReadyView: View {
                 }
                 .buttonStyle(.bigAction(.green))
                 .disabled(!model.isReady)
+                .accessibilityIdentifier("getReady.start")
                 .padding()
                 .background(.bar)
             }

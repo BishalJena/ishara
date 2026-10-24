@@ -84,6 +84,7 @@ struct HomeView: View {
                     .buttonStyle(.bigAction(.green))
                     .disabled(setup.details.name.trimmingCharacters(in: .whitespaces).isEmpty || setupProblem != nil)
                     .accessibilityLabel("Call \(setup.contact.name)")
+                    .accessibilityIdentifier("home.call")
                 }
                 .padding()
                 .background(.bar)

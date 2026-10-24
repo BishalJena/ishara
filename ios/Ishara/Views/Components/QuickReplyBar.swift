@@ -8,17 +8,31 @@ struct QuickReplyBar: View {
     var body: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 8) { buttons }
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) { buttons }
+            // At large text sizes the row scrolls sideways rather than wrapping into
+            // a 2x2 grid, which took so much height that the draft disappeared
+            // behind the action bar.
+            ScrollView(.horizontal) {
+                HStack(spacing: 8) { buttons }
+            }
+            .scrollIndicators(.visible)
         }
     }
 
     private var buttons: some View {
         ForEach(QuickReply.allCases, id: \.self) { reply in
-            Button(reply.label) { onChoose(reply) }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .frame(maxWidth: .infinity)
-                .accessibilityHint("Puts \u{201C}\(reply.text)\u{201D} in the draft")
+            Button { onChoose(reply) } label: {
+                // Fixed to one line: an even 4-way split is narrower than "Repeat"
+                // needs, and a wrapped label turns the button into a tall blob.
+                // When the labels can't fit, ViewThatFits switches to the scrolling row.
+                Text(reply.label)
+                    .lineLimit(1)
+                    .fixedSize()
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .accessibilityIdentifier("quickReply.\(reply)")
+            .accessibilityHint("Puts \u{201C}\(reply.text)\u{201D} in the draft")
         }
     }
 }

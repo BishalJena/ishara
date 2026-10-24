@@ -23,6 +23,9 @@ struct CaptionHistory: View {
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            // Opens on the newest caption even when the history already has entries
+            // (for example after returning to the screen); onChange only sees later ones.
+            .defaultScrollAnchor(.bottom)
             .onChange(of: captions.count) { _, count in
                 guard count > 0 else { return }
                 withAnimation { proxy.scrollTo(count - 1, anchor: .bottom) }
@@ -47,6 +50,7 @@ private struct CaptionRow: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityElement(children: .combine)
+        .accessibilityIdentifier(entry.speaker == .receptionist ? "caption.receptionist" : "caption.you")
     }
 }
 
