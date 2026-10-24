@@ -1,12 +1,10 @@
 import SwiftUI
 
-/// Screen 4 body: the exact sentence being spoken. The camera keeps watching so
-/// the user can sign the next thing.
+/// Screen 4 body: the camera keeps watching so the user can sign the next thing. The
+/// sentence being spoken sits in the action bar, right above STOP.
 struct SpeakingPanel: View {
-    let text: String
     let cameraState: CameraState
     let camera: LiveCamera?
-    let isStopRequested: Bool
     var isStopTooLate = false
     var errorMessage: String?
 
@@ -19,13 +17,12 @@ struct SpeakingPanel: View {
             if let errorMessage {
                 CallErrorBanner(message: errorMessage)
             }
-            // Once STOP is refused it is still being spoken, not stopping.
-            SpeakingCard(text: text, isStopRequested: isStopRequested && !isStopTooLate)
         }
     }
 }
 
-private struct SpeakingCard: View {
+/// The exact sentence being spoken.
+struct SpeakingCard: View {
     let text: String
     let isStopRequested: Bool
 
@@ -37,20 +34,21 @@ private struct SpeakingCard: View {
             Text("\u{201C}\(text)\u{201D}")
                 .font(.title2.weight(.semibold))
                 .fixedSize(horizontal: false, vertical: true)
-            ProgressView()
-                .progressViewStyle(.linear)
-                .tint(.purple)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.purple.opacity(0.2), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(isStopRequested ? "Stopping" : "Speaking now"): \(text)")
+        .accessibilityIdentifier("call.speaking")
     }
 }
 
 #Preview {
-    SpeakingPanel(text: "No, sorry, 4 pm doesn't work. Is there anything tomorrow morning?",
-                  cameraState: .watching, camera: nil, isStopRequested: false)
-        .padding()
+    VStack {
+        SpeakingPanel(cameraState: .watching, camera: nil)
+        SpeakingCard(text: "No, sorry, 4 pm doesn't work. Is there anything tomorrow morning?",
+                     isStopRequested: false)
+    }
+    .padding()
 }

@@ -49,8 +49,9 @@ cp ios/Ishara/Config/Secrets.example.xcconfig ios/Ishara/Config/Secrets.xcconfig
 - The values reach the app as the `IsharaBackendURL` / `IsharaAppToken` Info.plist keys.
   With `-IsharaDriver live` and a missing or broken value, Home says what's wrong and CALL stays off.
 - The app sends only a contact id (`clinic` for City Clinic, `mehta-office`); the numbers live in
-  the backend's `ALLOWED_RECIPIENTS` (e.g. `clinic=+91…`). Home keeps the note that Path B calls
-  come from a Bolna number, not your own.
+  the backend's `ALLOWED_RECIPIENTS` (e.g. `clinic=+91…`). Home and Get ready both say, in plain
+  words, that calls come from Ishara's calling number (Bolna's, Path B), not your own, and
+  that the receptionist hears an automated voice.
 - A live call costs money (Bolna about ₹5.5/min plus telephony) and must only go to a
   consenting teammate on the allowlist.
 

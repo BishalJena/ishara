@@ -1,8 +1,12 @@
 import SwiftUI
 
-/// Screen 3 body, top to bottom in the order the eyes move: camera, chips,
-/// draft. Quick replies and SEND live in the action bar below.
+/// Screen 3 body, top to bottom in the order the eyes move: camera, chips. The draft,
+/// quick replies and SEND live in the action bar below, so the draft always sits
+/// right above SEND.
 struct SigningPanel: View {
+    /// Lets the call screen scroll the chips into view.
+    static let chipRowID = "signingPanel.chips"
+
     let model: ActiveCallViewModel
 
     var body: some View {
@@ -18,7 +22,7 @@ struct SigningPanel: View {
                 DeliveryBanner(delivery: model.delivery)
             }
             ChipRow(chips: model.chips, onRemove: model.removeChip)
-            DraftCard(draft: model.draft, isComposing: model.isComposing)
+                .id(Self.chipRowID)
         }
     }
 }
