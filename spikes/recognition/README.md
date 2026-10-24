@@ -82,7 +82,9 @@ and one session ID throughout a recording session, including across commands:
   --concept hello --takes 3 --camera 0
 ```
 
-Repeat for thankyou, doctor, hospital and tomorrow. **SPACE** starts/stops a take;
+Repeat for each of the 12 demo signs (`--concept` accepts exactly these):
+hello, thankyou, yes, no, sorry, doctor, today, tomorrow, morning, afternoon,
+evening, time. **SPACE** starts/stops a take;
 **X** discards; **Q/escape** exits and discards an unfinished take. Keep face,
 shoulders and hands visible, with a complete sign and brief neutral boundaries.
 Long takes are rejected, not cropped. The camera requests 1280×720 at 30 FPS;
@@ -122,9 +124,170 @@ duplicate videos and session/source/hash overlap across splits. Frozen policies
 are bound to encoder and development fingerprints. Missing data, unverified labels,
 nonfinite evidence and reject-all calibration cannot pass.
 
+`calibrate` uses the calibration session only. It needs attempts for all 12 signs
+and at least 20 negatives, then picks the cut-off (similarity plus margin over the
+runner-up) that keeps the most correct accepts with **at least 60% per sign, 0 wrong
+accepts and 0 negative accepts** (PLAN R2b). If no cut-off qualifies it fails rather
+than freezing one that rejects everything. Besides `artifacts/retrieval/policy-<encoder>.json`
+it writes and prints `artifacts/evidence/calibration-<encoder>.md`: cut-off, margin,
+accepted/attempts per sign, wrong accepts and negative accepts with denominators.
+
+## Export the iPhone bundle
+
+```sh
+artifacts/signclip/.venv/bin/python retrieval.py export-bundle --encoder signclip
+```
+
+Writes `artifacts/evidence/recognition-bundle-<encoder>.json` for the on-device
+matcher (P2):
+
+```json
+{"version": 1, "encoder": "<encoder contract as canonical JSON>", "embedding_dim": 768,
+ "thresholds": {"similarity": 0.0, "margin": 0.0},
+ "quality": {"min_pose_fraction": 0.6, "min_hand_fraction": 0.2},
+ "references": [{"id": "<clip id>", "label": "hello", "embedding": [0.0]}]}
+```
+
+It refuses when the enrollment/calibration data changed since `calibrate`, or the
+loaded encoder contract differs from the frozen policy; re-run `calibrate` first.
+The quality values come from `recognition_data.QUALITY`, the same constant the Mac
+decision uses. References are Mac-extracted embeddings of the enrollment clips;
+the parity task (P3) re-embeds them with the iOS extractor before the iPhone relies
+on them. The bundle contains personal enrollment embeddings, so it stays under
+ignored `artifacts/`.
+
 `--fresh` disables feature caching. Reported batch timing still excludes capture,
 ranking and display; `live_latency_validated` and `demo_ready` stay false.
 If final-test findings drive changes, collect a new final test session.
+
+## Mac fallback: live recognizer into the call (PLAN A4)
+
+The demo safety net when the on-device recognizer isn't ready: the Mac webcam
+recognizes signs and the bridge posts them as chips to the same backend call
+WebSocket the app uses. Nothing is spoken until you press `s` (SEND).
+
+```
+ terminal (bridge venv: websockets only)              child process (SignCLIP venv: torch, MediaPipe)
+ mac_bridge.py --live ──starts──▶ live_source.py ── webcam / --replay-videos clips
+      ▲                                │  legacy Holistic once per frame
+      │  one JSON line per sign        │  → detector (2 s rest calibration, rest line)
+      └──── stdout ◀───────────────────┘  → accepted segment → SignCLIP features + embedding
+      │                                   → bundle: rank + decision, frozen thresholds
+      ▼                                   → sign, or null (unsure "?")
+ backend WebSocket: chips / approve / stop / end      logs, rest line, latency → stderr (terminal)
+```
+
+The two venvs stay separate: the bridge venv can't import torch, and the SignCLIP
+venv pins its own Transformers. The bridge starts the recognizer as a child process
+with the SignCLIP venv's Python (`--recognizer-python`, default
+`artifacts/signclip/.venv/bin/python`). Only result lines go to its stdout; any
+other printing, including native MediaPipe/torch output, goes to stderr.
+
+### One-time setup
+
+The light `.venv` and the SignCLIP venv as above, plus the bridge venv:
+
+```sh
+uv venv --python 3.11 artifacts/bridge/.venv
+uv pip install --python artifacts/bridge/.venv/bin/python --require-hashes -r requirements-bridge.lock
+artifacts/bridge/.venv/bin/python -m unittest test_mac_bridge test_detector test_detect_clips
+.venv/bin/python -m unittest test_live_source   # fakes only: no webcam, no model
+```
+
+### Runbook
+
+1. **Enrollment (R1).** Same signer who presents the demo. 3–5 takes per sign in
+   one session, then `review` and `verify` each clip
+   ([Capture and review](#capture-and-review)):
+
+   ```sh
+   .venv/bin/python pilot_capture.py capture --signer demo --session enrollment-01 \
+     --split enrollment --concept hello --takes 5 --camera 0
+   ```
+
+2. **Calibration (R3).** A new session: 5 takes per sign plus at least 20 negatives
+   covering idle, transition, incomplete and unsupported. Verify every clip.
+
+   ```sh
+   .venv/bin/python pilot_capture.py capture --signer demo --session calibration-01 \
+     --split calibration --concept hello --takes 5 --camera 0
+   .venv/bin/python pilot_capture.py capture --signer demo --session calibration-01 \
+     --split calibration --concept idle --takes 5 --camera 0 --note "hands resting, no sign"
+   .venv/bin/python retrieval.py status
+   ```
+
+3. **Freeze the cut-off (R2b).** Read the printed report: every sign at least 60%,
+   0 wrong accepts, 0 negative accepts.
+
+   ```sh
+   artifacts/signclip/.venv/bin/python retrieval.py calibrate --encoder signclip
+   ```
+
+4. **Export the bundle.**
+
+   ```sh
+   artifacts/signclip/.venv/bin/python retrieval.py export-bundle --encoder signclip
+   ```
+
+5. **Check it alone, no call.** Rest both hands for 2 s when asked (it prints
+   `rest line y=...`), then sign one at a time and drop your hands after each.
+   Every accepted segment prints the sign or `? (reason)` and its latency.
+   **q** in the window or Ctrl-C stops and prints the latency summary.
+
+   ```sh
+   artifacts/signclip/.venv/bin/python live_source.py --camera 0
+   # rehearse with saved clips through exactly the same path (paced like a camera):
+   artifacts/signclip/.venv/bin/python live_source.py --replay-videos artifacts/rehearsal
+   ```
+
+   `--replay-videos DIR` plays every .mp4/.mov/.m4v in DIR in name order. Each clip
+   calibrates on its first 2 s; for takes without a leading rest, pass the
+   `--rest-y` that live mode printed in the same seat. `--fast` skips the pacing,
+   but then latency no longer means live latency.
+
+6. **Into the call.** Attaching to a call the app or backend already started costs
+   nothing. Starting one needs `--contact clinic --confirm-cost` (it dials a real,
+   allowlisted phone and costs money; see the bridge's cost heads-up).
+
+   ```sh
+   export APP_TOKEN=...   # from the team secret store; never commit it
+   artifacts/bridge/.venv/bin/python mac_bridge.py --base-url https://<backend> \
+     --call-id <call_id> --live --camera 0
+   # rehearsal: recorded clips instead of the webcam
+   artifacts/bridge/.venv/bin/python mac_bridge.py --base-url https://<backend> \
+     --call-id <call_id> --live --replay-videos artifacts/rehearsal
+   ```
+
+   Signs become chips, `?` stays local, drafts arrive from the backend and you
+   press `s` to SEND. You can still type signs, `x`, `c`, `q yes|no|wait|repeat`,
+   `stop` and `e` (`h` lists them). If the recognizer stops, the bridge says so
+   and typed signs still work. `--bundle PATH` and `--rest-y Y` are passed to
+   the recognizer.
+
+### What the recognizer guarantees
+
+- Each sign uses the same `recognition_data.rank` and `decision` as calibration,
+  with the bundle's frozen thresholds and the shared quality minimums.
+- Rejected segments (too short, too long, lost tracking) and clips that end
+  mid-sign yield nothing.
+- An accepted segment yields `?` when the match is weak, the runner-up is too close,
+  tracking is poor, the shoulders can't be found, or it has more than 256 frames
+  (SignCLIP's limit; never truncated).
+- Without a bundle it warns at start and every sign is `?`. A bundle from another
+  SignCLIP setup (checkpoint, source, torch version or threads) stops it at start:
+  re-run `export-bundle` in the same venv.
+- Latency runs from the moment your hands are back at rest to the result. That
+  includes the detector's 0.4 s rest wait. G2 wants under 2 s live, so take the
+  number from `--camera`, not `--fast`.
+- Holistic runs once per frame. The SignCLIP features come from those same
+  landmarks, and on a public clip they matched `signclip.extract` exactly.
+
+**Known gap:** the bundle references and the calibration cut-off come from whole
+takes, while live matching sees only the detector's cut (0.2 s before the hands
+rise to the first rest frame). On one public clip, the cut's embedding had a cosine
+of 0.86 with the whole-clip embedding. Before trusting the frozen cut-off live,
+replay the calibration takes with `live_source.py --replay-videos` and check that
+they come out as calibrated.
 
 ## Historical INCLUDE harness
 

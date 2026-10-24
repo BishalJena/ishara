@@ -12,9 +12,13 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent
 ARTIFACTS = ROOT / "artifacts"
 DATASET = ARTIFACTS / "pilot" / "dataset.json"
-VOCABULARY = ("hello", "thankyou", "doctor", "hospital", "tomorrow")
+VOCABULARY = ("hello", "thankyou", "yes", "no", "sorry", "doctor",
+              "today", "tomorrow", "morning", "afternoon", "evening", "time")
 SPLITS = ("enrollment", "calibration", "test")
 NEGATIVES = ("idle", "transition", "incomplete", "unsupported")
+NEGATIVE_MINIMUM = {"calibration": 20, "test": 50}
+# Shared with the iPhone through the exported bundle; change both sides together.
+QUALITY = {"min_pose_fraction": 0.6, "min_hand_fraction": 0.2}
 
 
 def sha256(path):
@@ -109,7 +113,7 @@ def readiness(records, final=False):
         for label in VOCABULARY:
             if counts[split].get(label, 0) < minimum:
                 issues.append(f"{split}: need {minimum} verified examples of {label}")
-        negative_minimum = {"calibration": 20, "test": 50}.get(split, 0)
+        negative_minimum = NEGATIVE_MINIMUM.get(split, 0)
         if counts[split].get("negative", 0) < negative_minimum:
             issues.append(f"{split}: need {negative_minimum} negative clips")
         if negative_minimum:
@@ -165,7 +169,8 @@ def decision(result, quality, policy=None):
     if any(v is None or not np.isfinite(v) for v in measurements):
         return {"status": "abstain", "concept": None, "reason": "invalid evidence"}
     if (not top or top[0]["concept"] not in VOCABULARY
-            or quality.get("pose_fraction", 0) < 0.6 or quality.get("hand_fraction", 0) < 0.2
+            or quality.get("pose_fraction", 0) < QUALITY["min_pose_fraction"]
+            or quality.get("hand_fraction", 0) < QUALITY["min_hand_fraction"]
             or top[0]["similarity"] < policy["similarity"] or result["margin"] < policy["margin"]):
         return {"status": "abstain", "concept": None, "reason": "insufficient evidence"}
     return {"status": "candidate", "concept": top[0]["concept"], "reason": None}
