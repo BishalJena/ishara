@@ -75,7 +75,7 @@ struct HomeView: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    DisclosureNote()
+                    CallingNumberNote()
                     Button {
                         onCall(setup)
                     } label: {
@@ -93,17 +93,21 @@ struct HomeView: View {
     }
 }
 
-/// Path B calls come from Bolna's number; the user must know that before calling.
-private struct DisclosureNote: View {
+/// Calls come from Ishara's calling number (Bolna's, Path B), never the user's own, and
+/// the receptionist hears an automated voice. Shown on Home and again on Get ready, right
+/// before the call is placed, so the user knows both before calling.
+struct CallingNumberNote: View {
     var body: some View {
         Label {
-            Text("Path B calls come from a Bolna number, not your own number.")
+            Text("Calls are placed from Ishara's calling number, not your own number. The receptionist hears an automated voice reading what you approve.")
         } icon: {
             Image(systemName: "info.circle")
         }
         .font(.footnote)
         .foregroundStyle(.secondary)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("callingNumberNote")
     }
 }
 
