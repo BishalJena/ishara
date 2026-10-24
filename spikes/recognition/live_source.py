@@ -404,7 +404,7 @@ def draw_overlay(view: Any, overlay: Overlay) -> None:
     y = top + 88
     if panel.why:
         y += 6
-        cv2.putText(view, panel.why[:48], (left + 14, y), font, 0.55, RED, 1)
+        cv2.putText(view, panel.why[:40], (left + 14, y), font, 0.65, RED, 2)
         y += 18
     bar_left = left + 140
     for index, (sign, similarity) in enumerate(panel.bars):
