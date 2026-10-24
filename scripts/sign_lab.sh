@@ -6,7 +6,8 @@
 #   scripts/sign_lab.sh                      Groq drafts + Sarvam voice (small cost)
 #   scripts/sign_lab.sh --free               template drafts, no voice, no cost
 #   scripts/sign_lab.sh --bundle PATH        recognition bundle
-#                                            (default: artifacts/evidence/recognition-bundle-signclip.json)
+#                                            (default: the calibrated recognition-bundle-signclip.json,
+#                                            else the provisional try bundle from export-bundle --provisional)
 #   scripts/sign_lab.sh --camera N           webcam index (default 0)
 #   scripts/sign_lab.sh --port N             backend port (default 8000)
 #   scripts/sign_lab.sh --env-file PATH      where the Groq/Sarvam keys are (default: repo .env)
@@ -87,7 +88,13 @@ fi
 
 recognition_dir=$(cd "$recognition_dir" 2>/dev/null && pwd) ||
   die "no recognition folder at $recognition_dir; pass --recognition-dir"
-bundle=${bundle:-$recognition_dir/artifacts/evidence/recognition-bundle-signclip.json}
+if [[ -z $bundle ]]; then
+  # Prefer the calibrated bundle; before the calibration session exists, fall back to the
+  # provisional try bundle (live_source flags it as PROVISIONAL on every result).
+  bundle=$recognition_dir/artifacts/evidence/recognition-bundle-signclip.json
+  provisional=$recognition_dir/artifacts/evidence/recognition-bundle-signclip-provisional.json
+  [[ -f $bundle || ! -f $provisional ]] || bundle=$provisional
+fi
 base_url="http://$HOST:$port"
 signclip_python="$recognition_dir/artifacts/signclip/.venv/bin/python"
 bridge_python="$recognition_dir/artifacts/bridge/.venv/bin/python"

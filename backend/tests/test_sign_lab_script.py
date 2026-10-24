@@ -116,6 +116,32 @@ def test_bundle_flag_is_checked_too(recognition: Path, tmp_path: Path) -> None:
     assert f"no recognition bundle at {missing}" in result.stderr
 
 
+def test_falls_back_to_the_provisional_bundle_before_calibration(
+    recognition: Path, tmp_path: Path
+) -> None:
+    evidence = recognition / "artifacts/evidence"
+    (evidence / "recognition-bundle-signclip.json").unlink()
+    provisional = evidence / "recognition-bundle-signclip-provisional.json"
+    provisional.write_text("{}")
+    port = free_port()
+    out = tmp_path / "bridge.out"
+    env = {"FAKE_BRIDGE_OUT": str(out), "FAKE_BACKEND_PORT": str(port)}
+    result = run("--free", "--port", str(port), "--recognition-dir", str(recognition), env=env)
+    assert result.returncode == 0, result.stderr
+    assert f"--bundle {provisional} " in out.read_text()
+
+
+def test_calibrated_bundle_wins_over_the_provisional_one(recognition: Path, tmp_path: Path) -> None:
+    evidence = recognition / "artifacts/evidence"
+    (evidence / "recognition-bundle-signclip-provisional.json").write_text("{}")
+    port = free_port()
+    out = tmp_path / "bridge.out"
+    env = {"FAKE_BRIDGE_OUT": str(out), "FAKE_BACKEND_PORT": str(port)}
+    result = run("--free", "--port", str(port), "--recognition-dir", str(recognition), env=env)
+    assert result.returncode == 0, result.stderr
+    assert f"--bundle {evidence}/recognition-bundle-signclip.json " in out.read_text()
+
+
 def test_run_starts_the_backend_hands_the_bridge_its_args_then_stops_it(
     recognition: Path, tmp_path: Path
 ) -> None:
