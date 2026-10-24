@@ -58,8 +58,9 @@ public final class HolisticLandmarkProvider: LandmarkProvider {
         )
     }
 
-    private func landmark(_ point: NormalizedLandmark, visibility: Float? = nil) -> Landmark {
-        Landmark(x: point.x, y: point.y, z: point.z, visibility: visibility)
+    // MediaPipe also exports a `Landmark` (world coordinates), so qualify ours.
+    private func landmark(_ point: NormalizedLandmark, visibility: Float? = nil) -> SignPipeline.Landmark {
+        SignPipeline.Landmark(x: point.x, y: point.y, z: point.z, visibility: visibility)
     }
 }
 
