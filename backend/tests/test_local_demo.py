@@ -13,12 +13,13 @@ import sys
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from pathlib import Path
 
 import httpx
 import pytest
 
-from app.markers import DISCLOSURE, GOODBYE
+from app.markers import DISCLOSURE, GOODBYE, HOLDING_LINE
 from app.protocol import (
     CallState,
     CaptionMessage,
@@ -176,6 +177,25 @@ async def test_b24_talk_over_is_not_delivered_then_a_resend_is_spoken_once() -> 
     ]
     assert session.spoken_counts[first] == 0
     assert session.spoken_counts[resent] == 1
+
+
+async def test_a_long_pause_shows_the_holding_line_in_the_app() -> None:
+    demo = build_local_demo(pauses=replace(FAST, silence_s=0.2), log=lambda _: None)
+
+    async with demo_call(demo) as (call, run):
+        session = call.session
+        await session.wait_for(
+            lambda m: isinstance(m, CaptionMessage) and m.text == HOLDING_LINE,
+            since=0,
+            timeout=WAIT_S,
+        )
+        await _end_and_wait_for_goodbye(session)
+
+    assert run.spoken[:2] == [DISCLOSURE, HOLDING_LINE]
+    events = _events(session)
+    assert events[:2] == [f"agent: {DISCLOSURE}", f"agent: {HOLDING_LINE}"]
+    assert events[-1] == f"agent: {GOODBYE}"
+    assert set(events) == {f"agent: {line}" for line in (DISCLOSURE, HOLDING_LINE, GOODBYE)}
 
 
 def test_local_settings_ignore_dotenv_and_exported_secrets(
