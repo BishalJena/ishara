@@ -82,6 +82,8 @@ public enum SendingPhase: Equatable, Sendable {
     case idle
     case speaking(turnID: TurnID, text: String)
     case delivered
+    /// Spoken although the user tapped STOP: it was already being said.
+    case deliveredDespiteStop
     /// No confirmation arrived; the user may re-SEND `text`. Never resent automatically.
     case notDelivered(text: String)
     /// The user tapped STOP and the reply was not spoken. SEND may offer `text` again,
@@ -89,9 +91,22 @@ public enum SendingPhase: Equatable, Sendable {
     case stopped(text: String)
 }
 
+/// How far a STOP for the reply being spoken got.
+public enum StopProgress: Equatable, Sendable {
+    case none
+    case requested
+    /// The backend refused the STOP: the reply was already being spoken.
+    case tooLate
+}
+
 public struct ServerError: Equatable, Sendable {
     public let code: String
     public let message: String
+
+    /// STOP arrived after the call agent had started speaking the reply.
+    public static let cannotInterrupt = "cannot_interrupt"
+    /// The backend couldn't tell the call agent to hang up after End.
+    public static let endFailed = "end_failed"
 }
 
 /// The single source of truth for one call on the app side.
@@ -112,11 +127,12 @@ public final class TurnStore {
     public private(set) var chips: [Chip] = []
     public private(set) var draft: Draft?
     public private(set) var sending: SendingPhase = .idle
-    /// STOP was sent for the reply being spoken; it isn't sent twice.
-    public private(set) var isStopRequested = false
+    public private(set) var stopProgress: StopProgress = .none
+    /// The latest backend `error`, until the user's next action or the reply settles.
+    /// After End only `end_failed` is still recorded: the call may not have hung up.
+    public private(set) var lastError: ServerError?
     /// Shown to the user when the call can no longer carry messages.
     public private(set) var notice: String?
-    public private(set) var lastError: ServerError?
 
     private let sink: any OutgoingMessageSink
     private let makeTurnID: () -> TurnID
@@ -132,6 +148,9 @@ public final class TurnStore {
         self.currentTurnID = makeTurnID()
         if isLive { connectedAt = Date() }
     }
+
+    /// STOP was sent for the reply being spoken; it isn't sent twice.
+    public var isStopRequested: Bool { stopProgress != .none }
 
     /// The signs a `chips` message would carry, in order.
     public var recognisedSigns: [Sign] { chips.compactMap(\.sign) }
@@ -152,7 +171,7 @@ public final class TurnStore {
     public var unspokenText: String? {
         switch sending {
         case let .notDelivered(text), let .stopped(text): text
-        case .idle, .speaking, .delivered: nil
+        case .idle, .speaking, .delivered, .deliveredDespiteStop: nil
         }
     }
 
@@ -164,6 +183,7 @@ public final class TurnStore {
     public func add(_ chip: Chip) -> Bool {
         guard acceptsInput else { return false }
         if chip.sign != nil, recognisedSigns.count >= ProtocolLimits.maxChips { return false }
+        lastError = nil
         chips.append(chip)
         if chip.sign != nil { recognisedChipsChanged() }
         return true
@@ -171,6 +191,7 @@ public final class TurnStore {
 
     public func remove(_ chip: Chip) {
         guard acceptsInput, let index = chips.firstIndex(where: { $0.id == chip.id }) else { return }
+        lastError = nil
         let removed = chips.remove(at: index)
         if removed.sign != nil { recognisedChipsChanged() }
     }
@@ -178,6 +199,7 @@ public final class TurnStore {
     /// Puts a quick-reply sentence in the draft on a fresh turn. Nothing is sent until SEND.
     public func useQuickReply(_ reply: QuickReply) {
         guard acceptsInput else { return }
+        lastError = nil
         beginNewTurn()
         draft = Draft(text: reply.text, origin: .quickReply)
     }
@@ -186,25 +208,29 @@ public final class TurnStore {
     /// chips is stale; nothing is sent.
     public func clear() {
         guard !chips.isEmpty || draft != nil else { return }
+        lastError = nil
         beginNewTurn()
     }
 
     /// Approves exactly the shown draft, once. A new turn then begins with no chips or draft.
     public func send() {
         guard canSend, let draft else { return }
+        lastError = nil
         approve(draft.text, turnID: currentTurnID)
     }
 
     /// After "not delivered" or a stop, approves the same text again on a new turn id.
     public func resend() {
         guard canResend, let text = unspokenText else { return }
+        lastError = nil
         approve(text, turnID: makeTurnID())
     }
 
     /// Asks the backend to cancel the reply being spoken, once per reply.
     public func stop() {
         guard acceptsInput, isAwaitingDelivery, !isStopRequested else { return }
-        isStopRequested = true
+        lastError = nil
+        stopProgress = .requested
         sink.send(.stop)
     }
 
@@ -219,7 +245,13 @@ public final class TurnStore {
     // MARK: Backend events
 
     public func receive(_ message: ServerMessage) {
-        guard state != .ended else { return }
+        guard state != .ended else {
+            // A failed hang-up still matters after End: the call may still be running.
+            if case let .error(code, text) = message, code == ServerError.endFailed {
+                lastError = ServerError(code: code, message: text)
+            }
+            return
+        }
         switch message {
         case .status(.ended):
             sink.discardPending()
@@ -241,7 +273,8 @@ public final class TurnStore {
         case let .spoken(turnID):
             if case let .speaking(speakingTurn, text) = sending, speakingTurn == turnID {
                 captions.append(Caption(text: text, at: Date(), speaker: .user))
-                settle(.delivered)
+                // Spoken although STOP was tapped: say so, never a plain "delivered".
+                settle(isStopRequested ? .deliveredDespiteStop : .delivered)
             }
         case let .notDelivered(turnID, _):
             if case let .speaking(speakingTurn, text) = sending, speakingTurn == turnID {
@@ -250,7 +283,11 @@ public final class TurnStore {
                 settle(isStopRequested ? .stopped(text: text) : .notDelivered(text: text))
             }
         case let .error(code, message):
+            // Errors are only shown; they never send or settle anything.
             lastError = ServerError(code: code, message: message)
+            if code == ServerError.cannotInterrupt, isAwaitingDelivery, stopProgress == .requested {
+                stopProgress = .tooLate
+            }
         case .unknown:
             break
         }
@@ -307,7 +344,8 @@ public final class TurnStore {
 
     private func settle(_ phase: SendingPhase) {
         sending = phase
-        isStopRequested = false
+        stopProgress = .none
+        lastError = nil
     }
 
     private func beginNewTurn() {
