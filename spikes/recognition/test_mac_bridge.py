@@ -255,6 +255,53 @@ def child(code):
     return [sys.executable, "-c", "import json, os, sys, time\n" + code]
 
 
+class DescribeResult(unittest.TestCase):
+    TOP = [{"sign": "doctor", "similarity": 0.8312}, {"sign": "hello", "similarity": 0.6149},
+           {"sign": "time", "similarity": 0.55}]
+
+    def test_accepted_sign_shows_top3_margin_and_latency(self):
+        details = {"sign": "doctor", "reason": None, "top": self.TOP, "margin": 0.2163,
+                   "latency_ms": 462.0, "failed_checks": [], "provisional": False}
+        self.assertEqual(mb.describe_result(details),
+                         "✓ doctor  (doctor 0.83 | hello 0.61 | time 0.55; margin 0.22; 0.46 s)")
+
+    def test_unsure_sign_says_which_checks_failed_instead_of_the_long_reason(self):
+        details = {"sign": None, "reason": "insufficient evidence (best morning 0.580, ...)",
+                   "top": [{"sign": "morning", "similarity": 0.58}, {"sign": "evening", "similarity": 0.56}],
+                   "margin": 0.02, "latency_ms": 470.0, "failed_checks": ["similarity", "margin", "pose", "hands"]}
+        self.assertEqual(mb.describe_result(details),
+                         "? unsure  (morning 0.58 | evening 0.56; margin 0.02; 0.47 s; low similarity, "
+                         "low margin, body seen in too few frames, hands seen in too few frames)")
+
+    def test_unsure_without_failed_checks_shows_the_reason(self):
+        self.assertEqual(mb.describe_result({"sign": None, "reason": "no recognition bundle",
+                                             "top": [], "margin": None, "latency_ms": 450.0,
+                                             "failed_checks": []}),
+                         "? unsure  (0.45 s; no recognition bundle)")
+
+    def test_old_recognizer_lines_still_read(self):
+        self.assertEqual(mb.describe_result({"sign": "doctor"}), "✓ doctor")
+        self.assertEqual(mb.describe_result({"sign": None}), "? unsure")
+        self.assertEqual(mb.describe_result({"sign": None, "reason": "low similarity", "latency_ms": 500}),
+                         "? unsure  (0.50 s; low similarity)")
+        self.assertEqual(mb.describe_result({"sign": None, "failed_checks": ["new_check"]}),
+                         "? unsure  (new_check)")
+
+    def test_a_reason_is_never_shown_for_an_accepted_sign(self):
+        self.assertEqual(mb.describe_result({"sign": "yes", "reason": "stray", "failed_checks": ["margin"]}),
+                         "✓ yes")
+
+    def test_provisional_results_are_tagged(self):
+        self.assertEqual(mb.describe_result({"sign": "yes", "provisional": True}), "✓ yes  [PROVISIONAL]")
+        self.assertEqual(mb.describe_result({"sign": "yes", "provisional": False}), "✓ yes")
+
+    def test_parse_result_details_keeps_every_key_and_checks_the_sign(self):
+        line = mb.result_line("doctor", margin=0.2, top=self.TOP)
+        self.assertEqual(mb.parse_result_details(line), {"sign": "doctor", "margin": 0.2, "top": self.TOP})
+        with self.assertRaises(ValueError):
+            mb.parse_result_details('{"sign": "hospital", "margin": 0.2}')
+
+
 class SubprocessSourceTests(unittest.IsolatedAsyncioTestCase):
     def test_result_lines_round_trip_and_reject_unknown_signs(self):
         line = mb.result_line("doctor", latency_ms=812.5)
@@ -274,14 +321,25 @@ class SubprocessSourceTests(unittest.IsolatedAsyncioTestCase):
             'for sign in ("hello", None, "doctor"):\n'
             '    print(json.dumps({"sign": sign, "latency_ms": 5}), flush=True)\n'), lines.append)
         self.assertEqual(await asyncio.wait_for(collect(source), 30), ["hello", None, "doctor"])
-        self.assertEqual(lines, [])
+        self.assertEqual(lines, ["✓ hello  (0.01 s)", "? unsure  (0.01 s)", "✓ doctor  (0.01 s)"])
+
+    async def test_each_result_is_shown_and_a_provisional_bundle_is_announced_once(self):
+        lines = []
+        rows = [{"sign": "doctor", "provisional": True, "top": [{"sign": "doctor", "similarity": 0.9}]},
+                {"sign": None, "provisional": True, "failed_checks": ["margin"]}]
+        source = mb.SubprocessSource(child(
+            f'for row in {rows!r}:\n    print(json.dumps(row), flush=True)\n'), lines.append)
+        self.assertEqual(await asyncio.wait_for(collect(source), 30), ["doctor", None])
+        self.assertEqual(lines, [f"!!! {mb.PROVISIONAL_BANNER} !!!",
+                                 "✓ doctor  (doctor 0.90)  [PROVISIONAL]",
+                                 "? unsure  (low margin)  [PROVISIONAL]"])
 
     async def test_a_crashed_child_is_reported_after_its_results(self):
         lines = []
         source = mb.SubprocessSource(child('print(json.dumps({"sign": "yes"}))\nsys.exit(3)'),
                                      lines.append)
         self.assertEqual(await asyncio.wait_for(collect(source), 30), ["yes"])
-        self.assertEqual(lines, ["! live recognizer stopped (exit 3); type signs instead"])
+        self.assertEqual(lines, ["✓ yes", "! live recognizer stopped (exit 3); type signs instead"])
 
     async def test_an_unknown_sign_from_the_child_fails_loudly(self):
         source = mb.SubprocessSource(child('print(json.dumps({"sign": "hospital"}))'))

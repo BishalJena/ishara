@@ -34,7 +34,7 @@ import recognition_data as data
 from detect_clips import CALIBRATION_HELP, within
 from detector import CalibrationError, Params, Segment, SignDetector, State, calibrate
 from detector import Frame as DetectorFrame
-from mac_bridge import PROVISIONAL_BANNER, result_line
+from mac_bridge import PROVISIONAL_BANNER, describe_result, result_line
 
 DEFAULT_BUNDLE = data.ARTIFACTS / "evidence" / "recognition-bundle-signclip.json"
 LATENCY_BUDGET_S = 2.0  # G2: sign end to chip
@@ -302,10 +302,10 @@ class LiveSource:
         self.latencies.append(latency)
         self.count += 1
         over = "  OVER the 2 s budget" if latency >= LATENCY_BUDGET_S else ""
-        shown = match.sign or f"? ({match.reason})"
+        recognition = Recognition(match, latency, segment)
         self._message = f"#{self.count} {match.sign or '?'}  {latency:.2f} s"
-        self.out(f"#{self.count} {span} -> {shown}  latency {latency:.2f} s{over}")
-        return Recognition(match, latency, segment)
+        self.out(f"#{self.count} {span}  {describe_result(result_details(recognition))}{over}")
+        return recognition
 
 
 def _rounded(value: float | None) -> float | None:

@@ -356,7 +356,8 @@ class Latency(unittest.TestCase):
         # The segment closes after 0.40 s of rest; matching then takes 0.25 s.
         self.assertAlmostEqual(results[0].latency_s, 0.40 + 0.25, places=6)
         self.assertEqual(source.latencies, [results[0].latency_s])
-        self.assertTrue(any("latency 0.65 s" in line for line in lines))
+        self.assertIn("#1 1.80-3.00 s  ✓ doctor  (doctor 1.00 | afternoon 0.00 | evening 0.00; "
+                      "margin 1.00; 0.65 s)", lines)
         self.assertIn("within the 2 s budget", source.summary())
 
     def test_slow_results_are_flagged_over_budget(self):

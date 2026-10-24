@@ -262,11 +262,46 @@ def result_line(result: Result, **details: object) -> str:
     return json.dumps({"sign": result, **details})
 
 
-def parse_result_line(line: str) -> Result:
-    sign: object = json.loads(line)["sign"]
+def parse_result_details(line: str) -> dict[str, Any]:
+    """A whole result line; "sign" is checked, the rest is evidence to show and log."""
+    details: dict[str, Any] = json.loads(line)
+    sign = details["sign"]
     if sign is None or (isinstance(sign, str) and sign in SIGNS):
-        return sign
+        return details
     raise ValueError(f"recognizer sent unknown sign {sign!r}")
+
+
+def parse_result_line(line: str) -> Result:
+    sign: Result = parse_result_details(line)["sign"]
+    return sign
+
+
+CHECK_WORDS = {"similarity": "low similarity", "margin": "low margin",
+               "pose": "body seen in too few frames", "hands": "hands seen in too few frames"}
+
+
+def describe_result(details: Mapping[str, Any]) -> str:
+    """One readable line per sign, e.g. `✓ doctor  (doctor 0.83 | time 0.61 | no 0.55;
+    margin 0.22; 0.46 s)`. Lines from an older recognizer show what they carry."""
+    sign = details["sign"]
+    parts = []
+    if top := details.get("top"):
+        parts.append(" | ".join(f"{c['sign']} {c['similarity']:.2f}" for c in top))
+    if (margin := details.get("margin")) is not None:
+        parts.append(f"margin {margin:.2f}")
+    if (latency_ms := details.get("latency_ms")) is not None:
+        parts.append(f"{latency_ms / 1000:.2f} s")
+    if sign is None:
+        checks = details.get("failed_checks")
+        why = ", ".join(CHECK_WORDS.get(c, c) for c in checks) if checks else details.get("reason")
+        if why:
+            parts.append(why)
+    line = f"✓ {sign}" if sign is not None else "? unsure"
+    if parts:
+        line += f"  ({'; '.join(parts)})"
+    if details.get("provisional"):
+        line += "  [PROVISIONAL]"
+    return line
 
 
 class SubprocessSource:
@@ -276,6 +311,7 @@ class SubprocessSource:
 
     def __init__(self, argv: Sequence[str], out: Callable[[str], None] = print) -> None:
         self.argv, self.out = tuple(argv), out
+        self._warned_provisional = False
 
     async def results(self) -> AsyncIterator[Result]:
         process = await asyncio.create_subprocess_exec(
@@ -283,7 +319,12 @@ class SubprocessSource:
         try:
             assert process.stdout is not None  # requested as a pipe above
             async for raw in process.stdout:
-                yield parse_result_line(raw.decode())
+                details = parse_result_details(raw.decode())
+                if details.get("provisional") and not self._warned_provisional:
+                    self._warned_provisional = True
+                    self.out(f"!!! {PROVISIONAL_BANNER} !!!")
+                self.out(describe_result(details))
+                yield details["sign"]
             if code := await process.wait():
                 self.out(f"! live recognizer stopped (exit {code}); type signs instead")
         finally:
