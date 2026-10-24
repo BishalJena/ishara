@@ -35,7 +35,8 @@ struct CameraAccess: Sendable {
 }
 
 /// The front camera as the screens see it while recognition watches it: the capture
-/// session to preview (the same one recognition reads frames from) and whether it may run.
+/// session to preview (the same one recognition reads frames from), whether it may
+/// run, and the latest tracked body points to draw on top.
 @MainActor
 @Observable
 final class LiveCamera {
@@ -44,6 +45,8 @@ final class LiveCamera {
     var permission: CameraPermission
     /// The device has no usable front camera.
     var isUnavailable = false
+    /// Latest wrists, shoulders and rest line from recognition; nil until a frame is tracked.
+    var overlay: BodyOverlay?
 
     init(session: AVCaptureSession, permission: CameraPermission = .notDetermined) {
         self.session = session
