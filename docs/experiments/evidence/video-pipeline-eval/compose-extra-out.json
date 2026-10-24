@@ -1,0 +1,226 @@
+{
+  "spent": {
+    "groq": 9,
+    "voice": 0
+  },
+  "turns": [
+    {
+      "turn": "X1",
+      "receptionist": "We have slots today and tomorrow. When would you like to come?",
+      "recognised": {
+        "chips": [],
+        "draft": null,
+        "template": null
+      },
+      "oracle": {
+        "chips": [
+          "today",
+          "evening"
+        ],
+        "draft": {
+          "text": "Is there an appointment this evening?",
+          "source": "template",
+          "seconds": 1.504,
+          "groq_raw": null,
+          "validator": null
+        },
+        "template": "Is there an appointment this evening?"
+      },
+      "voice": null
+    },
+    {
+      "turn": "X2",
+      "receptionist": "Your appointment is booked for tomorrow.",
+      "recognised": {
+        "chips": [],
+        "draft": null,
+        "template": null
+      },
+      "oracle": {
+        "chips": [
+          "sorry",
+          "time"
+        ],
+        "draft": {
+          "text": "Sorry, what time is available?",
+          "source": "template",
+          "seconds": 0.198,
+          "groq_raw": "Sorry, I can't make that time.",
+          "validator": [
+            "adds a refusal the user did not sign"
+          ]
+        },
+        "template": "Sorry, what time is available?"
+      },
+      "voice": null
+    },
+    {
+      "turn": "P1",
+      "receptionist": null,
+      "recognised": {
+        "chips": [],
+        "draft": null,
+        "template": null
+      },
+      "oracle": {
+        "chips": [
+          "hello",
+          "doctor",
+          "today",
+          "afternoon"
+        ],
+        "draft": {
+          "text": "Hello, I'd like to see the doctor this afternoon.",
+          "source": "llm",
+          "seconds": 0.146,
+          "groq_raw": "Hello, I'd like to see the doctor this afternoon.",
+          "validator": []
+        },
+        "template": "Hello, I'd like a doctor's appointment this afternoon."
+      },
+      "voice": null
+    },
+    {
+      "turn": "P2",
+      "receptionist": "We have 11 am tomorrow. Does that work?",
+      "recognised": {
+        "chips": [],
+        "draft": null,
+        "template": null
+      },
+      "oracle": {
+        "chips": [
+          "no",
+          "evening"
+        ],
+        "draft": {
+          "text": "No, 11 am doesn't work. Do you have any openings tomorrow evening?",
+          "source": "llm",
+          "seconds": 0.173,
+          "groq_raw": "No, 11 am doesn't work. Do you have any openings tomorrow evening?",
+          "validator": []
+        },
+        "template": "No, sorry, that doesn't work. Is there anything in the evening?"
+      },
+      "voice": null
+    },
+    {
+      "turn": "P3",
+      "receptionist": "Can you come at 5:15 pm today?",
+      "recognised": {
+        "chips": [],
+        "draft": null,
+        "template": null
+      },
+      "oracle": {
+        "chips": [
+          "yes"
+        ],
+        "draft": {
+          "text": "Yes, 5:15 pm today works for me.",
+          "source": "llm",
+          "seconds": 0.154,
+          "groq_raw": "Yes, 5:15 pm today works for me.",
+          "validator": []
+        },
+        "template": "Yes, that works."
+      },
+      "voice": null
+    },
+    {
+      "turn": "P4",
+      "receptionist": "We can see you tomorrow.",
+      "recognised": {
+        "chips": [],
+        "draft": null,
+        "template": null
+      },
+      "oracle": {
+        "chips": [
+          "time"
+        ],
+        "draft": {
+          "text": "What time can you see me tomorrow?",
+          "source": "llm",
+          "seconds": 0.146,
+          "groq_raw": "What time can you see me tomorrow?",
+          "validator": []
+        },
+        "template": "What time is available?"
+      },
+      "voice": null
+    },
+    {
+      "turn": "P5",
+      "receptionist": "Could you repeat that, please?",
+      "recognised": {
+        "chips": [],
+        "draft": null,
+        "template": null
+      },
+      "oracle": {
+        "chips": [
+          "sorry"
+        ],
+        "draft": {
+          "text": "Sorry.",
+          "source": "template",
+          "seconds": 0.171,
+          "groq_raw": "Sorry, I didn't hear you clearly. Could you please repeat that?",
+          "validator": [
+            "adds a refusal the user did not sign"
+          ]
+        },
+        "template": "Sorry."
+      },
+      "voice": null
+    },
+    {
+      "turn": "P6",
+      "receptionist": "You're booked for 10:30 tomorrow morning.",
+      "recognised": {
+        "chips": [],
+        "draft": null,
+        "template": null
+      },
+      "oracle": {
+        "chips": [
+          "thankyou"
+        ],
+        "draft": {
+          "text": "Thank you, that works perfectly for me.",
+          "source": "llm",
+          "seconds": 0.143,
+          "groq_raw": "Thank you, that works perfectly for me.",
+          "validator": []
+        },
+        "template": "Thank you."
+      },
+      "voice": null
+    },
+    {
+      "turn": "P7",
+      "receptionist": null,
+      "recognised": {
+        "chips": [],
+        "draft": null,
+        "template": null
+      },
+      "oracle": {
+        "chips": [
+          "doctor",
+          "morning"
+        ],
+        "draft": {
+          "text": "I'd like to book an appointment with the doctor. Do you have any openings in the morning?",
+          "source": "llm",
+          "seconds": 0.171,
+          "groq_raw": "I'd like to book an appointment with the doctor. Do you have any openings in the morning?",
+          "validator": []
+        },
+        "template": "I'd like a doctor's appointment in the morning."
+      },
+      "voice": null
+    }
+  ]
+}

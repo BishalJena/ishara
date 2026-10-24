@@ -4,6 +4,9 @@ Executed 20 October 2026 on the development Mac. This is the authoritative summa
 of local ML measurements. [Runbook](../../spikes/recognition/README.md) ·
 [Current direction](../HANDOFF.md) · [Next acceptance gates](../../PLAN.md)
 
+Later, separate run: [video-to-voice pipeline on public ISL videos](video-pipeline-eval.md)
+(24 October, cross-signer, through the live recognizer, composer and voice).
+
 ## Scope
 
 The corpus contains 11 selected public INCLUDE clips and seven saved
