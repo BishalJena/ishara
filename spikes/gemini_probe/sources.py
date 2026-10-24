@@ -14,14 +14,18 @@ Everything lands under spikes/recognition/artifacts/gemini_probe/ (gitignored).
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import re
+import struct
 import sys
 import tarfile
 import urllib.parse
 import urllib.request
 import zipfile
+import zlib
 from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -146,27 +150,58 @@ def download(url: str, destination: Path) -> None:
     partial.rename(destination)
 
 
-def fetch_include(members: list[list[str]]) -> None:
-    """Range-read the wanted INCLUDE members, grouped by zip."""
+def member_bytes(url: str, info: zipfile.ZipInfo) -> bytes:
+    """One member's data in two range requests (local header, then the whole body).
+
+    Zenodo serves ~0.35 MB/s per connection, so the 1 MB readahead of RemoteFile is too
+    slow for hundreds of clips; whole-member requests run in parallel instead.
+    """
+    header = fetch_clips.RemoteFile(url, info.header_offset + 30)._fetch(info.header_offset, info.header_offset + 30)
+    name_length, extra_length = struct.unpack("<HH", header[26:30])
+    start = info.header_offset + 30 + name_length + extra_length
+    body = fetch_clips.RemoteFile(url, start + info.compress_size)._fetch(start, start + info.compress_size)
+    if info.compress_type == zipfile.ZIP_STORED:
+        return body
+    if info.compress_type == zipfile.ZIP_DEFLATED:
+        return zlib.decompressobj(-15).decompress(body)
+    raise ValueError(f"Unsupported compression {info.compress_type} for {info.filename}")
+
+
+def fetch_include(members: list[list[str]], workers: int = 12) -> None:
+    """Range-read the wanted INCLUDE members, several at a time."""
     index_ = fetch_clips.zip_index()
     by_zip: dict[str, list[str]] = {}
     for key, member in members:
-        by_zip.setdefault(key, []).append(member)
+        if not include_path(member).is_file():
+            by_zip.setdefault(key, []).append(member)
+    jobs = []
     for key, wanted in sorted(by_zip.items()):
-        pending = [m for m in wanted if not include_path(m).is_file()]
-        if not pending:
-            continue
         url, size = index_[key]
         archive = zipfile.ZipFile(fetch_clips.RemoteFile(url, size))
         names = {n.lstrip("./"): n for n in archive.namelist()}
-        for member in pending:
-            destination = include_path(member)
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            partial = destination.with_suffix(".part")
-            with archive.open(names[member]) as source:
-                partial.write_bytes(source.read())
-            partial.rename(destination)
-            print(f"  {member}", flush=True)
+        jobs += [(url, archive.getinfo(names[m]), m) for m in wanted]
+
+    def one(job: tuple[str, zipfile.ZipInfo, str]) -> None:
+        url, info, member = job
+        for attempt in range(3):  # Zenodo drops long range reads now and then (IncompleteRead)
+            try:
+                data = member_bytes(url, info)
+                break
+            except (OSError, http.client.HTTPException) as error:
+                print(f"  retry {member}: {type(error).__name__}", flush=True)
+                if attempt == 2:
+                    raise
+        if len(data) != info.file_size or zlib.crc32(data) != info.CRC:
+            raise ValueError(f"Corrupt download of {member}")
+        destination = include_path(member)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        partial = destination.with_suffix(".part")
+        partial.write_bytes(data)
+        partial.rename(destination)
+        print(f"  {member}", flush=True)
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        list(pool.map(one, jobs))
 
 
 def include_path(member: str) -> Path:
@@ -176,11 +211,10 @@ def include_path(member: str) -> Path:
 
 def fetch(spec_path: Path) -> int:
     spec = json.loads(spec_path.read_text())
-    include = [s["include_member"] for s in spec["sources"] if "include_member" in s]
-    fetch_include(include)
     for source in spec["sources"]:
         if source.get("islrtc_path"):
             download(ISLRTC_FILE + urllib.parse.quote(source["islrtc_path"]), ARTIFACTS / source["file"])
+    fetch_include([s["include_member"] for s in spec["sources"] if "include_member" in s])
     return 0
 
 
