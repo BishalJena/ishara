@@ -12,6 +12,7 @@ struct CallEndedPanel: View {
                 .accessibilityHidden(true)
             Text(title)
                 .font(.title2.bold())
+                .multilineTextAlignment(.center)
             Text("Nothing will be sent. Any pending draft was wiped, so the next call starts clean.")
                 .font(.body)
                 .multilineTextAlignment(.center)
