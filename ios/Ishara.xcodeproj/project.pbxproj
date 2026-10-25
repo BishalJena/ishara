@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		04A298A8991E9D21BAA5AABD /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F122F57D5868D990A7D8607F /* HomeView.swift */; };
 		075052019F52310F95B92698 /* QuickReplyBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E33B72E0774F40615731CD8A /* QuickReplyBar.swift */; };
+		B6D5E2F3A4B5C6D7E8F90112 /* AskCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C4D1E2F3A4B5C6D7E8F901 /* AskCard.swift */; };
 		08AF537C8F2C3A4A769D8F01 /* CallModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 982A950789AC5BBB3D7DF110 /* CallModels.swift */; };
 		0AC87ACE8A0AFA6B054D8A34 /* BackendFakes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA065F19BC7657A1F4E7D2D1 /* BackendFakes.swift */; };
 		0C487F915F586CE0AF0A4D8A /* FakeCallDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBBEF1F2F01D8A80C53914BA /* FakeCallDriver.swift */; };
@@ -157,6 +158,7 @@
 		DBF9D95F47AC58D27C65B272 /* ChipRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChipRow.swift; sourceTree = "<group>"; };
 		E2081128C63E44B37F9A2C28 /* IsharaUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IsharaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E33B72E0774F40615731CD8A /* QuickReplyBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickReplyBar.swift; sourceTree = "<group>"; };
+		A5C4D1E2F3A4B5C6D7E8F901 /* AskCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskCard.swift; sourceTree = "<group>"; };
 		E3703075FFA4C0A6189C01C8 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
 		E3CBA8973C3BC30E14064F5C /* LocalAssets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LocalAssets; path = Ishara/LocalAssets; sourceTree = SOURCE_ROOT; };
 		EB991EA3BCF329790A65973B /* CameraFeedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraFeedTests.swift; sourceTree = "<group>"; };
@@ -262,6 +264,7 @@
 				DBF9D95F47AC58D27C65B272 /* ChipRow.swift */,
 				36D8E6BB02BA49CC4B2610BC /* DraftCard.swift */,
 				31EACB5BD18A00F6EEC03AE4 /* FlowLayout.swift */,
+				A5C4D1E2F3A4B5C6D7E8F901 /* AskCard.swift */,
 				E33B72E0774F40615731CD8A /* QuickReplyBar.swift */,
 				C75094643E4319B9D9FE9EAA /* ReplayMenu.swift */,
 			);
@@ -583,6 +586,7 @@
 				88D129F5D1F6BDC593F029BE /* LiveCallDriver.swift in Sources */,
 				C7163DE6D475E5BBE4338F4C /* LiveCamera.swift in Sources */,
 				74A11F08935C2D0D80626B4F /* PipelineRecognitionController.swift in Sources */,
+				B6D5E2F3A4B5C6D7E8F90112 /* AskCard.swift in Sources */,
 				075052019F52310F95B92698 /* QuickReplyBar.swift in Sources */,
 				3B216E1616E508A0DE9F00F4 /* RecognitionAssets.swift in Sources */,
 				28A130A60A7795A2344A6059 /* RecognitionController.swift in Sources */,

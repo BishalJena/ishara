@@ -89,7 +89,7 @@ final class FakeCallTests: XCTestCase {
                        [.result(.sign(.hello)), .result(.unsure)])
         XCTAssertEqual(events.first, .camera(.signing))
         XCTAssertEqual(events.last, .camera(.watching))
-        XCTAssertEqual(recognition.replayOptions.count, 13, "12 signs and ?")
+        XCTAssertEqual(recognition.replayOptions.count, Sign.allCases.count + 1, "every sign and ?")
     }
 
     func testScriptPlaysOnceSigningStarts() async {

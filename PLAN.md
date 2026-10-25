@@ -63,7 +63,7 @@ Agreed on 23 October 2026. Raise any change explicitly; don't switch silently.
 | D6 | Where recognition runs | **On the iPhone**: MediaPipe Holistic for iOS (official SwiftPM package, MediaPipeTasksVision 1.1.1) plus SignCLIP converted to Core ML (FP16, run with compute units `.cpuAndGPU`; see P1). The **Mac is the backup** | On-device is the pitch; the Mac replay pipeline (extraction, SignCLIP embedding, reference matching) already runs, though it has no calibrated cut-off yet and abstains on everything until R2b |
 | D7 | Backend hosting | Small Python backend on **Heroku**, **EU** region, **Basic dyno or higher** (never Eco). Deployed by pushing `backend/` with `git subtree` (`backend/HEROKU.md`) | Team has credits; Eco dynos sleep and Bolna would hear silence. EU is closer to India than the default US region (latency not measured) |
 | D8 | Recognition model and data *(25 Oct, revised the same evening)* | **Pure ASL, with a ready-made signer-independent model used as is**: the Kaggle ASL Signs 1st-place model (MIT code, public 11 MB TFLite, 250 glosses, CC-BY corpus of ~94k phone-camera clips from 21 Deaf signers). **No own recordings, no training or fine-tuning, no reference clips.** Any of the 250 glosses can become a chip under the open-set rule (full softmax, p ≥ 0.6, margin ≥ 0.3, gloss in the service-call vocabulary; pick-one tile below that; never restrict to the vocabulary first). Rehearsed words: hello, thankyou, yes, no, now (today), please, tomorrow; candidates morning, wait; dropped sick, time. ISL forms are **not** mixed in, even where measured to coincide. Details: [handoff](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md), [measurements](docs/experiments/asl-model-probe.md) | We cannot produce sign data ourselves and public ISL data cannot give a signer-independent recognizer (INCLUDE ≈ 16 clips/word, none for yes/no/sorry; cross-signer SignCLIP accepted 4/42). Measured 25 Oct: the ASL model got 6/11 Lifeprint clips at 0.70–0.94 and four of the presenter's signs first try, 4 ms per sign, 0 wrong accepts at p ≥ 0.6, and stays flat on signs it does not know |
-| D9 *(proposed 25 Oct, pending founder yes)* | Delegated call mode | The user signs the intent, approves a **brief** once, and the Bolna agent makes the call for them, pursuing only the brief; afterwards the app shows transcript + Bolna's call summary. Optionally **attended**: live captions, and at decision points the agent says "one moment" and the user answers yes/no/wait by sign or tap (event injection). The verbatim live mode stays. Details: [handoff §D9](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#d9-proposed-the-delegated-call-with-optional-steering) | Removes real-time turn-taking pressure, needs 2–3 content signs per call, fits service calls, and is what Bolna agents are built for (~1 day on the existing backend). Keeps every safety rule: one explicit approval, disclosure, no out-of-brief commitments, allowlisted recipients |
+| D9 *(approved 25 Oct, both variants)* | Delegated call mode | The user signs the intent, approves a **brief** once, and the Bolna agent makes the call for them, pursuing only the brief; afterwards the app shows transcript + Bolna's call summary. Optionally **attended**: live captions, and at decision points the agent says "one moment" and the user answers yes/no/wait by sign or tap (event injection). The verbatim live mode stays. Details: [handoff §D9](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#d9-approved-25-oct-built-the-delegated-call-with-optional-steering) | Removes real-time turn-taking pressure, needs 2–3 content signs per call, fits service calls, and is what Bolna agents are built for (~1 day on the existing backend). Keeps every safety rule: one explicit approval, disclosure, no out-of-brief commitments, allowlisted recipients |
 
 Already settled: native **SwiftUI** app and **nothing is spoken unless the user taps SEND**.
 SignCLIP as the main recognizer (SL-GCN as comparison) held until 25 Oct; D8 replaces it
@@ -377,10 +377,9 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 
 - [x] **R5a [Build]** Measure the ready-made ASL model: ISL clips, Lifeprint ASL clips, presenter
   webcam session, offline analysis. *Done 25 Oct:* [record](docs/experiments/asl-model-probe.md).
-- [ ] **R5 [Mate]** ASL recognizer into the pipeline, Day 1: Mac matcher behind `--model asl`,
-  bundle v2, composer accepts the model's glosses (and #34), pick-one tile and quick-reply buttons,
-  probe fixes for Thursday. *Done:* the
-  [Day 1 list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#day-1-mon-26-oct-recognizer-into-the-pipeline-mac-composer-ui).
+- [ ] **R5 [Mate]** ASL recognizer on the phone: LiteRT, Kaggle layout from the Tasks
+  Landmarker, parity, pick-one tile, framing guard, Brief/Notes screens. *Done:* the
+  [left-for-you list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-you-teammate-in-order).
   Replaces R1–R4.
 - [ ] ~~**R4 [You]** Final test session: 10 × 12 signs plus 50 negatives.~~ Superseded by D8.
 - [ ] **G2 Gate 2** (see §7, revised 25 Oct).
@@ -391,11 +390,13 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 ### Tue 27 Oct: on-device pipeline → Gate 3
 
 - [ ] **R6 [Build]** ASL recognizer on device, Day 2: LiteRT in `SignPipeline`, Tasks Landmarker →
-  Kaggle layout, Mac-vs-phone parity on saved cuts, hand-out-of-frame guard, docs. *Done:* the
-  [Day 2 list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#day-2-tue-27-oct-on-device-and-the-delegated-call-mode).
-- [ ] **V7 [Build]** D9 delegated call (if approved): brief → agent variables → webhook transcript
-  + summary → Notes screen; attended variant with an "ask the user" step on the event channel.
-  *Done:* fake-Bolna tests, then one real call to a consenting teammate after approval.
+  Kaggle layout, Mac-vs-phone parity on saved cuts, hand-out-of-frame guard, docs. *Done:* items
+  1–4 of the [left-for-you list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-you-teammate-in-order).
+- [x] **V7 [Build]** D9 delegated call, backend and Mac bridge: briefs, delegated/attended
+  calls, asks and answers, notes; Sign Lab end-to-end test. (25 Oct; iOS Brief/Notes screens
+  and the real call remain: see the handoff)
+- [x] **R5 (Mac half)** ASL matcher behind `--model asl`, bundle v2, composer vocabulary, #34,
+  iOS wire types, `LogitsMatcher`, `AskCard`. (25 Oct)
 
 - [ ] **P2 [Build]** MediaPipe Holistic (iOS) feeding the Swift detector and matcher, using the
   frozen cut-off and your enrollment references bundled in the app.

@@ -85,7 +85,7 @@ final class RecognitionBundleTests: XCTestCase {
         }
 
         XCTAssertEqual(Set(try load(bundleJSON(references: references)).references.map(\.label)), Set(SignLabel.allCases))
-        XCTAssertEqual(SignLabel.allCases.count, 12)
+        XCTAssertEqual(SignLabel.allCases.count, 34)  // 12 template signs + 22 ASL glosses (D8)
     }
 
     // MARK: Validation failures

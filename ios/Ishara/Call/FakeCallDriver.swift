@@ -81,6 +81,9 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
             // ended, so the caption goes in now, while `end()` is still on its way.
             deliver(.caption(text: DemoScript.goodbye, at: Date().timeIntervalSince1970, speaker: .agent))
             finish()
+        case .answer:
+            // The fake drives live calls only; delegated asks (D9) come from the real backend.
+            break
         }
     }
 

@@ -24,7 +24,7 @@ the demo. The pitch says all of this plainly.
 | Day 1 bake-off between model A (TFLite) and model B (SignCLIP-ASL) | **Done, A wins by default**: it works zero-shot and SignCLIP-ASL would need references or its text encoder. B is dropped unless A fails on the phone. |
 | ISL-overlap test | **Done**: thankyou 7/8, hello (wave) 7/9, yes (hand) 1/1 shared; everything else not. Pure ASL chosen anyway. |
 | Vocabulary from the 250 | **Measured**: solid = hello, thankyou, yes, no, now, please, tomorrow; candidates = morning, wait; dropped = sick, time. |
-| Live mode only | **New D9 (proposed)**: a *delegated call* mode, where the user signs the intent, approves a brief once, and the Bolna agent makes the call; optionally attended with yes/no/wait steering. |
+| Live mode only | **New D9 (approved, built)**: a *delegated call* mode, where the user signs the intent, approves a brief once, and the Bolna agent makes the call; optionally attended with yes/no/wait steering. |
 
 ## Vocabulary and script
 
@@ -58,97 +58,59 @@ slot → **no** → **tomorrow · please** → "10:30 tomorrow morning?" → **y
 
 Probe defaults and their evidence are in the record; the first labelled session is on the phone.
 
-## Day 1 (Mon 26 Oct): recognizer into the pipeline (Mac), composer, UI
+## What is built (25 Oct, evening) and what is left
 
-1. **Adapter in the recognition spike.** `spikes/asl_probe/asl_model.py` already gives
-   `kaggle_frame(result)` (legacy Holistic → `[543, 3]`, NaN for missing) and `AslModel.predict`
-   via a subprocess in `artifacts/asl_signs/.venv` (the main `.venv` is uv-managed and must not
-   get TensorFlow). Promote it to `spikes/recognition/asl_matcher.py` as a second `Matcher` for
-   `live_source.py` / `mac_bridge.py`, selected by `--model asl`; `Match.similarity` carries the
-   probability, `Match.top` the top-3 glosses. `live_probe.AslMatcher` is the reference.
-   *Done:* `scripts/sign_lab.sh --model asl` shows chips from the webcam with the real composer.
-2. **Bundle format v2** for the app: `{"model": "asl-signs-1st-place", "model_sha256", "glosses":
-   [250], "vocabulary": [...], "thresholds": {"p", "margin", "pick_one_p"}, "per_word": {...},
-   "quality": data.QUALITY, "provisional": bool}`. No reference embeddings any more.
-   `RecognitionBundle.swift` and `SignMatcher.swift` read it; `SignMatcher` becomes "argmax over
-   250, then the rule above". *Done:* Swift tests for chip / pick-one / `?` / non-vocab.
-3. **Composer accepts the model's glosses.** `backend/app/protocol.py`, `validator.py`,
-   `templates.py`, `ios/Packages/CallSession/.../Vocabulary.swift`, `RecognitionCore/.../SignLabel.swift`,
-   `recognition_data.VOCABULARY`: the label set comes from the bundle's `glosses` ∩ a service-call
-   allowlist (the 8 + candidates + the "untested but plausible" list). `now` means today; `please`
-   is politeness, not a fact. Fix issue #34 while there. *Done:* 813+ backend tests green, Swift
-   packages green.
-4. **UI:** pick-one tile (two tappable candidates at most, nothing auto-selected), yes/no/wait
-   quick-reply buttons on the call screen. `?` stays `?`.
-5. **Probe fixes** (for Thursday): big prompt banner, save an `.mp4` per cut, `--portrait`, per-word
-   summary with ground-truth labels. Re-encode the ISLRTC clips on the lesson page to H.264 or drop
-   them (pure ASL now); keep the Lifeprint cards.
+Everything below is on this branch with tests; nothing has run against real Bolna or an iPhone.
 
-## Day 2 (Tue 27 Oct): on device, and the delegated-call mode
+| Done | Where | Verified |
+|---|---|---|
+| ASL model as a `live_source` matcher with the open-set rule; `--model asl` on `live_source.py`, `mac_bridge.py`, `scripts/sign_lab.sh` | `spikes/recognition/asl_matcher.py`, `asl_model.py`, `asl_model_server.py`, `fixtures/asl/asl-bundle-provisional.json` (bundle v2: glosses, vocabulary, thresholds, `provisional: true`) | 14 rule tests; Lifeprint clips through the detector: no 0.95, tomorrow 0.74 chips |
+| Backend vocabulary: 12 template signs + 22 ASL glosses, validator meanings, plain template sentences, `now` = today, issue #34 | `backend/app/protocol.py` (`TEMPLATE_SIGNS`, `ASL_SIGNS`), `validator.py`, `templates.py` | 874 backend tests |
+| D9 delegated call: `POST /briefs`, `POST /calls` `mode=delegated` (+`attended`), agent opens with the brief after the disclosure, answers from the custom-LLM listen node (Groq brain, rule brain fallback, every line checked), `ask`/`answer`/`ask_resolved`, 10 s timeout → callback line, hang-up when done, `GET /calls/{id}/notes` | `backend/app/delegate.py`, `calls.py`, `custom_llm.py`, `protocol.py` | 21 tests + an end-to-end Sign Lab test with the scripted receptionist |
+| Mac bridge: `--delegated [--attended] --name --brief-chips`, shows the agent's question, answers by sign or `a yes|no|wait` | `spikes/recognition/mac_bridge.py` | bridge tests |
+| iOS: `Sign`/`SignLabel` carry the 34 backend signs; `StartCallRequest.mode/briefID/attended`, `BriefRequest`, `Brief`, `CallNotes`, `ask`/`ask_resolved`/`answer` messages; `BackendClient.createBrief/notes/startCall(_:)`; `TurnStore.openQuestion`, `answer`, `answerIfAsked`; `LogitsBundle` + `LogitsMatcher` (same rule, same fixture); `AskCard` on the signing screen, a recognised yes/no/wait answers an open question | `ios/Packages/CallSession`, `ios/Packages/RecognitionCore/.../LogitsMatcher.swift`, `ios/Ishara/Views/Components/AskCard.swift`, `ActiveCallViewModel.swift` | CallSession 175, RecognitionCore 104, app 139 tests; app builds for the simulator |
 
-1. **LiteRT on iOS.** CocoaPods `TensorFlowLiteSwift` (Metal subspec optional) wrapped as a
-   `SignPipeline` encoder, or Bazel if CocoaPods is unacceptable in the SwiftPM project. Input is
-   the Tasks Holistic Landmarker output re-ordered to the Kaggle 543-point layout, NaN for missing
-   parts. **Parity first:** run the same 20 saved cuts through Mac (legacy Holistic) and simulator
-   /phone (Tasks Landmarker) and compare top-1 and p before trusting phone chips (PLAN P3). If
-   LiteRT slips, the demo runs recognition on the Mac bridge (D6 backup, G3 fallback).
-2. **Framing guard.** Portrait is narrow: simulated 9:16 cropping dropped `no` 0.64 → 0.42 and
-   `tomorrow` 0.36 → 0.17 because hands left the frame. The Get-ready screen should show the rest
-   line and warn when a hand is out of frame for > 0.3 s during a sign; the `?` reason should say
-   "hand left the frame".
-3. **D9, delegated call (proposed):** see below.
-4. **Docs:** PLAN §1/§5/§6/§7, `docs/HANDOFF.md`, `README.md`, status snapshot. Credit Deaf
-   Professional Arts Network, Georgia Tech, hoyso48 and the sign-language-processing mirror;
-   Lifeprint for the lesson clips (local viewing only).
+**Try it on the Mac now** (free, nothing dialled):
 
-## Thursday (iPhone): the one measurement that matters
+```sh
+scripts/sign_lab.sh --free --model asl                                   # live mode, ASL model, webcam
+scripts/sign_lab.sh --free --model asl -- --delegated --attended --name "Asha"   # D9: the agent calls, asks you yes/no
+```
 
-8 words × 5 attempts, guided prompt, portrait, phone at the distance a user holds it, same
-decision rule. This is simultaneously the product-condition test, the landmarker parity check
-(G3) and the number for the slide. Gate: ≥ 6/10 per script sign counting one-tap pick-one, 0 wrong
-auto-accepts, 0 auto-accepts on negatives, < 2 s. Then freeze thresholds (and any per-word value)
-from this session only.
+In the delegated run the scripted receptionist offers "4 pm tomorrow"; the bridge prints
+the agent's question; sign **yes** or type `a yes`, and the agent says "Yes, 4 pm tomorrow
+works. Thank you." Add `--brief-chips tomorrow morning` to change the brief; drop
+`--attended` for the unattended version (the agent promises a callback and hangs up).
 
-## D9 (proposed): the delegated call, with optional steering
+### Left for you (teammate), in order
 
-**What it is.** The user signs the intent (`doctor · tomorrow · morning` or taps it), the app
-builds a **brief** from the chips plus the user's profile (name, DOB, clinic, callback number;
-typed once), shows it, and the user approves it **once**. The Bolna agent then places the call and
-pursues only the brief. Afterwards the app shows the **transcript and the Call Summary** (Bolna
-runs a summary extraction on every call and posts it with the webhook; transcript via the
-executions API). Anything the brief did not cover comes back as a question in the notes, never
-as a commitment the agent made up.
-
-**Two ways to run it, chosen at dial time:**
-
-- *Unattended:* phone down, notes later. Out-of-brief questions → "I'll check and call back."
-- *Attended:* captions stream live. At a decision point the agent says "One moment, please" and
-  the app shows the question with the options; the user signs or taps `yes` / `no` / `wait`; the
-  answer is injected (the existing Bolna event-injection channel, ~0.8 s). No answer within ~10 s
-  → the unattended behaviour. The agent does the greeting, spelling and small talk; the user acts
-  only at the moments that are theirs.
-
-The existing verbatim **live mode** (every sentence composed from signs and approved) stays as the
-third option for personal calls.
-
-**Why.** It removes real-time turn-taking pressure (one missed sign no longer stalls a receptionist),
-needs only 2–3 content signs per call, fits service calls (clinic, visa, passport, restaurant), and
-is what Bolna agents are built for: ~1 day on top of the existing backend (call placement, allowlist,
-status webhook already exist). The attended variant keeps the live "sign → voice" moment for the
-pitch, using recognition where it is most reliable (`yes` 0.91, `no` 0.64, `please` 0.95 first try).
-
-**Safety that must carry over.** One explicit approval of the brief before dialling; the agent
-discloses it is calling on behalf of a Deaf user; it may only pursue the brief and must not commit
-outside it; transcript shown next to the summary (summaries can hallucinate, transcripts don't);
-allowlisted consenting recipients only; a real call still needs the founder's go-ahead and a cost
-heads-up (PLAN §10).
-
-**Build (Ansuman, ~1 day):** `POST /briefs` (chips + profile → brief text, Groq-drafted, validator-
-checked, shown for approval) → `POST /calls` with Bolna agent variables `{brief, user_name, …}` and
-a prompt that forbids out-of-brief commitments → webhook handler stores transcript + summary →
-`GET /calls/{id}/notes` → iOS "Notes" screen. Attended mode adds an "ask the user" node in the graph
-agent that waits for an injected `answer` event with a 10 s timeout. Test with the fake Bolna first,
-one real call to a teammate after approval.
+1. **LiteRT on iOS.** Wrap `model.tflite` (11 MB, from the Hugging Face mirror; ship it in the
+   app bundle with its SHA-256 checked against the bundle's `model.sha256`) behind a
+   `LogitsModel` in `SignPipeline`: input `[frames, 543, 3]` float32 in the **Kaggle layout**
+   (face 468, left hand 21, pose 33, right hand 21; NaN for a missing part), output 250
+   logits; `LogitsMatcher` does the rest. CocoaPods `TensorFlowLiteSwift` (Metal subspec
+   optional) or Bazel; see R21. The Tasks Holistic Landmarker output must be re-ordered to
+   that layout; `asl_model.kaggle_frame` is the reference. **Parity first:** the same 20
+   saved cuts through Mac and simulator, compare top-1 and p (PLAN P3). If it slips, the
+   demo runs recognition on the Mac bridge (D6 backup).
+2. **Pick-one tile.** `LogitsMatchResult.pickOne` is produced by the matcher but the app's
+   `SegmentClassifier` still maps results to `.sign` / `.unsure`; add a `.candidate(Sign)`
+   recognition event, a tappable tile in `SigningPanel`, and accept only on tap.
+3. **Brief and Notes screens.** Home: a "Call for me" button → profile fields (name,
+   optional callback, reason) + the signed/tapped chips → `BackendClient.createBrief` →
+   show `Brief.text` with "Approve and call" (attended toggle) → `startCall(StartCallRequest(
+   mode: .delegated, briefID:, attended:))`. After `status ended`, `notes(callID:)` →
+   a Notes screen: outcome, summary bullets, open questions, transcript, Bolna summary.
+4. **Framing guard.** Warn when a hand is out of frame for > 0.3 s during a sign (portrait
+   is narrow: simulated 9:16 cropping dropped `no` 0.64 → 0.42); say "hand left the frame"
+   as the `?` reason.
+5. **Thursday, iPhone:** 8 words × 5 attempts, guided, portrait (`live_probe.py --portrait`
+   on the Mac is the rehearsal). Then freeze the bundle's thresholds from that session and
+   set `provisional: false`.
+6. **Real Bolna call** of the delegated flow to a consenting teammate, after the founder's
+   go-ahead and a cost heads-up: the welcome message is Bolna's static disclosure; the
+   opening goes out as a `user_reply` event right after `in-progress`, so watch for a
+   `not_delivered` if Bolna is still speaking (B24) and re-send once by hand if so.
 
 ## Rules for this track
 

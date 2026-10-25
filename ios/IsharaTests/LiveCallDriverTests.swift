@@ -46,7 +46,7 @@ final class LiveCallDriverTests: XCTestCase {
         XCTAssertEqual(requests.map(\.url?.absoluteString), ["https://backend.example.test/calls"])
         XCTAssertEqual(requests.first?.value(forHTTPHeaderField: "Authorization"), "Bearer test-token")
         let body = try XCTUnwrap(requests.first?.httpBody.map { String(decoding: $0, as: UTF8.self) })
-        XCTAssertEqual(body, #"{"contact_id":"clinic","purpose":"doctor_appointment"}"#)
+        XCTAssertEqual(body, #"{"attended":false,"contact_id":"clinic","mode":"live","purpose":"doctor_appointment"}"#)
         let sockets = await transport.requests
         XCTAssertEqual(sockets.map(\.url?.absoluteString), ["wss://backend.example.test/calls/call_1/ws"])
         XCTAssertEqual(sockets.first?.value(forHTTPHeaderField: "Authorization"), "Bearer test-token")

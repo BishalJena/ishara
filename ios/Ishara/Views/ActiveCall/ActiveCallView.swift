@@ -145,6 +145,9 @@ private struct CallActionBar: View {
             }
         case .signing:
             VStack(spacing: 12) {
+                if let question = model.openQuestion {
+                    AskCard(question: question, onAnswer: model.answer)
+                }
                 QuickReplyBar(onChoose: model.choose)
                     .disabled(!model.canUseQuickReplies)
                 PinnedSentence(maxHeight: sentenceMaxHeight) {

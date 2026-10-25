@@ -107,18 +107,44 @@ public actor BackendClient: AppMessageSending {
 
     /// Asks the backend to place a call. The backend only dials allowlisted contacts.
     public func startCall(contactID: String, purpose: CallPurpose) async throws -> CallStart {
-        var request = authorizedRequest(url: config.baseURL.appending(path: "calls"))
+        try await startCall(StartCallRequest(contactID: contactID, purpose: purpose))
+    }
+
+    /// Places a live or delegated call (D9). Starting a delegated call with a brief id is
+    /// the user's one approval of that brief.
+    public func startCall(_ body: StartCallRequest) async throws -> CallStart {
+        try await post(body, path: "calls", as: CallStart.self)
+    }
+
+    /// `POST /briefs` (D9): the brief the user reads and approves before a delegated call.
+    public func createBrief(_ body: BriefRequest) async throws -> Brief {
+        try await post(body, path: "briefs", as: Brief.self)
+    }
+
+    /// `GET /calls/{id}/notes` (D9): transcript, outcome and summary; `ready` once the call ended.
+    public func notes(callID: String) async throws -> CallNotes {
+        let url = config.baseURL.appending(path: "calls").appending(path: callID).appending(path: "notes")
+        let (data, response) = try await http.perform(authorizedRequest(url: url))
+        return try decoded(CallNotes.self, data: data, response: response)
+    }
+
+    private func post<Body: Encodable, Reply: Decodable>(
+        _ body: Body, path: String, as reply: Reply.Type
+    ) async throws -> Reply {
+        var request = authorizedRequest(url: config.baseURL.appending(path: path))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try WireCoding.makeEncoder().encode(
-            StartCallRequest(contactID: contactID, purpose: purpose))
-
+        request.httpBody = try WireCoding.makeEncoder().encode(body)
         let (data, response) = try await http.perform(request)
+        return try decoded(reply, data: data, response: response)
+    }
+
+    private func decoded<Reply: Decodable>(_: Reply.Type, data: Data, response: URLResponse) throws -> Reply {
         guard let http = response as? HTTPURLResponse else { throw BackendError.notHTTPResponse }
         guard (200..<300).contains(http.statusCode) else {
             throw BackendError.httpStatus(http.statusCode)
         }
-        return try JSONDecoder().decode(CallStart.self, from: data)
+        return try JSONDecoder().decode(Reply.self, from: data)
     }
 
     /// Opens `{ws_base}/calls/{call_id}/ws` and replaces `events` with its messages.

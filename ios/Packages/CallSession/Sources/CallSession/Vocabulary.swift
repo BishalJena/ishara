@@ -1,6 +1,7 @@
 import Foundation
 
-/// The 12 demo signs. Raw values are the backend's `Sign` literals (backend/app/protocol.py).
+/// The backend's `Sign` literals (backend/app/protocol.py), in its order: the twelve
+/// template signs, then the ASL Signs glosses the composer accepts (decision D8).
 public enum Sign: String, Codable, CaseIterable, Sendable {
     case hello
     case thankyou
@@ -14,6 +15,38 @@ public enum Sign: String, Codable, CaseIterable, Sendable {
     case afternoon
     case evening
     case time
+    case please
+    case now
+    case wait
+    case night
+    case yesterday
+    case later
+    case can
+    case `where`
+    case who
+    case why
+    case have
+    case finish
+    case callonphone
+    case sick
+    case hungry
+    case drink
+    case water
+    case home
+    case go
+    case see
+    case hear
+    case read
+
+    /// The twelve signs the fixed templates know in full.
+    public static let templateSigns: [Sign] = [
+        .hello, .thankyou, .yes, .no, .sorry, .doctor, .today, .tomorrow, .morning, .afternoon,
+        .evening, .time,
+    ]
+    /// The words rehearsed for the demo (D8), in the probe's order.
+    public static let rehearsed: [Sign] = [
+        .hello, .thankyou, .yes, .no, .now, .please, .tomorrow, .wait, .morning,
+    ]
 }
 
 /// Why the call is being placed. Chosen on the Home screen, never signed.

@@ -28,35 +28,145 @@ public enum DraftSource: String, Codable, CaseIterable, Sendable {
 
 // MARK: - REST
 
-/// Body of `POST /calls` (`StartCallRequest`).
+/// Decision D9. `live`: every sentence is composed from signs and approved with SEND.
+/// `delegated`: the agent pursues a brief the user approved once (by starting the call).
+public enum CallMode: String, Codable, CaseIterable, Sendable {
+    case live
+    case delegated
+}
+
+/// Body of `POST /calls` (`StartCallRequest`). A delegated call needs `briefID`; `attended`
+/// lets the agent ask the user yes/no/wait questions during the call.
 public struct StartCallRequest: Codable, Equatable, Sendable {
     public var contactID: String
     public var purpose: CallPurpose
+    public var mode: CallMode
+    public var briefID: String?
+    public var attended: Bool
 
-    public init(contactID: String, purpose: CallPurpose) {
+    public init(
+        contactID: String, purpose: CallPurpose, mode: CallMode = .live, briefID: String? = nil,
+        attended: Bool = false
+    ) {
         self.contactID = contactID
         self.purpose = purpose
+        self.mode = mode
+        self.briefID = briefID
+        self.attended = attended
     }
 
     enum CodingKeys: String, CodingKey {
         case contactID = "contact_id"
-        case purpose
+        case purpose, mode, attended
+        case briefID = "brief_id"
     }
 }
 
-/// Response of `POST /calls` (`StartCallResponse`).
+/// Response of `POST /calls` (`StartCallResponse`). Older backends omit `mode`.
 public struct CallStart: Codable, Equatable, Sendable {
     public var callID: String
     public var state: CallState
+    public var mode: CallMode
 
-    public init(callID: String, state: CallState) {
+    public init(callID: String, state: CallState, mode: CallMode = .live) {
         self.callID = callID
         self.state = state
+        self.mode = mode
     }
 
     enum CodingKeys: String, CodingKey {
         case callID = "call_id"
-        case state
+        case state, mode
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        callID = try container.decode(String.self, forKey: .callID)
+        state = try container.decode(CallState.self, forKey: .state)
+        mode = try container.decodeIfPresent(CallMode.self, forKey: .mode) ?? .live
+    }
+}
+
+// MARK: - Delegated calls (D9)
+
+/// What the agent may share about the caller; nothing else is ever said.
+public struct Profile: Codable, Equatable, Sendable {
+    public var name: String
+    public var callback: String?
+    public var notes: String?
+
+    public init(name: String, callback: String? = nil, notes: String? = nil) {
+        self.name = name
+        self.callback = callback
+        self.notes = notes
+    }
+}
+
+/// Body of `POST /briefs`.
+public struct BriefRequest: Codable, Equatable, Sendable {
+    public var purpose: CallPurpose
+    public var chips: [Sign]
+    public var profile: Profile
+
+    public init(purpose: CallPurpose, chips: [Sign], profile: Profile) {
+        self.purpose = purpose
+        self.chips = chips
+        self.profile = profile
+    }
+}
+
+/// Response of `POST /briefs`: `text` is what the user approves; the agent pursues exactly it.
+public struct Brief: Codable, Equatable, Sendable {
+    public var briefID: String
+    public var text: String
+    public var goal: String
+    public var constraints: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case briefID = "brief_id"
+        case text, goal, constraints
+    }
+}
+
+/// An answer to the agent's question on an attended delegated call.
+public enum AskChoice: String, Codable, CaseIterable, Sendable {
+    case yes, no, wait
+}
+
+public struct AskOption: Codable, Equatable, Sendable {
+    public var choice: AskChoice
+    /// Exactly what the agent will say if this is chosen.
+    public var spoken: String
+
+    public init(choice: AskChoice, spoken: String) {
+        self.choice = choice
+        self.spoken = spoken
+    }
+}
+
+public struct TranscriptEntry: Codable, Equatable, Sendable {
+    public var speaker: CaptionSpeaker
+    public var text: String
+    public var at: Double
+}
+
+/// Response of `GET /calls/{id}/notes`.
+public struct CallNotes: Codable, Equatable, Sendable {
+    public var callID: String
+    public var mode: CallMode
+    public var ready: Bool
+    public var brief: String?
+    public var outcome: String?
+    public var summary: [String]
+    public var openQuestions: [String]
+    public var transcript: [TranscriptEntry]
+    public var bolnaSummary: String?
+
+    enum CodingKeys: String, CodingKey {
+        case callID = "call_id"
+        case mode, ready, brief, outcome, summary, transcript
+        case openQuestions = "open_questions"
+        case bolnaSummary = "bolna_summary"
     }
 }
 
@@ -72,6 +182,8 @@ public enum AppMessage: Equatable, Sendable {
     case stop
     /// End the call.
     case end
+    /// Answer the agent's open question on an attended delegated call (D9).
+    case answer(askID: String, choice: AskChoice)
 }
 
 extension AppMessage: Encodable {
@@ -80,6 +192,8 @@ extension AppMessage: Encodable {
         case turnID = "turn_id"
         case chips
         case text
+        case askID = "ask_id"
+        case choice
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -97,6 +211,10 @@ extension AppMessage: Encodable {
             try container.encode("stop", forKey: .type)
         case .end:
             try container.encode("end", forKey: .type)
+        case let .answer(askID, choice):
+            try container.encode("answer", forKey: .type)
+            try container.encode(askID, forKey: .askID)
+            try container.encode(choice, forKey: .choice)
         }
     }
 }
@@ -115,6 +233,11 @@ public enum ServerMessage: Equatable, Sendable {
     /// No `spoken` confirmation arrived in time. The backend never resends on its own.
     case notDelivered(turnID: TurnID, reason: String)
     case error(code: String, message: String)
+    /// Attended delegated call: the agent said "one moment, please" and needs the user's
+    /// answer; after `timeoutS` with none, it says `fallback` instead.
+    case ask(askID: String, question: String, options: [AskOption], fallback: String, timeoutS: Double)
+    /// The question closed: what the agent said, and whether the user or the timeout decided.
+    case askResolved(askID: String, spoken: String, source: String)
     /// A message type this app version doesn't know. Ignored rather than treated as a failure,
     /// so a newer backend can't crash an older app.
     case unknown(type: String)
@@ -132,6 +255,12 @@ extension ServerMessage: Decodable {
         case reason
         case code
         case message
+        case askID = "ask_id"
+        case question
+        case options
+        case fallback
+        case timeoutS = "timeout_s"
+        case spoken
     }
 
     public init(from decoder: Decoder) throws {
@@ -164,6 +293,18 @@ extension ServerMessage: Decodable {
             self = .error(
                 code: try container.decode(String.self, forKey: .code),
                 message: try container.decode(String.self, forKey: .message))
+        case "ask":
+            self = .ask(
+                askID: try container.decode(String.self, forKey: .askID),
+                question: try container.decode(String.self, forKey: .question),
+                options: try container.decode([AskOption].self, forKey: .options),
+                fallback: try container.decode(String.self, forKey: .fallback),
+                timeoutS: try container.decode(Double.self, forKey: .timeoutS))
+        case "ask_resolved":
+            self = .askResolved(
+                askID: try container.decode(String.self, forKey: .askID),
+                spoken: try container.decode(String.self, forKey: .spoken),
+                source: try container.decode(String.self, forKey: .source))
         default:
             self = .unknown(type: type)
         }

@@ -187,6 +187,8 @@ final class ActiveCallViewModel {
         case .camera(let state):
             cameraState = state
         case .result(.sign(let sign)):
+            // D9: while the agent waits for an answer, a signed yes/no/wait answers it.
+            if store?.answerIfAsked(sign) == true { return }
             store?.add(.recognised(sign))
         case .result(.unsure):
             store?.add(.unsure())
@@ -202,6 +204,11 @@ final class ActiveCallViewModel {
     // MARK: User actions
 
     func removeChip(_ chip: Chip) { store?.remove(chip) }
+
+    /// The agent's open question on an attended delegated call (D9), if any.
+    var openQuestion: OpenQuestion? { isEnded ? nil : store?.openQuestion }
+
+    func answer(_ choice: AskChoice) { store?.answer(choice) }
 
     func clear() { store?.clear() }
 
