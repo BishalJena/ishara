@@ -23,6 +23,7 @@
 ## Where to look
 
 - [Active plan: decisions, tasks, gates, tests](PLAN.md)
+- [Latest system state snapshot (25 Oct)](docs/status/2026-10-25.md)
 - [Architecture board (Excalidraw)](docs/architecture/README.md)
 - [Current workflow and edge cases](docs/WORKFLOW.md)
 - [Teammate handoff: capability and setup](docs/HANDOFF.md)
