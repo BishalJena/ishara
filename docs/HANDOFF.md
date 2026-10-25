@@ -1,5 +1,10 @@
 # Teammate handoff
 
+> **25 Oct, recognition track:** we are not recording our own signs and not training.
+> The two-day plan for a published ASL recognizer is in
+> [handoffs/2026-10-26-ready-made-asl-recognizer.md](handoffs/2026-10-26-ready-made-asl-recognizer.md)
+> (PLAN decision D8). The sections below describe the state before that change.
+
 Current state: **24 October 2026**, branch `main` (PRs #5–#33 are merged).
 This file owns the current capability and direction. Detailed measurements belong
 in the [experiment record](experiments/recognition.md), active tasks in

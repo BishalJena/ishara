@@ -1,7 +1,12 @@
 # Ishara demo build plan
 
-Updated **23 October 2026**. This file owns the active tasks, decisions and
+Updated **25 October 2026**. This file owns the active tasks, decisions and
 acceptance criteria. Submission deadline: **Saturday 31 October 2026**.
+
+**Recognition track change (25 Oct, decision D8):** no own recordings and no training.
+The demo recognizer is a published, signer-independent ASL model; see the
+[two-day handoff](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md). R1–R4 and
+G2 below are superseded by that document until it is folded back in.
 
 **Visual version:** [architecture board](docs/architecture/README.md)
 (`docs/architecture/ishara-board.excalidraw`). If the board and this plan disagree,
@@ -56,9 +61,11 @@ Agreed on 23 October 2026. Raise any change explicitly; don't switch silently.
 | D5 | Vocabulary | **12 signs** (see §5), one sign at a time with hands down between signs. Wait and Repeat are buttons | Enough for the script; small enough to record and rehearse |
 | D6 | Where recognition runs | **On the iPhone**: MediaPipe Holistic for iOS (official SwiftPM package, MediaPipeTasksVision 1.1.1) plus SignCLIP converted to Core ML (FP16, run with compute units `.cpuAndGPU`; see P1). The **Mac is the backup** | On-device is the pitch; the Mac replay pipeline (extraction, SignCLIP embedding, reference matching) already runs, though it has no calibrated cut-off yet and abstains on everything until R2b |
 | D7 | Backend hosting | Small Python backend on **Heroku**, **EU** region, **Basic dyno or higher** (never Eco). Deployed by pushing `backend/` with `git subtree` (`backend/HEROKU.md`) | Team has credits; Eco dynos sleep and Bolna would hear silence. EU is closer to India than the default US region (latency not measured) |
+| D8 | Recognition model and data *(25 Oct)* | **Ready-made, signer-independent ASL model from public data** (first choice: the Kaggle ASL Signs 1st-place model, MIT code, public weights, 250 signs, 21 Deaf signers, CC-BY corpus; second: SignCLIP-ASL with PopSign landmark references). **No own recordings, no training or fine-tuning.** Vocabulary limited to the model's glosses (doctor → call purpose, today → now, evening → night; sorry/afternoon dropped). ISL forms used only where an **ISL-overlap test** shows the model recognizes them. Details and the two-day schedule: [handoff](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md) | We cannot produce sign data ourselves and public ISL data cannot give a signer-independent recognizer this week (INCLUDE ≈ 16 clips/word, none for yes/no/sorry; cross-signer SignCLIP accepted 4/42). Public ASL has ~94k sequences and a published model; adopting it is a two-day job |
 
-Already settled: native **SwiftUI** app, **SignCLIP** as the main recognizer
-(SL-GCN as comparison), and **nothing is spoken unless the user taps SEND**.
+Already settled: native **SwiftUI** app and **nothing is spoken unless the user taps SEND**.
+SignCLIP as the main recognizer (SL-GCN as comparison) held until 25 Oct; D8 replaces it
+for the demo.
 
 **Buildathon rule** (official page, checked 23 Oct): any project qualifies if voice
 is part of it; Bolna is not required by the rules. The team chose Bolna anyway (D1).
@@ -220,6 +227,12 @@ Pauses cost nothing: hands at rest means nothing happens.
 
 ## 5. Vocabulary (12 signs)
 
+> **Superseded 25 Oct (D8).** The demo vocabulary is now the 10 ASL glosses in the
+> [handoff](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#vocabulary-what-the-250-signs-give-us)
+> (hello, thankyou, yes, no, sick, tomorrow, morning, now, time, wait), and the recording
+> budget below does not apply. The table is kept as the ISL target vocabulary and for the
+> ISL-overlap test.
+
 | Sign | Used in script | Public reference video |
 |---|---|---|
 | hello | ✅ | INCLUDE |
@@ -359,13 +372,24 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 
 ### Mon 26 Oct: final recognition test → Gate 2
 
-- [ ] **R4 [You]** Final test session: 10 × 12 signs plus 50 negatives. **Evaluate once.**
-- [ ] **G2 Gate 2** (see §7).
+- [ ] **R5 [Mate]** Ready-made ASL recognizer, Day 1: fetch and inspect the model, adapter,
+  test clips, per-sign cut-offs, bake-off record, Mac path, presenter live trial.
+  *Done:* the Day 1 go/no-go table in the
+  [handoff](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#day-1-mon-26-oct-bake-off-and-a-working-mac-path).
+  Replaces R1–R4.
+- [ ] ~~**R4 [You]** Final test session: 10 × 12 signs plus 50 negatives.~~ Superseded by D8.
+- [ ] **G2 Gate 2** (see §7, revised 25 Oct).
 - [x] **V6 [Build]** Call session layer: `POST /calls` with the allowlist, the WebSocket messages (§3),
   `turn_id` handling, single-use approval, stale-turn rejection, caption forwarding and
   WebSocket pings. *Done:* tests for double SEND, stale approval and an ended call. (PR #16)
 
 ### Tue 27 Oct: on-device pipeline → Gate 3
+
+- [ ] **R6 [Build]** Ready-made ASL recognizer, Day 2: new vocabulary in backend, iOS and
+  spike code (plus issue #34), pick-one chips and yes/no/wait buttons, on-device run of
+  the winner (LiteRT or Core ML) with Mac-vs-phone parity, script and docs updates.
+  *Done:* the
+  [Day 2 list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#day-2-tue-27-oct-phone-ui-script-docs).
 
 - [ ] **P2 [Build]** MediaPipe Holistic (iOS) feeding the Swift detector and matcher, using the
   frozen cut-off and your enrollment references bundled in the app.
@@ -429,7 +453,7 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 | Gate | When | Pass | If it fails |
 |---|---|---|---|
 | **G1** Voice | Sat 24 | Exact text spoken on the call; no double speech; agent stays quiet otherwise; captions reach the backend | Fallback 1: the speak node uses a built-in LLM with a "repeat exactly" prompt and the backend checks the transcript. Fallback 2: Path A becomes the main path |
-| **G2** Recognition | Mon 26 | Final test: **≥ 9/10 per sign**, **0 wrong accepted signs**, **0 accepts on the 50 negatives**, **< 2 s** from the sign ending to the chip, measured live | Drop or replace the signs that get confused (choose more distinct ones), add quick-reply taps, recollect a new final session (the old one becomes development data) |
+| **G2** Recognition *(revised 25 Oct, D8)* | Mon 26 | Presenter live trial on the Mac, 10 attempts per script sign: **≥ 6/10 correct chips per sign** (auto-accepted or chosen with one tap from a pick-one pair), **0 wrong auto-accepted chips**, **0 auto-accepts on the negatives**, **< 2 s** from the sign ending to the chip | Swap a missed sign for an in-vocabulary synonym or a button; if three or more script signs miss, run "pick-one always" (model proposes top-2, user taps) and say so on the slide |
 | **G3** On-device | Tue 27 | The simulator pipeline matches the Mac on every calibration clip | Demo recognition on the Mac (A4) and pitch "designed for on-device" |
 | **G4** Real call | Thu 29 | The full script works live twice on the iPhone; the recipient hears exactly the approved sentences | Friday becomes a fix day; the Mac fallback and the backup video are the safety net |
 
