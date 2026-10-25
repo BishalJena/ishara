@@ -1,186 +1,177 @@
-# Handoff: a ready-made ASL recognizer in two days (26–27 Oct)
+# Handoff: the ready-made ASL recognizer, and the delegated-call mode (26–29 Oct)
 
-Written 25 October 2026 for the teammate. Supersedes the recognition track (R1–R4, G2)
-of [PLAN.md](../../PLAN.md) for the demo; everything else in the plan (Bolna Path B,
-composer, call safety, iPhone gates) stands. Decision D8 in the plan points here.
+Written 25 October 2026 for the teammate, revised the same evening after the measurements.
+Supersedes the recognition track (R1–R4, G2) of [PLAN.md](../../PLAN.md); decisions D8 and D9
+point here. Everything else in the plan (Bolna Path B, composer, call safety, iPhone gates) stands.
 
 ## The decision, in one paragraph
 
-We will **not record our own signs and we will not train or fine-tune anything.** The
-recognizer for the demo is a **published, signer-independent ASL model trained on public
-data**, dropped into the existing landmark → segment → match → chip pipeline. The
-presenter learns the script's signs from one canonical ASL source and signs live. ISL
-stays the product goal; an **ISL-overlap test** (below) decides, by measurement and not by
-belief, which of our ISL signs the ASL model already recognizes, so the presenter may sign
-those the ISL way. Everything not covered by the model becomes a button. Nothing is spoken
-without SEND, as before.
+**The demo is pure ASL.** The recognizer is the public **Kaggle ASL Signs 1st-place model**
+(1D-CNN + Transformer, 11 MB TFLite, MIT code, CC-BY corpus of ~94k phone-camera clips from 21
+Deaf signers), used **as is**: no recording of our own data, no training, no fine-tuning, no
+reference clips, no enrollment. We measured it on 25 Oct
+([record](../experiments/asl-model-probe.md)): 6 of 11 Lifeprint ASL clips right at 0.70–0.94,
+four of the presenter's signs right on the first attempt, confident-when-right and flat-when-not,
+4 ms per sign, 0 wrong accepts at p ≥ 0.6. ISL is the product goal and is blocked by data
+(INCLUDE ≈ 16 clips/word, none for yes/no/sorry); we measured which ISL signs the model happens
+to share (thank you, the wave hello, the hand-form yes) and decided **not** to mix languages in
+the demo. The pitch says all of this plainly.
 
-Why: public ISL data cannot give a signer-independent recognizer this week (INCLUDE has
-~16 clips per word from a handful of students, and **no clips at all for yes, no, sorry**;
-cross-signer SignCLIP accepted 4 of 42 public clips in
-[video-pipeline-eval.md](../experiments/video-pipeline-eval.md)). Public ASL has ~94k
-landmark sequences from 21 Deaf signers under CC-BY and a winning model with public
-weights. Picking that up is a two-day job; closing the ISL data gap is not.
+## What changed since the morning version
 
-## What is already out there (checked 25 Oct)
+| Was planned | Now |
+|---|---|
+| Day 1 bake-off between model A (TFLite) and model B (SignCLIP-ASL) | **Done, A wins by default**: it works zero-shot and SignCLIP-ASL would need references or its text encoder. B is dropped unless A fails on the phone. |
+| ISL-overlap test | **Done**: thankyou 7/8, hello (wave) 7/9, yes (hand) 1/1 shared; everything else not. Pure ASL chosen anyway. |
+| Vocabulary from the 250 | **Measured**: solid = hello, thankyou, yes, no, now, please, tomorrow; candidates = morning, wait; dropped = sick, time. |
+| Live mode only | **New D9 (proposed)**: a *delegated call* mode, where the user signs the intent, approves a brief once, and the Bolna agent makes the call; optionally attended with yes/no/wait steering. |
 
-| Asset | What it is | Terms | Evidence |
-|---|---|---|---|
-| **Google ASL Signs / PopSign corpus** ([Kaggle `asl-signs`](https://www.kaggle.com/competitions/asl-signs)) | ~94,477 isolated-sign sequences, **250 signs, 21 Deaf signers**, recorded on Pixel phones at home. Landmarks only: **MediaPipe Holistic 543 points × (x, y, z)**, the same extractor family we run. | **CC-BY 4.0** (Deaf Professional Arts Network and Georgia Tech, per the data card). Downloading needs a Kaggle account that accepted the competition rules. | Data card read 25 Oct. Not downloaded yet. |
-| **1st-place model** (hoyso48) | 1D-CNN + Transformer, ~1.85M parameters, trained on all competition data. Author-reported **participant-split CV 0.80, private leaderboard 0.88** over 250 classes. Preprocessing (nose-centred normalization, selected landmarks, lag-1/lag-2 motion) is inside the exported model. | Code **MIT** ([GitHub](https://github.com/hoyso48/Google---Isolated-Sign-Language-Recognition-1st-place-solution)). Weights mirrored by the sign-language-processing group: [`sign/kaggle-asl-signs-1st-place`](https://huggingface.co/sign/kaggle-asl-signs-1st-place), `model.tflite` **11.2 MB** + `sign_to_prediction_index_map.json`. | Write-up and HF file list read 25 Oct. **Input/output signature not yet inspected**: competition format was `[frames, 543, 3]` float32 in, 250 probabilities out; confirm with the interpreter before anything else. |
-| **SignCLIP-ASL** | The SignCLIP architecture we already run (609-feature Holistic input, Core ML conversion in `ml/coreml/`), **fine-tuned on PopSign + ASL Citizen + Sem-Lex (~200k examples)**. Covers glosses beyond the 250 (doctor, today, sorry, …) because ASL Citizen/Sem-Lex do. | Weights in the authors' [Drive folder](https://drive.google.com/drive/folders/10q7FxPlicrfwZn7_FgtNqKFDiAJi6CTc) ([README](https://github.com/J22Melody/fairseq/tree/main/examples/MMPT#demo-and-model-weights)); no explicit licence stated, same situation as the multilingual checkpoint we use. | README read 25 Oct; accuracy on these datasets is author-reported in their paper/CSV, not reproduced. Needs references or the text encoder (not instantiated in `signclip.py`). |
-| OpenHands WLASL checkpoints | Pose SL-GCN/ST-GCN on WLASL-2000 (27 landmarks), `slgcn.py` already loads this family. | Apache-2.0 code; WLASL data terms separate. | [checkpoints.csv](https://github.com/AI4Bharat/OpenHands/blob/main/docs/_static/checkpoints.csv) lists `wlasl_slgcn.zip`. WLASL-2000 pose accuracy is low; **third choice only**. |
-| ASL Citizen | 83k videos, 2,731 glosses, 52 signers. | Microsoft Research licence: non-commercial, no redistribution; 42.8 GB single zip. | **Not used.** Too big for two days and the licence is wrong for a product demo. |
-| LiteRT for iOS | Runs `.tflite` in Swift: CocoaPods `TensorFlowLiteSwift` (optional `CoreML`/`Metal` subspecs). | Apache-2.0. | [Quickstart](https://ai.google.dev/edge/litert/ios/quickstart) read 25 Oct. Our app uses SwiftPM only; CocoaPods is new integration (Day 2, stretch). |
+## Vocabulary and script
 
-What we did **not** find: a public ISL model with signer-independent evidence; freely
-downloadable BSL isolated-sign data (BSL-1K/BOBSL need research agreements); any Google
-SL2T/SignGemma ISL release.
+The app accepts **any of the 250 glosses** that clears the decision rule; nothing is hard-coded
+except the gloss list that ships with the model. The eight words below are the ones we rehearse
+and promise on stage because they are measured:
 
-## Vocabulary: what the 250 signs give us
-
-| Script word | In ASL Signs 250? | Plan |
+| Role | Words | Evidence (reference / presenter) |
 |---|---|---|
-| hello | yes | sign |
-| thankyou | yes | sign |
-| yes / no | yes | sign (hand forms); **also buttons**, as the plan already allows |
-| tomorrow | yes | sign |
-| morning | yes | sign |
-| time | yes | sign (spare) |
-| doctor | **no** | not needed: the call purpose `doctor_appointment` already carries it. Use **sick** (in the 250) for "I need to see a doctor" |
-| today | **no** | **now** (in the 250) |
-| evening | **no** | **night** (in the 250), spare |
-| sorry, afternoon | **no** | drop; `sorry` can be a button if the script needs it |
-| extras available | wait, please, later, yesterday, finish, callonphone, where, can | `wait`/`please` are useful spares |
+| Solid | hello, thankyou, yes, no, now ("today"), please, tomorrow | ≥ 0.70 on Lifeprint or ISLRTC; presenter 0.95 / (shared form) / 0.91 / 0.64 / 0.93 / 0.95 / top-1 17 of 21 at 0.3–0.66 |
+| Candidates | morning, wait | presenter 0.62 once; Lifeprint 0.88 in a window. Decide on the phone session. |
+| Dropped | sick, time | flat or wrong for both references and presenter |
+| Untested but in the 250 | yesterday, later, night, can, where, who, why, have, finish, callonphone, hungry, drink, water, home, go, see, hear, read | available for free; don't promise them |
 
-Demo vocabulary (10, final list after Day 1): **hello, thankyou, yes, no, sick, tomorrow,
-morning, now, time, wait**. Script turns become T1 `hello · sick · tomorrow`, T3
-`no · morning`, T5 `yes · thankyou`; the composer's purpose supplies "doctor". The
-other 240 classes act as a built-in "something else" bucket, which is a real advantage
-over reference matching: the model has a place to put non-vocabulary movement.
+Live-mode script: **hello** → (call purpose supplies "doctor's appointment") → receptionist offers a
+slot → **no** → **tomorrow · please** → "10:30 tomorrow morning?" → **yes** → **thankyou**.
 
-## The ISL-overlap test (how we "combine" ISL and ASL honestly)
+## Decision rule (open set), to be implemented identically in Python and Swift
 
-We do not assume any ISL sign equals its ASL counterpart. We **measure** it: run the ISL
-clips already on this Mac (INCLUDE clips under `spikes/recognition/artifacts/clips/`,
-ISLRTC/Bridgeconn dictionary cuts under `artifacts/video_eval/` and
-`artifacts/gemini_probe/`) through the ASL model. A word is **shared** only if the
-ASL gloss with the same meaning is top-1 on **every** ISL clip of it with the calibrated
-margin. Shared words may be signed the ISL way in the demo and are labelled so on the
-slide; everything else is signed the ASL way. Expectation, not promise: `hello` and
-possibly `time` pass; most others fail (the Gemini probe saw ISL `doctor` read as `time`).
-If nothing passes, the demo is ASL-only and the slide says so.
+1. Full 250-way softmax over the model's logits. **Never restrict to the vocabulary first**
+   (restricting first turned ISL `evening` into `no` 6/7 at p ≈ 0.01).
+2. **Chip** when top-1 ∈ vocabulary, p ≥ 0.6, margin over the runner-up ≥ 0.3, and
+   `data.QUALITY` tracking minimums hold.
+3. **Pick-one tile** when top-1 ∈ vocabulary and 0.35 ≤ p < 0.6: show the candidate; accept only
+   on tap, or combine with the next attempt.
+4. Otherwise `?`. A non-vocabulary top-1 at any confidence is `?` (the other 240 classes are the
+   "something else" bucket; that is what keeps wrong words out).
+5. Per-word thresholds are allowed (`tomorrow` 0.45 is the candidate) only after a labelled
+   session shows zero wrong accepts at that value. Provisional values are flagged in the bundle
+   exactly like `PROVISIONAL_BANNER` today.
 
-## Day 1 (Mon 26 Oct): bake-off and a working Mac path
+Probe defaults and their evidence are in the record; the first labelled session is on the phone.
 
-All on the Mac, no device, no paid calls. Keep every clip under the gitignored
-`spikes/recognition/artifacts/`; commit only our own outputs under `docs/experiments/evidence/`.
+## Day 1 (Mon 26 Oct): recognizer into the pipeline (Mac), composer, UI
 
-1. **Fetch and inspect model A** (the 1st-place TFLite).
-   `huggingface-cli download sign/kaggle-asl-signs-1st-place model.tflite sign_to_prediction_index_map.json`
-   into `artifacts/asl_signs/`. Record SHA-256s. Load with the LiteRT/TensorFlow Lite
-   Python interpreter, print input/output details. *Done:* a note in the bake-off record
-   with the exact signature, dtype and whether variable frame count is accepted.
-2. **Adapter** `spikes/recognition/asl_signs_model.py`: `Observation` frames (the
-   543-point Holistic output `live_source.track` already yields) → `[T, 543, 3]` with NaN
-   for missing points (that is how the training data encodes misses; check against the
-   Kaggle parquet convention) → 250 probabilities → ranked `(gloss, p)`. Pad the segment
-   0.5 s before/after like the PopSign recordings. Smoke it on the 2026-10-20 webcam
-   sessions in `artifacts/sessions/` (intended `hello`): *Done:* `hello` appears in the
-   top-3 on most of them, or a written reason why not (framing, landmark version).
-3. **Test clips** (local only, `video_eval.py prepare` with a new spec):
-   - ASL: 2–3 public tutorial clips per demo word from other signers (Lifeprint/ASL
-     University, Signing Savvy, YouTube; standard licence, local evaluation only, record
-     URL and terms in `sources.json` as before). Model A trained on every PopSign signer,
-     so PopSign data cannot be its test set.
-   - ISL overlap: the existing INCLUDE, ISLRTC and Bridgeconn cuts of the 12 ISL words.
-   - Negatives: 20+ clips of idle sitting, fidgeting, drinking water, scratching, a
-     half-sign. These are not sign data; record them yourself or cut them from the public
-     clips' rest periods.
-4. **Decision rule for A** in `recognition_data.decision` terms: restrict to the demo
-   subset; accept when top-1 is in the subset, `p ≥ τ` and `p₁ − p₂ ≥ m`; **pick-one**
-   when the top-2 are both in the subset and close; else `?`. Calibrate `τ, m` **per sign**
-   on the ASL test clips + negatives with the existing zero-wrong-accept rule
-   (`retrieval.calibrate_policy` logic; a probe-style policy file). Keep `data.QUALITY`
-   tracking minimums.
-5. **Model B, only if A disappoints** (A's top-1 under 70% on the ASL test clips):
-   SignCLIP-ASL weights into `artifacts/signclip/`, `signclip.py` takes a checkpoint
-   path + pinned SHA (keep the multilingual pin as default), references = 20 PopSign
-   landmark sequences per demo word (`kaggle competitions download -c asl-signs -f
-   train_landmark_files/<participant>/<sequence>.parquet`, chosen from `train.csv` so that
-   reference participants ≠ any test participant), kNN over the existing `rank`. Then the
-   same test. B's upside is on-device reuse (`ml/coreml/convert_signclip.py` and
-   `SignMatcher.swift` need only new weights); its downside is unmeasured accuracy.
-6. **Bake-off record** `docs/experiments/asl-model-bakeoff.md` + evidence folder: per
-   word top-1/top-2, accepted/wrong/`?` at the frozen cut-offs, negatives accepted,
-   latency per segment, the ISL-overlap table, SHA-256s, sources. Same leakage discipline
-   as the earlier records (cut-offs frozen before test, labels only in the scorer).
-7. **Mac path end to end**: winner wired into `live_source.py`/`mac_bridge.py` as a
-   second `Matcher` (selected by flag), `scripts/sign_lab.sh` runs with the real composer.
-   **Presenter live trial**: 10 attempts per script sign, hands down between signs, logged
-   with `--log`. *Done:* the per-sign table from the log.
+1. **Adapter in the recognition spike.** `spikes/asl_probe/asl_model.py` already gives
+   `kaggle_frame(result)` (legacy Holistic → `[543, 3]`, NaN for missing) and `AslModel.predict`
+   via a subprocess in `artifacts/asl_signs/.venv` (the main `.venv` is uv-managed and must not
+   get TensorFlow). Promote it to `spikes/recognition/asl_matcher.py` as a second `Matcher` for
+   `live_source.py` / `mac_bridge.py`, selected by `--model asl`; `Match.similarity` carries the
+   probability, `Match.top` the top-3 glosses. `live_probe.AslMatcher` is the reference.
+   *Done:* `scripts/sign_lab.sh --model asl` shows chips from the webcam with the real composer.
+2. **Bundle format v2** for the app: `{"model": "asl-signs-1st-place", "model_sha256", "glosses":
+   [250], "vocabulary": [...], "thresholds": {"p", "margin", "pick_one_p"}, "per_word": {...},
+   "quality": data.QUALITY, "provisional": bool}`. No reference embeddings any more.
+   `RecognitionBundle.swift` and `SignMatcher.swift` read it; `SignMatcher` becomes "argmax over
+   250, then the rule above". *Done:* Swift tests for chip / pick-one / `?` / non-vocab.
+3. **Composer accepts the model's glosses.** `backend/app/protocol.py`, `validator.py`,
+   `templates.py`, `ios/Packages/CallSession/.../Vocabulary.swift`, `RecognitionCore/.../SignLabel.swift`,
+   `recognition_data.VOCABULARY`: the label set comes from the bundle's `glosses` ∩ a service-call
+   allowlist (the 8 + candidates + the "untested but plausible" list). `now` means today; `please`
+   is politeness, not a fact. Fix issue #34 while there. *Done:* 813+ backend tests green, Swift
+   packages green.
+4. **UI:** pick-one tile (two tappable candidates at most, nothing auto-selected), yes/no/wait
+   quick-reply buttons on the call screen. `?` stays `?`.
+5. **Probe fixes** (for Thursday): big prompt banner, save an `.mp4` per cut, `--portrait`, per-word
+   summary with ground-truth labels. Re-encode the ISLRTC clips on the lesson page to H.264 or drop
+   them (pure ASL now); keep the Lifeprint cards.
 
-**Go/no-go at the end of Day 1** (presenter live trial, Mac): ≥ 6/10 correct chips per
-script sign counting one-tap pick-one, **0 wrong auto-accepted chips, 0 auto-accepts on
-negatives**. If a sign misses, swap it for an in-vocabulary synonym or a button; if three
-or more script signs miss, run Day 2 in "pick-one always" mode (model proposes top-2, the
-user taps) and say so on the slide.
+## Day 2 (Tue 27 Oct): on device, and the delegated-call mode
 
-## Day 2 (Tue 27 Oct): phone, UI, script, docs
+1. **LiteRT on iOS.** CocoaPods `TensorFlowLiteSwift` (Metal subspec optional) wrapped as a
+   `SignPipeline` encoder, or Bazel if CocoaPods is unacceptable in the SwiftPM project. Input is
+   the Tasks Holistic Landmarker output re-ordered to the Kaggle 543-point layout, NaN for missing
+   parts. **Parity first:** run the same 20 saved cuts through Mac (legacy Holistic) and simulator
+   /phone (Tasks Landmarker) and compare top-1 and p before trusting phone chips (PLAN P3). If
+   LiteRT slips, the demo runs recognition on the Mac bridge (D6 backup, G3 fallback).
+2. **Framing guard.** Portrait is narrow: simulated 9:16 cropping dropped `no` 0.64 → 0.42 and
+   `tomorrow` 0.36 → 0.17 because hands left the frame. The Get-ready screen should show the rest
+   line and warn when a hand is out of frame for > 0.3 s during a sign; the `?` reason should say
+   "hand left the frame".
+3. **D9, delegated call (proposed):** see below.
+4. **Docs:** PLAN §1/§5/§6/§7, `docs/HANDOFF.md`, `README.md`, status snapshot. Credit Deaf
+   Professional Arts Network, Georgia Tech, hoyso48 and the sign-language-processing mirror;
+   Lifeprint for the lesson clips (local viewing only).
 
-1. **Composer and vocabulary**: new labels in `backend/app/protocol.py`, `validator.py`
-   (`sick` → "not feeling well / unwell" must count as its meaning, no invented symptom),
-   `templates.py`; `ios/Packages/CallSession/.../Vocabulary.swift`,
-   `RecognitionCore/.../SignLabel.swift`, `spikes/recognition/recognition_data.VOCABULARY`
-   and the Sign Lab guides. Re-run the 813 backend tests and the Swift packages. Also fix
-   issue #34 while in the validator.
-2. **UI**: pick-one chips (two tappable candidates, nothing auto-selected), yes/no (and
-   wait) buttons on the call screen; `?` stays `?`. Transcript and SEND semantics unchanged.
-3. **On device**, pick by winner:
-   - A: LiteRT via CocoaPods (`TensorFlowLiteSwift`, Metal subspec optional) wrapped in
-     a `SignPipeline` encoder; the Tasks Holistic Landmarker output must be mapped to the
-     same 543-point order. **Stretch.** If it slips, the demo runs recognition on the Mac
-     bridge (PLAN D6 backup, G3 fallback) and the pitch says "designed for on-device".
-   - B: re-run `ml/coreml/convert_signclip.py` + `parity.py` with the new checkpoint
-     (expect the same `.cpuAndGPU` requirement), new bundle, no Swift changes beyond labels.
-   Either way: **parity on the same clips, Mac vs phone**, before trusting phone chips.
-4. **Script and rehearsal**: update PLAN §1 script to the 10-word vocabulary; two full
-   run-throughs in Sign Lab; the presenter practises from one source only (PopSign's
-   reference videos or Lifeprint), because the model learned the PopSign signers' forms.
-5. **Docs**: PLAN §5/§6/§7 to match, `docs/HANDOFF.md`, `README.md`, ledger rows
-   (below), status snapshot. Credit Deaf Professional Arts Network, Georgia Tech, hoyso48,
-   the sign-language-processing mirror, and SignCLIP's authors if B is used.
-6. **Still owed from the plan, not part of this track**: the first real Bolna call (V4,
-   needs the founder's go-ahead and cost heads-up), iPhone install (Thu), G3/G4.
+## Thursday (iPhone): the one measurement that matters
+
+8 words × 5 attempts, guided prompt, portrait, phone at the distance a user holds it, same
+decision rule. This is simultaneously the product-condition test, the landmarker parity check
+(G3) and the number for the slide. Gate: ≥ 6/10 per script sign counting one-tap pick-one, 0 wrong
+auto-accepts, 0 auto-accepts on negatives, < 2 s. Then freeze thresholds (and any per-word value)
+from this session only.
+
+## D9 (proposed): the delegated call, with optional steering
+
+**What it is.** The user signs the intent (`doctor · tomorrow · morning` or taps it), the app
+builds a **brief** from the chips plus the user's profile (name, DOB, clinic, callback number;
+typed once), shows it, and the user approves it **once**. The Bolna agent then places the call and
+pursues only the brief. Afterwards the app shows the **transcript and the Call Summary** (Bolna
+runs a summary extraction on every call and posts it with the webhook; transcript via the
+executions API). Anything the brief did not cover comes back as a question in the notes, never
+as a commitment the agent made up.
+
+**Two ways to run it, chosen at dial time:**
+
+- *Unattended:* phone down, notes later. Out-of-brief questions → "I'll check and call back."
+- *Attended:* captions stream live. At a decision point the agent says "One moment, please" and
+  the app shows the question with the options; the user signs or taps `yes` / `no` / `wait`; the
+  answer is injected (the existing Bolna event-injection channel, ~0.8 s). No answer within ~10 s
+  → the unattended behaviour. The agent does the greeting, spelling and small talk; the user acts
+  only at the moments that are theirs.
+
+The existing verbatim **live mode** (every sentence composed from signs and approved) stays as the
+third option for personal calls.
+
+**Why.** It removes real-time turn-taking pressure (one missed sign no longer stalls a receptionist),
+needs only 2–3 content signs per call, fits service calls (clinic, visa, passport, restaurant), and
+is what Bolna agents are built for: ~1 day on top of the existing backend (call placement, allowlist,
+status webhook already exist). The attended variant keeps the live "sign → voice" moment for the
+pitch, using recognition where it is most reliable (`yes` 0.91, `no` 0.64, `please` 0.95 first try).
+
+**Safety that must carry over.** One explicit approval of the brief before dialling; the agent
+discloses it is calling on behalf of a Deaf user; it may only pursue the brief and must not commit
+outside it; transcript shown next to the summary (summaries can hallucinate, transcripts don't);
+allowlisted consenting recipients only; a real call still needs the founder's go-ahead and a cost
+heads-up (PLAN §10).
+
+**Build (Ansuman, ~1 day):** `POST /briefs` (chips + profile → brief text, Groq-drafted, validator-
+checked, shown for approval) → `POST /calls` with Bolna agent variables `{brief, user_name, …}` and
+a prompt that forbids out-of-brief commitments → webhook handler stores transcript + summary →
+`GET /calls/{id}/notes` → iOS "Notes" screen. Attended mode adds an "ask the user" node in the graph
+agent that waits for an injected `answer` event with a 10 s timeout. Test with the fake Bolna first,
+one real call to a teammate after approval.
 
 ## Rules for this track
 
 - **No training, no fine-tuning, no ASL Citizen download, no Gemini in the call path.**
-  If a model needs a weight change to work, it is the wrong model for this week.
-- Public clips are fetched for local evaluation only; nothing third-party is committed or
-  put in the submission. Cut-offs are frozen before test clips run.
-- A wrong word is worse than no word: auto-accept stays at zero wrong on everything we
-  measure; uncertainty shows as pick-one or `?`.
-- Wording for the pitch, every time: *"signer-independent ASL model from public data
-  (21 Deaf signers); the presenter is hearing and learned the signs from PopSign; ISL is
-  the goal and is blocked by data, which is the problem we want to solve; ISL forms are
-  used only where we measured the model recognizes them; nothing is spoken without SEND;
-  no Deaf-user validation yet."*
+- Public clips are fetched for local evaluation or learning only; nothing third-party is committed.
+- A wrong word is worse than no word: auto-accept stays at zero wrong on everything measured;
+  uncertainty shows as pick-one or `?`. Never restrict the softmax to the vocabulary first.
+- Pitch wording, every time: *"a published, signer-independent ASL model trained on public data
+  from 21 Deaf signers; the presenter is hearing and learned the signs from Lifeprint; ISL is the
+  goal and is blocked by data, which is the problem we want to solve; nothing is spoken on a call
+  without the user's approval; no Deaf-user validation yet."*
 
 ## Open questions for you (teammate)
 
-1. Does the TFLite accept a variable frame count, or is it fixed to the competition's
-   padding? Decides whether we resample segments.
-2. Are PopSign landmark misses NaN or zero in the parquet files? Our `signclip_features`
-   uses zeros for SignCLIP; model A must get what it was trained on.
-3. CocoaPods in the iOS project: acceptable, or do we keep A on the Mac bridge for the
-   demo and do on-device after the buildathon?
-4. If B is tested: Kaggle account for the landmark files (competition rules acceptance is
-   personal; do not share the token).
+1. CocoaPods in the iOS project for LiteRT: acceptable, or Bazel, or Mac bridge for the demo?
+2. Tasks Holistic Landmarker on iOS: confirm it exposes face (468), pose (33) and both hands (21)
+   in a form we can re-order to the Kaggle layout, and what it reports for a missing hand.
+3. D9: do you see a problem with an "ask the user" node waiting on an injected event in the graph
+   agent? If the graph can't wait, the fallback is a backend-driven custom-LLM node like today's.
 
 ## Claim ledger
 
-Rows R18–R23 in [CLAIM-LEDGER.md](../CLAIM-LEDGER.md#recognition-data-and-decision-models)
-hold the sources behind this document and their evidence limits: ASL Signs corpus and
-CC-BY (R18), the 1st-place model (R19), SignCLIP-ASL (R20), LiteRT on iOS (R21), ASL
-Citizen not used (R22), and "ISL and ASL overlap" as a per-word hypothesis (R23).
+Rows R18–R24 and B29 in [CLAIM-LEDGER.md](../CLAIM-LEDGER.md#recognition-data-and-decision-models)
+hold the sources and evidence limits: ASL Signs corpus and CC-BY (R18), the 1st-place model (R19),
+SignCLIP-ASL (R20), LiteRT on iOS (R21), ASL Citizen not used (R22), "ISL and ASL overlap" measured
+per word (R23), the 25 Oct probe results (R24), Bolna call summary on every call (B29).

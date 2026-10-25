@@ -1,0 +1,110 @@
+[
+ {
+  "id": "lifeprint_gif_night_night",
+  "path": "artifacts/asl_probe/lifeprint/gif_night_night.mp4",
+  "label": "night",
+  "source": "Lifeprint-gif"
+ },
+ {
+  "id": "lifeprint_gif_no_no-2-movement",
+  "path": "artifacts/asl_probe/lifeprint/gif_no_no-2-movement.mp4",
+  "label": "no",
+  "source": "Lifeprint-gif"
+ },
+ {
+  "id": "lifeprint_gif_now_now",
+  "path": "artifacts/asl_probe/lifeprint/gif_now_now.mp4",
+  "label": "now",
+  "source": "Lifeprint-gif"
+ },
+ {
+  "id": "lifeprint_gif_sick_sick",
+  "path": "artifacts/asl_probe/lifeprint/gif_sick_sick.mp4",
+  "label": "sick",
+  "source": "Lifeprint-gif"
+ },
+ {
+  "id": "lifeprint_gif_time_time-1",
+  "path": "artifacts/asl_probe/lifeprint/gif_time_time-1.mp4",
+  "label": "time",
+  "source": "Lifeprint-gif"
+ },
+ {
+  "id": "lifeprint_gif_tomorrow_tomorrow",
+  "path": "artifacts/asl_probe/lifeprint/gif_tomorrow_tomorrow.mp4",
+  "label": "tomorrow",
+  "source": "Lifeprint-gif"
+ },
+ {
+  "id": "lifeprint_gif_wait_wait",
+  "path": "artifacts/asl_probe/lifeprint/gif_wait_wait.mp4",
+  "label": "wait",
+  "source": "Lifeprint-gif"
+ },
+ {
+  "id": "lifeprint_yt_morning_PKrGMspKng4",
+  "path": "artifacts/asl_probe/lifeprint/yt_morning_PKrGMspKng4.mp4",
+  "label": "morning",
+  "source": "Lifeprint-yt"
+ },
+ {
+  "id": "lifeprint_yt_morning_iH8N44QMh7c",
+  "path": "artifacts/asl_probe/lifeprint/yt_morning_iH8N44QMh7c.mp4",
+  "label": "morning",
+  "source": "Lifeprint-yt"
+ },
+ {
+  "id": "lifeprint_yt_no_QJXKaOSyl4o",
+  "path": "artifacts/asl_probe/lifeprint/yt_no_QJXKaOSyl4o.mp4",
+  "label": "no",
+  "source": "Lifeprint-yt"
+ },
+ {
+  "id": "lifeprint_yt_now_g2j70neQ_lI",
+  "path": "artifacts/asl_probe/lifeprint/yt_now_g2j70neQ_lI.mp4",
+  "label": "now",
+  "source": "Lifeprint-yt"
+ },
+ {
+  "id": "lifeprint_yt_please_rnb9FxPO7is",
+  "path": "artifacts/asl_probe/lifeprint/yt_please_rnb9FxPO7is.mp4",
+  "label": "please",
+  "source": "Lifeprint-yt"
+ },
+ {
+  "id": "lifeprint_yt_sick_oe9All9w7Ng",
+  "path": "artifacts/asl_probe/lifeprint/yt_sick_oe9All9w7Ng.mp4",
+  "label": "sick",
+  "source": "Lifeprint-yt"
+ },
+ {
+  "id": "lifeprint_yt_tomorrow_6gFOZMDptIk",
+  "path": "artifacts/asl_probe/lifeprint/yt_tomorrow_6gFOZMDptIk.mp4",
+  "label": "tomorrow",
+  "source": "Lifeprint-yt"
+ },
+ {
+  "id": "lifeprint_yt_tomorrow_E17VasimjWo",
+  "path": "artifacts/asl_probe/lifeprint/yt_tomorrow_E17VasimjWo.mp4",
+  "label": "tomorrow",
+  "source": "Lifeprint-yt"
+ },
+ {
+  "id": "lifeprint_yt_wait_4gAd3p_Jgq8",
+  "path": "artifacts/asl_probe/lifeprint/yt_wait_4gAd3p_Jgq8.mp4",
+  "label": "wait",
+  "source": "Lifeprint-yt"
+ },
+ {
+  "id": "lifeprint_yt_wait_6GXWaW1omCI",
+  "path": "artifacts/asl_probe/lifeprint/yt_wait_6GXWaW1omCI.mp4",
+  "label": "wait",
+  "source": "Lifeprint-yt"
+ },
+ {
+  "id": "lifeprint_yt_yes_0usayvOXzHo",
+  "path": "artifacts/asl_probe/lifeprint/yt_yes_0usayvOXzHo.mp4",
+  "label": "yes",
+  "source": "Lifeprint-yt"
+ }
+]

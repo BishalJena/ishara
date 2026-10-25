@@ -1,0 +1,715 @@
+[
+ {
+  "id": "lifeprint_gif_night_night",
+  "label": "night",
+  "source": "Lifeprint-gif",
+  "variant": "raw",
+  "frames": 4,
+  "top5": [
+   [
+    "arm",
+    0.067
+   ],
+   [
+    "table",
+    0.048
+   ],
+   [
+    "on",
+    0.048
+   ],
+   [
+    "into",
+    0.039
+   ],
+   [
+    "backyard",
+    0.027
+   ]
+  ],
+  "top1": "arm",
+  "p1": 0.067,
+  "margin": 0.019,
+  "demo_top1": "no",
+  "demo_p": 0.007,
+  "demo_margin": 0.003,
+  "best_window": {
+   "start_s": 0.6,
+   "top1": "arm",
+   "p1": 0.057,
+   "p_target": 0.01
+  }
+ },
+ {
+  "id": "lifeprint_gif_no_no-2-movement",
+  "label": "no",
+  "source": "Lifeprint-gif",
+  "variant": "raw",
+  "frames": 4,
+  "top5": [
+   [
+    "no",
+    0.999
+   ],
+   [
+    "duck",
+    0.0
+   ],
+   [
+    "loud",
+    0.0
+   ],
+   [
+    "goose",
+    0.0
+   ],
+   [
+    "nap",
+    0.0
+   ]
+  ],
+  "top1": "no",
+  "p1": 0.999,
+  "margin": 0.998,
+  "demo_top1": "no",
+  "demo_p": 0.999,
+  "demo_margin": 0.999,
+  "best_window": {
+   "start_s": 0.0,
+   "top1": "no",
+   "p1": 0.999,
+   "p_target": 0.999
+  }
+ },
+ {
+  "id": "lifeprint_gif_now_now",
+  "label": "now",
+  "source": "Lifeprint-gif",
+  "variant": "raw",
+  "frames": 3,
+  "top5": [
+   [
+    "now",
+    0.957
+   ],
+   [
+    "callonphone",
+    0.009
+   ],
+   [
+    "yellow",
+    0.003
+   ],
+   [
+    "thankyou",
+    0.002
+   ],
+   [
+    "drawer",
+    0.002
+   ]
+  ],
+  "top1": "now",
+  "p1": 0.957,
+  "margin": 0.948,
+  "demo_top1": "now",
+  "demo_p": 0.957,
+  "demo_margin": 0.955,
+  "best_window": null
+ },
+ {
+  "id": "lifeprint_gif_sick_sick",
+  "label": "sick",
+  "source": "Lifeprint-gif",
+  "variant": "raw",
+  "frames": 4,
+  "top5": [
+   [
+    "like",
+    0.393
+   ],
+   [
+    "happy",
+    0.087
+   ],
+   [
+    "empty",
+    0.066
+   ],
+   [
+    "thankyou",
+    0.037
+   ],
+   [
+    "zebra",
+    0.029
+   ]
+  ],
+  "top1": "like",
+  "p1": 0.393,
+  "margin": 0.306,
+  "demo_top1": "thankyou",
+  "demo_p": 0.037,
+  "demo_margin": 0.023,
+  "best_window": null
+ },
+ {
+  "id": "lifeprint_gif_time_time-1",
+  "label": "time",
+  "source": "Lifeprint-gif",
+  "variant": "raw",
+  "frames": 6,
+  "top5": [
+   [
+    "time",
+    0.102
+   ],
+   [
+    "arm",
+    0.094
+   ],
+   [
+    "puzzle",
+    0.083
+   ],
+   [
+    "weus",
+    0.052
+   ],
+   [
+    "jump",
+    0.047
+   ]
+  ],
+  "top1": "time",
+  "p1": 0.102,
+  "margin": 0.007,
+  "demo_top1": "time",
+  "demo_p": 0.102,
+  "demo_margin": 0.098,
+  "best_window": {
+   "start_s": 0.0,
+   "top1": "time",
+   "p1": 0.115,
+   "p_target": 0.115
+  }
+ },
+ {
+  "id": "lifeprint_gif_tomorrow_tomorrow",
+  "label": "tomorrow",
+  "source": "Lifeprint-gif",
+  "variant": "raw",
+  "frames": 4,
+  "top5": [
+   [
+    "tomorrow",
+    0.838
+   ],
+   [
+    "every",
+    0.026
+   ],
+   [
+    "brother",
+    0.014
+   ],
+   [
+    "later",
+    0.012
+   ],
+   [
+    "yourself",
+    0.009
+   ]
+  ],
+  "top1": "tomorrow",
+  "p1": 0.838,
+  "margin": 0.811,
+  "demo_top1": "tomorrow",
+  "demo_p": 0.838,
+  "demo_margin": 0.837,
+  "best_window": null
+ },
+ {
+  "id": "lifeprint_gif_wait_wait",
+  "label": "wait",
+  "source": "Lifeprint-gif",
+  "variant": "raw",
+  "frames": 10,
+  "top5": [
+   [
+    "wait",
+    0.742
+   ],
+   [
+    "finger",
+    0.112
+   ],
+   [
+    "why",
+    0.026
+   ],
+   [
+    "sticky",
+    0.01
+   ],
+   [
+    "wet",
+    0.01
+   ]
+  ],
+  "top1": "wait",
+  "p1": 0.742,
+  "margin": 0.63,
+  "demo_top1": "wait",
+  "demo_p": 0.742,
+  "demo_margin": 0.733,
+  "best_window": {
+   "start_s": 2.74,
+   "top1": "wait",
+   "p1": 0.477,
+   "p_target": 0.477
+  }
+ },
+ {
+  "id": "lifeprint_yt_morning_PKrGMspKng4",
+  "label": "morning",
+  "source": "Lifeprint-yt",
+  "variant": "raw",
+  "frames": 66,
+  "top5": [
+   [
+    "happy",
+    0.147
+   ],
+   [
+    "please",
+    0.118
+   ],
+   [
+    "hungry",
+    0.036
+   ],
+   [
+    "shirt",
+    0.033
+   ],
+   [
+    "thankyou",
+    0.029
+   ]
+  ],
+  "top1": "happy",
+  "p1": 0.147,
+  "margin": 0.029,
+  "demo_top1": "thankyou",
+  "demo_p": 0.029,
+  "demo_margin": 0.02,
+  "best_window": {
+   "start_s": 0.0,
+   "top1": "happy",
+   "p1": 0.133,
+   "p_target": 0.01
+  }
+ },
+ {
+  "id": "lifeprint_yt_morning_iH8N44QMh7c",
+  "label": "morning",
+  "source": "Lifeprint-yt",
+  "variant": "raw",
+  "frames": 54,
+  "top5": [
+   [
+    "table",
+    0.047
+   ],
+   [
+    "book",
+    0.045
+   ],
+   [
+    "happy",
+    0.044
+   ],
+   [
+    "morning",
+    0.038
+   ],
+   [
+    "arm",
+    0.037
+   ]
+  ],
+  "top1": "table",
+  "p1": 0.047,
+  "margin": 0.003,
+  "demo_top1": "morning",
+  "demo_p": 0.038,
+  "demo_margin": 0.022,
+  "best_window": null
+ },
+ {
+  "id": "lifeprint_yt_no_QJXKaOSyl4o",
+  "label": "no",
+  "source": "Lifeprint-yt",
+  "variant": "raw",
+  "frames": 86,
+  "top5": [
+   [
+    "no",
+    0.928
+   ],
+   [
+    "duck",
+    0.008
+   ],
+   [
+    "goose",
+    0.007
+   ],
+   [
+    "horse",
+    0.003
+   ],
+   [
+    "nap",
+    0.002
+   ]
+  ],
+  "top1": "no",
+  "p1": 0.928,
+  "margin": 0.92,
+  "demo_top1": "no",
+  "demo_p": 0.928,
+  "demo_margin": 0.928,
+  "best_window": {
+   "start_s": 0.0,
+   "top1": "no",
+   "p1": 0.955,
+   "p_target": 0.955
+  }
+ },
+ {
+  "id": "lifeprint_yt_now_g2j70neQ_lI",
+  "label": "now",
+  "source": "Lifeprint-yt",
+  "variant": "raw",
+  "frames": 76,
+  "top5": [
+   [
+    "now",
+    0.904
+   ],
+   [
+    "yellow",
+    0.023
+   ],
+   [
+    "callonphone",
+    0.018
+   ],
+   [
+    "wait",
+    0.004
+   ],
+   [
+    "jacket",
+    0.002
+   ]
+  ],
+  "top1": "now",
+  "p1": 0.904,
+  "margin": 0.881,
+  "demo_top1": "now",
+  "demo_p": 0.904,
+  "demo_margin": 0.9,
+  "best_window": {
+   "start_s": 0.0,
+   "top1": "now",
+   "p1": 0.917,
+   "p_target": 0.917
+  }
+ },
+ {
+  "id": "lifeprint_yt_please_rnb9FxPO7is",
+  "label": "please",
+  "source": "Lifeprint-yt",
+  "variant": "raw",
+  "frames": 72,
+  "top5": [
+   [
+    "please",
+    0.944
+   ],
+   [
+    "arm",
+    0.004
+   ],
+   [
+    "zebra",
+    0.003
+   ],
+   [
+    "minemy",
+    0.002
+   ],
+   [
+    "hungry",
+    0.002
+   ]
+  ],
+  "top1": "please",
+  "p1": 0.944,
+  "margin": 0.94,
+  "demo_top1": "morning",
+  "demo_p": 0.0,
+  "demo_margin": 0.0,
+  "best_window": {
+   "start_s": 0.0,
+   "top1": "please",
+   "p1": 0.941,
+   "p_target": 0.941
+  }
+ },
+ {
+  "id": "lifeprint_yt_sick_oe9All9w7Ng",
+  "label": "sick",
+  "source": "Lifeprint-yt",
+  "variant": "raw",
+  "frames": 232,
+  "top5": [
+   [
+    "if",
+    0.078
+   ],
+   [
+    "now",
+    0.04
+   ],
+   [
+    "many",
+    0.027
+   ],
+   [
+    "TV",
+    0.026
+   ],
+   [
+    "wait",
+    0.022
+   ]
+  ],
+  "top1": "if",
+  "p1": 0.078,
+  "margin": 0.038,
+  "demo_top1": "now",
+  "demo_p": 0.04,
+  "demo_margin": 0.019,
+  "best_window": {
+   "start_s": 2.5,
+   "top1": "sad",
+   "p1": 0.161,
+   "p_target": 0.01
+  }
+ },
+ {
+  "id": "lifeprint_yt_tomorrow_6gFOZMDptIk",
+  "label": "tomorrow",
+  "source": "Lifeprint-yt",
+  "variant": "raw",
+  "frames": 79,
+  "top5": [
+   [
+    "tomorrow",
+    0.697
+   ],
+   [
+    "yourself",
+    0.035
+   ],
+   [
+    "every",
+    0.029
+   ],
+   [
+    "brother",
+    0.028
+   ],
+   [
+    "later",
+    0.015
+   ]
+  ],
+  "top1": "tomorrow",
+  "p1": 0.697,
+  "margin": 0.661,
+  "demo_top1": "tomorrow",
+  "demo_p": 0.697,
+  "demo_margin": 0.696,
+  "best_window": {
+   "start_s": 0.5,
+   "top1": "tomorrow",
+   "p1": 0.72,
+   "p_target": 0.72
+  }
+ },
+ {
+  "id": "lifeprint_yt_tomorrow_E17VasimjWo",
+  "label": "tomorrow",
+  "source": "Lifeprint-yt",
+  "variant": "raw",
+  "frames": 77,
+  "top5": [
+   [
+    "every",
+    0.573
+   ],
+   [
+    "girl",
+    0.095
+   ],
+   [
+    "tomorrow",
+    0.06
+   ],
+   [
+    "backyard",
+    0.045
+   ],
+   [
+    "yourself",
+    0.02
+   ]
+  ],
+  "top1": "every",
+  "p1": 0.573,
+  "margin": 0.479,
+  "demo_top1": "tomorrow",
+  "demo_p": 0.06,
+  "demo_margin": 0.059,
+  "best_window": {
+   "start_s": 0.5,
+   "top1": "every",
+   "p1": 0.556,
+   "p_target": 0.058
+  }
+ },
+ {
+  "id": "lifeprint_yt_wait_4gAd3p_Jgq8",
+  "label": "wait",
+  "source": "Lifeprint-yt",
+  "variant": "raw",
+  "frames": 319,
+  "top5": [
+   [
+    "wait",
+    0.084
+   ],
+   [
+    "finger",
+    0.043
+   ],
+   [
+    "closet",
+    0.039
+   ],
+   [
+    "mitten",
+    0.03
+   ],
+   [
+    "there",
+    0.023
+   ]
+  ],
+  "top1": "wait",
+  "p1": 0.084,
+  "margin": 0.041,
+  "demo_top1": "wait",
+  "demo_p": 0.084,
+  "demo_margin": 0.062,
+  "best_window": {
+   "start_s": 3.5,
+   "top1": "wait",
+   "p1": 0.882,
+   "p_target": 0.882
+  }
+ },
+ {
+  "id": "lifeprint_yt_wait_6GXWaW1omCI",
+  "label": "wait",
+  "source": "Lifeprint-yt",
+  "variant": "raw",
+  "frames": 154,
+  "top5": [
+   [
+    "if",
+    0.094
+   ],
+   [
+    "mitten",
+    0.04
+   ],
+   [
+    "many",
+    0.029
+   ],
+   [
+    "give",
+    0.026
+   ],
+   [
+    "callonphone",
+    0.023
+   ]
+  ],
+  "top1": "if",
+  "p1": 0.094,
+  "margin": 0.054,
+  "demo_top1": "now",
+  "demo_p": 0.014,
+  "demo_margin": 0.003,
+  "best_window": {
+   "start_s": 2.5,
+   "top1": "close",
+   "p1": 0.038,
+   "p_target": 0.015
+  }
+ },
+ {
+  "id": "lifeprint_yt_yes_0usayvOXzHo",
+  "label": "yes",
+  "source": "Lifeprint-yt",
+  "variant": "raw",
+  "frames": 60,
+  "top5": [
+   [
+    "yes",
+    0.716
+   ],
+   [
+    "can",
+    0.184
+   ],
+   [
+    "shoe",
+    0.012
+   ],
+   [
+    "drop",
+    0.011
+   ],
+   [
+    "haveto",
+    0.003
+   ]
+  ],
+  "top1": "yes",
+  "p1": 0.716,
+  "margin": 0.532,
+  "demo_top1": "yes",
+  "demo_p": 0.716,
+  "demo_margin": 0.713,
+  "best_window": null
+ }
+]

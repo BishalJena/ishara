@@ -2,7 +2,8 @@
 
 ## Current phase and controlling constraints
 
-- **Phase: demo build** (23–31 October 2026). Follow [PLAN.md](PLAN.md): its decisions, day-by-day tasks and gates are the source of truth. The goal is a demo-ready app with about 12 signs and one rehearsed clinic call, not a complete product.
+- **Phase: demo build** (23–31 October 2026). Follow [PLAN.md](PLAN.md): its decisions, day-by-day tasks and gates are the source of truth. The goal is a demo-ready app with a small rehearsed sign vocabulary and one rehearsed clinic call, not a complete product.
+- **Recognition (decision D8, 25 Oct):** pure ASL, using the public Kaggle ASL Signs 1st-place model as is (no own recordings, no training, no fine-tuning, no reference clips). Open-set rule: full 250-way softmax, never restricted to the vocabulary first; chip only at p ≥ 0.6 and margin ≥ 0.3 for a vocabulary gloss. Measurements: [docs/experiments/asl-model-probe.md](docs/experiments/asl-model-probe.md); plan: [docs/handoffs/2026-10-26-ready-made-asl-recognizer.md](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md).
 - **Call path (decision D1, Option C):** build Path B first. Bolna places the call from its default number, the backend acts as Bolna's custom LLM, and the app sends approved text via graph events. Path A (the user's own-number Phone call plus Apple Add Audio in Calls) is a Thursday bonus. Always disclose that Path B calls come from a Bolna number, not the user's own number.
 - **Nothing is spoken unless the user taps SEND.** Approvals are single use and tied to a `turn_id`. Unsure recognition, stale drafts, network failure and ended calls stay silent; never guess.
 - **The LLM composer (Groq, `openai/gpt-oss-120b`) may reword but not add facts.** A validator rejects missing chip meanings and any invented day, time, number or name; templates are the fallback (also when Groq is slower than 1.5 s or has no key).
