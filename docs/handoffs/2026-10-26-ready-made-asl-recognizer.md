@@ -82,17 +82,18 @@ the agent's question; sign **yes** or type `a yes`, and the agent says "Yes, 4 p
 works. Thank you." Add `--brief-chips tomorrow morning` to change the brief; drop
 `--attended` for the unattended version (the agent promises a callback and hangs up).
 
-### Left for you (teammate), in order
+### Left for the teammate (Mac and simulator), in order
 
-1. **LiteRT on iOS.** Wrap `model.tflite` (11 MB, from the Hugging Face mirror; ship it in the
+1. **LiteRT in the app.** Wrap `model.tflite` (11 MB, from the Hugging Face mirror; ship it in the
    app bundle with its SHA-256 checked against the bundle's `model.sha256`) behind a
    `LogitsModel` in `SignPipeline`: input `[frames, 543, 3]` float32 in the **Kaggle layout**
    (face 468, left hand 21, pose 33, right hand 21; NaN for a missing part), output 250
    logits; `LogitsMatcher` does the rest. CocoaPods `TensorFlowLiteSwift` (Metal subspec
    optional) or Bazel; see R21. The Tasks Holistic Landmarker output must be re-ordered to
-   that layout; `asl_model.kaggle_frame` is the reference. **Parity first:** the same 20
-   saved cuts through Mac and simulator, compare top-1 and p (PLAN P3). If it slips, the
-   demo runs recognition on the Mac bridge (D6 backup).
+   that layout; `asl_model.kaggle_frame` is the reference. **Parity in the simulator:** feed
+   the same 20 saved cuts (`artifacts/asl_probe/live/<session>/*.mp4`, via the existing
+   `VideoFileFrameSource`) through the Mac path and the simulator path and compare top-1 and
+   p; that is PLAN P3 as far as a simulator can take it.
 2. **Pick-one tile.** `LogitsMatchResult.pickOne` is produced by the matcher but the app's
    `SegmentClassifier` still maps results to `.sign` / `.unsure`; add a `.candidate(Sign)`
    recognition event, a tappable tile in `SigningPanel`, and accept only on tap.
@@ -101,16 +102,26 @@ works. Thank you." Add `--brief-chips tomorrow morning` to change the brief; dro
    show `Brief.text` with "Approve and call" (attended toggle) → `startCall(StartCallRequest(
    mode: .delegated, briefID:, attended:))`. After `status ended`, `notes(callID:)` →
    a Notes screen: outcome, summary bullets, open questions, transcript, Bolna summary.
+   The simulator plus `scripts/sign_lab.sh --backend-only` exercises the whole flow with the
+   scripted receptionist, as the end-to-end test does.
 4. **Framing guard.** Warn when a hand is out of frame for > 0.3 s during a sign (portrait
    is narrow: simulated 9:16 cropping dropped `no` 0.64 → 0.42); say "hand left the frame"
-   as the `?` reason.
-5. **Thursday, iPhone:** 8 words × 5 attempts, guided, portrait (`live_probe.py --portrait`
-   on the Mac is the rehearsal). Then freeze the bundle's thresholds from that session and
-   set `provisional: false`.
-6. **Real Bolna call** of the delegated flow to a consenting teammate, after the founder's
-   go-ahead and a cost heads-up: the welcome message is Bolna's static disclosure; the
-   opening goes out as a `user_reply` event right after `in-progress`, so watch for a
-   `not_delivered` if Bolna is still speaking (B24) and re-send once by hand if so.
+   as the `?` reason. Testable in the simulator with the saved cuts cropped to 9:16.
+5. **Probe fixes for Thursday**: ground-truth labels in `live_probe.py` output are already
+   there; add a per-word summary export the slide can use.
+
+### Left for the founder (iPhone), in order
+
+1. **Install and the Thursday session** (next section): 8 words × 5 attempts, guided,
+   portrait. `live_probe.py --portrait` on the Mac is the rehearsal.
+2. **Freeze the thresholds** from that session (per-word values if needed) and set the
+   bundle's `provisional` to false; the teammate wires the frozen bundle in.
+3. **Real device parity and speed** (PLAN G3/G4 on the phone): camera preview, Tasks
+   Landmarker frame rate, chip latency.
+4. **The first real delegated call** to a consenting teammate, with a cost heads-up: the
+   welcome message is Bolna's static disclosure; the opening goes out as a `user_reply` event
+   right after `in-progress`, so watch for a `not_delivered` if Bolna is still speaking (B24)
+   and re-send once by hand if so.
 
 ## Thursday (iPhone): the one measurement that matters
 
@@ -168,7 +179,7 @@ WebSocket `ask` {ask_id, question, options[{choice, spoken}], fallback, timeout_
   goal and is blocked by data, which is the problem we want to solve; nothing is spoken on a call
   without the user's approval; no Deaf-user validation yet."*
 
-## Open questions for you (teammate)
+## Open questions for the teammate
 
 1. CocoaPods in the iOS project for LiteRT: acceptable, or Bazel, or Mac bridge for the demo?
 2. Tasks Holistic Landmarker on iOS: confirm it exposes face (468), pose (33) and both hands (21)

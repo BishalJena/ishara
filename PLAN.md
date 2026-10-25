@@ -377,10 +377,13 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 
 - [x] **R5a [Build]** Measure the ready-made ASL model: ISL clips, Lifeprint ASL clips, presenter
   webcam session, offline analysis. *Done 25 Oct:* [record](docs/experiments/asl-model-probe.md).
-- [ ] **R5 [Mate]** ASL recognizer on the phone: LiteRT, Kaggle layout from the Tasks
-  Landmarker, parity, pick-one tile, framing guard, Brief/Notes screens. *Done:* the
-  [left-for-you list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-you-teammate-in-order).
+- [ ] **R5 [Mate]** ASL recognizer in the app (simulator): LiteRT, Kaggle layout from the Tasks
+  Landmarker, parity on saved cuts, pick-one tile, framing guard, Brief/Notes screens. *Done:* the
+  [teammate list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-the-teammate-mac-and-simulator-in-order).
   Replaces R1–R4.
+- [ ] **R7 [You]** iPhone: install, the Thursday labelled session, frozen thresholds, device
+  parity and speed, the first real delegated call. *Done:* the
+  [founder list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-the-founder-iphone-in-order).
 - [ ] ~~**R4 [You]** Final test session: 10 × 12 signs plus 50 negatives.~~ Superseded by D8.
 - [ ] **G2 Gate 2** (see §7, revised 25 Oct).
 - [x] **V6 [Build]** Call session layer: `POST /calls` with the allowlist, the WebSocket messages (§3),
@@ -390,8 +393,8 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 ### Tue 27 Oct: on-device pipeline → Gate 3
 
 - [ ] **R6 [Build]** ASL recognizer on device, Day 2: LiteRT in `SignPipeline`, Tasks Landmarker →
-  Kaggle layout, Mac-vs-phone parity on saved cuts, hand-out-of-frame guard, docs. *Done:* items
-  1–4 of the [left-for-you list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-you-teammate-in-order).
+  Kaggle layout, simulator parity on saved cuts, hand-out-of-frame guard, docs. *Done:* items
+  1–4 of the [teammate list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-the-teammate-mac-and-simulator-in-order).
 - [x] **V7 [Build]** D9 delegated call, backend and Mac bridge: briefs, delegated/attended
   calls, asks and answers, notes; Sign Lab end-to-end test. (25 Oct; iOS Brief/Notes screens
   and the real call remain: see the handoff)
