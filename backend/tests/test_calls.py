@@ -233,7 +233,7 @@ def test_start_call_dials_allowlisted_contact_with_call_id_marker(harness: Harne
     )
     assert response.status_code == 200
     body = response.json()
-    assert body == {"call_id": body["call_id"], "state": "dialing"}
+    assert body == {"call_id": body["call_id"], "state": "dialing", "mode": "live"}
     assert len(body["call_id"]) == 32 and int(body["call_id"], 16) >= 0
     assert harness.bolna.started == [(PHARMACY, {"ishara_call_id": body["call_id"]})]
 

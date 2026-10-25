@@ -14,7 +14,32 @@ from collections.abc import Sequence
 from app.protocol import SIGNS, Purpose, Sign
 
 _DAYS: tuple[Sign, ...] = ("today", "tomorrow")
-_PARTS: tuple[Sign, ...] = ("morning", "afternoon", "evening")
+_PARTS: tuple[Sign, ...] = ("morning", "afternoon", "evening", "night")
+# ASL glosses (D8) the full template logic does not model: said plainly, after the main
+# sentence, in this order. None carries a day, time, number or name.
+_ALIASES: dict[Sign, Sign] = {"now": "today"}
+_PLAIN: dict[Sign, str] = {
+    "please": "Please.",
+    "wait": "A moment, please.",
+    "yesterday": "Yesterday.",
+    "later": "Maybe later.",
+    "can": "Can you help me with that?",
+    "where": "Where is it?",
+    "who": "Who should I ask for?",
+    "why": "Why is that?",
+    "have": "Do you have that?",
+    "finish": "That's all from me.",
+    "callonphone": "Please call me on the phone.",
+    "sick": "I'm feeling sick.",
+    "hungry": "I'm hungry.",
+    "drink": "I'd like a drink.",
+    "water": "Some water, please.",
+    "home": "At home.",
+    "go": "I need to go.",
+    "see": "I'd like to see them.",
+    "hear": "I hear you.",
+    "read": "I'll read it.",
+}
 _APPOINTMENT: dict[Purpose, str] = {"doctor_appointment": "a doctor's appointment"}
 _DECLINE = "No, sorry, that doesn't work."  # already apologises, so a "sorry" chip adds nothing
 
@@ -53,7 +78,7 @@ def compose_template(chips: Sequence[Sign], purpose: Purpose) -> str:
     unknown = set(chips) - set(SIGNS)
     if unknown:
         raise ValueError(f"unknown signs: {sorted(unknown)}")
-    signs: set[Sign] = set(chips)
+    signs: set[Sign] = {_ALIASES.get(c, c) for c in chips}
     appointment = _APPOINTMENT[purpose]
     when = _when(signs, as_subject=False)
     only_yes = "yes" in signs and "no" not in signs
@@ -91,4 +116,5 @@ def compose_template(chips: Sequence[Sign], purpose: Purpose) -> str:
         body = [_join_prefix(opener, body[0]), *body[1:]] if body else [f"{opener}."]
     if "thankyou" in signs:
         body.append("Thank you.")
+    body += [_PLAIN[sign] for sign in SIGNS if sign in signs and sign in _PLAIN]
     return " ".join(body)

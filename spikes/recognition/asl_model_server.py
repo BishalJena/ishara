@@ -1,4 +1,4 @@
-"""Tiny stdin/stdout server around the ASL Signs 1st-place TFLite.
+"""Tiny stdin/stdout server around the ASL Signs 1st-place TFLite (run by asl_model.AslModel).
 
 Runs in artifacts/asl_signs/.venv (ai-edge-litert), so the MediaPipe venv never has to
 import TensorFlow. Protocol, one request at a time:
@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 from ai_edge_litert.interpreter import Interpreter
 
-ASSETS = Path(__file__).resolve().parent.parent / "recognition" / "artifacts" / "asl_signs"
+ASSETS = Path(__file__).resolve().parent / "artifacts" / "asl_signs"
 POINTS, COORDS = 543, 3
 
 

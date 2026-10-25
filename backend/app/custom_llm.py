@@ -134,13 +134,19 @@ async def decide(
     if marker is None:
         return Reply("", "silent")
 
-    for text in tracker.take_new(marker.call_id, receptionist_utterances(body)):
+    new_utterances = tracker.take_new(marker.call_id, receptionist_utterances(body))
+    for text in new_utterances:
         await ledger.record_caption(marker.call_id, text)
 
     if marker.node == "listen":
         if latest_user_is_silence(body):
+            if await _delegated_line(ledger, marker.call_id, None) is not None:
+                return Reply("", "silent")  # a delegated agent waits quietly
             await ledger.record_agent_line(marker.call_id, HOLDING_LINE)
             return Reply(HOLDING_LINE, "holding_line")
+        heard = " ".join(new_utterances).strip()
+        if heard and (say := await _delegated_line(ledger, marker.call_id, heard)):
+            return Reply(say, "delegate")
         return Reply("", "silent")
 
     # parse_marker_block only returns a speak block with both fields filled in.
@@ -148,6 +154,18 @@ async def decide(
     if not await ledger.claim_reply(marker.call_id, marker.turn_id, marker.reply_text):
         return Reply("", "claim_refused")
     return Reply(marker.reply_text, "reply", spoken_turn=(marker.call_id, marker.turn_id))
+
+
+async def _delegated_line(ledger: CallLedger, call_id: str, heard: str | None) -> str | None:
+    """The delegated agent's next line (D9), or None for live calls / ledgers without it.
+    `heard` None only asks whether the call is delegated."""
+    reply = getattr(ledger, "delegate_reply", None)
+    if reply is None:
+        return None
+    if heard is None:
+        is_delegated = getattr(ledger, "is_delegated", None)
+        return "" if is_delegated is not None and await is_delegated(call_id) else None
+    return await reply(call_id, heard)
 
 
 async def stream_completion(

@@ -29,7 +29,7 @@ from typing import Any
 import httpx
 
 from app.bolna_agent import SILENCE_REPEAT_S
-from app.markers import EVENT_USER_REPLY
+from app.markers import EVENT_USER_REPLY, HOLDING_LINE
 from fakes.fake_bolna import FakeBolna, FakeRun, RunEnded
 
 RECEPTIONIST_LINES = (
@@ -122,7 +122,9 @@ class ScriptedBolna(FakeBolna):
     async def _respond(self, run: FakeRun) -> str:
         approved_reply = run.node == "speak"
         reply = await super()._respond(run)
-        if approved_reply and reply:
+        # The receptionist answers approved replies and, on a delegated call (D9), the
+        # agent's own lines from the listen node; never the holding line.
+        if reply and (approved_reply or reply != HOLDING_LINE):
             self._answer_later(run)
         return reply
 

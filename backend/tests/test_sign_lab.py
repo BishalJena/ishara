@@ -321,3 +321,94 @@ def test_silence_repeat_is_off_unless_asked_for() -> None:
     assert off.silence_s == 0
     assert on.silence_s > 0
     assert on.ring_s == off.ring_s * 2
+
+
+async def test_delegated_attended_call_runs_through_the_lab_end_to_end() -> None:
+    """D9 in the Sign Lab: the scripted receptionist answers the agent's own lines, the
+    agent pauses to ask, the user answers yes, and the notes say what happened."""
+    import json
+
+    logs: list[str] = []
+    player = RecordingPlayer()
+    voice = VoiceQueue(FakeTTS(), player, log=logs.append, clock=lambda: 0.0)
+    lab = build_sign_lab(
+        composer=build_lab_composer("templates", log=logs.append),
+        voice=voice,
+        pauses=FAST,
+        log=logs.append,
+    )
+    async with (
+        app_for(lab) as base_url,
+        httpx.AsyncClient(base_url=base_url, headers=auth_headers(TOKEN)) as client,
+    ):
+        brief = await client.post(
+            "/briefs",
+            json={
+                "purpose": "doctor_appointment",
+                "chips": ["tomorrow", "morning"],
+                "profile": {"name": "Asha Rao"},
+            },
+        )
+        assert brief.status_code == 200, brief.text
+        started = await client.post(
+            "/calls",
+            json={
+                "contact_id": "clinic",
+                "purpose": "doctor_appointment",
+                "mode": "delegated",
+                "brief_id": brief.json()["brief_id"],
+                "attended": True,
+            },
+        )
+        assert started.status_code == 200, started.text
+        call_id = started.json()["call_id"]
+
+        async with open_call_socket(base_url, call_id, TOKEN) as socket:
+            seen: list[dict] = []
+
+            async def next_of(kind: str) -> dict:
+                async with asyncio.timeout(WAIT_S):
+                    while True:
+                        raw = await socket.receive_text()
+                        assert raw is not None, "socket closed"
+                        message = json.loads(raw)
+                        seen.append(message)
+                        if message["type"] == kind:
+                            return message
+
+            ask = await next_of("ask")
+            assert ask["question"] == RECEPTIONIST_LINES[0]
+            await socket.send_text(
+                json.dumps({"type": "answer", "ask_id": ask["ask_id"], "choice": "yes"})
+            )
+            resolved = await next_of("ask_resolved")
+            assert resolved["spoken"] == "Yes, 4 pm tomorrow works. Thank you."
+            await next_of("spoken")
+            await socket.send_text(json.dumps({"type": "end"}))
+            await next_of("status")
+
+        run = await lab.fake.run_for_call(call_id)
+        await until(lambda: GOODBYE in run.spoken)
+        await asyncio.wait_for(voice.drain(), WAIT_S)
+        notes = (await client.get(f"/calls/{call_id}/notes")).json()
+
+    agent_lines = [m["text"] for m in seen if m["type"] == "caption" and m["speaker"] == "agent"]
+    assert agent_lines[0] == DISCLOSURE
+    assert "One moment, please." in agent_lines
+    # The opening goes through the verbatim speak node (a `spoken`, not an agent caption),
+    # and is voiced before the receptionist's first line.
+    opening = "I'd like to book a doctor's appointment for Asha Rao, tomorrow in the morning."
+    assert player.played.index(opening) < player.played.index(
+        "Yes, 4 pm tomorrow works. Thank you."
+    )
+    assert [e["text"] for e in notes["transcript"] if e["speaker"] == "agent"][:2] == [
+        DISCLOSURE,
+        opening,
+    ]
+    assert [m["text"] for m in seen if m["type"] == "caption" and m["speaker"] == "receptionist"][
+        0
+    ] == RECEPTIONIST_LINES[0]
+    assert "Yes, 4 pm tomorrow works. Thank you." in player.played
+    assert notes["mode"] == "delegated" and notes["ready"] is True
+    assert notes["outcome"] == "booked"
+    assert any(s.startswith("You answered:") for s in notes["summary"])

@@ -95,6 +95,7 @@ class Match:
     thresholds: dict[str, float] | None = None  # bundle cut-offs plus data.QUALITY minimums
     failed_checks: tuple[str, ...] = ()  # FAILED_CHECKS keys the frozen decision tripped on
     provisional: bool = False  # the bundle says its thresholds are not calibrated yet
+    pick_one: str | None = None  # ASL open-set rule: a vocabulary candidate the user must confirm; never a chip by itself
 
 
 @dataclass(frozen=True)
@@ -340,7 +341,7 @@ def result_details(recognition: Recognition) -> dict[str, Any]:
             "top": [{"sign": c.sign, "similarity": _rounded(c.similarity)} for c in match.top],
             "quality": None if match.quality is None else {k: _rounded(v) for k, v in match.quality.items()},
             "thresholds": match.thresholds, "failed_checks": list(match.failed_checks),
-            "provisional": match.provisional}
+            "provisional": match.provisional, "pick_one": match.pick_one}
 
 
 def result_json(recognition: Recognition) -> str:
@@ -483,11 +484,12 @@ def videos_in(directory: Path) -> list[Path]:
     return sorted(p for p in directory.iterdir() if p.suffix.lower() in VIDEO_SUFFIXES)
 
 
-def replay_clips(paths: Sequence[Path], realtime: bool, keep_image: bool) -> Iterator[Clip]:
+def replay_clips(paths: Sequence[Path], realtime: bool, keep_image: bool,
+                 tracker: Callable[..., Iterator[Observation]] | None = None) -> Iterator[Clip]:
     """Each clip gets a fresh tracker, as signclip.extract gives each enrollment clip."""
     for path in paths:
         log(f"replaying {path.name}")
-        yield track(video_images(path, realtime), keep_image)
+        yield (tracker or track)(video_images(path, realtime), keep_image)
 
 
 def signclip_features(observations: Sequence[Observation]) -> tuple[np.ndarray, dict[str, float]]:
@@ -555,8 +557,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     source.add_argument("--camera", type=int, help="live camera index")
     source.add_argument("--replay-videos", type=Path, metavar="DIR",
                         help="feed every .mp4/.mov/.m4v in DIR (sorted) through the same path")
-    parser.add_argument("--bundle", type=Path, default=DEFAULT_BUNDLE,
-                        help="retrieval.py export-bundle output (default: %(default)s)")
+    parser.add_argument("--model", choices=("signclip", "asl"), default="signclip",
+                        help="signclip: personalised reference matching (default); asl: the public ASL Signs "
+                             "model with the open-set rule (asl_matcher.py), no references needed")
+    parser.add_argument("--bundle", type=Path, default=None,
+                        help="recognition bundle (default: retrieval.py export-bundle output for signclip, "
+                             "fixtures/asl/asl-bundle-provisional.json for asl)")
     parser.add_argument("--rest-y", type=float, help="skip calibration and use this rest line (0-1)")
     parser.add_argument("--no-preview", action="store_true",
                         help="no window (by default it shows the camera or clip with the latest result)")
@@ -572,14 +578,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             parser.error(f"no .mp4/.mov/.m4v clips in {args.replay_videos}")
 
     results = result_stream()
-    bundle = load_bundle(args.bundle)
-    matcher = signclip_matcher(bundle) if bundle is not None else None
+    if args.model == "asl":
+        import asl_matcher as am
+
+        matcher: Any = am.asl_matcher(args.bundle or am.DEFAULT_ASL_BUNDLE)
+        tracker = am.track_kaggle
+    else:
+        bundle = load_bundle(args.bundle or DEFAULT_BUNDLE)
+        matcher = signclip_matcher(bundle) if bundle is not None else None
+        tracker = track
     show = None if args.no_preview else preview(not args.no_mirror)
     if args.camera is not None:
-        clips: Iterable[Clip] = [track(camera_images(args.camera), keep_image=show is not None)]
+        clips: Iterable[Clip] = [tracker(camera_images(args.camera), keep_image=show is not None)]
         log(f"{REST_PROMPT}, then sign one at a time. q in the window (or Ctrl-C) stops.")
     else:
-        clips = replay_clips(paths, realtime=not args.fast, keep_image=show is not None)
+        clips = replay_clips(paths, realtime=not args.fast, keep_image=show is not None, tracker=tracker)
     live = LiveSource(clips, matcher, rest_y=args.rest_y, retry_calibration=args.camera is not None,
                       show=show)
     try:
@@ -591,6 +604,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         log(live.summary())
         if show is not None:
             close_preview()
+        if hasattr(matcher, "close"):
+            matcher.close()
     return 0
 
 

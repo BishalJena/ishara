@@ -156,7 +156,7 @@ def test_run_starts_the_backend_hands_the_bridge_its_args_then_stops_it(
     assert lines[1] == "token=ishara-local-demo"
     assert lines[2] == (
         f"args=mac_bridge.py --base-url http://127.0.0.1:{port} --contact clinic "
-        f"--confirm-cost --live --camera 0 "
+        f"--confirm-cost --live --camera 0 --model signclip "
         f"--bundle {recognition}/artifacts/evidence/recognition-bundle-signclip.json "
         f"--recognizer-python {recognition}/artifacts/signclip/.venv/bin/python"
     )
@@ -222,3 +222,47 @@ def test_ctrl_c_stops_the_backend_too(recognition: Path, tmp_path: Path) -> None
         if process.poll() is None:
             os.killpg(process.pid, signal.SIGKILL)
     assert not answers(port)
+
+
+def test_model_asl_needs_the_asl_model_and_names_the_fix(recognition: Path) -> None:
+    port = free_port()
+    result = run(
+        "--free", "--model", "asl", "--port", str(port), "--recognition-dir", str(recognition)
+    )
+    assert result.returncode == 1
+    assert "no ASL model at" in result.stderr
+    assert "asl-model-probe.md" in result.stderr
+
+
+def test_model_asl_runs_the_recognition_venv_with_the_asl_bundle(
+    recognition: Path, tmp_path: Path
+) -> None:
+    executable(recognition / ".venv/bin/python", "exit 0\n")
+    executable(recognition / "artifacts/asl_signs/.venv/bin/python", "exit 0\n")
+    (recognition / "artifacts/asl_signs/model.tflite").write_bytes(b"\0")
+    bundle = recognition / "fixtures/asl/asl-bundle-provisional.json"
+    bundle.parent.mkdir(parents=True)
+    bundle.write_text("{}")
+    port = free_port()
+    out = tmp_path / "bridge.out"
+    env = {"FAKE_BRIDGE_OUT": str(out), "FAKE_BACKEND_PORT": str(port)}
+    result = run(
+        "--free",
+        "--model",
+        "asl",
+        "--port",
+        str(port),
+        "--recognition-dir",
+        str(recognition),
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr
+    args = out.read_text().splitlines()[2]
+    assert f"--model asl --bundle {bundle} " in args
+    assert args.endswith(f"--recognizer-python {recognition}/.venv/bin/python")
+
+
+def test_model_must_be_signclip_or_asl() -> None:
+    result = run("--model", "coreml")
+    assert result.returncode == 2
+    assert "--model must be signclip or asl" in result.stderr

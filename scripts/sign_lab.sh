@@ -5,9 +5,13 @@
 #
 #   scripts/sign_lab.sh                      Groq drafts + Sarvam voice (small cost)
 #   scripts/sign_lab.sh --free               template drafts, no voice, no cost
+#   scripts/sign_lab.sh --model asl          the public ASL Signs model with the open-set rule (D8):
+#                                            no references, no SignCLIP download; needs
+#                                            artifacts/asl_signs/{model.tflite,.venv} (asl-model-probe.md)
 #   scripts/sign_lab.sh --bundle PATH        recognition bundle
-#                                            (default: the calibrated recognition-bundle-signclip.json,
-#                                            else the provisional try bundle from export-bundle --provisional)
+#                                            (signclip default: the calibrated recognition-bundle-signclip.json,
+#                                            else the provisional try bundle from export-bundle --provisional;
+#                                            asl default: fixtures/asl/asl-bundle-provisional.json)
 #   scripts/sign_lab.sh --camera N           webcam index (default 0)
 #   scripts/sign_lab.sh --port N             backend port (default 8000)
 #   scripts/sign_lab.sh --env-file PATH      where the Groq/Sarvam keys are (default: repo .env)
@@ -29,7 +33,7 @@ CONTACT=clinic
 HEALTH_WAIT_S=90
 
 usage() {
-  sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 die() {
@@ -39,6 +43,7 @@ die() {
 
 port=8000
 camera=0
+model=signclip
 bundle=""
 env_file=""
 recognition_dir="$ROOT/spikes/recognition"
@@ -54,6 +59,7 @@ need_value() {
 while (($#)); do
   case $1 in
     --free) paid=0 ;;
+    --model) need_value "$@"; model=$2; shift ;;
     --bundle) need_value "$@"; bundle=$2; shift ;;
     --camera) need_value "$@"; camera=$2; shift ;;
     --port) need_value "$@"; port=$2; shift ;;
@@ -75,6 +81,10 @@ case $receptionist in
   script | manual) ;;
   *) echo "sign_lab: --receptionist must be script or manual" >&2; exit 2 ;;
 esac
+case $model in
+  signclip | asl) ;;
+  *) echo "sign_lab: --model must be signclip or asl" >&2; exit 2 ;;
+esac
 
 if [[ $receptionist == manual && $mode != backend ]]; then
   cat >&2 <<EOF
@@ -88,15 +98,22 @@ fi
 
 recognition_dir=$(cd "$recognition_dir" 2>/dev/null && pwd) ||
   die "no recognition folder at $recognition_dir; pass --recognition-dir"
-if [[ -z $bundle ]]; then
+if [[ -z $bundle && $model == signclip ]]; then
   # Prefer the calibrated bundle; before the calibration session exists, fall back to the
   # provisional try bundle (live_source flags it as PROVISIONAL on every result).
   bundle=$recognition_dir/artifacts/evidence/recognition-bundle-signclip.json
   provisional=$recognition_dir/artifacts/evidence/recognition-bundle-signclip-provisional.json
   [[ -f $bundle || ! -f $provisional ]] || bundle=$provisional
+elif [[ -z $bundle ]]; then
+  bundle=$recognition_dir/fixtures/asl/asl-bundle-provisional.json
 fi
 base_url="http://$HOST:$port"
 signclip_python="$recognition_dir/artifacts/signclip/.venv/bin/python"
+# The ASL model needs only MediaPipe (the recognition .venv) plus its own small LiteRT venv.
+recognizer_python=$signclip_python
+[[ $model == signclip ]] || recognizer_python="$recognition_dir/.venv/bin/python"
+asl_python="$recognition_dir/artifacts/asl_signs/.venv/bin/python"
+asl_model="$recognition_dir/artifacts/asl_signs/model.tflite"
 bridge_python="$recognition_dir/artifacts/bridge/.venv/bin/python"
 
 backend_args=(--port "$port" --app-token "$APP_TOKEN_VALUE" --receptionist "$receptionist")
@@ -121,17 +138,27 @@ check_bridge_parts() {
     cd $recognition_dir && uv venv --python 3.11 artifacts/bridge/.venv && \\
       uv pip install --python artifacts/bridge/.venv/bin/python --require-hashes -r requirements-bridge.lock")
   fi
-  if [[ ! -x $signclip_python ]]; then
+  if [[ $model == signclip && ! -x $signclip_python ]]; then
     problems+=("no SignCLIP venv at $signclip_python. Fix (about 2.4 GB download):
     cd $recognition_dir && mkdir -p artifacts/signclip && uv venv --python 3.11 artifacts/signclip/.venv && \\
       uv pip install --python artifacts/signclip/.venv/bin/python -r requirements-signclip.txt && \\
       artifacts/signclip/.venv/bin/python setup_signclip.py")
   fi
-  if [[ ! -f $bundle ]]; then
+  if [[ $model == asl && ! -x $recognizer_python ]]; then
+    problems+=("no recognition venv at $recognizer_python (spikes/recognition/README.md: Set up)")
+  fi
+  if [[ $model == asl && ( ! -x $asl_python || ! -f $asl_model ) ]]; then
+    problems+=("no ASL model at $asl_model with its venv at $asl_python. Fix (11 MB download):
+    see docs/experiments/asl-model-probe.md, Reproduce (curl the model + class map, python3 -m venv, pip install ai-edge-litert numpy)")
+  fi
+  if [[ $model == signclip && ! -f $bundle ]]; then
     problems+=("no recognition bundle at $bundle. Fix: record and calibrate (spikes/recognition/README.md), then
     cd $recognition_dir && artifacts/signclip/.venv/bin/python retrieval.py calibrate --encoder signclip && \\
       artifacts/signclip/.venv/bin/python retrieval.py export-bundle --encoder signclip
-  or pass --bundle PATH.")
+  or pass --bundle PATH, or use --model asl.")
+  fi
+  if [[ $model == asl && ! -f $bundle ]]; then
+    problems+=("no ASL bundle at $bundle; pass --bundle PATH")
   fi
   if [[ ! -f $recognition_dir/mac_bridge.py ]]; then
     problems+=("no mac_bridge.py in $recognition_dir; pass --recognition-dir")
@@ -198,8 +225,8 @@ run_bridge() {
   echo
   cd "$recognition_dir"
   APP_TOKEN=$APP_TOKEN_VALUE "$bridge_python" mac_bridge.py --base-url "$base_url" \
-    --contact "$CONTACT" --confirm-cost "${source_args[@]}" --bundle "$bundle" \
-    --recognizer-python "$signclip_python" ${bridge_extra[@]+"${bridge_extra[@]}"}
+    --contact "$CONTACT" --confirm-cost "${source_args[@]}" --model "$model" --bundle "$bundle" \
+    --recognizer-python "$recognizer_python" ${bridge_extra[@]+"${bridge_extra[@]}"}
 }
 
 case $mode in

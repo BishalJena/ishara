@@ -5,11 +5,18 @@ from itertools import combinations
 
 import pytest
 
-from app.protocol import MAX_SPOKEN_CHARS, SIGNS, Sign
+from app.protocol import ASL_SIGNS, MAX_SPOKEN_CHARS, TEMPLATE_SIGNS, Sign
 from app.templates import compose_template
 
 PURPOSE = "doctor_appointment"
-ALL_CHIP_SETS = [list(c) for n in range(1, len(SIGNS) + 1) for c in combinations(SIGNS, n)]
+# Every combination of the twelve template signs; the ASL glosses are appended plainly and
+# are covered one at a time and paired with each template sign.
+ALL_CHIP_SETS = [
+    list(c) for n in range(1, len(TEMPLATE_SIGNS) + 1) for c in combinations(TEMPLATE_SIGNS, n)
+]
+ASL_CHIP_SETS = [[sign] for sign in ASL_SIGNS] + [
+    [core, sign] for sign in ASL_SIGNS for core in TEMPLATE_SIGNS
+]
 
 
 def t(*chips: Sign) -> str:

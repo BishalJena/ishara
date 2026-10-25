@@ -1,4 +1,4 @@
-"""Client for model_server.py plus the Kaggle landmark layout, importable from the MediaPipe venv.
+"""Client for asl_model_server.py plus the Kaggle landmark layout, importable from the MediaPipe venv.
 
     model = AslModel()                       # spawns the TFLite server in its own venv
     probs = model.predict(landmarks)         # [T, 543, 3] float32 with NaN -> 250 probabilities
@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-ASSETS = HERE.parent / "recognition" / "artifacts" / "asl_signs"
+ASSETS = HERE / "artifacts" / "asl_signs"
 SERVER_PYTHON = ASSETS / ".venv" / "bin" / "python"
 FACE, HAND, POSE = 468, 21, 33
 POINTS = FACE + HAND + POSE + HAND  # 543, Kaggle order: face, left hand, pose, right hand
@@ -41,12 +41,15 @@ def quality(landmarks: np.ndarray) -> dict[str, float]:
 class AslModel:
     def __init__(self) -> None:
         if not SERVER_PYTHON.exists():
-            raise FileNotFoundError(f"{SERVER_PYTHON} missing: create it with python3 -m venv and pip install ai-edge-litert numpy")
+            raise FileNotFoundError(f"{SERVER_PYTHON} missing: python3 -m venv {SERVER_PYTHON.parents[1]} && "
+                                    f"{SERVER_PYTHON.parents[1]}/bin/pip install ai-edge-litert numpy")
+        if not (ASSETS / "model.tflite").exists():
+            raise FileNotFoundError(f"{ASSETS / 'model.tflite'} missing; see docs/experiments/asl-model-probe.md, Reproduce")
         self.glosses: list[str] = [None] * 250
         for gloss, i in json.loads((ASSETS / "sign_to_prediction_index_map.json").read_text()).items():
             self.glosses[i] = gloss
         self.index = {g: i for i, g in enumerate(self.glosses)}
-        self.proc = subprocess.Popen([str(SERVER_PYTHON), str(HERE / "model_server.py")], stdin=subprocess.PIPE,
+        self.proc = subprocess.Popen([str(SERVER_PYTHON), str(HERE / "asl_model_server.py")], stdin=subprocess.PIPE,
                                      stdout=subprocess.PIPE, stderr=sys.stderr, bufsize=0)
         ready = json.loads(self.proc.stdout.readline())
         assert ready.get("ready"), ready

@@ -67,3 +67,8 @@ class CallLedger(Protocol):
     async def mark_spoken(self, call_id: str, turn_id: str) -> None:
         """The custom LLM finished streaming the claimed reply to Bolna."""
         ...
+
+    async def delegate_reply(self, call_id: str, heard: str) -> str | None:
+        """Decision D9: what the agent says next on a delegated call after the
+        receptionist said `heard`; None for live calls (the listen node stays silent)."""
+        ...
