@@ -144,7 +144,7 @@ arrives, Bolna transitions to `speak` but **does not speak** ([ledger B24](docs/
 The backend must therefore confirm `spoken {turn_id}` from the custom-LLM request, and
 show "not delivered, tap SEND again" when no confirmation arrives. Never resend on its own.
 
-### Path A difference (Thursday bonus)
+### Path A difference (bonus, only if everything else is done by Wednesday)
 
 The user dials from the normal Phone app and opens Ishara. On SEND, the backend asks
 **Sarvam's TTS API directly** for a WAV clip, the app plays it, and Apple's
@@ -381,7 +381,7 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
   Landmarker, parity on saved cuts, pick-one tile, framing guard, Brief/Notes screens. *Done:* the
   [teammate list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-the-teammate-mac-and-simulator-in-order).
   Replaces R1–R4.
-- [ ] **R7 [You]** iPhone: install, the Thursday labelled session, frozen thresholds, device
+- [ ] **R7 [You]** iPhone (Mon–Tue): install, the labelled phone session, frozen thresholds, device
   parity and speed, the first real delegated call. *Done:* the
   [founder list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-the-founder-iphone-in-order).
 - [ ] ~~**R4 [You]** Final test session: 10 × 12 signs plus 50 negatives.~~ Superseded by D8.

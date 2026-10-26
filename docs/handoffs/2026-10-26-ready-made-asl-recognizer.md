@@ -1,4 +1,4 @@
-# Handoff: the ready-made ASL recognizer, and the delegated-call mode (26–29 Oct)
+# Handoff: the ready-made ASL recognizer, and the delegated-call mode (26–28 Oct)
 
 Written 25 October 2026 for the teammate, revised the same evening after the measurements.
 Supersedes the recognition track (R1–R4, G2) of [PLAN.md](../../PLAN.md); decisions D8 and D9
@@ -61,6 +61,7 @@ Probe defaults and their evidence are in the record; the first labelled session 
 ## What is built (25 Oct, evening) and what is left
 
 Everything below is on this branch with tests; nothing has run against real Bolna or an iPhone.
+**Deadline for all of it: Wednesday 28 Oct.** Thursday and Friday are rehearsal and slide only.
 
 | Done | Where | Verified |
 |---|---|---|
@@ -107,13 +108,13 @@ works. Thank you." Add `--brief-chips tomorrow morning` to change the brief; dro
 4. **Framing guard.** Warn when a hand is out of frame for > 0.3 s during a sign (portrait
    is narrow: simulated 9:16 cropping dropped `no` 0.64 → 0.42); say "hand left the frame"
    as the `?` reason. Testable in the simulator with the saved cuts cropped to 9:16.
-5. **Probe fixes for Thursday**: ground-truth labels in `live_probe.py` output are already
-   there; add a per-word summary export the slide can use.
+5. **Probe export**: ground-truth labels in `live_probe.py` output are already there; add a
+   per-word summary export the slide can use.
 
 ### Left for the founder (iPhone), in order
 
-1. **Install and the Thursday session** (next section): 8 words × 5 attempts, guided,
-   portrait. `live_probe.py --portrait` on the Mac is the rehearsal.
+1. **Install and the labelled phone session** (next section), **Monday or Tuesday**: 8 words ×
+   5 attempts, guided, portrait. `live_probe.py --portrait` on the Mac is the rehearsal.
 2. **Freeze the thresholds** from that session (per-word values if needed) and set the
    bundle's `provisional` to false; the teammate wires the frozen bundle in.
 3. **Real device parity and speed** (PLAN G3/G4 on the phone): camera preview, Tasks
@@ -123,7 +124,7 @@ works. Thank you." Add `--brief-chips tomorrow morning` to change the brief; dro
    right after `in-progress`, so watch for a `not_delivered` if Bolna is still speaking (B24)
    and re-send once by hand if so.
 
-## Thursday (iPhone): the one measurement that matters
+## The phone session (Mon 26 or Tue 27 Oct): the one measurement that matters
 
 8 words × 5 attempts, guided prompt, portrait, phone at the distance a user holds it, same
 decision rule. This is simultaneously the product-condition test, the landmarker parity check
