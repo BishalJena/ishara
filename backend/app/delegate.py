@@ -137,7 +137,8 @@ def build_brief(request: BriefRequest) -> BriefResponse:
     if when:
         lines.append(f"Preferred: {' '.join(dict.fromkeys(when))}.")
     if request.profile.notes:
-        lines.append(f"Reason, if asked: {request.profile.notes.strip()}")
+        reason = request.profile.notes.strip()
+        lines.append(f"Reason, if asked: {reason}{'' if reason.endswith(('.', '!', '?')) else '.'}")
     share = [f"name ({name})"] + (["callback number"] if request.profile.callback else [])
     lines.append("May share: " + ", ".join(share) + ".")
     lines.append(

@@ -918,7 +918,7 @@ def test_the_brief_with_a_callback_and_notes_carries_them() -> None:
     request = BriefRequest(purpose="doctor_appointment", chips=["now"], profile=profile)
     response = build_brief(request)
     assert response.text.endswith(
-        "Preferred: today. Reason, if asked: a sore knee May share: name (Ravi), callback "
+        "Preferred: today. Reason, if asked: a sore knee. May share: name (Ravi), callback "
         "number. Will not agree to anything outside this brief; anything else comes back to "
         "you as a question."
     )
@@ -1037,3 +1037,13 @@ def test_a_socket_that_connects_with_no_open_ask_gets_only_the_status(flow) -> N
     call_id = opened_call(f, attended=True)
     with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
         assert [m["type"] for m in quiet(f, ws)] == ["status"]
+
+
+@pytest.mark.parametrize("notes", ["a sore knee", "a sore knee.", "a sore knee?"])
+def test_the_reason_reads_as_its_own_sentence(notes) -> None:
+    request = BriefRequest(
+        purpose="doctor_appointment", chips=[], profile={"name": "Ravi", "notes": notes}
+    )
+    text = build_brief(request).text
+    ending = notes if notes[-1] in ".?" else notes + "."
+    assert f"Reason, if asked: {ending} May share:" in text
