@@ -18,6 +18,7 @@ attempt, for --combine) and --csv. --write-bundle PATH writes a frozen copy of t
 (provisional false) with the suggested global cut-off, plus per-word cut-offs with --per-word;
 review it before shipping it in ios/Ishara/Resources/asl-bundle.json and fixtures/asl/. Add
 --provisional for a candidate that keeps the app's provisional banner (e.g. from public clips).
+--vocabulary a,b,c judges any source as if the bundle chipped only those glosses (a what-if).
 
 Run with spikes/recognition/.venv (MediaPipe) for --clips; --records and --app need numpy only.
 """
