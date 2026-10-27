@@ -94,6 +94,14 @@ _NO_SLOT = re.compile(
     r"|nothing (free|available|left)|not available|unavailable"
     r"|(can't|cannot|can not|unable to) (do|fit|offer|book|give|see|manage))\b"
 )
+# Details a receptionist may ask for that no brief carries (the profile has only a name,
+# a callback number and a reason).
+_OUT_OF_BRIEF = re.compile(
+    r"\b(date of birth|birth ?date|birthday|born|dob|how old|age|insurance|policy|card"
+    r"|credit|debit|bank|account|payment|pay|deposit|address|post ?code|zip|pin ?code"
+    r"|e-?mail|aadhaar|social security|ssn|id number|medical (history|records?)"
+    r"|allerg(y|ies)|medications?|password|otp)\b"
+)
 # "That isn't confirmed yet", "not booked": a booking word that denies the booking.
 _NOT_BOOKED = re.compile(
     r"(\b(not|never)\b|n't\b)[^.?!]{0,20}?\b(booked|confirmed|reserved|scheduled)\b"
@@ -262,6 +270,10 @@ class RuleBrain:
             return Decision(self.opening(state))
         if _confirms(heard):
             return Decision(CLOSE_LINE, done=True)
+        if _OUT_OF_BRIEF.search(_normalise(heard)):
+            # The brief shares only the name and the callback number: never guess the rest,
+            # and never answer "insurance number" with the phone number.
+            return Decision(CALLBACK_LINE, done=True)
         proposal = _proposal_in(heard)
         if proposal:
             if state.attended:

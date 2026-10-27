@@ -219,6 +219,7 @@ OUT_OF_BRIEF = [
     "What's your insurance number?",
     "Could you read me the card number for the deposit?",
     "Can you confirm your address?",
+    "And the name of your insurance provider?",
 ]
 
 
@@ -587,3 +588,15 @@ def test_a_callback_after_an_offer_stays_a_callback_even_with_no_slots() -> None
         TranscriptEntry(speaker="agent", text=CALLBACK_LINE, at=2.0),
     ]
     assert build_notes("c1", make_brief().brief, entries, [], None, True).outcome == "callback"
+
+
+@pytest.mark.parametrize("attended", [True, False])
+@pytest.mark.parametrize("heard", OUT_OF_BRIEF)
+def test_out_of_brief_requests_get_the_callback_line_and_a_hang_up(flow, heard, attended) -> None:
+    f = flow(end_after_done_s=0.05)
+    call_id = opened_call(f, attended=attended)
+    said = f.listen_turn(call_id, heard)
+    assert said == CALLBACK_LINE
+    assert "4321" not in said and "Asha" not in said
+    wait_for(lambda: ended_by_agent(f))
+    assert notes(f, call_id)["outcome"] == "callback"
