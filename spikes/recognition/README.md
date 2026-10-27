@@ -339,7 +339,8 @@ artifacts/bridge/.venv/bin/python -m unittest test_mac_bridge test_detector test
    calibrates on its first 2 s; for takes without a leading rest, pass the
    `--rest-y` that live mode printed in the same seat. `--fast` skips the pacing,
    but then latency no longer means live latency. Replayed clips get the same
-   window; `--no-preview` turns it off.
+   window; `--no-preview` turns it off. Short public clips have no 2 s rest of their
+   own; play them as one camera with `--video` instead ([Demo fallback](#demo-fallback-asl-model-rehearsed-from-clips)).
 
 6. **Into the call.** Attaching to a call the app or backend already started costs
    nothing. Starting one needs `--contact clinic --confirm-cost` (it dials a real,
@@ -400,6 +401,116 @@ rise to the first rest frame). On one public clip, the cut's embedding had a cos
 of 0.86 with the whole-clip embedding. Before trusting the frozen cut-off live,
 replay the calibration takes with `live_source.py --replay-videos` and check that
 they come out as calibrated.
+
+## Demo fallback (ASL model, rehearsed from clips)
+
+The safety net for demo day: if the phone's recognizer fails, the Mac recognizes the
+signs with the public ASL model (`--model asl`, decision D8) and the bridge posts the
+chips to the same backend call. It works in live mode (you press `s` to SEND) and in
+Call for me (`--delegated --attended`), where you answer the agent's question by
+signing yes / no / wait or typing `a yes|no|wait`.
+
+```
+ saved clips (--video) ─┐
+                        ├─▶ live_source.py --model asl ──▶ mac_bridge.py ──WebSocket──▶ backend call
+ webcam (--camera 0) ───┘    2 s rest calibration once,      chips, SEND,        (local or deployed)
+                             detector, ASL model,            answers
+                             open-set rule
+```
+
+`--video A B C` plays the clips one after the other as if they were the webcam: one
+clock, real-time pace, one rest calibration at the start, then the same detector.
+Start with a hands-down rest clip and put a rest clip between turns. (`--replay-videos`
+calibrates every clip on its own first 2 s, so short per-word clips give nothing.)
+
+### Setup (once)
+
+- The recognition `.venv` ([Set up](#set-up-the-browser-miniature)) and the bridge venv
+  ([One-time setup](#one-time-setup)).
+- The ASL model and its venv in `artifacts/asl_signs/`: *Reproduce* in
+  [asl-model-probe.md](../../docs/experiments/asl-model-probe.md).
+- For rehearsals and the automated check, Lifeprint (ASL University, Bill Vicars) clips in
+  `artifacts/fallback_clips/` (gitignored, standard YouTube licence: local use only, never
+  commit or upload them). The rest clip is 2.0 s of the signer with both hands out of frame:
+
+  ```sh
+  # from spikes/recognition; needs yt-dlp (uv tool install yt-dlp) and ffmpeg (brew install ffmpeg)
+  mkdir -p artifacts/fallback_clips && cd artifacts/fallback_clips
+  for pair in rest:4gAd3p_Jgq8 hello:FVjpLa8GqeM thankyou:2W0BDFUjsG0 yes:0usayvOXzHo \
+              no:QJXKaOSyl4o please:rnb9FxPO7is tomorrow:6gFOZMDptIk morning:iH8N44QMh7c; do
+    name=${pair%%:*} id=${pair#*:} start=0
+    [[ $name == rest ]] && start=8.6
+    yt-dlp -q -f 'bv*[height<=480]' -o "$name.src.%(ext)s" -- "$id"
+    ffmpeg -loglevel error -y -ss "$start" -i "$name".src.* -c:v libx264 -pix_fmt yuv420p -an "$name.mp4"
+    rm "$name".src.*
+  done
+  cd ../..
+  ```
+
+### Rehearse locally (free: nothing is dialled, template drafts, no keys read)
+
+```sh
+# terminal 1, repo root: the local backend with the scripted receptionist
+(cd backend && uv run python -m scripts.local_demo --port 8799 --delay 0.3)
+# terminal 2, repo root: live mode, the PLAN script from clips; press s after each draft, e to end
+C=$PWD/spikes/recognition/artifacts/fallback_clips   # absolute: sign_lab.sh runs the bridge from spikes/recognition
+scripts/sign_lab.sh --bridge-only --model asl --port 8799 -- --video \
+  $C/rest.mp4 $C/hello.mp4 $C/rest.mp4 $C/rest.mp4 $C/no.mp4 $C/tomorrow.mp4 $C/please.mp4 \
+  $C/rest.mp4 $C/rest.mp4 $C/yes.mp4 $C/thankyou.mp4 $C/rest.mp4
+# Call for me, attended: clips can't wait for the question, so be the receptionist yourself
+(cd backend && uv run python -m scripts.sign_lab --port 8799 --receptionist manual)   # terminal 1
+scripts/sign_lab.sh --bridge-only --model asl --port 8799 -- --video \
+  $C/rest.mp4 $C/rest.mp4 $C/yes.mp4 $C/rest.mp4 --delegated --attended --name Asha    # terminal 2
+# when terminal 2 prints "rest line y=...", type in terminal 1: We have 4 pm tomorrow. Does that work?
+# the yes clip answers about 4 s later; then type: Yes, 10:30 tomorrow morning.  (the agent closes)
+```
+
+`scripts/sign_lab.sh --free --model asl` starts both in one terminal (webcam by default;
+add `-- --video ...` for clips). Drop `--video ...` to sign at the webcam instead.
+
+### Demo day: the deployed backend
+
+`sign_lab.sh` only talks to a local backend, so run the bridge directly. The backend
+address and the app token come from the team's secret store, never from this file:
+
+```sh
+cd spikes/recognition
+read -r ISHARA_BACKEND               # paste https://<deployed backend>
+read -rs APP_TOKEN && export APP_TOKEN   # paste the app token (not echoed, not saved)
+ASL=(--live --model asl --recognizer-python .venv/bin/python --camera 0 --log)
+# live mode: the Mac places the call (a real Bolna call from Bolna's number: cost heads-up first)
+artifacts/bridge/.venv/bin/python mac_bridge.py --base-url "$ISHARA_BACKEND" --contact clinic --confirm-cost "${ASL[@]}"
+# Call for me, attended (needs the D9 endpoints deployed)
+artifacts/bridge/.venv/bin/python mac_bridge.py --base-url "$ISHARA_BACKEND" --contact clinic --confirm-cost \
+  "${ASL[@]}" --delegated --attended --name "<caller name>"
+```
+
+`--call-id <id>` instead of `--contact clinic --confirm-cost` joins a call that is already
+up, but the app doesn't show its call id, and joining replaces the phone's connection
+(the backend keeps one app socket per call). So on demo day the Mac places its own call.
+`--recognizer-python .venv/bin/python` matters: the bridge's default is the SignCLIP venv.
+Rest both hands for 2 s when the recognizer starts. It needs a few seconds to load after
+the call starts (2–15 s measured on a busy Mac). If recognition misbehaves, type the signs
+(`hello`, `no tomorrow please`, …) or `a yes`; nothing is ever spoken without `s` or an answer.
+
+### Automated check
+
+`test_mac_bridge.ClipDrivenFallback` plays both runs against a local backend on a free
+port and asserts on what the backend sent back: the drafts for the expected chips, a
+`spoken` for every SEND, the agent's question answered by the yes clip (`ask_resolved`
+from the user, no chip), and the call notes (outcome `booked`). `scripts/verify.sh` runs
+it in "recognition light tests" (about 1 minute); without the venvs, model or clips it is
+skipped and prints `SKIPPED clip-driven fallback runs need ...` with what is missing.
+`ISHARA_FALLBACK_CLIPS=DIR` points it at other clips with the same names.
+
+```sh
+.venv/bin/python -m unittest -v test_mac_bridge.ClipDrivenFallback
+```
+
+Measured 28 Oct on these clips (one signer, not the presenter, no Deaf users): every
+script sign became the right chip (hello 0.67, no 0.96, tomorrow 0.75, please 0.95,
+yes 0.70–0.72, thankyou 0.82; 0.4–0.9 s from hands down to chip), morning stayed `?`
+(top-1 `table` 0.08) and the out-of-vocabulary DAILY clip stayed `?` (`every` 0.55).
 
 ## Evaluate saved videos end to end (video_eval.py)
 
