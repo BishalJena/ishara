@@ -61,9 +61,32 @@ final class OpenQuestionTests: XCTestCase {
         XCTAssertEqual(store.captions.last?.speaker, .agent)
     }
 
+    /// A lost connection wipes the question like a draft: the backend may resolve it (its
+    /// timeout line) while the app can't hear, so an answer tapped later could be stale.
+    func testLostConnectionWipesTheQuestionAndAnswersNothing() {
+        store.receive(ask)
+        store.connectionLost()
+
+        XCTAssertNil(store.openQuestion)
+        XCTAssertFalse(store.answer(.yes))
+        XCTAssertFalse(store.answerIfAsked(.yes))
+        XCTAssertEqual(sink.sent, [])
+    }
+
+    func testQuestionStaysGoneAfterTheConnectionComesBack() {
+        store.receive(ask)
+        store.receive(.status(.error))
+        store.receive(.status(.inCall))
+
+        XCTAssertNil(store.openQuestion)
+        XCTAssertFalse(store.answer(.no))
+        XCTAssertEqual(sink.sent, [])
+    }
+
     func testEndedCallAnswersNothing() {
         store.receive(ask)
         store.receive(.status(.ended))
+        XCTAssertNil(store.openQuestion, "an ended call still shows the question")
         XCTAssertFalse(store.answer(.yes))
         XCTAssertFalse(sink.sent.contains(.answer(askID: "a1", choice: .yes)))
     }

@@ -250,7 +250,7 @@ final class ActiveCallViewModel {
     func removeChip(_ chip: Chip) { store?.remove(chip) }
 
     /// The agent's open question on an attended delegated call (D9), if any.
-    var openQuestion: OpenQuestion? { isEnded ? nil : store?.openQuestion }
+    var openQuestion: OpenQuestion? { store?.openQuestion }
 
     func answer(_ choice: AskChoice) { store?.answer(choice) }
 
