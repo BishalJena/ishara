@@ -24,6 +24,18 @@ def decide_by_right_hand(lm: np.ndarray) -> str:
     return "chip:yes" if seen.mean() > 0.5 else "abstain"
 
 
+class Gaps(unittest.TestCase):
+    def test_part_gap_averages_only_frames_where_both_saw_the_part(self):
+        mac, app = clip(), clip()
+        app[:, p.PARTS["face"], 0] += 0.02
+        app[0, p.PARTS["face"]] = np.nan
+        mac[1, p.PARTS["face"]] = np.nan
+        app[2, p.PARTS["face"], 0] += 1.0  # a frame both saw, far off
+        self.assertAlmostEqual(p.part_gap(mac, app, "face"), (3 * 0.02 + 1.02) / 4, places=5)
+        app[:, p.PARTS["pose"]] = np.nan
+        self.assertIsNone(p.part_gap(mac, app, "pose"))
+
+
 class PartSwap(unittest.TestCase):
     def test_swapping_the_part_the_model_reads_reproduces_the_mac_decision(self):
         mac, app = clip(), clip()

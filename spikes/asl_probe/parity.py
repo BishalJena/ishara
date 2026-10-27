@@ -104,10 +104,10 @@ def tracking(lm: np.ndarray) -> dict[str, float]:
             "pose": present(POSE0, POSE0 + POSE)}
 
 
-def hand_gap(a: np.ndarray, b: np.ndarray, start: int) -> float | None:
-    """Mean xy distance between the two landmarkers' points for one hand, over frames where both saw it."""
+def part_gap(a: np.ndarray, b: np.ndarray, part: str) -> float | None:
+    """Mean xy distance between the two landmarkers' points for one part (PARTS), over frames where both saw it."""
     n = min(len(a), len(b))
-    pa, pb = a[:n, start:start + HAND, :2], b[:n, start:start + HAND, :2]
+    pa, pb = a[:n, PARTS[part], :2], b[:n, PARTS[part], :2]
     both = ~np.isnan(pa[..., 0]).any(axis=1) & ~np.isnan(pb[..., 0]).any(axis=1)
     if not both.any():
         return None
@@ -176,7 +176,8 @@ def main(argv=None) -> int:
                     "mac_decision": label(mac_d), "app_decision": label(app_d), "why": why,
                     "runtime_max_abs_diff": round(float(np.abs(mac_on_app - app_p).max()), 5),
                     "tracking_mac": tracking(mac_lm), "tracking_app": tracking(app_lm),
-                    "left_gap": hand_gap(mac_lm, app_lm, LEFT), "right_gap": hand_gap(mac_lm, app_lm, RIGHT),
+                    "left_gap": part_gap(mac_lm, app_lm, "left_hand"), "right_gap": part_gap(mac_lm, app_lm, "right_hand"),
+                    "face_gap": part_gap(mac_lm, app_lm, "face"), "pose_gap": part_gap(mac_lm, app_lm, "pose"),
                     "mirrored_frames": int(mirrored_frames(mac_lm, app_lm).sum()),
                     "app_seconds": round(app_row["seconds"], 2),
                 })
