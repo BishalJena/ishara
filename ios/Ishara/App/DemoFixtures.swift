@@ -13,20 +13,50 @@ private final class SilentSink: OutgoingMessageSink {
 @MainActor
 final class FixtureCallDriver: CallDriver {
     let store = TurnStore(sink: SilentSink(), initialState: .dialing)
+    /// What `notes()` returns; without it, there was no call.
+    var fixedNotes: CallNotes?
 
     var onReconnectStopped: ((ReconnectStop) -> Void)?
 
     func start(_ setup: CallSetup) async throws -> TurnStore { store }
     func close() {}
     func createBrief(_ request: BriefRequest) async throws -> Brief { DelegatedDemo.brief(for: request) }
-    func notes() async throws -> CallNotes { throw CallDriverError.noCall }
+    func notes() async throws -> CallNotes {
+        guard let fixedNotes else { throw CallDriverError.noCall }
+        return fixedNotes
+    }
 }
 
 extension DemoFixture {
+    /// The Notes screen after the scripted delegated call was booked on a "yes", with an
+    /// automatic summary standing in for the one Bolna's webhook delivers.
+    @MainActor
+    func makeNotes() -> NotesModel? {
+        guard self == .notes else { return nil }
+        let setup = CallSetup.demo
+        let brief = DelegatedDemo.brief(for: BriefRequest(
+            purpose: setup.purpose, chips: [.tomorrow, .morning], profile: Profile(name: setup.details.name)))
+        let answer = DelegatedDemo.options[0].spoken
+        let now = Date().timeIntervalSince1970
+        let transcript = [
+            TranscriptEntry(speaker: .agent, text: DemoScript.disclosure, at: now),
+            TranscriptEntry(speaker: .receptionist, text: DelegatedDemo.offer, at: now),
+            TranscriptEntry(speaker: .agent, text: answer, at: now),
+            TranscriptEntry(speaker: .receptionist, text: DelegatedDemo.confirmation, at: now),
+        ]
+        var notes = DelegatedDemo.notes(
+            goal: brief.goal, name: setup.details.name, brief: brief.text,
+            transcript: transcript, answers: [answer], ready: true)
+        notes.bolnaSummary = "The caller booked a doctor's appointment for 10:30 tomorrow morning."
+        let driver = FixtureCallDriver()
+        driver.fixedNotes = notes
+        return NotesModel(contactName: setup.contact.name, driver: driver)
+    }
+
     /// Builds the call screen state by replaying PLAN §1 messages into a real TurnStore.
     @MainActor
     func makeActiveCall() -> ActiveCallViewModel? {
-        guard self != .home, self != .getReady else { return nil }
+        guard self != .home, self != .getReady, self != .notes else { return nil }
         let driver = FixtureCallDriver()
         let store = driver.store
         let model = ActiveCallViewModel(setup: .demo, driver: driver, recognition: ScriptedRecognitionController())

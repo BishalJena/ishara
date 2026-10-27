@@ -81,4 +81,6 @@ struct DemoLaunchOptions {
 enum DemoFixture: String, CaseIterable {
     case home, getReady, signing, speaking, delivered, notDelivered, ended, connectionLost
     case composing, stopped, stopTooLate, deliveredDespiteStop, backendError, endedNoCaptions, hangUpUnconfirmed
+    /// The notes of a booked delegated call (D9), with the call service's own summary.
+    case notes
 }
