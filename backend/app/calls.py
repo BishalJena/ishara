@@ -439,7 +439,6 @@ class CallManager(CallLedger):
         if entry is None or not isinstance(delegate, DelegateState) or session.finished:
             return
         delegate.pending_ask = None
-        delegate.answers.append(spoken)
         await self._send(session, AskResolvedMessage(ask_id=ask_id, spoken=spoken, source=source))  # type: ignore[arg-type]
         await self._speak_line(session, spoken, f"ask-{ask_id}")
         if source == "timeout" or spoken.startswith("Yes"):
@@ -527,8 +526,13 @@ class CallManager(CallLedger):
         before = self._snapshot(session)
         spoken_text = session.in_flight.approved_text if session.in_flight is not None else None
         if session.mark_spoken(turn_id):
-            if spoken_text and not turn_id.startswith("ask-"):
-                self._note(session, "agent", spoken_text)  # delegated asks were noted when decided
+            if spoken_text:
+                self._note(session, "agent", spoken_text)
+                delegate = session.delegate
+                if turn_id.startswith("ask-") and isinstance(delegate, DelegateState):
+                    # Only an answer the receptionist heard counts in the notes; one that
+                    # was never delivered must not turn into "booked".
+                    delegate.answers.append(spoken_text)
             await self._send(session, SpokenMessage(turn_id=turn_id))
         await self._publish(session, before)
 

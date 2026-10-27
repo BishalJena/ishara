@@ -367,6 +367,7 @@ def test_attended_call_speaks_the_brief_then_asks_the_user_and_speaks_the_answer
         replies = f.bolna.replies()
         assert replies and replies[-1]["reply_text"] == "Yes, 4 pm tomorrow works. Thank you."
         assert replies[-1]["turn_id"].startswith("ask-")
+        assert f.speak_last(call_id) == "Yes, 4 pm tomorrow works. Thank you."
 
     f.finish(summary="Appointment agreed for 4 pm tomorrow.")
     notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()

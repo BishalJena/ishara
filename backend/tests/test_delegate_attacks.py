@@ -702,3 +702,41 @@ def test_a_caption_before_the_answered_webhook_opens_the_call_once(flow) -> None
     wait_for(lambda: bool(f.bolna.replies()))
     openings = [said, *spoken_texts(f)].count(OPENING)
     assert openings == 1, (said, spoken_texts(f))
+
+
+def test_an_undelivered_yes_is_not_reported_as_booked(flow) -> None:
+    f = flow(delivery_timeout_s=0.1, end_after_done_s=0.2)
+    call_id = f.start(f.brief(), attended=True)
+    with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
+        f.live(call_id)
+        f.speak_last(call_id)
+        f.listen_turn(call_id, OFFER)
+        ask = f.drain_until(ws, "ask")
+        ws.send_json({"type": "answer", "ask_id": ask["ask_id"], "choice": "yes"})
+        # Bolna never says it (the receptionist talked over it, ledger B24).
+        assert f.drain_until(ws, "not_delivered")["turn_id"] == f"ask-{ask['ask_id']}"
+    wait_for(lambda: ended_by_agent(f))
+    result = notes(f, call_id)
+    assert result["outcome"] != "booked"
+    assert not any(line.startswith("You answered") for line in result["summary"])
+
+
+def test_a_spoken_answer_is_in_the_transcript_and_the_notes(flow) -> None:
+    f = flow()
+    call_id = f.start(f.brief(), attended=True)
+    with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
+        f.live(call_id)
+        f.speak_last(call_id)
+        f.listen_turn(call_id, OFFER)
+        ask = f.drain_until(ws, "ask")
+        ws.send_json({"type": "answer", "ask_id": ask["ask_id"], "choice": "yes"})
+        f.drain_until(ws, "ask_resolved")
+        assert f.speak_last(call_id) == "Yes, 4 pm tomorrow works. Thank you."
+        f.drain_until(ws, "spoken")
+    status(f, "run-1", "completed")
+    result = notes(f, call_id)
+    assert ("agent", "Yes, 4 pm tomorrow works. Thank you.") in [
+        (e["speaker"], e["text"]) for e in result["transcript"]
+    ]
+    assert 'You answered: "Yes, 4 pm tomorrow works. Thank you."' in result["summary"]
+    assert result["outcome"] == "booked"
