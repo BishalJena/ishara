@@ -94,6 +94,60 @@ class Suggest(unittest.TestCase):
         self.assertEqual(frozen.per_word, {"tomorrow": 0.45})
 
 
+class CandidateBundle(unittest.TestCase):
+    def test_candidate_keeps_the_provisional_flag(self):
+        document = json.loads(s.DEFAULT_BUNDLE.read_text())
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "candidate.json"
+            s.write_bundle(document, {"p": 0.65, "per_word": {"tomorrow": 0.5}}, True, "test", path, provisional=True)
+            candidate = load_asl_bundle(path)
+            text = json.loads(path.read_text())["calibration"]
+        self.assertTrue(candidate.provisional, "a candidate from public clips must not unlock the shipped banner")
+        self.assertEqual(candidate.thresholds["p"], 0.65)
+        self.assertEqual(candidate.per_word, {"tomorrow": 0.5})
+        self.assertTrue(text.startswith("candidate"), text)
+
+
+class Combine(unittest.TestCase):
+    """Several runs of the same clips (Mac / app path, landscape / portrait) judged together."""
+    rule = s.Rule(frozenset({"yes", "tomorrow"}), p=0.6, margin=0.3, pick_one_p=0.35)
+
+    def test_attempts_survive_the_json_round_trip(self):
+        attempts = [s.Attempt("yes", (("yes", 0.9), ("no", 0.05)), dict(GOOD), "yes_1.mp4"),
+                    s.Attempt("none", (("tomorrow", 0.4), ("later", 0.2)), {"pose_fraction": 0.5, "hand_fraction": 0.1},
+                              "none_1.mp4", 0.4)]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "run.json"
+            path.write_text(json.dumps({"source": "Mac path", "attempts": s.attempts_json(attempts)}))
+            name, loaded = s.from_json(path)
+        self.assertEqual(name, "Mac path")
+        self.assertEqual(loaded, attempts)
+
+    def test_suggestion_is_fitted_on_every_run_at_once(self):
+        mac = [attempt("yes", ("yes", 0.9), ("no", 0.05)), attempt("tomorrow", ("tomorrow", 0.5), ("later", 0.1))]
+        app = [attempt("yes", ("yes", 0.9), ("no", 0.05)), attempt("none", ("tomorrow", 0.5), ("later", 0.1))]
+        self.assertEqual(s.suggest(mac, self.rule)["per_word"], {"tomorrow": 0.5}, "the Mac run alone allows it")
+        report = s.combine({"Mac": mac, "app": app}, self.rule)
+        self.assertEqual(report["suggestion"]["per_word"], {}, "the app run has a negative at 0.5: no per-word cut-off")
+        self.assertEqual(report["suggestion"]["p"], 0.6)
+
+    def test_a_wrong_chip_in_any_run_fails_the_combined_gate(self):
+        clean = [attempt("yes", ("yes", 0.9), ("no", 0.05))]
+        dirty = [attempt("yes", ("yes", 0.9), ("no", 0.05)), attempt("none", ("yes", 0.8), ("no", 0.1))]
+        report = s.combine({"Mac": clean, "app": dirty}, self.rule)
+        self.assertTrue(report["runs"]["Mac"]["gate"]["passes"])
+        self.assertFalse(report["runs"]["app"]["gate"]["passes"])
+        self.assertFalse(report["passes"])
+        self.assertTrue(s.combine({"Mac": clean, "app": clean}, self.rule)["passes"])
+
+    def test_combined_table_has_one_column_per_run(self):
+        runs = {"Mac": [attempt("yes", ("yes", 0.9), ("no", 0.05)), attempt("yes", ("mitten", 0.9), ("yes", 0.01))],
+                "app": [attempt("yes", ("yes", 0.5), ("no", 0.1)), attempt("yes", ("yes", 0.7), ("no", 0.1))]}
+        table = s.combined_markdown(s.combine(runs, self.rule))
+        row = next(line for line in table.splitlines() if line.startswith("| yes "))
+        self.assertEqual(row, "| yes | 2 | 1+0/2 fail | 1+1/2 pass |")
+
+
 class Labels(unittest.TestCase):
     def test_label_is_the_file_name_before_the_attempt_number(self):
         self.assertEqual(s.label_of(Path("tomorrow_03.mov")), "tomorrow")
