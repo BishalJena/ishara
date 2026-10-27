@@ -43,6 +43,24 @@ class PartSwap(unittest.TestCase):
         report = p.attribute(mac, app, decide_by_right_hand)
         self.assertIn("handedness", report["explained_by"])
 
+    def test_handedness_is_not_named_when_the_hands_are_not_mirrored(self):
+        mac, app = clip(), clip()
+        mac[:, p.PARTS["left_hand"]] = mac[:, p.PARTS["right_hand"]] = np.nan  # the Mac saw no hand at all
+        app[:, p.PARTS["left_hand"]] = np.nan  # the app saw the right one
+        report = p.attribute(mac, app, decide_by_right_hand)
+        self.assertEqual((report["mac"], report["app"]), ("abstain", "chip:yes"))
+        self.assertEqual(report["mirrored_frames"], 0)
+        self.assertNotIn("handedness", report["swaps"], "exchanging hands that agree is not a test of handedness")
+        self.assertEqual(report["explained_by"], ["right_hand"])
+
+    def test_mirrored_frames_count_only_hands_on_the_other_side(self):
+        mac, app = clip(), clip()
+        mac[:, p.PARTS["left_hand"]] = np.nan
+        app[:, p.PARTS["right_hand"]] = np.nan
+        app[:2, p.PARTS["left_hand"]] = np.nan  # two frames where the app saw no hand
+        app[2:4, p.PARTS["left_hand"]] += 0.3  # two where its left hand is elsewhere
+        self.assertEqual(int(p.mirrored_frames(mac, app).sum()), FRAMES - 4)
+
     def test_different_frame_counts_are_aligned_and_reported(self):
         mac, app = clip(), clip()[:-2]
         report = p.attribute(mac, app, decide_by_right_hand)
