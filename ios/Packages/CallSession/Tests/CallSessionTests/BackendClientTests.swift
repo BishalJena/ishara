@@ -39,7 +39,7 @@ final class BackendClientTests: XCTestCase {
         XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
         XCTAssertEqual(
             String(decoding: try XCTUnwrap(request.httpBody), as: UTF8.self),
-            #"{"contact_id":"city_clinic","purpose":"doctor_appointment"}"#)
+            #"{"attended":false,"contact_id":"city_clinic","mode":"live","purpose":"doctor_appointment"}"#)
     }
 
     func testStartCallKeepsBasePathPrefix() async throws {

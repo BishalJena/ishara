@@ -11,7 +11,9 @@ from app.markers import (
     render_marker_block,
 )
 from app.protocol import (
+    ASL_SIGNS,
     SIGNS,
+    TEMPLATE_SIGNS,
     ApproveMessage,
     CaptionMessage,
     ChipsMessage,
@@ -25,7 +27,9 @@ from app.protocol import (
 
 def test_sign_literal_matches_vocabulary_tuple() -> None:
     assert Sign.__args__ == SIGNS
-    assert len(SIGNS) == 12
+    assert len(TEMPLATE_SIGNS) == 12
+    assert SIGNS == TEMPLATE_SIGNS + ASL_SIGNS
+    assert len(set(SIGNS)) == len(SIGNS)
 
 
 def test_app_messages_parse_by_type() -> None:

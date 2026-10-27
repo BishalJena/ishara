@@ -1,5 +1,18 @@
 # Teammate handoff
 
+> **25 Oct, recognition track:** the demo is **pure ASL** with a published, signer-independent
+> model used as is (no recording, no training); measured the same day in
+> [experiments/asl-model-probe.md](experiments/asl-model-probe.md). Integration plan and the
+> proposed delegated-call mode:
+> [handoffs/2026-10-26-ready-made-asl-recognizer.md](handoffs/2026-10-26-ready-made-asl-recognizer.md)
+> (PLAN D8, D9). The sections below describe the state before that change.
+>
+> **27 Oct:** the ASL model runs inside the app (LiteRT, `ios/Packages/SignPipelineLiteRT`) and
+> matches the Mac on the simulator parity clips; the pick-one tile, framing hint and the "Call for
+> me" Brief and Notes screens are built and pass end to end against the local demo backend. See
+> [Built on 27 Oct](handoffs/2026-10-26-ready-made-asl-recognizer.md#built-on-27-oct-the-mac-only-list)
+> for what landed and what is left (phone clips, device speed, the first real call).
+
 Current state: **24 October 2026**, branch `main` (PRs #5–#33 are merged).
 This file owns the current capability and direction. Detailed measurements belong
 in the [experiment record](experiments/recognition.md), active tasks in
@@ -34,7 +47,7 @@ Bolna call has been placed (V4), no sign of the presenting signer has been recor
 |---|---|---|
 | Backend (`backend/`) | FastAPI app, Groq composer with validator and templates, Bolna custom-LLM endpoint, call sessions with single-use approvals, status webhook with its own secret, Path A `/tts`, Bolna agent builder and CLI, fake Bolna and end-to-end script tests, fake-app and V4 spike tools, Sign Lab backend | #6–#8, #10, #13–#17, #26, #30 |
 | CI and deploy | `scripts/verify.sh`, GitHub Actions, Heroku scripts and `backend/HEROKU.md` | #15, #28 |
-| iOS (`ios/`) | `ios/Ishara` app (4 screens, fake and live call drivers, scripted and pipeline recognition) and local packages `ios/Packages/{RecognitionCore,CallSession,SignPipeline,SignPipelineMediaPipe}`; unit and UI tests pass in the simulator | #18, #20, #22, #23, #27 |
+| iOS (`ios/`) | `ios/Ishara` app (live call and "Call for me" (D9) flows: Home, Get ready, Brief, call, Notes; fake and live call drivers, scripted and pipeline recognition with the ASL Signs model through LiteRT, D8) and local packages `ios/Packages/{RecognitionCore,CallSession,SignPipeline,SignPipelineMediaPipe,SignPipelineLiteRT}`; unit and UI tests pass in the simulator, including "Call for me" against the local demo backend | #18, #20, #22, #23, #27, #46 |
 | Core ML (`ml/coreml/`) | SignCLIP encoder as FP16 Core ML; matches PyTorch on 47/47 clips with `.cpuAndGPU` on a Mac (the Neural Engine gives wrong embeddings, so the app refuses it) | #21 |
 | Mac recognition | 12-sign vocabulary, calibration report and bundle export, start/stop detector, live webcam recognizer with top-3 display, Mac bridge into the backend call, guided 12-sign recording session and provisional try bundle | #9, #11, #12, #25, #29, #32 |
 | Evaluation | Cross-signer run on 42 public clips through recognizer, composer and voice: right sign ranked first for 27/39, but 4 correct chips, 1 wrong, the rest `?` at the zero-wrong-accept cut-off; composer on true chips 9/12 fit, one validator gap (see plan task V5b) | #33 |

@@ -45,7 +45,13 @@ async def test_start_call_posts_contact_and_purpose_with_bearer() -> None:
     assert seen[0].method == "POST"
     assert seen[0].url.path == "/calls"
     assert seen[0].headers["authorization"] == "Bearer tok"
-    assert json.loads(seen[0].content) == {"contact_id": "clinic", "purpose": "doctor_appointment"}
+    assert json.loads(seen[0].content) == {
+        "contact_id": "clinic",
+        "purpose": "doctor_appointment",
+        "mode": "live",
+        "brief_id": None,
+        "attended": False,
+    }
 
 
 async def test_start_call_raises_when_backend_refuses() -> None:

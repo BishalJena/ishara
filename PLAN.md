@@ -1,7 +1,13 @@
 # Ishara demo build plan
 
-Updated **23 October 2026**. This file owns the active tasks, decisions and
+Updated **25 October 2026**. This file owns the active tasks, decisions and
 acceptance criteria. Submission deadline: **Saturday 31 October 2026**.
+
+**Recognition track change (25 Oct, decisions D8 and D9):** no own recordings and no training.
+The demo is **pure ASL** with a published, signer-independent model used as is, measured on
+25 Oct ([record](docs/experiments/asl-model-probe.md)); a delegated-call mode is proposed. See the
+[handoff](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md). R1–R4 and G2 below are
+superseded by that document until it is folded back in.
 
 **Visual version:** [architecture board](docs/architecture/README.md)
 (`docs/architecture/ishara-board.excalidraw`). If the board and this plan disagree,
@@ -49,16 +55,19 @@ Agreed on 23 October 2026. Raise any change explicitly; don't switch silently.
 
 | # | Topic | Decision | Why |
 |---|---|---|---|
-| D1 | Who carries the call | **Option C.** Build **Path B** first: Bolna places the call through its default number. **Path A** (user's own number + Apple call-audio injection) is a Thursday bonus | B is testable before a device is available, gives the app real captions and uses Bolna centrally. A keeps the native-call story if it works |
+| D1 | Who carries the call | **Option C.** Build **Path B** first: Bolna places the call through its default number. **Path A** (user's own number + Apple call-audio injection) is a bonus if everything else lands by Wednesday | B is testable before a device is available, gives the app real captions and uses Bolna centrally. A keeps the native-call story if it works |
 | D2 | Voice (TTS) | **Sarvam Bulbul** (v4 Flash, English-India voice). Cartesia Sonic is the backup | Sponsor, inside Bolna's flat rate, Indian voice |
 | D3 | Call language | **English (India)** only. Hindi is "next" | Lowest effort |
 | D4 | Chips → sentence | **Groq LLM** (OpenAI-compatible API, model `openai/gpt-oss-120b`) drafts the sentence using the chips plus the live transcript, then a **validator** checks it. Fixed **templates** are the fallback. Replaced Cerebras on 23 Oct | Fast, context-aware wording; templates catch meaning drift. Cerebras is not free; Groq is billed per token at a low rate (§10) |
 | D5 | Vocabulary | **12 signs** (see §5), one sign at a time with hands down between signs. Wait and Repeat are buttons | Enough for the script; small enough to record and rehearse |
 | D6 | Where recognition runs | **On the iPhone**: MediaPipe Holistic for iOS (official SwiftPM package, MediaPipeTasksVision 1.1.1) plus SignCLIP converted to Core ML (FP16, run with compute units `.cpuAndGPU`; see P1). The **Mac is the backup** | On-device is the pitch; the Mac replay pipeline (extraction, SignCLIP embedding, reference matching) already runs, though it has no calibrated cut-off yet and abstains on everything until R2b |
 | D7 | Backend hosting | Small Python backend on **Heroku**, **EU** region, **Basic dyno or higher** (never Eco). Deployed by pushing `backend/` with `git subtree` (`backend/HEROKU.md`) | Team has credits; Eco dynos sleep and Bolna would hear silence. EU is closer to India than the default US region (latency not measured) |
+| D8 | Recognition model and data *(25 Oct, revised the same evening)* | **Pure ASL, with a ready-made signer-independent model used as is**: the Kaggle ASL Signs 1st-place model (MIT code, public 11 MB TFLite, 250 glosses, CC-BY corpus of ~94k phone-camera clips from 21 Deaf signers). **No own recordings, no training or fine-tuning, no reference clips.** Any of the 250 glosses can become a chip under the open-set rule (full softmax, p ≥ 0.6, margin ≥ 0.3, gloss in the service-call vocabulary; pick-one tile below that; never restrict to the vocabulary first). Rehearsed words: hello, thankyou, yes, no, now (today), please, tomorrow; candidates morning, wait; dropped sick, time. ISL forms are **not** mixed in, even where measured to coincide. Details: [handoff](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md), [measurements](docs/experiments/asl-model-probe.md) | We cannot produce sign data ourselves and public ISL data cannot give a signer-independent recognizer (INCLUDE ≈ 16 clips/word, none for yes/no/sorry; cross-signer SignCLIP accepted 4/42). Measured 25 Oct: the ASL model got 6/11 Lifeprint clips at 0.70–0.94 and four of the presenter's signs first try, 4 ms per sign, 0 wrong accepts at p ≥ 0.6, and stays flat on signs it does not know |
+| D9 *(approved 25 Oct, both variants)* | Delegated call mode | The user signs the intent, approves a **brief** once, and the Bolna agent makes the call for them, pursuing only the brief; afterwards the app shows transcript + Bolna's call summary. Optionally **attended**: live captions, and at decision points the agent says "one moment" and the user answers yes/no/wait by sign or tap (event injection). The verbatim live mode stays. Details: [handoff §D9](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#d9-approved-25-oct-built-the-delegated-call-with-optional-steering) | Removes real-time turn-taking pressure, needs 2–3 content signs per call, fits service calls, and is what Bolna agents are built for (~1 day on the existing backend). Keeps every safety rule: one explicit approval, disclosure, no out-of-brief commitments, allowlisted recipients |
 
-Already settled: native **SwiftUI** app, **SignCLIP** as the main recognizer
-(SL-GCN as comparison), and **nothing is spoken unless the user taps SEND**.
+Already settled: native **SwiftUI** app and **nothing is spoken unless the user taps SEND**.
+SignCLIP as the main recognizer (SL-GCN as comparison) held until 25 Oct; D8 replaces it
+for the demo.
 
 **Buildathon rule** (official page, checked 23 Oct): any project qualifies if voice
 is part of it; Bolna is not required by the rules. The team chose Bolna anyway (D1).
@@ -135,7 +144,7 @@ arrives, Bolna transitions to `speak` but **does not speak** ([ledger B24](docs/
 The backend must therefore confirm `spoken {turn_id}` from the custom-LLM request, and
 show "not delivered, tap SEND again" when no confirmation arrives. Never resend on its own.
 
-### Path A difference (Thursday bonus)
+### Path A difference (bonus, only if everything else is done by Wednesday)
 
 The user dials from the normal Phone app and opens Ishara. On SEND, the backend asks
 **Sarvam's TTS API directly** for a WAV clip, the app plays it, and Apple's
@@ -219,6 +228,13 @@ Pauses cost nothing: hands at rest means nothing happens.
 ---
 
 ## 5. Vocabulary (12 signs)
+
+> **Superseded 25 Oct (D8).** The demo is pure ASL: any of the model's 250 glosses can become a
+> chip; the rehearsed words are hello, thankyou, yes, no, now, please, tomorrow (candidates
+> morning, wait) per the
+> [handoff](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#vocabulary-and-script).
+> The recording budget below does not apply. The table is kept as the ISL target vocabulary;
+> the ISL-overlap measurement is in the [probe record](docs/experiments/asl-model-probe.md).
 
 | Sign | Used in script | Public reference video |
 |---|---|---|
@@ -359,13 +375,33 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 
 ### Mon 26 Oct: final recognition test → Gate 2
 
-- [ ] **R4 [You]** Final test session: 10 × 12 signs plus 50 negatives. **Evaluate once.**
-- [ ] **G2 Gate 2** (see §7).
+- [x] **R5a [Build]** Measure the ready-made ASL model: ISL clips, Lifeprint ASL clips, presenter
+  webcam session, offline analysis. *Done 25 Oct:* [record](docs/experiments/asl-model-probe.md).
+- [x] **R5 [Mate]** ASL recognizer in the app (simulator): LiteRT, Kaggle layout from the Tasks
+  Landmarker, parity on saved cuts, pick-one tile, framing guard, Brief/Notes screens. *Done 27 Oct*
+  ([what landed](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#built-on-27-oct-the-mac-only-list));
+  what is left for the teammate is review, simulator testing and the deploy
+  ([list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-the-teammate-mac-and-simulator)).
+  Replaces R1–R4.
+- [ ] **R7 [You]** iPhone, when it is available: the phone clips (the Camera app is enough), frozen
+  thresholds, device speed, the first real delegated call. *Done:* the
+  [founder list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-the-founder-needs-the-iphone).
+- [ ] ~~**R4 [You]** Final test session: 10 × 12 signs plus 50 negatives.~~ Superseded by D8.
+- [ ] **G2 Gate 2** (see §7, revised 25 Oct).
 - [x] **V6 [Build]** Call session layer: `POST /calls` with the allowlist, the WebSocket messages (§3),
   `turn_id` handling, single-use approval, stale-turn rejection, caption forwarding and
   WebSocket pings. *Done:* tests for double SEND, stale approval and an ended call. (PR #16)
 
 ### Tue 27 Oct: on-device pipeline → Gate 3
+
+- [x] **R6 [Build]** ASL recognizer in the app, Day 2: LiteRT (`SignPipelineLiteRT`), Tasks
+  Landmarker → Kaggle layout, simulator parity on saved clips, hand-out-of-frame guard, docs.
+  *Done 27 Oct;* on-device speed stays with R7.
+- [x] **V7 [Build]** D9 delegated call, backend and Mac bridge: briefs, delegated/attended
+  calls, asks and answers, notes; Sign Lab end-to-end test. (25 Oct; the iOS Brief/Notes screens
+  landed 27 Oct and passed end to end against the local demo backend; the real call remains)
+- [x] **R5 (Mac half)** ASL matcher behind `--model asl`, bundle v2, composer vocabulary, #34,
+  iOS wire types, `LogitsMatcher`, `AskCard`. (25 Oct)
 
 - [ ] **P2 [Build]** MediaPipe Holistic (iOS) feeding the Swift detector and matcher, using the
   frozen cut-off and your enrollment references bundled in the app.
@@ -379,7 +415,13 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
   iOS extractor rather than copying Mac embeddings. Also re-check the Core ML embeddings on
   the iPhone with `.cpuAndGPU` (the Neural Engine failed on the Mac, P1).
   *Done:* both give the same accepted label (or "?") on every calibration clip.
-- [ ] **G3 Gate 3** (see §7).
+  *27 Oct, ASL model (D8):* 18 Lifeprint clips, whole: the same chip on all 9 clips the Mac is
+  confident about, decisions agree on 17/18 (the other: Mac `?`, app pick-one MORNING), the Mac
+  model on the app's landmarks reproduces the app exactly
+  ([evidence](docs/experiments/evidence/asl-model-probe/parity-simulator-lifeprint.json)). The
+  SignCLIP part of P3 is moot under D8. Repeat on the phone clips once they exist.
+- [ ] **G3 Gate 3** (see §7). Met in the simulator for the ASL model on the Lifeprint clips;
+  the phone clips are the remaining check.
 - [x] **A2 [Build]** Wire the app to the backend: start call, chips → draft, SEND, captions,
   status, STOP, End. Uses the replay-video recognizer in the simulator.
   (done 24 Oct: #20/#27, `LiveCallDriver` over `POST /calls` and the call WebSocket, tested
@@ -402,12 +444,12 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 
 ### Thu 29 Oct: real iPhone → Gate 4
 
-- [ ] **T1 [Mate]** Install on the iPhone (Xcode, dev team). Record the iOS version, enable
+- [ ] **T1 [You]** Install on the iPhone (Xcode, dev team). Record the iOS version, enable
   **Add Audio in Calls**, and grant camera and injection permissions.
-- [ ] **T2 [Mate + You]** Path B full script live on the phone camera, plus the edge-case run:
+- [ ] **T2 [You + Mate]** Path B full script live on the phone camera, plus the edge-case run:
   long pause, fidgeting, wrong chip, out of frame, double SEND, receptionist
   interrupting, network off, End.
-- [ ] **T3 [Mate]** Path A bonus: own-number call, play a Sarvam clip, recipient repeats what they
+- [ ] **T3 [You]** Path A bonus: own-number call, play a Sarvam clip, recipient repeats what they
   heard; camera and Live Captions on at the same time.
 - [ ] **G4 Gate 4** (see §7).
 
@@ -429,7 +471,7 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 | Gate | When | Pass | If it fails |
 |---|---|---|---|
 | **G1** Voice | Sat 24 | Exact text spoken on the call; no double speech; agent stays quiet otherwise; captions reach the backend | Fallback 1: the speak node uses a built-in LLM with a "repeat exactly" prompt and the backend checks the transcript. Fallback 2: Path A becomes the main path |
-| **G2** Recognition | Mon 26 | Final test: **≥ 9/10 per sign**, **0 wrong accepted signs**, **0 accepts on the 50 negatives**, **< 2 s** from the sign ending to the chip, measured live | Drop or replace the signs that get confused (choose more distinct ones), add quick-reply taps, recollect a new final session (the old one becomes development data) |
+| **G2** Recognition *(revised 25 Oct, D8)* | Mon 26 | Presenter live trial on the Mac, 10 attempts per script sign: **≥ 6/10 correct chips per sign** (auto-accepted or chosen with one tap from a pick-one pair), **0 wrong auto-accepted chips**, **0 auto-accepts on the negatives**, **< 2 s** from the sign ending to the chip | Swap a missed sign for an in-vocabulary synonym or a button; if three or more script signs miss, run "pick-one always" (model proposes top-2, user taps) and say so on the slide |
 | **G3** On-device | Tue 27 | The simulator pipeline matches the Mac on every calibration clip | Demo recognition on the Mac (A4) and pitch "designed for on-device" |
 | **G4** Real call | Thu 29 | The full script works live twice on the iPhone; the recipient hears exactly the approved sentences | Friday becomes a fix day; the Mac fallback and the backup video are the safety net |
 

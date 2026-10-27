@@ -19,7 +19,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
 
-from app.protocol import CallState, Purpose, Sign
+from app.protocol import CallMode, CallState, Purpose, Sign, TranscriptEntry
 
 
 class TurnPhase(StrEnum):
@@ -84,6 +84,12 @@ class CallSession:
     purpose: Purpose
     run_id: str | None = None
     last_caption: str | None = None
+    # Decision D9: "delegated" calls carry a DelegateState (app/delegate.py) that the
+    # custom-LLM endpoint consults instead of staying silent in the listen node.
+    mode: CallMode = "live"
+    delegate: object | None = None
+    transcript: list[TranscriptEntry] = field(default_factory=list)
+    bolna_summary: str | None = None
     # Line state from Bolna and captions; never SPEAKING (that is derived from in_flight).
     line: CallState = CallState.DIALING
     current: Turn | None = None

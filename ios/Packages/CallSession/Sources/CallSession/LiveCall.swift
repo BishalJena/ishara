@@ -21,7 +21,18 @@ public final class LiveCall {
         purpose: CallPurpose,
         makeTurnID: @escaping () -> TurnID = TurnID.random
     ) async throws -> LiveCall {
-        let start = try await client.startCall(contactID: contactID, purpose: purpose)
+        try await start(
+            client: client, request: StartCallRequest(contactID: contactID, purpose: purpose),
+            makeTurnID: makeTurnID)
+    }
+
+    /// Places a live or delegated (D9) call and opens its socket.
+    public static func start(
+        client: BackendClient,
+        request: StartCallRequest,
+        makeTurnID: @escaping () -> TurnID = TurnID.random
+    ) async throws -> LiveCall {
+        let start = try await client.startCall(request)
         let call = LiveCall(client: client, start: start, makeTurnID: makeTurnID)
         await call.connect()
         return call

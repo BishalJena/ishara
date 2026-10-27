@@ -124,7 +124,15 @@ check_recognition_light() {
       "&& uv pip install --python .venv-light/bin/python -r requirements-light.txt"
     skip "no spikes/recognition/.venv or .venv-light"
   fi
-  step "$python" -m unittest test_retrieval test_detector test_detect_clips test_mac_bridge test_live_source test_record_session test_video_eval
+  step "$python" -m unittest test_retrieval test_detector test_detect_clips test_mac_bridge test_live_source test_record_session test_video_eval test_asl_matcher test_asl_summary
+}
+
+# SignPipelineLiteRT can't load until its LiteRT binary is downloaded (checksum-verified, once).
+fetch_litert() {
+  local script=ios/Packages/SignPipelineLiteRT/Scripts/download_tflite_c.sh
+  if [[ -x $script ]]; then
+    step "$script"
+  fi
 }
 
 check_shellcheck() {
@@ -149,6 +157,7 @@ check_swift_packages() {
   done
   ((${#manifests[@]})) || skip "no ios/Packages/*/Package.swift"
   [[ -n $XCODE_DIR ]] || skip "Xcode not found in /Applications (Command Line Tools have no XCTest)"
+  fetch_litert
   for manifest in "${manifests[@]}"; do
     step swift test --package-path "$(dirname "$manifest")"
   done
@@ -170,6 +179,7 @@ check_ios_app() {
     skip "no $project"
   fi
   [[ -n $XCODE_DIR ]] || skip "Xcode not found in /Applications"
+  fetch_litert
   destination=${IOS_DESTINATION:-}
   if [[ -z $destination ]]; then
     udid=$(pick_simulator)

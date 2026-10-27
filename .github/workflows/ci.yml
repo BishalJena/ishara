@@ -112,6 +112,12 @@ jobs:
         run: |
           xcodebuild -version
           swift --version
+      # SignPipelineLiteRT can't load until its LiteRT binary is downloaded (not committed;
+      # checksum-verified by the script), as scripts/verify.sh does locally.
+      - name: Fetch the LiteRT binary
+        run: |
+          script=ios/Packages/SignPipelineLiteRT/Scripts/download_tflite_c.sh
+          if [[ -x $script ]]; then "$script"; fi
       - name: swift test each package
         run: |
           shopt -s nullglob

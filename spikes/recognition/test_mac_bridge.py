@@ -813,3 +813,87 @@ class CommandLine(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DelegatedCall(unittest.IsolatedAsyncioTestCase):
+    """Decision D9: the bridge shows the agent's question and answers it by sign or by hand."""
+
+    def setUp(self):
+        self.transport, self.lines = FakeTransport(), []
+        self.bridge = mb.Bridge(self.transport, mb.TurnState(new_id=ids()), self.lines.append,
+                                mb.SessionLog(self.lines.append))
+        self.ask = {"type": "ask", "ask_id": "a1", "question": "We have 4 pm tomorrow. Does that work?",
+                    "options": [{"choice": "yes", "spoken": "Yes, 4 pm tomorrow works. Thank you."},
+                                {"choice": "no", "spoken": "No, 4 pm tomorrow doesn't work, sorry."},
+                                {"choice": "wait", "spoken": "One moment, please, I'm checking."}],
+                    "fallback": "I'll need to check that and call back. Thank you.", "timeout_s": 10.0}
+
+    async def server(self, message):
+        await self.bridge.on_server(json.dumps(message))
+
+    async def test_a_signed_yes_answers_the_open_question_instead_of_becoming_a_chip(self):
+        await self.server(self.ask)
+        self.assertTrue(any("AGENT ASKS YOU" in line for line in self.lines))
+        await self.bridge.on_result("yes")
+        self.assertEqual(self.transport.sent, [{"type": "answer", "ask_id": "a1", "choice": "yes"}])
+        self.assertEqual(self.bridge.state.chips, [])
+        await self.server({"type": "ask_resolved", "ask_id": "a1", "source": "user",
+                           "spoken": "Yes, 4 pm tomorrow works. Thank you."})
+        self.assertIsNone(self.bridge.pending_ask)
+        # With the question closed, a signed yes is an ordinary chip again.
+        await self.bridge.on_result("yes")
+        self.assertEqual(self.transport.sent[-1]["type"], "chips")
+
+    async def test_typed_answer_and_unknown_choice(self):
+        await self.server(self.ask)
+        self.assertTrue(await self.bridge.handle_line("a maybe"))
+        self.assertEqual(self.transport.sent, [])
+        self.assertTrue(await self.bridge.handle_line("a no"))
+        self.assertEqual(self.transport.sent, [{"type": "answer", "ask_id": "a1", "choice": "no"}])
+
+    async def test_answer_without_a_question_sends_nothing(self):
+        self.assertTrue(await self.bridge.handle_line("a yes"))
+        self.assertEqual(self.transport.sent, [])
+        self.assertIn("nothing to answer: the agent has not asked anything", self.lines)
+
+    async def test_timeout_resolution_is_shown(self):
+        await self.server(self.ask)
+        await self.server({"type": "ask_resolved", "ask_id": "a1", "source": "timeout",
+                           "spoken": self.ask["fallback"]})
+        self.assertTrue(any("no answer in time" in line for line in self.lines))
+
+
+class DelegatedStart(unittest.TestCase):
+    def setUp(self):
+        self.posts, self.lines = [], []
+
+    def post(self, url, body, headers):
+        self.posts.append((url, body))
+        if url.endswith("/briefs"):
+            return {"brief_id": "b9", "text": "Call on behalf of Asha to book a doctor's appointment.",
+                    "goal": "book a doctor's appointment", "constraints": []}
+        return {"call_id": "c42", "state": "dialing", "mode": "delegated"}
+
+    def test_delegated_start_creates_the_brief_then_starts_with_its_id(self):
+        delegated = {"name": "Asha", "chips": ["tomorrow", "morning"], "attended": True, "notes": None}
+        call_id = mb.start_call("https://b", "clinic", TOKEN, True, self.post, self.lines.append, delegated)
+        self.assertEqual(call_id, "c42")
+        self.assertEqual(self.posts[0], ("https://b/briefs", {
+            "purpose": "doctor_appointment", "chips": ["tomorrow", "morning"], "profile": {"name": "Asha"}}))
+        self.assertEqual(self.posts[1], ("https://b/calls", {
+            "contact_id": "clinic", "purpose": "doctor_appointment", "mode": "delegated",
+            "brief_id": "b9", "attended": True}))
+        self.assertTrue(any(line.startswith("BRIEF") for line in self.lines))
+        self.assertIn("(delegated)", self.lines[-1])
+
+    def test_delegated_needs_contact_and_attended_needs_delegated(self):
+        with self.assertRaises(SystemExit):
+            mb.parse_args(["--base-url", "https://b", "--call-id", "c1", "--delegated"])
+        with self.assertRaises(SystemExit):
+            mb.parse_args(["--base-url", "https://b", "--contact", "clinic", "--attended"])
+        with self.assertRaises(SystemExit):
+            mb.parse_args(["--base-url", "https://b", "--contact", "clinic", "--delegated",
+                           "--brief-chips", "banana"])
+        args = mb.parse_args(["--base-url", "https://b", "--contact", "clinic", "--delegated", "--attended"])
+        self.assertTrue(args.delegated and args.attended)
+        self.assertEqual(args.brief_chips, ["tomorrow", "morning"])

@@ -24,10 +24,35 @@ _MEANINGS: dict[Sign, re.Pattern[str]] = {
     "sorry": re.compile(r"\b(sorry|apologies|apologi[sz]e|excuse me)\b"),
     "doctor": re.compile(r"\b(doctor|doctors|doctor's|dr)\b"),
     "time": re.compile(r"\b(time|times|slot|slots|when)\b"),
+    # ASL glosses (D8). "now" is temporal (today); "night" and "yesterday" are facts below.
+    "please": re.compile(r"\bplease\b"),
+    "wait": re.compile(r"\b(wait|hold on|hold|one moment|a moment|moment|minute)\b"),
+    "later": re.compile(r"\b(later|afterwards|another time)\b"),
+    "can": re.compile(r"\b(can|could|able)\b"),
+    "where": re.compile(r"\b(where|address|location)\b"),
+    "who": re.compile(r"\b(who|whom)\b"),
+    "why": re.compile(r"\b(why|reason)\b"),
+    "have": re.compile(r"\b(have|has|had|got)\b"),
+    "finish": re.compile(r"\b(finish|finished|done|complete|completed|that's all)\b"),
+    "callonphone": re.compile(r"\b(call|phone|ring)\b"),
+    "sick": re.compile(r"\b(sick|unwell|ill|not feeling well|not well)\b"),
+    "hungry": re.compile(r"\b(hungry|eat|food)\b"),
+    "drink": re.compile(r"\b(drink|drinks)\b"),
+    "water": re.compile(r"\bwater\b"),
+    "home": re.compile(r"\b(home|house)\b"),
+    "go": re.compile(r"\b(go|going|leave|come)\b"),
+    "see": re.compile(r"\b(see|visit|meet)\b"),
+    "hear": re.compile(r"\b(hear|heard|hearing)\b"),
+    "read": re.compile(r"\b(read|reading)\b"),
 }
-# Polarity words that flip the user's answer; they need the matching chip.
+# Polarity words that flip the user's answer; they need the matching chip. Agreement also
+# covers "that works", "sounds good", "perfect" (issue #34: a bare thankyou must not accept).
 _REFUSAL = _MEANINGS["no"]
-_AGREEMENT = re.compile(r"\b(yes|yeah|yep)\b")
+_AGREEMENT = re.compile(
+    r"\b(yes|yeah|yep|sure|perfect|perfectly|agreed)\b"
+    r"|\b(that|this|it|which) (works|is fine|is good|is great|is perfect|suits me|sounds good)\b"
+    r"|\bworks (perfectly |well )?for me\b|\bsounds (good|great|perfect)\b"
+)
 
 _PARTS = ("morning", "afternoon", "evening", "night")
 _WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
@@ -48,6 +73,7 @@ def _temporal_table() -> list[tuple[re.Pattern[str], frozenset[str]]]:
     rows += [(f"this {part}", ("day:today", f"part:{part}")) for part in _PARTS]
     rows += [("tonight", ("day:today", "part:evening"))]
     rows += [(day, (f"day:{day}",)) for day in ("today", "tomorrow", "yesterday")]
+    rows += [("(?:right )?now", ("day:today",))]
     rows += [(f"{day}s?", (f"day:{day}",)) for day in _WEEKDAYS]
     rows += [(month, (f"day:{month}",)) for month in _MONTHS]
     rows += [(f"(?:next|this|last|coming) {span}", (f"day:{span}",)) for span in _SPANS]
@@ -61,10 +87,13 @@ def _temporal_table() -> list[tuple[re.Pattern[str], frozenset[str]]]:
 _TEMPORAL = _temporal_table()
 _SIGN_FACTS: dict[Sign, str] = {
     "today": "day:today",
+    "now": "day:today",
     "tomorrow": "day:tomorrow",
+    "yesterday": "day:yesterday",
     "morning": "part:morning",
     "afternoon": "part:afternoon",
     "evening": "part:evening",
+    "night": "part:night",
 }
 
 _NUMBER_WORDS = frozenset(

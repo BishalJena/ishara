@@ -30,6 +30,8 @@ enum ActiveCallStage: Equatable {
 struct ActiveCallView: View {
     let model: ActiveCallViewModel
     let onLeave: () -> Void
+    /// D9: opens the call's notes once it has ended.
+    var onShowNotes: (() -> Void)? = nil
 
     /// Grows with Dynamic Type so a whole caption still fits at large sizes, but is
     /// capped so the chips, draft and SEND keep most of the screen.
@@ -83,7 +85,8 @@ struct ActiveCallView: View {
         .padding(.horizontal)
         .padding(.top, 8)
         .safeAreaInset(edge: .bottom) {
-            CallActionBar(model: model, stage: stage, sentenceMaxHeight: sentenceMaxHeight, onLeave: onLeave)
+            CallActionBar(model: model, stage: stage, sentenceMaxHeight: sentenceMaxHeight, onLeave: onLeave,
+                          onShowNotes: onShowNotes)
                 .padding()
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { actionBarHeight = $0 }
                 .background(.bar)
@@ -122,8 +125,43 @@ private struct CallActionBar: View {
     let stage: ActiveCallStage
     let sentenceMaxHeight: CGFloat
     let onLeave: () -> Void
+    let onShowNotes: (() -> Void)?
 
     var body: some View {
+        if model.isDelegated {
+            delegatedBar
+        } else {
+            liveBar
+        }
+    }
+
+    /// D9: no draft, quick replies or SEND; the agent speaks from the approved brief. The
+    /// user answers its questions (attended) and reads the notes afterwards.
+    @ViewBuilder
+    private var delegatedBar: some View {
+        switch stage {
+        case .ended, .connectionLost(_, false):
+            VStack(spacing: 12) {
+                if let onShowNotes {
+                    Button(action: onShowNotes) {
+                        Label("See the call notes", systemImage: "doc.text")
+                    }
+                    .buttonStyle(.bigAction(.blue))
+                    .accessibilityIdentifier("call.notes")
+                }
+                Button("Back to Home", action: onLeave)
+                    .buttonStyle(.bigAction(Color.gray.opacity(0.3), foreground: .primary))
+                    .accessibilityIdentifier("call.backHome")
+            }
+        case .signing, .speaking, .connectionLost:
+            if let question = model.openQuestion {
+                AskCard(question: question, onAnswer: model.answer)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var liveBar: some View {
         switch stage {
         case .ended:
             Button("Back to Home", action: onLeave)
@@ -145,6 +183,9 @@ private struct CallActionBar: View {
             }
         case .signing:
             VStack(spacing: 12) {
+                if let question = model.openQuestion {
+                    AskCard(question: question, onAnswer: model.answer)
+                }
                 QuickReplyBar(onChoose: model.choose)
                     .disabled(!model.canUseQuickReplies)
                 PinnedSentence(maxHeight: sentenceMaxHeight) {

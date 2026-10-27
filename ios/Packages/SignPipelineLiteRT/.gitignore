@@ -1,0 +1,5 @@
+# Library package: the app resolves its own dependency graph.
+Package.resolved
+.swiftpm/
+# Downloaded by Scripts/download_tflite_c.sh.
+Frameworks/

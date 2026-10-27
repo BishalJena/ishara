@@ -524,7 +524,10 @@ class DrawOverlay(unittest.TestCase):
 
 class BridgeBoundary(unittest.TestCase):
     def test_vocabularies_match(self):
-        self.assertEqual(mb.SIGNS, data.VOCABULARY)
+        # The bridge accepts the backend's whole vocabulary (template signs + ASL glosses);
+        # SignCLIP enrollment bundles cover the 12 template signs, which must all be in it.
+        self.assertEqual(mb.SIGNS[:len(data.VOCABULARY)], data.VOCABULARY)
+        self.assertTrue(set(data.VOCABULARY) <= set(mb.SIGNS))
 
     def test_results_cross_to_the_bridge_as_lines(self):
         results, _, _ = run([Script().sign(1.0).hold(0.8, UP_Y).hold(0.6).observations()],

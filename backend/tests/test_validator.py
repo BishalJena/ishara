@@ -4,7 +4,14 @@ from itertools import combinations
 
 import pytest
 
-from app.protocol import MAX_CHIPS, MAX_SPOKEN_CHARS, SIGNS, ComposeRequest, Sign
+from app.protocol import (
+    ASL_SIGNS,
+    MAX_CHIPS,
+    MAX_SPOKEN_CHARS,
+    TEMPLATE_SIGNS,
+    ComposeRequest,
+    Sign,
+)
 from app.templates import compose_template
 from app.validator import MAX_WORDS, validate
 
@@ -40,7 +47,18 @@ def test_plan_script_wording_is_accepted(chips: list[Sign], caption: str, draft:
 
 
 def test_every_template_passes_the_validator() -> None:
-    chip_sets = [list(c) for n in range(1, MAX_CHIPS + 1) for c in combinations(SIGNS, n)]
+    chip_sets = [list(c) for n in range(1, MAX_CHIPS + 1) for c in combinations(TEMPLATE_SIGNS, n)]
+    chip_sets += [[sign] for sign in ASL_SIGNS]
+    chip_sets += [[core, sign] for sign in ASL_SIGNS for core in TEMPLATE_SIGNS]
+    chip_sets += [[a, b] for a in ASL_SIGNS for b in ASL_SIGNS if a < b]
+    chip_sets += [
+        ["hello", "sick", "tomorrow"],
+        ["no", "please"],
+        ["yes", "thankyou", "please"],
+        ["now", "please"],
+        ["wait"],
+        ["tomorrow", "please", "morning"],
+    ]
     for chips in chip_sets:
         draft = compose_template(chips, "doctor_appointment")
         assert check(draft, chips) == [], (chips, draft)
@@ -71,9 +89,45 @@ def test_word_limit_is_25() -> None:
 # ---- chip meanings ----
 
 
-@pytest.mark.parametrize("sign", SIGNS)
+@pytest.mark.parametrize("sign", TEMPLATE_SIGNS)
 def test_each_missing_chip_meaning_is_reported(sign: Sign) -> None:
     assert check("Please hold.", [sign]) == [f"missing meaning: {sign}"]
+
+
+@pytest.mark.parametrize("sign", ASL_SIGNS)
+def test_each_missing_asl_gloss_meaning_is_reported(sign: Sign) -> None:
+    assert check("Alright then.", [sign]) == [f"missing meaning: {sign}"]
+
+
+@pytest.mark.parametrize(
+    ("sign", "draft"),
+    [
+        ("please", "Please."),
+        ("wait", "A moment."),
+        ("now", "Is today free?"),
+        ("now", "Right now?"),
+        ("night", "At night?"),
+        ("yesterday", "Yesterday."),
+        ("later", "Maybe later."),
+        ("sick", "I'm feeling sick."),
+        ("callonphone", "Please call me."),
+        ("finish", "That's all."),
+    ],
+)
+def test_asl_gloss_synonyms(sign: Sign, draft: str) -> None:
+    assert check(draft, [sign]) == []
+
+
+@pytest.mark.parametrize(
+    "draft",
+    ["Thank you, that works perfectly for me.", "Thanks, sounds good.", "Thank you, perfect."],
+)
+def test_issue_34_bare_thankyou_must_not_accept(draft: str) -> None:
+    assert check(draft, ["thankyou"]) == ["adds agreement the user did not sign"]
+
+
+def test_now_without_chip_is_an_invented_day() -> None:
+    assert "invented day: today" in check("Hello, can you do it now?", ["hello", "can"])
 
 
 def test_missing_no_in_script_turn_three() -> None:

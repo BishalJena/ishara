@@ -1,0 +1,1824 @@
+{
+ "session": "20261025-213120",
+ "min_p": 0.6,
+ "min_margin": 0.3,
+ "records": [
+  {
+   "word": "hello",
+   "attempt": 1,
+   "npy": "artifacts/asl_probe/live/20261025-213120/000_hello.npy",
+   "accepted": "hello",
+   "top": [
+    [
+     "hello",
+     0.9476
+    ],
+    [
+     "pretend",
+     0.0176
+    ],
+    [
+     "will",
+     0.0061
+    ]
+   ],
+   "p1": 0.9476,
+   "margin": 0.9299,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 1.0
+   },
+   "latency_s": 0.478,
+   "segment": [
+    300662.53,
+    300663.53
+   ],
+   "reason": null
+  },
+  {
+   "word": "hello",
+   "attempt": 2,
+   "npy": "artifacts/asl_probe/live/20261025-213120/001_hello.npy",
+   "accepted": null,
+   "top": [
+    [
+     "pretend",
+     0.2819
+    ],
+    [
+     "hello",
+     0.2395
+    ],
+    [
+     "grandpa",
+     0.0591
+    ]
+   ],
+   "p1": 0.2819,
+   "margin": 0.0424,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8571428571428571
+   },
+   "latency_s": 0.495,
+   "segment": [
+    300690.31,
+    300691.72
+   ],
+   "reason": "best pretend p=0.28; failed: not in vocabulary, similarity, margin"
+  },
+  {
+   "word": "hello",
+   "attempt": 3,
+   "npy": "artifacts/asl_probe/live/20261025-213120/002_hello.npy",
+   "accepted": null,
+   "top": [
+    [
+     "hello",
+     0.5786
+    ],
+    [
+     "pretend",
+     0.1804
+    ],
+    [
+     "will",
+     0.046
+    ]
+   ],
+   "p1": 0.5786,
+   "margin": 0.3982,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8095238095238095
+   },
+   "latency_s": 0.49,
+   "segment": [
+    300693.3,
+    300694.61
+   ],
+   "reason": "best hello p=0.58; failed: similarity"
+  },
+  {
+   "word": "hello",
+   "attempt": 4,
+   "npy": "artifacts/asl_probe/live/20261025-213120/003_hello.npy",
+   "accepted": null,
+   "top": [
+    [
+     "hello",
+     0.3698
+    ],
+    [
+     "hat",
+     0.1786
+    ],
+    [
+     "pretend",
+     0.0399
+    ]
+   ],
+   "p1": 0.3698,
+   "margin": 0.1913,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8333333333333334
+   },
+   "latency_s": 0.435,
+   "segment": [
+    300696.48,
+    300698.01
+   ],
+   "reason": "best hello p=0.37; failed: similarity, margin"
+  },
+  {
+   "word": "hello",
+   "attempt": 5,
+   "npy": "artifacts/asl_probe/live/20261025-213120/004_hello.npy",
+   "accepted": "yes",
+   "top": [
+    [
+     "yes",
+     0.9131
+    ],
+    [
+     "can",
+     0.0438
+    ],
+    [
+     "carrot",
+     0.0123
+    ]
+   ],
+   "p1": 0.9131,
+   "margin": 0.8693,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.9047619047619048
+   },
+   "latency_s": 0.427,
+   "segment": [
+    300715.58,
+    300716.97
+   ],
+   "reason": null
+  },
+  {
+   "word": "thankyou",
+   "attempt": 1,
+   "npy": "artifacts/asl_probe/live/20261025-213120/005_thankyou.npy",
+   "accepted": "no",
+   "top": [
+    [
+     "no",
+     0.6416
+    ],
+    [
+     "goose",
+     0.0222
+    ],
+    [
+     "jump",
+     0.0193
+    ]
+   ],
+   "p1": 0.6416,
+   "margin": 0.6194,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.9444444444444444
+   },
+   "latency_s": 0.504,
+   "segment": [
+    300725.92,
+    300727.11
+   ],
+   "reason": null
+  },
+  {
+   "word": "thankyou",
+   "attempt": 2,
+   "npy": "artifacts/asl_probe/live/20261025-213120/006_thankyou.npy",
+   "accepted": "now",
+   "top": [
+    [
+     "now",
+     0.9345
+    ],
+    [
+     "callonphone",
+     0.0324
+    ],
+    [
+     "another",
+     0.0052
+    ]
+   ],
+   "p1": 0.9345,
+   "margin": 0.9021,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 1.0
+   },
+   "latency_s": 0.436,
+   "segment": [
+    300735.08,
+    300736.35
+   ],
+   "reason": null
+  },
+  {
+   "word": "thankyou",
+   "attempt": 3,
+   "npy": "artifacts/asl_probe/live/20261025-213120/007_thankyou.npy",
+   "accepted": "please",
+   "top": [
+    [
+     "please",
+     0.9494
+    ],
+    [
+     "zebra",
+     0.0143
+    ],
+    [
+     "hungry",
+     0.0024
+    ]
+   ],
+   "p1": 0.9494,
+   "margin": 0.9351,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 1.0
+   },
+   "latency_s": 0.473,
+   "segment": [
+    300746.01,
+    300747.14
+   ],
+   "reason": null
+  },
+  {
+   "word": "thankyou",
+   "attempt": 4,
+   "npy": "artifacts/asl_probe/live/20261025-213120/008_thankyou.npy",
+   "accepted": null,
+   "top": [
+    [
+     "brother",
+     0.1519
+    ],
+    [
+     "another",
+     0.1386
+    ],
+    [
+     "tomorrow",
+     0.0633
+    ]
+   ],
+   "p1": 0.1519,
+   "margin": 0.0133,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8214285714285714
+   },
+   "latency_s": 0.436,
+   "segment": [
+    300754.01,
+    300755.76
+   ],
+   "reason": "best brother p=0.15; failed: not in vocabulary, similarity, margin"
+  },
+  {
+   "word": "thankyou",
+   "attempt": 5,
+   "npy": "artifacts/asl_probe/live/20261025-213120/009_thankyou.npy",
+   "accepted": null,
+   "top": [
+    [
+     "tomorrow",
+     0.3163
+    ],
+    [
+     "another",
+     0.1411
+    ],
+    [
+     "callonphone",
+     0.0577
+    ]
+   ],
+   "p1": 0.3163,
+   "margin": 0.1752,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8333333333333334
+   },
+   "latency_s": 0.48,
+   "segment": [
+    300757.09,
+    300758.29
+   ],
+   "reason": "best tomorrow p=0.32; failed: similarity, margin"
+  },
+  {
+   "word": "yes",
+   "attempt": 1,
+   "npy": "artifacts/asl_probe/live/20261025-213120/010_yes.npy",
+   "accepted": null,
+   "top": [
+    [
+     "tomorrow",
+     0.4872
+    ],
+    [
+     "yourself",
+     0.0838
+    ],
+    [
+     "another",
+     0.0414
+    ]
+   ],
+   "p1": 0.4872,
+   "margin": 0.4034,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8260869565217391
+   },
+   "latency_s": 0.426,
+   "segment": [
+    300760.08,
+    300761.55
+   ],
+   "reason": "best tomorrow p=0.49; failed: similarity"
+  },
+  {
+   "word": "yes",
+   "attempt": 2,
+   "npy": "artifacts/asl_probe/live/20261025-213120/011_yes.npy",
+   "accepted": null,
+   "top": [
+    [
+     "yourself",
+     0.6616
+    ],
+    [
+     "tomorrow",
+     0.0729
+    ],
+    [
+     "another",
+     0.0306
+    ]
+   ],
+   "p1": 0.6616,
+   "margin": 0.5887,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8461538461538461
+   },
+   "latency_s": 0.491,
+   "segment": [
+    300775.45,
+    300776.32
+   ],
+   "reason": "best yourself p=0.66; failed: not in vocabulary"
+  },
+  {
+   "word": "yes",
+   "attempt": 3,
+   "npy": "artifacts/asl_probe/live/20261025-213120/012_yes.npy",
+   "accepted": "tomorrow",
+   "top": [
+    [
+     "tomorrow",
+     0.6592
+    ],
+    [
+     "yourself",
+     0.1601
+    ],
+    [
+     "later",
+     0.0143
+    ]
+   ],
+   "p1": 0.6592,
+   "margin": 0.4991,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8518518518518519
+   },
+   "latency_s": 0.43,
+   "segment": [
+    300777.85,
+    300779.59
+   ],
+   "reason": null
+  },
+  {
+   "word": "yes",
+   "attempt": 4,
+   "npy": "artifacts/asl_probe/live/20261025-213120/013_yes.npy",
+   "accepted": null,
+   "top": [
+    [
+     "there",
+     0.1761
+    ],
+    [
+     "give",
+     0.1185
+    ],
+    [
+     "wet",
+     0.0649
+    ]
+   ],
+   "p1": 0.1761,
+   "margin": 0.0576,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 1.0
+   },
+   "latency_s": 0.434,
+   "segment": [
+    300806.32,
+    300807.69
+   ],
+   "reason": "best there p=0.18; failed: not in vocabulary, similarity, margin"
+  },
+  {
+   "word": "yes",
+   "attempt": 5,
+   "npy": "artifacts/asl_probe/live/20261025-213120/014_yes.npy",
+   "accepted": null,
+   "top": [
+    [
+     "boat",
+     0.1272
+    ],
+    [
+     "sticky",
+     0.1234
+    ],
+    [
+     "wet",
+     0.0976
+    ]
+   ],
+   "p1": 0.1272,
+   "margin": 0.0038,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 1.0
+   },
+   "latency_s": 0.426,
+   "segment": [
+    300810.1,
+    300811.48
+   ],
+   "reason": "best boat p=0.13; failed: not in vocabulary, similarity, margin"
+  },
+  {
+   "word": "no",
+   "attempt": 1,
+   "npy": "artifacts/asl_probe/live/20261025-213120/015_no.npy",
+   "accepted": null,
+   "top": [
+    [
+     "mitten",
+     0.98
+    ],
+    [
+     "morning",
+     0.0019
+    ],
+    [
+     "finger",
+     0.0017
+    ]
+   ],
+   "p1": 0.98,
+   "margin": 0.978,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.9523809523809523
+   },
+   "latency_s": 0.492,
+   "segment": [
+    300813.36,
+    300814.76
+   ],
+   "reason": "best mitten p=0.98; failed: not in vocabulary"
+  },
+  {
+   "word": "no",
+   "attempt": 2,
+   "npy": "artifacts/asl_probe/live/20261025-213120/016_no.npy",
+   "accepted": null,
+   "top": [
+    [
+     "drink",
+     0.7084
+    ],
+    [
+     "cloud",
+     0.0399
+    ],
+    [
+     "owl",
+     0.0297
+    ]
+   ],
+   "p1": 0.7084,
+   "margin": 0.6685,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8333333333333334
+   },
+   "latency_s": 0.499,
+   "segment": [
+    300823.29,
+    300824.5
+   ],
+   "reason": "best drink p=0.71; failed: not in vocabulary"
+  },
+  {
+   "word": "no",
+   "attempt": 3,
+   "npy": "artifacts/asl_probe/live/20261025-213120/017_no.npy",
+   "accepted": null,
+   "top": [
+    [
+     "into",
+     0.0901
+    ],
+    [
+     "hungry",
+     0.0367
+    ],
+    [
+     "close",
+     0.0321
+    ]
+   ],
+   "p1": 0.0901,
+   "margin": 0.0534,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.75
+   },
+   "latency_s": 0.472,
+   "segment": [
+    300827.12,
+    300827.92
+   ],
+   "reason": "best into p=0.09; failed: not in vocabulary, similarity, margin"
+  },
+  {
+   "word": "no",
+   "attempt": 4,
+   "npy": "artifacts/asl_probe/live/20261025-213120/018_no.npy",
+   "accepted": null,
+   "top": [
+    [
+     "find",
+     0.813
+    ],
+    [
+     "feet",
+     0.0996
+    ],
+    [
+     "frenchfries",
+     0.0311
+    ]
+   ],
+   "p1": 0.813,
+   "margin": 0.7134,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.972972972972973
+   },
+   "latency_s": 0.503,
+   "segment": [
+    300829.1,
+    300831.56
+   ],
+   "reason": "best find p=0.81; failed: not in vocabulary"
+  },
+  {
+   "word": "no",
+   "attempt": 5,
+   "npy": "artifacts/asl_probe/live/20261025-213120/019_no.npy",
+   "accepted": null,
+   "top": [
+    [
+     "see",
+     0.9295
+    ],
+    [
+     "look",
+     0.027
+    ],
+    [
+     "high",
+     0.0036
+    ]
+   ],
+   "p1": 0.9295,
+   "margin": 0.9025,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.9629629629629629
+   },
+   "latency_s": 0.43,
+   "segment": [
+    300832.23,
+    300833.95
+   ],
+   "reason": "best see p=0.93; failed: not in vocabulary"
+  },
+  {
+   "word": "now",
+   "attempt": 1,
+   "npy": "artifacts/asl_probe/live/20261025-213120/020_now.npy",
+   "accepted": null,
+   "top": [
+    [
+     "look",
+     0.3961
+    ],
+    [
+     "see",
+     0.0657
+    ],
+    [
+     "jump",
+     0.0513
+    ]
+   ],
+   "p1": 0.3961,
+   "margin": 0.3305,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6
+   },
+   "latency_s": 0.435,
+   "segment": [
+    300835.9,
+    300836.5
+   ],
+   "reason": "best look p=0.40; failed: not in vocabulary, similarity"
+  },
+  {
+   "word": "now",
+   "attempt": 2,
+   "npy": "artifacts/asl_probe/live/20261025-213120/021_now.npy",
+   "accepted": null,
+   "top": [
+    [
+     "morning",
+     0.2164
+    ],
+    [
+     "police",
+     0.1162
+    ],
+    [
+     "table",
+     0.0497
+    ]
+   ],
+   "p1": 0.2164,
+   "margin": 0.1003,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.9230769230769231
+   },
+   "latency_s": 0.494,
+   "segment": [
+    300843.42,
+    300845.1
+   ],
+   "reason": "best morning p=0.22; failed: similarity, margin"
+  },
+  {
+   "word": "now",
+   "attempt": 3,
+   "npy": "artifacts/asl_probe/live/20261025-213120/022_now.npy",
+   "accepted": "morning",
+   "top": [
+    [
+     "morning",
+     0.6151
+    ],
+    [
+     "open",
+     0.027
+    ],
+    [
+     "giraffe",
+     0.0199
+    ]
+   ],
+   "p1": 0.6151,
+   "margin": 0.5881,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6785714285714286
+   },
+   "latency_s": 0.427,
+   "segment": [
+    300846.83,
+    300848.62
+   ],
+   "reason": null
+  },
+  {
+   "word": "now",
+   "attempt": 4,
+   "npy": "artifacts/asl_probe/live/20261025-213120/023_now.npy",
+   "accepted": null,
+   "top": [
+    [
+     "closet",
+     0.2674
+    ],
+    [
+     "police",
+     0.046
+    ],
+    [
+     "hesheit",
+     0.0343
+    ]
+   ],
+   "p1": 0.2674,
+   "margin": 0.2214,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8484848484848485
+   },
+   "latency_s": 0.439,
+   "segment": [
+    300854.7,
+    300856.92
+   ],
+   "reason": "best closet p=0.27; failed: not in vocabulary, similarity, margin"
+  },
+  {
+   "word": "now",
+   "attempt": 5,
+   "npy": "artifacts/asl_probe/live/20261025-213120/024_now.npy",
+   "accepted": null,
+   "top": [
+    [
+     "closet",
+     0.3099
+    ],
+    [
+     "police",
+     0.0855
+    ],
+    [
+     "all",
+     0.0509
+    ]
+   ],
+   "p1": 0.3099,
+   "margin": 0.2244,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.9347826086956522
+   },
+   "latency_s": 0.486,
+   "segment": [
+    300859.2,
+    300862.2
+   ],
+   "reason": "best closet p=0.31; failed: not in vocabulary, similarity, margin"
+  },
+  {
+   "word": "please",
+   "attempt": 1,
+   "npy": "artifacts/asl_probe/live/20261025-213120/025_please.npy",
+   "accepted": null,
+   "top": [
+    [
+     "shoe",
+     0.0888
+    ],
+    [
+     "haveto",
+     0.049
+    ],
+    [
+     "can",
+     0.0429
+    ]
+   ],
+   "p1": 0.0888,
+   "margin": 0.0398,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.9666666666666667
+   },
+   "latency_s": 0.499,
+   "segment": [
+    300864.87,
+    300866.8
+   ],
+   "reason": "best shoe p=0.09; failed: not in vocabulary, similarity, margin"
+  },
+  {
+   "word": "please",
+   "attempt": 2,
+   "npy": "artifacts/asl_probe/live/20261025-213120/026_please.npy",
+   "accepted": null,
+   "top": [
+    [
+     "weus",
+     0.3425
+    ],
+    [
+     "arm",
+     0.1134
+    ],
+    [
+     "police",
+     0.0367
+    ]
+   ],
+   "p1": 0.3425,
+   "margin": 0.2291,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.9523809523809523
+   },
+   "latency_s": 0.494,
+   "segment": [
+    300868.39,
+    300869.72
+   ],
+   "reason": "best weus p=0.34; failed: not in vocabulary, similarity, margin"
+  },
+  {
+   "word": "please",
+   "attempt": 3,
+   "npy": "artifacts/asl_probe/live/20261025-213120/027_please.npy",
+   "accepted": null,
+   "top": [
+    [
+     "puzzle",
+     0.0688
+    ],
+    [
+     "zipper",
+     0.0603
+    ],
+    [
+     "time",
+     0.057
+    ]
+   ],
+   "p1": 0.0688,
+   "margin": 0.0085,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8181818181818182
+   },
+   "latency_s": 0.5,
+   "segment": [
+    300871.66,
+    300872.4
+   ],
+   "reason": "best puzzle p=0.07; failed: not in vocabulary, similarity, margin"
+  },
+  {
+   "word": "please",
+   "attempt": 4,
+   "npy": "artifacts/asl_probe/live/20261025-213120/028_please.npy",
+   "accepted": null,
+   "top": [
+    [
+     "arm",
+     0.7984
+    ],
+    [
+     "weus",
+     0.0662
+    ],
+    [
+     "police",
+     0.0072
+    ]
+   ],
+   "p1": 0.7984,
+   "margin": 0.7322,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.9814814814814815
+   },
+   "latency_s": 0.431,
+   "segment": [
+    300875.17,
+    300878.79
+   ],
+   "reason": "best arm p=0.80; failed: not in vocabulary"
+  },
+  {
+   "word": "please",
+   "attempt": 5,
+   "npy": "artifacts/asl_probe/live/20261025-213120/029_please.npy",
+   "accepted": null,
+   "top": [
+    [
+     "weus",
+     0.4792
+    ],
+    [
+     "arm",
+     0.2137
+    ],
+    [
+     "police",
+     0.033
+    ]
+   ],
+   "p1": 0.4792,
+   "margin": 0.2655,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.896551724137931
+   },
+   "latency_s": 0.502,
+   "segment": [
+    300880.6,
+    300882.53
+   ],
+   "reason": "best weus p=0.48; failed: not in vocabulary, similarity, margin"
+  },
+  {
+   "word": "tomorrow",
+   "attempt": 1,
+   "npy": "artifacts/asl_probe/live/20261025-213120/030_tomorrow.npy",
+   "accepted": null,
+   "top": [
+    [
+     "arm",
+     0.8071
+    ],
+    [
+     "weus",
+     0.114
+    ],
+    [
+     "police",
+     0.0113
+    ]
+   ],
+   "p1": 0.8071,
+   "margin": 0.6931,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.9583333333333334
+   },
+   "latency_s": 0.426,
+   "segment": [
+    300883.87,
+    300885.39
+   ],
+   "reason": "best arm p=0.81; failed: not in vocabulary"
+  },
+  {
+   "word": "tomorrow",
+   "attempt": 2,
+   "npy": "artifacts/asl_probe/live/20261025-213120/031_tomorrow.npy",
+   "accepted": null,
+   "top": [
+    [
+     "yourself",
+     0.8411
+    ],
+    [
+     "tomorrow",
+     0.0226
+    ],
+    [
+     "another",
+     0.007
+    ]
+   ],
+   "p1": 0.8411,
+   "margin": 0.8185,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.84
+   },
+   "latency_s": 0.435,
+   "segment": [
+    300914.13,
+    300915.73
+   ],
+   "reason": "best yourself p=0.84; failed: not in vocabulary"
+  },
+  {
+   "word": "tomorrow",
+   "attempt": 3,
+   "npy": "artifacts/asl_probe/live/20261025-213120/032_tomorrow.npy",
+   "accepted": null,
+   "top": [
+    [
+     "tomorrow",
+     0.4821
+    ],
+    [
+     "yourself",
+     0.2994
+    ],
+    [
+     "later",
+     0.0268
+    ]
+   ],
+   "p1": 0.4821,
+   "margin": 0.1827,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8260869565217391
+   },
+   "latency_s": 0.495,
+   "segment": [
+    300917.01,
+    300918.47
+   ],
+   "reason": "best tomorrow p=0.48; failed: similarity, margin"
+  },
+  {
+   "word": "tomorrow",
+   "attempt": 4,
+   "npy": "artifacts/asl_probe/live/20261025-213120/033_tomorrow.npy",
+   "accepted": null,
+   "top": [
+    [
+     "tomorrow",
+     0.404
+    ],
+    [
+     "yourself",
+     0.1731
+    ],
+    [
+     "later",
+     0.0605
+    ]
+   ],
+   "p1": 0.404,
+   "margin": 0.2309,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8636363636363636
+   },
+   "latency_s": 0.497,
+   "segment": [
+    300919.74,
+    300921.13
+   ],
+   "reason": "best tomorrow p=0.40; failed: similarity, margin"
+  },
+  {
+   "word": "tomorrow",
+   "attempt": 5,
+   "npy": "artifacts/asl_probe/live/20261025-213120/034_tomorrow.npy",
+   "accepted": null,
+   "top": [
+    [
+     "tomorrow",
+     0.3255
+    ],
+    [
+     "yourself",
+     0.2927
+    ],
+    [
+     "jeans",
+     0.0466
+    ]
+   ],
+   "p1": 0.3255,
+   "margin": 0.0328,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8
+   },
+   "latency_s": 0.432,
+   "segment": [
+    300922.4,
+    300923.67
+   ],
+   "reason": "best tomorrow p=0.33; failed: similarity, margin"
+  },
+  {
+   "word": "wait",
+   "attempt": 1,
+   "npy": "artifacts/asl_probe/live/20261025-213120/035_wait.npy",
+   "accepted": null,
+   "top": [
+    [
+     "drop",
+     0.0454
+    ],
+    [
+     "backyard",
+     0.0289
+    ],
+    [
+     "kiss",
+     0.0236
+    ]
+   ],
+   "p1": 0.0454,
+   "margin": 0.0165,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.42857142857142855
+   },
+   "latency_s": 0.497,
+   "segment": [
+    300925.14,
+    300925.54
+   ],
+   "reason": "best drop p=0.05; failed: not in vocabulary, similarity, margin"
+  },
+  {
+   "word": "wait",
+   "attempt": 2,
+   "npy": "artifacts/asl_probe/live/20261025-213120/036_wait.npy",
+   "accepted": null,
+   "top": [
+    [
+     "tomorrow",
+     0.3029
+    ],
+    [
+     "another",
+     0.2225
+    ],
+    [
+     "later",
+     0.066
+    ]
+   ],
+   "p1": 0.3029,
+   "margin": 0.0804,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8333333333333334
+   },
+   "latency_s": 0.498,
+   "segment": [
+    300925.87,
+    300927.41
+   ],
+   "reason": "best tomorrow p=0.30; failed: similarity, margin"
+  },
+  {
+   "word": "wait",
+   "attempt": 3,
+   "npy": "artifacts/asl_probe/live/20261025-213120/037_wait.npy",
+   "accepted": null,
+   "top": [
+    [
+     "another",
+     0.6343
+    ],
+    [
+     "tomorrow",
+     0.0825
+    ],
+    [
+     "callonphone",
+     0.059
+    ]
+   ],
+   "p1": 0.6343,
+   "margin": 0.5518,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.875
+   },
+   "latency_s": 0.49,
+   "segment": [
+    300928.86,
+    300929.93
+   ],
+   "reason": "best another p=0.63; failed: not in vocabulary"
+  },
+  {
+   "word": "wait",
+   "attempt": 4,
+   "npy": "artifacts/asl_probe/live/20261025-213120/038_wait.npy",
+   "accepted": null,
+   "top": [
+    [
+     "tomorrow",
+     0.5289
+    ],
+    [
+     "backyard",
+     0.0546
+    ],
+    [
+     "another",
+     0.0413
+    ]
+   ],
+   "p1": 0.5289,
+   "margin": 0.4743,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.896551724137931
+   },
+   "latency_s": 0.493,
+   "segment": [
+    300931.07,
+    300933.01
+   ],
+   "reason": "best tomorrow p=0.53; failed: similarity"
+  },
+  {
+   "word": "wait",
+   "attempt": 5,
+   "npy": "artifacts/asl_probe/live/20261025-213120/039_wait.npy",
+   "accepted": null,
+   "top": [
+    [
+     "tomorrow",
+     0.2957
+    ],
+    [
+     "another",
+     0.1278
+    ],
+    [
+     "backyard",
+     0.0918
+    ]
+   ],
+   "p1": 0.2957,
+   "margin": 0.168,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8928571428571429
+   },
+   "latency_s": 0.426,
+   "segment": [
+    300934.41,
+    300936.2
+   ],
+   "reason": "best tomorrow p=0.30; failed: similarity, margin"
+  },
+  {
+   "word": "morning",
+   "attempt": 1,
+   "npy": "artifacts/asl_probe/live/20261025-213120/040_morning.npy",
+   "accepted": null,
+   "top": [
+    [
+     "tomorrow",
+     0.3139
+    ],
+    [
+     "another",
+     0.1218
+    ],
+    [
+     "callonphone",
+     0.0313
+    ]
+   ],
+   "p1": 0.3139,
+   "margin": 0.192,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.9375
+   },
+   "latency_s": 0.487,
+   "segment": [
+    300937.13,
+    300939.24
+   ],
+   "reason": "best tomorrow p=0.31; failed: similarity, margin"
+  },
+  {
+   "word": "morning",
+   "attempt": 2,
+   "npy": "artifacts/asl_probe/live/20261025-213120/041_morning.npy",
+   "accepted": null,
+   "top": [
+    [
+     "tomorrow",
+     0.4892
+    ],
+    [
+     "another",
+     0.0846
+    ],
+    [
+     "backyard",
+     0.0405
+    ]
+   ],
+   "p1": 0.4892,
+   "margin": 0.4046,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8888888888888888
+   },
+   "latency_s": 0.493,
+   "segment": [
+    300946.68,
+    300948.48
+   ],
+   "reason": "best tomorrow p=0.49; failed: similarity"
+  },
+  {
+   "word": "morning",
+   "attempt": 3,
+   "npy": "artifacts/asl_probe/live/20261025-213120/042_morning.npy",
+   "accepted": null,
+   "top": [
+    [
+     "tomorrow",
+     0.5242
+    ],
+    [
+     "another",
+     0.0769
+    ],
+    [
+     "not",
+     0.0387
+    ]
+   ],
+   "p1": 0.5242,
+   "margin": 0.4473,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.92
+   },
+   "latency_s": 0.426,
+   "segment": [
+    300949.88,
+    300951.53
+   ],
+   "reason": "best tomorrow p=0.52; failed: similarity"
+  },
+  {
+   "word": "morning",
+   "attempt": 4,
+   "npy": "artifacts/asl_probe/live/20261025-213120/043_morning.npy",
+   "accepted": null,
+   "top": [
+    [
+     "tomorrow",
+     0.5004
+    ],
+    [
+     "backyard",
+     0.0888
+    ],
+    [
+     "another",
+     0.0463
+    ]
+   ],
+   "p1": 0.5004,
+   "margin": 0.4116,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.9166666666666666
+   },
+   "latency_s": 0.431,
+   "segment": [
+    300952.61,
+    300954.21
+   ],
+   "reason": "best tomorrow p=0.50; failed: similarity"
+  },
+  {
+   "word": "morning",
+   "attempt": 5,
+   "npy": "artifacts/asl_probe/live/20261025-213120/044_morning.npy",
+   "accepted": null,
+   "top": [
+    [
+     "tomorrow",
+     0.2207
+    ],
+    [
+     "another",
+     0.1268
+    ],
+    [
+     "brother",
+     0.0658
+    ]
+   ],
+   "p1": 0.2207,
+   "margin": 0.0939,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8695652173913043
+   },
+   "latency_s": 0.431,
+   "segment": [
+    300955.28,
+    300956.81
+   ],
+   "reason": "best tomorrow p=0.22; failed: similarity, margin"
+  },
+  {
+   "word": "sick",
+   "attempt": 1,
+   "npy": "artifacts/asl_probe/live/20261025-213120/045_sick.npy",
+   "accepted": null,
+   "top": [
+    [
+     "tomorrow",
+     0.365
+    ],
+    [
+     "another",
+     0.1747
+    ],
+    [
+     "callonphone",
+     0.0346
+    ]
+   ],
+   "p1": 0.365,
+   "margin": 0.1902,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8333333333333334
+   },
+   "latency_s": 0.427,
+   "segment": [
+    300957.73,
+    300959.27
+   ],
+   "reason": "best tomorrow p=0.36; failed: similarity, margin"
+  },
+  {
+   "word": "sick",
+   "attempt": 2,
+   "npy": "artifacts/asl_probe/live/20261025-213120/046_sick.npy",
+   "accepted": null,
+   "top": [
+    [
+     "tomorrow",
+     0.4634
+    ],
+    [
+     "backyard",
+     0.0661
+    ],
+    [
+     "yourself",
+     0.066
+    ]
+   ],
+   "p1": 0.4634,
+   "margin": 0.3973,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.85
+   },
+   "latency_s": 0.496,
+   "segment": [
+    300960.34,
+    300961.68
+   ],
+   "reason": "best tomorrow p=0.46; failed: similarity"
+  },
+  {
+   "word": "sick",
+   "attempt": 3,
+   "npy": "artifacts/asl_probe/live/20261025-213120/047_sick.npy",
+   "accepted": null,
+   "top": [
+    [
+     "tomorrow",
+     0.411
+    ],
+    [
+     "brother",
+     0.0808
+    ],
+    [
+     "every",
+     0.0392
+    ]
+   ],
+   "p1": 0.411,
+   "margin": 0.3302,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.875
+   },
+   "latency_s": 0.481,
+   "segment": [
+    300963.15,
+    300964.74
+   ],
+   "reason": "best tomorrow p=0.41; failed: similarity"
+  },
+  {
+   "word": "sick",
+   "attempt": 4,
+   "npy": "artifacts/asl_probe/live/20261025-213120/048_sick.npy",
+   "accepted": null,
+   "top": [
+    [
+     "go",
+     0.3006
+    ],
+    [
+     "wet",
+     0.1266
+    ],
+    [
+     "outside",
+     0.084
+    ]
+   ],
+   "p1": 0.3006,
+   "margin": 0.174,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8571428571428571
+   },
+   "latency_s": 0.497,
+   "segment": [
+    301041.98,
+    301043.38
+   ],
+   "reason": "best go p=0.30; failed: not in vocabulary, similarity, margin"
+  },
+  {
+   "word": "sick",
+   "attempt": 5,
+   "npy": "artifacts/asl_probe/live/20261025-213120/049_sick.npy",
+   "accepted": null,
+   "top": [
+    [
+     "like",
+     0.1211
+    ],
+    [
+     "shirt",
+     0.1091
+    ],
+    [
+     "outside",
+     0.0722
+    ]
+   ],
+   "p1": 0.1211,
+   "margin": 0.012,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8333333333333334
+   },
+   "latency_s": 0.493,
+   "segment": [
+    301044.85,
+    301046.04
+   ],
+   "reason": "best like p=0.12; failed: not in vocabulary, similarity, margin"
+  },
+  {
+   "word": "time",
+   "attempt": 1,
+   "npy": "artifacts/asl_probe/live/20261025-213120/050_time.npy",
+   "accepted": null,
+   "top": [
+    [
+     "go",
+     0.2341
+    ],
+    [
+     "wet",
+     0.1059
+    ],
+    [
+     "outside",
+     0.0926
+    ]
+   ],
+   "p1": 0.2341,
+   "margin": 0.1282,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8
+   },
+   "latency_s": 0.495,
+   "segment": [
+    301047.31,
+    301048.58
+   ],
+   "reason": "best go p=0.23; failed: not in vocabulary, similarity, margin"
+  },
+  {
+   "word": "time",
+   "attempt": 2,
+   "npy": "artifacts/asl_probe/live/20261025-213120/051_time.npy",
+   "accepted": null,
+   "top": [
+    [
+     "taste",
+     0.5806
+    ],
+    [
+     "sick",
+     0.0472
+    ],
+    [
+     "sad",
+     0.0413
+    ]
+   ],
+   "p1": 0.5806,
+   "margin": 0.5333,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8421052631578947
+   },
+   "latency_s": 0.428,
+   "segment": [
+    301050.18,
+    301051.38
+   ],
+   "reason": "best taste p=0.58; failed: not in vocabulary, similarity"
+  },
+  {
+   "word": "time",
+   "attempt": 3,
+   "npy": "artifacts/asl_probe/live/20261025-213120/052_time.npy",
+   "accepted": null,
+   "top": [
+    [
+     "go",
+     0.2163
+    ],
+    [
+     "wet",
+     0.08
+    ],
+    [
+     "white",
+     0.0438
+    ]
+   ],
+   "p1": 0.2163,
+   "margin": 0.1363,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8823529411764706
+   },
+   "latency_s": 0.498,
+   "segment": [
+    301053.11,
+    301055.31
+   ],
+   "reason": "best go p=0.22; failed: not in vocabulary, similarity, margin"
+  },
+  {
+   "word": "time",
+   "attempt": 4,
+   "npy": "artifacts/asl_probe/live/20261025-213120/053_time.npy",
+   "accepted": null,
+   "top": [
+    [
+     "black",
+     0.0966
+    ],
+    [
+     "because",
+     0.055
+    ],
+    [
+     "moon",
+     0.0383
+    ]
+   ],
+   "p1": 0.0966,
+   "margin": 0.0416,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8695652173913043
+   },
+   "latency_s": 0.493,
+   "segment": [
+    301061.91,
+    301063.42
+   ],
+   "reason": "best black p=0.10; failed: not in vocabulary, similarity, margin"
+  },
+  {
+   "word": "time",
+   "attempt": 5,
+   "npy": "artifacts/asl_probe/live/20261025-213120/054_time.npy",
+   "accepted": null,
+   "top": [
+    [
+     "moon",
+     0.1222
+    ],
+    [
+     "down",
+     0.0707
+    ],
+    [
+     "stairs",
+     0.0434
+    ]
+   ],
+   "p1": 0.1222,
+   "margin": 0.0515,
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.7894736842105263
+   },
+   "latency_s": 0.429,
+   "segment": [
+    301065.42,
+    301066.68
+   ],
+   "reason": "best moon p=0.12; failed: not in vocabulary, similarity, margin"
+  }
+ ],
+ "labels_inferred": {
+  "0": "hello",
+  "1": "hello",
+  "2": "hello",
+  "3": "hello",
+  "4": "yes",
+  "5": "no",
+  "6": "now",
+  "7": "please",
+  "8": "tomorrow",
+  "9": "tomorrow",
+  "10": "tomorrow",
+  "11": "tomorrow",
+  "12": "tomorrow",
+  "13": "wait?",
+  "14": "wait?",
+  "15": "wait?",
+  "16": "wait?",
+  "17": "wait?",
+  "18": "wait?",
+  "19": "wait?",
+  "20": "morning",
+  "21": "morning",
+  "22": "morning",
+  "23": "morning",
+  "24": "morning",
+  "25": "time",
+  "26": "time",
+  "27": "time",
+  "28": "time",
+  "29": "time",
+  "30": "time",
+  "31": "tomorrow",
+  "32": "tomorrow",
+  "33": "tomorrow",
+  "34": "tomorrow",
+  "35": "noise",
+  "36": "tomorrow",
+  "37": "tomorrow",
+  "38": "tomorrow",
+  "39": "tomorrow",
+  "40": "tomorrow",
+  "41": "tomorrow",
+  "42": "tomorrow",
+  "43": "tomorrow",
+  "44": "tomorrow",
+  "45": "tomorrow",
+  "46": "tomorrow",
+  "47": "tomorrow",
+  "48": "sick",
+  "49": "sick",
+  "50": "sick",
+  "51": "sick",
+  "52": "sick",
+  "53": "sick",
+  "54": "sick"
+ }
+}

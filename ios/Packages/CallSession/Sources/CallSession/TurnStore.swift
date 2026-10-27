@@ -114,6 +114,32 @@ public struct ServerError: Equatable, Sendable {
 /// Safety rules (PLAN.md §4, docs/WORKFLOW.md): nothing is spoken unless the user taps SEND,
 /// an approval is used once and tied to its turn, unsure chips and stale drafts never reach
 /// the call, and after End or a disconnect nothing is sent on the user's behalf.
+/// The agent paused the receptionist and needs the user's yes / no / wait (D9).
+public struct OpenQuestion: Equatable, Sendable {
+    public let askID: String
+    public let question: String
+    public let options: [AskOption]
+    public let fallback: String
+    public let timeoutS: Double
+    public let askedAt: Date
+
+    public init(
+        askID: String, question: String, options: [AskOption], fallback: String, timeoutS: Double,
+        askedAt: Date = Date()
+    ) {
+        self.askID = askID
+        self.question = question
+        self.options = options
+        self.fallback = fallback
+        self.timeoutS = timeoutS
+        self.askedAt = askedAt
+    }
+
+    public func spoken(for choice: AskChoice) -> String? {
+        options.first { $0.choice == choice }?.spoken
+    }
+}
+
 @MainActor
 @Observable
 public final class TurnStore {
@@ -133,6 +159,8 @@ public final class TurnStore {
     public private(set) var lastError: ServerError?
     /// Shown to the user when the call can no longer carry messages.
     public private(set) var notice: String?
+    /// D9 attended call: the agent's open question, until it is answered or times out.
+    public private(set) var openQuestion: OpenQuestion?
 
     private let sink: any OutgoingMessageSink
     private let makeTurnID: () -> TurnID
@@ -294,9 +322,34 @@ public final class TurnStore {
             if code == ServerError.cannotInterrupt, isAwaitingDelivery, stopProgress == .requested {
                 stopProgress = .tooLate
             }
+        case let .ask(askID, question, options, fallback, timeoutS):
+            openQuestion = OpenQuestion(
+                askID: askID, question: question, options: options, fallback: fallback,
+                timeoutS: timeoutS, askedAt: Date())
+        case let .askResolved(askID, spoken, source):
+            if openQuestion?.askID == askID { openQuestion = nil }
+            captions.append(Caption(text: spoken, at: Date(), speaker: source == "user" ? .user : .agent))
         case .unknown:
             break
         }
+    }
+
+    // MARK: Delegated call (D9)
+
+    /// Answer the agent's open question. Returns false when there is none (nothing is sent).
+    /// A `wait` keeps the question open; the backend restarts its timer.
+    @discardableResult
+    public func answer(_ choice: AskChoice) -> Bool {
+        guard state != .ended, let question = openQuestion else { return false }
+        sink.send(.answer(askID: question.askID, choice: choice))
+        return true
+    }
+
+    /// A recognised yes / no / wait while a question is open answers it instead of becoming
+    /// a chip. Returns true when it was consumed that way.
+    public func answerIfAsked(_ sign: Sign) -> Bool {
+        guard openQuestion != nil, let choice = AskChoice(rawValue: sign.rawValue) else { return false }
+        return answer(choice)
     }
 
     /// The socket closed. Nothing pending is sent, drafts are wiped and nothing is resent

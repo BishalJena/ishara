@@ -46,6 +46,9 @@ class ExecutionUpdate(BaseModel):
 
     id: str | int
     status: str
+    # Bolna's Call Summary extraction runs on every call and arrives as `summary` on the
+    # final webhook (docs, 25 Oct). Kept for the notes screen; never logged.
+    summary: str | None = None
 
     @property
     def run_id(self) -> str:

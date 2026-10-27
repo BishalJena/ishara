@@ -41,22 +41,25 @@ actor FakeTransport: WebSocketTransport {
     }
 }
 
-/// Answers `POST /calls` with one canned response and records each request.
+/// Answers `POST /calls` with one canned response (or a per-path one from `routes`, e.g.
+/// `/briefs`) and records each request.
 actor FakeHTTP: HTTPClient {
     private(set) var requests: [URLRequest] = []
     private let status: Int
     private let body: String
+    private let routes: [String: String]
 
-    init(status: Int = 200, body: String = #"{"call_id":"call_1","state":"dialing"}"#) {
+    init(status: Int = 200, body: String = #"{"call_id":"call_1","state":"dialing"}"#, routes: [String: String] = [:]) {
         self.status = status
         self.body = body
+        self.routes = routes
     }
 
     func perform(_ request: URLRequest) async throws -> (Data, URLResponse) {
         requests.append(request)
         let response = HTTPURLResponse(
             url: request.url!, statusCode: status, httpVersion: "HTTP/1.1", headerFields: nil)!
-        return (Data(body.utf8), response)
+        return (Data((routes[request.url!.path] ?? body).utf8), response)
     }
 }
 

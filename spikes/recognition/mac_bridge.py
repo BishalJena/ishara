@@ -23,8 +23,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Protocol
 
-SIGNS = ("hello", "thankyou", "yes", "no", "sorry", "doctor",
-         "today", "tomorrow", "morning", "afternoon", "evening", "time")
+from vocabulary import SIGNS  # the backend's Sign literals (template signs + ASL glosses)
 MAX_CHIPS = 8  # backend ChipsMessage limit
 AGENT_LABEL = "Ishara (voice)"
 QUICK_REPLIES = {
@@ -332,7 +331,12 @@ def describe_result(details: Mapping[str, Any]) -> str:
         parts.append(f"{latency_ms / 1000:.2f} s")
     if why := unsure_why(details):
         parts.append(why)
-    line = f"✓ {sign}" if sign is not None else "? unsure"
+    if sign is not None:
+        line = f"✓ {sign}"
+    elif candidate := details.get("pick_one"):
+        line = f"? pick one: {candidate}  (type {candidate} to accept it, or sign again)"
+    else:
+        line = "? unsure"
     if parts:
         line += f"  ({'; '.join(parts)})"
     if details.get("provisional"):
@@ -385,6 +389,7 @@ class Transport(Protocol):
 
 
 HELP = (f"signs: {' '.join(SIGNS)}  (? = unsure, never sent)\n"
+        "a yes|no|wait: answer the agent's question on a delegated call (or sign it)\n"
         "x remove last chip | c clear turn | s SEND draft | q yes|no|wait|repeat quick reply\n"
         "stop cancel unspoken output | e end call | h help")
 
@@ -397,6 +402,7 @@ class Bridge:
         self.transport, self.out, self.log = transport, out, log or SessionLog(out)
         self.state = state or TurnState()
         self.manual = ManualSource()
+        self.pending_ask: Message | None = None  # D9 attended call: the open question
         self._tasks: list[asyncio.Task[None]] = []
 
     async def send(self, message: Message | None) -> None:
@@ -405,6 +411,10 @@ class Bridge:
             self.log.record("bridge", message)
 
     async def on_result(self, result: Result) -> None:
+        if self.pending_ask is not None and result in ("yes", "no", "wait"):
+            # Signing yes/no/wait while the agent waits answers the question (D9).
+            await self.answer(result)
+            return
         try:
             message = self.state.add(result)
         except ChipLimit as error:
@@ -434,6 +444,12 @@ class Bridge:
                 self.out(f"! quick reply is one of: {' '.join(QUICK_REPLIES)}")
                 return True
             await self._send_approval(self.state.quick_reply(name))
+        elif command == "a":
+            choice = args[0].lower() if len(args) == 1 else ""
+            if choice not in ("yes", "no", "wait"):
+                self.out("! answer is one of: a yes | a no | a wait")
+                return True
+            await self.answer(choice)
         elif command == "stop":
             await self.send(self.state.stop())
         elif command == "e":
@@ -478,6 +494,17 @@ class Bridge:
         elif kind == "not_delivered":
             if (text := self.state.on_not_delivered(message["turn_id"])) is not None:
                 self.log.show(f"! not delivered ({message['reason']}), tap SEND again (s): {text}")
+        elif kind == "ask":
+            self.pending_ask = message
+            options = "  ".join(f"{o['choice']}: \"{o['spoken']}\"" for o in message["options"])
+            self.log.show(f"AGENT ASKS YOU ({message['timeout_s']:.0f} s, else \"{message['fallback']}\"):\n"
+                          f"  receptionist said: {message['question']}\n  {options}\n"
+                          f"  answer: sign yes/no/wait, or type: a yes | a no | a wait")
+        elif kind == "ask_resolved":
+            if self.pending_ask is not None and self.pending_ask["ask_id"] == message["ask_id"]:
+                self.pending_ask = None
+            who = "you chose" if message["source"] == "user" else "no answer in time, agent says"
+            self.log.show(f"{who}: {message['spoken']}")
         elif kind == "error":
             self.log.show(f"! backend error {message['code']}: {message['message']}")
         else:
@@ -495,6 +522,13 @@ class Bridge:
                                  for source in (self.manual, *sources))]
         finally:
             await self.transport.close()
+
+    async def answer(self, choice: str) -> None:
+        if self.pending_ask is None:
+            self.out("nothing to answer: the agent has not asked anything")
+            return
+        await self.send({"type": "answer", "ask_id": self.pending_ask["ask_id"], "choice": choice})
+        self.log.show(f"answered {choice}")
 
     async def _send_approval(self, message: Message | None) -> None:
         if message is None:
@@ -584,15 +618,28 @@ def post_json(url: str, body: Message, headers: dict[str, str]) -> Message:
 
 
 def start_call(base_url: str, contact: str, token: str, confirm_cost: bool,
-               post: PostJson = post_json, out: Callable[[str], None] = print) -> str:
-    """Asks the backend to dial. Refuses unless the cost was confirmed on the command line."""
+               post: PostJson = post_json, out: Callable[[str], None] = print,
+               delegated: Mapping[str, Any] | None = None) -> str:
+    """Asks the backend to dial. Refuses unless the cost was confirmed on the command line.
+
+    `delegated` (D9): {"name", "chips", "attended", "notes"}; the brief is created, shown
+    and approved by starting the call with its id."""
     out(COST_HEADS_UP)
     if not confirm_cost:
         raise SystemExit("Not starting a call: re-run with --confirm-cost to accept the cost.")
-    reply = post(f"{base_url}/calls", {"contact_id": contact, "purpose": PURPOSE},
-                 auth_headers(token))
+    body: Message = {"contact_id": contact, "purpose": PURPOSE}
+    if delegated is not None:
+        profile = {"name": delegated["name"]}
+        if delegated.get("notes"):
+            profile["notes"] = delegated["notes"]
+        brief = post(f"{base_url}/briefs", {"purpose": PURPOSE, "chips": list(delegated.get("chips", [])),
+                                             "profile": profile}, auth_headers(token))
+        out(f"BRIEF (approved by starting the call):\n  {brief['text']}")
+        body.update({"mode": "delegated", "brief_id": brief["brief_id"],
+                     "attended": bool(delegated.get("attended"))})
+    reply = post(f"{base_url}/calls", body, auth_headers(token))
     call_id = str(reply["call_id"])
-    out(f"call {call_id} started: {reply['state']}")
+    out(f"call {call_id} started: {reply['state']} ({reply.get('mode', 'live')})")
     return call_id
 
 
@@ -661,6 +708,15 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--confirm-cost", action="store_true",
                         help="accept the cost of the call that --contact starts")
     parser.add_argument("--replay", type=Path, help="JSON list of results to play back")
+    delegated = parser.add_argument_group(
+        "delegated call (D9)", "the agent pursues an approved brief; you only answer its questions")
+    delegated.add_argument("--delegated", action="store_true", help="start a delegated call (needs --contact)")
+    delegated.add_argument("--attended", action="store_true",
+                           help="the agent may ask you yes/no/wait questions; without it, it promises a callback")
+    delegated.add_argument("--name", default="the caller", help="caller's name the agent may share")
+    delegated.add_argument("--brief-chips", nargs="*", default=["tomorrow", "morning"], metavar="SIGN",
+                           help="signs that set the brief's preferred time (default: tomorrow morning)")
+    delegated.add_argument("--brief-notes", help="reason the agent may give if asked")
     parser.add_argument("--log", nargs="?", const="", metavar="PATH",
                         help="append recognizer results, chips, drafts, captions and spoken "
                              "confirmations as JSONL (default PATH: artifacts/lab/session-<time>.jsonl)")
@@ -671,14 +727,24 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     clips.add_argument("--camera", type=int, help="webcam index (default 0)")
     clips.add_argument("--replay-videos", type=Path, metavar="DIR",
                        help="rehearse with saved clips through the same live path")
+    live.add_argument("--model", choices=("signclip", "asl"), default="signclip",
+                      help="live_source.py recognizer: personalised SignCLIP references, or the public "
+                           "ASL Signs model with the open-set rule (default: %(default)s)")
     live.add_argument("--bundle", type=Path, help="recognition bundle (default: live_source.py's)")
     live.add_argument("--rest-y", type=float, help="skip the 2 s rest calibration; use this line")
     live.add_argument("--recognizer-python", type=Path, default=RECOGNIZER_PYTHON,
                       help="Python of the SignCLIP venv (default: %(default)s)")
     args = parser.parse_args(argv)
-    if not args.live and any(getattr(args, name) is not None
-                             for name in ("camera", "replay_videos", "bundle", "rest_y")):
-        parser.error("--camera, --replay-videos, --bundle and --rest-y need --live")
+    if not args.live and (args.model != "signclip" or any(getattr(args, name) is not None
+                                                           for name in ("camera", "replay_videos", "bundle", "rest_y"))):
+        parser.error("--camera, --replay-videos, --model, --bundle and --rest-y need --live")
+    if args.delegated and not args.contact:
+        parser.error("--delegated starts a new call, so it needs --contact")
+    if not args.delegated and (args.attended or args.brief_notes):
+        parser.error("--attended and --brief-notes need --delegated")
+    unknown = [c for c in args.brief_chips if c not in SIGNS]
+    if unknown:
+        parser.error(f"--brief-chips: unknown signs {unknown}")
     if args.log is not None:
         try:
             args.log = session_log_path(args.log)
@@ -698,6 +764,8 @@ def session_log_path(value: str, now: Callable[[], datetime] = datetime.now) -> 
 def live_command(args: argparse.Namespace) -> list[str]:
     """The recognizer child's argv; it inherits this process's working directory."""
     command = [str(args.recognizer_python), str(ROOT / "live_source.py")]
+    if args.model != "signclip":
+        command += ["--model", args.model]
     if args.replay_videos is not None:
         command += ["--replay-videos", str(args.replay_videos)]
     else:
@@ -735,8 +803,10 @@ def main(argv: list[str] | None = None, env: Mapping[str, str] = os.environ,
         await Bridge(transport, out=out, log=log).run(lines(), sources)
 
     try:
+        delegated = ({"name": args.name, "chips": args.brief_chips, "attended": args.attended,
+                      "notes": args.brief_notes} if args.delegated else None)
         call_id = args.call_id or start_call(args.base_url, args.contact, token,
-                                             args.confirm_cost, post, out)
+                                             args.confirm_cost, post, out, delegated)
         asyncio.run(session(call_id))
     except BackendError as error:
         out(f"! {error}")

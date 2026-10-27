@@ -3,10 +3,36 @@ import Foundation
 
 /// One recognition outcome for a finished sign.
 enum RecognitionResult: Equatable, Sendable {
-    /// The sign matched one of the user's recorded examples closely enough.
+    /// The recognizer is confident: a chip.
     case sign(Sign)
+    /// D8 grey zone: a vocabulary sign the model is fairly but not fully sure of. Shown as a
+    /// "Did you mean …?" tile; it becomes a chip only when the user taps it.
+    case candidate(Sign)
     /// Something was signed but nothing matched well enough: a [?] chip, never spoken.
     case unsure
+    /// Like `unsure`, and a hand left the picture during the sign, so the user is told to
+    /// keep both hands inside the frame.
+    case handLeftFrame
+}
+
+extension RecognitionResult {
+    /// Replay spellings, for `-IsharaReplay` and the simulator's replay menu: a sign name,
+    /// `?` (unsure), `name?` (a "did you mean" candidate) or `frame` (a hand left the frame).
+    init?(replayOption text: String) {
+        let word = text.trimmingCharacters(in: .whitespaces).lowercased()
+        switch word {
+        case ScriptedRecognitionController.unsureOption: self = .unsure
+        case ScriptedRecognitionController.framingOption: self = .handLeftFrame
+        default:
+            if word.hasSuffix("?"), let sign = Sign(rawValue: String(word.dropLast())) {
+                self = .candidate(sign)
+            } else if let sign = Sign(rawValue: word) {
+                self = .sign(sign)
+            } else {
+                return nil
+            }
+        }
+    }
 }
 
 /// What the call screen hears from recognition while the user signs.

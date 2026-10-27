@@ -20,6 +20,7 @@ from app.bolna_client import HttpBolnaClient
 from app.calls import CallManager
 from app.composer import build_composer
 from app.config import Settings, get_settings
+from app.delegate import build_brain
 from app.ports import BolnaClient, CallLedger, Composer
 from app.utterances import UtteranceTracker
 
@@ -65,7 +66,7 @@ def build_app(settings: Settings) -> FastAPI:
     ledger = None
     if settings.bolna_api_key is not None:
         bolna = HttpBolnaClient(settings.bolna_api_key, settings.bolna_agent_id)
-        ledger = CallManager(settings, composer, bolna)
+        ledger = CallManager(settings, composer, bolna, brain=build_brain(settings))
     return create_app(settings, composer=composer, bolna=bolna, ledger=ledger)
 
 

@@ -57,10 +57,22 @@ cp ios/Ishara/Config/Secrets.example.xcconfig ios/Ishara/Config/Secrets.xcconfig
 
 ## Recognition files (pipeline only)
 
+Before the first build, fetch the LiteRT library the `SignPipelineLiteRT` package links (the
+package cannot load without it; checksum-verified, not committed):
+
+```sh
+Packages/SignPipelineLiteRT/Scripts/download_tflite_c.sh
+```
+
 Models and recordings go in `ios/Ishara/LocalAssets/` (gitignored, copied into the app as a
 folder). See [LocalAssets/README.md](Ishara/LocalAssets/README.md): `holistic_landmarker.task`,
-`SignCLIPEncoder.mlmodelc` / `.mlpackage`, `recognition-bundle.json`, and `SampleSigns/*.mov`
-for the simulator (including `rest.mov` for calibration).
+`asl-signs.tflite` (the ASL Signs model, decision D8; its thresholds ship in
+`Resources/asl-bundle.json`), the older `SignCLIPEncoder` and `recognition-bundle.json`, and
+`SampleSigns/*.mov` for the simulator (including `rest.mov` for calibration).
+
+- With `asl-signs.tflite` the ASL model runs: a confident vocabulary sign is a chip, a fairly
+  sure one a "Did you mean …?" tile that counts only when tapped, anything else **[?]** (with
+  "a hand left the picture" when that is why).
 
 - No recognition bundle or encoder: every accepted sign shows **[?]**. The app never guesses.
 - Rejected attempts (too short, too long, lost tracking) produce no chip at all.
@@ -171,10 +183,14 @@ low confidence → [?], no bundle → [?], rejected attempt → nothing).
 | `Packages/RecognitionCore` | Start/stop detector, calibration, recognition bundle, matcher |
 | `Packages/SignPipeline` | Frame sources, landmarks, SignCLIP features, Core ML encoder |
 | `Packages/SignPipelineMediaPipe` | MediaPipe Holistic landmark provider (iOS only) |
+| `Packages/SignPipelineLiteRT` | LiteRT (TensorFlow Lite) runner for the ASL Signs model (iOS only; downloads its binary) |
 
-## Still needs a device or Xcode
+"Call for me" (decision D9) is Home → **CALL FOR ME** → Get ready → Brief → the delegated call
+→ Notes; it runs on the fake call in demo mode, and against the local demo backend in
+`DelegatedCallUITests`.
 
-- P3 parity: the same saved videos through the simulator pipeline and the Mac; re-embed the
-  enrollment references with the iOS extractor before trusting the bundle.
-- T1: install on the iPhone, grant camera permission, measure Holistic + encoder latency.
-- The `SignPipelineMediaPipe` adapter has not yet been compiled against the real MediaPipe module.
+## Still needs a device
+
+- T1: install on the iPhone, grant camera permission, measure Holistic + model latency.
+- The ASL model on portrait phone footage (the simulator parity used Lifeprint clips; see
+  `docs/experiments/asl-model-probe.md`, Run 4).

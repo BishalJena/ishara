@@ -89,7 +89,117 @@ final class FakeCallTests: XCTestCase {
                        [.result(.sign(.hello)), .result(.unsure)])
         XCTAssertEqual(events.first, .camera(.signing))
         XCTAssertEqual(events.last, .camera(.watching))
-        XCTAssertEqual(recognition.replayOptions.count, 13, "12 signs and ?")
+        XCTAssertEqual(recognition.replayOptions.count, Sign.allCases.count + 2 + Sign.rehearsed.count,
+                       "every sign, ?, frame, and a candidate per rehearsed sign")
+    }
+
+    func testReplayMenuOffersCandidatesAndTheFramingCase() async {
+        let recognition = ScriptedRecognitionController(offersReplay: true, timeScale: fast)
+        var results: [RecognitionResult] = []
+        let listener = Task {
+            for await event in recognition.signingEvents() {
+                if case .result(let result) = event { results.append(result) }
+            }
+        }
+        defer { listener.cancel() }
+
+        recognition.replay("tomorrow?")
+        recognition.replay(ScriptedRecognitionController.framingOption)
+
+        let played = await eventually { results.count == 2 }
+        XCTAssertTrue(played)
+        XCTAssertTrue(results.contains(.candidate(.tomorrow)))
+        XCTAssertTrue(results.contains(.handLeftFrame))
+        XCTAssertTrue(recognition.replayOptions.contains("tomorrow?"))
+    }
+
+    // MARK: Delegated call (D9)
+
+    private func delegatedSetup(attended: Bool) -> CallSetup {
+        var setup = CallSetup.demo
+        let request = BriefRequest(purpose: .doctorAppointment, chips: [.tomorrow, .morning], profile: Profile(name: "Riya"))
+        setup.delegation = Delegation(brief: DelegatedDemo.brief(for: request), attended: attended)
+        return setup
+    }
+
+    func testAttendedDelegatedCallAsksThenBooksOnYes() async throws {
+        let driver = FakeCallDriver(options: .init(timeScale: fast))
+        let model = ActiveCallViewModel(setup: delegatedSetup(attended: true), driver: driver, recognition: StubRecognition())
+        let run = Task { await model.run() }
+        defer { run.cancel() }
+
+        let asked = await eventually(timeout: .seconds(5)) { model.openQuestion != nil }
+        XCTAssertTrue(asked)
+        XCTAssertEqual(model.openQuestion?.question, DelegatedDemo.offer)
+        XCTAssertEqual(model.captions.map(\.text).prefix(2), [
+            DemoScript.disclosure, "I'd like to book a doctor's appointment for Riya, tomorrow in the morning.",
+        ])
+
+        model.handle(.result(.sign(.yes)))
+
+        let ended = await eventually(timeout: .seconds(5)) { model.isEnded }
+        XCTAssertTrue(ended)
+        XCTAssertNil(model.openQuestion)
+        XCTAssertTrue(model.chips.isEmpty, "a delegated call never composes chips")
+        let notes = try await driver.notes()
+        XCTAssertTrue(notes.ready)
+        XCTAssertEqual(notes.mode, .delegated)
+        XCTAssertEqual(notes.outcome, "booked")
+        XCTAssertTrue(notes.summary.contains("You answered: \"Yes, 10:30 tomorrow works. Thank you.\""))
+        XCTAssertEqual(notes.transcript.last?.text, DelegatedDemo.closeLine)
+    }
+
+    func testUnattendedDelegatedCallPromisesACallbackAndNeverAsks() async throws {
+        let driver = FakeCallDriver(options: .init(timeScale: fast))
+        let model = ActiveCallViewModel(setup: delegatedSetup(attended: false), driver: driver, recognition: StubRecognition())
+        let run = Task { await model.run() }
+        defer { run.cancel() }
+
+        let ended = await eventually(timeout: .seconds(5)) { model.isEnded }
+        XCTAssertTrue(ended)
+        XCTAssertTrue(model.captions.contains { $0.text == DelegatedDemo.callbackLine })
+        let notes = try await driver.notes()
+        XCTAssertEqual(notes.outcome, "callback")
+        XCTAssertEqual(notes.openQuestions.count, 1)
+    }
+
+    func testUnansweredQuestionTimesOutToTheCallbackLine() async throws {
+        let driver = FakeCallDriver(options: .init(timeScale: fast))
+        let model = ActiveCallViewModel(setup: delegatedSetup(attended: true), driver: driver, recognition: StubRecognition())
+        let run = Task { await model.run() }
+        defer { run.cancel() }
+
+        let ended = await eventually(timeout: .seconds(5)) { model.isEnded }
+        XCTAssertTrue(ended)
+        let notes = try await driver.notes()
+        XCTAssertEqual(notes.outcome, "callback")
+        XCTAssertTrue(model.captions.contains { $0.text == DelegatedDemo.callbackLine })
+    }
+
+    func testWaitKeepsTheQuestionOpen() async {
+        let driver = FakeCallDriver(options: .init(timeScale: fast))
+        let model = ActiveCallViewModel(setup: delegatedSetup(attended: true), driver: driver, recognition: StubRecognition())
+        let run = Task { await model.run() }
+        defer { run.cancel() }
+        let asked = await eventually(timeout: .seconds(5)) { model.openQuestion != nil }
+        XCTAssertTrue(asked)
+
+        model.answer(.wait)
+
+        XCTAssertNotNil(model.openQuestion, "wait holds the line; the question stays")
+        XCTAssertEqual(model.captions.last?.text, "One moment, please, I'm checking.")
+        driver.close()
+    }
+
+    func testFakeBriefSaysOnlyWhatWasSignedAndTyped() async throws {
+        let driver = FakeCallDriver()
+        let brief = try await driver.createBrief(BriefRequest(
+            purpose: .doctorAppointment, chips: [.now, .afternoon], profile: Profile(name: " Riya ", callback: "123")))
+
+        XCTAssertEqual(brief.text, "Call on behalf of Riya, who is Deaf and uses the Ishara app, to book a doctor's appointment. "
+            + "Preferred: today in the afternoon. May share: name (Riya), callback number. "
+            + "Will not agree to anything outside this brief; anything else comes back to you as a question.")
+        XCTAssertEqual(brief.constraints, ["preferred time: today in the afternoon"])
     }
 
     func testScriptPlaysOnceSigningStarts() async {

@@ -49,9 +49,14 @@ final class ActiveCallViewModel {
     private(set) var cameraState: CameraState = .watching
     private(set) var startFailure: String?
     private(set) var reconnectStop: ReconnectStop?
+    /// D8 pick-one: the latest grey-zone sign, offered as "Did you mean …?" until the user
+    /// taps it, dismisses it, or the next sign replaces it. Never a chip by itself.
+    private(set) var candidate: Sign?
+    /// The last sign couldn't be read because a hand left the picture.
+    private(set) var showsFramingHint = false
     private var userEnded = false
 
-    @ObservationIgnored private let driver: any CallDriver
+    @ObservationIgnored let driver: any CallDriver
 
     init(setup: CallSetup, driver: any CallDriver, recognition: any RecognitionController) {
         self.setup = setup
@@ -89,6 +94,13 @@ final class ActiveCallViewModel {
         case .connecting, .live, .interrupted: false
         }
     }
+
+    /// D9: the agent pursues an approved brief; the user only answers its questions.
+    var isDelegated: Bool { setup.delegation != nil }
+    /// D9 attended: the user watches and answers yes / no / wait by sign or tap.
+    var isAttended: Bool { setup.delegation?.attended ?? false }
+    /// Signs matter on a live call, and on an attended delegated call (to answer questions).
+    var watchesSigns: Bool { !isDelegated || isAttended }
 
     var connectedAt: Date? { store?.connectedAt }
     var captions: [Caption] { store?.captions ?? [] }
@@ -183,14 +195,48 @@ final class ActiveCallViewModel {
 
     func handle(_ event: RecognitionEvent) {
         guard !isEnded else { return }
-        switch event {
-        case .camera(let state):
-            cameraState = state
-        case .result(.sign(let sign)):
-            store?.add(.recognised(sign))
-        case .result(.unsure):
-            store?.add(.unsure())
+        guard case .result(let result) = event else {
+            if case .camera(let state) = event { cameraState = state }
+            return
         }
+        guard watchesSigns else { return }
+        candidate = nil
+        showsFramingHint = false
+        switch result {
+        case .sign(let sign):
+            accept(sign)
+        case .candidate(let sign):
+            candidate = sign
+        case .unsure:
+            addUnsure()
+        case .handLeftFrame:
+            showsFramingHint = true
+            addUnsure()
+        }
+    }
+
+    /// The user tapped "Did you mean …?": the candidate counts as signed.
+    func acceptCandidate() {
+        guard let sign = candidate, !isEnded else { return }
+        candidate = nil
+        accept(sign)
+    }
+
+    func dismissCandidate() {
+        candidate = nil
+    }
+
+    private func accept(_ sign: Sign) {
+        // D9: while the agent waits for an answer, a signed yes/no/wait answers it.
+        if store?.answerIfAsked(sign) == true { return }
+        // On a delegated call nothing is composed; only answers reach the call.
+        guard !isDelegated else { return }
+        store?.add(.recognised(sign))
+    }
+
+    private func addUnsure() {
+        guard !isDelegated else { return }
+        store?.add(.unsure())
     }
 
     /// Called when the user leaves the screen. Nothing is sent.
@@ -202,6 +248,11 @@ final class ActiveCallViewModel {
     // MARK: User actions
 
     func removeChip(_ chip: Chip) { store?.remove(chip) }
+
+    /// The agent's open question on an attended delegated call (D9), if any.
+    var openQuestion: OpenQuestion? { isEnded ? nil : store?.openQuestion }
+
+    func answer(_ choice: AskChoice) { store?.answer(choice) }
 
     func clear() { store?.clear() }
 
@@ -226,6 +277,7 @@ final class ActiveCallViewModel {
         userEnded = true
         store?.end()
         cameraState = .watching
+        candidate = nil
     }
 
     // MARK: Private

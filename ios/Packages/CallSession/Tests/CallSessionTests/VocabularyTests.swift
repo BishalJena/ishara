@@ -8,8 +8,13 @@ final class VocabularyTests: XCTestCase {
         let backendSigns = [
             "hello", "thankyou", "yes", "no", "sorry", "doctor",
             "today", "tomorrow", "morning", "afternoon", "evening", "time",
+            "please", "now", "wait", "night", "yesterday", "later", "can", "where", "who",
+            "why", "have", "finish", "callonphone", "sick", "hungry", "drink", "water",
+            "home", "go", "see", "hear", "read",
         ]
         XCTAssertEqual(Sign.allCases.map(\.rawValue), backendSigns)
+        XCTAssertEqual(Sign.templateSigns.map(\.rawValue), Array(backendSigns.prefix(12)))
+        XCTAssertTrue(Sign.rehearsed.allSatisfy { Sign.allCases.contains($0) })
     }
 
     func testPurposeRawValueMatchesBackend() {

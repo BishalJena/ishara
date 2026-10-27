@@ -35,7 +35,7 @@ final class MessagesTests: XCTestCase {
         let data = try WireCoding.makeEncoder().encode(Sign.allCases)
         XCTAssertEqual(
             String(decoding: data, as: UTF8.self),
-            #"["hello","thankyou","yes","no","sorry","doctor","today","tomorrow","morning","afternoon","evening","time"]"#
+            #"["hello","thankyou","yes","no","sorry","doctor","today","tomorrow","morning","afternoon","evening","time","please","now","wait","night","yesterday","later","can","where","who","why","have","finish","callonphone","sick","hungry","drink","water","home","go","see","hear","read"]"#
         )
     }
 
@@ -49,13 +49,67 @@ final class MessagesTests: XCTestCase {
             StartCallRequest(contactID: "city_clinic", purpose: .doctorAppointment))
         XCTAssertEqual(
             String(decoding: data, as: UTF8.self),
-            #"{"contact_id":"city_clinic","purpose":"doctor_appointment"}"#)
+            #"{"attended":false,"contact_id":"city_clinic","mode":"live","purpose":"doctor_appointment"}"#)
+    }
+
+    func testDelegatedStartCallRequestEncodesLikeBackendModel() throws {
+        let data = try WireCoding.makeEncoder().encode(
+            StartCallRequest(
+                contactID: "clinic", purpose: .doctorAppointment, mode: .delegated, briefID: "b9", attended: true))
+        XCTAssertEqual(
+            String(decoding: data, as: UTF8.self),
+            #"{"attended":true,"brief_id":"b9","contact_id":"clinic","mode":"delegated","purpose":"doctor_appointment"}"#)
     }
 
     func testStartCallResponseDecodes() throws {
         let start = try JSONDecoder().decode(
             CallStart.self, from: Data(#"{"call_id":"call_123","state":"dialing"}"#.utf8))
         XCTAssertEqual(start, CallStart(callID: "call_123", state: .dialing))
+        let delegated = try JSONDecoder().decode(
+            CallStart.self, from: Data(#"{"call_id":"c2","state":"dialing","mode":"delegated"}"#.utf8))
+        XCTAssertEqual(delegated.mode, .delegated)
+    }
+
+    func testBriefRequestEncodesAndBriefDecodes() throws {
+        let data = try WireCoding.makeEncoder().encode(
+            BriefRequest(purpose: .doctorAppointment, chips: [.tomorrow, .morning], profile: Profile(name: "Asha")))
+        XCTAssertEqual(
+            String(decoding: data, as: UTF8.self),
+            #"{"chips":["tomorrow","morning"],"profile":{"name":"Asha"},"purpose":"doctor_appointment"}"#)
+        let brief = try JSONDecoder().decode(
+            Brief.self,
+            from: Data(#"{"brief_id":"b9","text":"Call on behalf of Asha.","goal":"book a doctor's appointment","constraints":["preferred time: tomorrow in the morning"]}"#.utf8))
+        XCTAssertEqual(brief.briefID, "b9")
+        XCTAssertEqual(brief.constraints, ["preferred time: tomorrow in the morning"])
+    }
+
+    func testAnswerEncodesLikeBackendModel() throws {
+        let text = try WireCoding.encodeText(.answer(askID: "a1", choice: .no))
+        XCTAssertEqual(text, #"{"ask_id":"a1","choice":"no","type":"answer"}"#)
+    }
+
+    func testAskAndAskResolvedDecode() throws {
+        let ask = try WireCoding.decodeServerMessage(
+            #"{"type":"ask","ask_id":"a1","question":"We have 4 pm tomorrow. Does that work?","options":[{"choice":"yes","spoken":"Yes, 4 pm tomorrow works. Thank you."},{"choice":"no","spoken":"No, sorry."},{"choice":"wait","spoken":"One moment."}],"fallback":"I'll call back.","timeout_s":10.0}"#)
+        guard case let .ask(askID, question, options, fallback, timeoutS) = ask else { return XCTFail("\(ask)") }
+        XCTAssertEqual(askID, "a1")
+        XCTAssertEqual(question, "We have 4 pm tomorrow. Does that work?")
+        XCTAssertEqual(options.map(\.choice), [.yes, .no, .wait])
+        XCTAssertEqual(options[0].spoken, "Yes, 4 pm tomorrow works. Thank you.")
+        XCTAssertEqual(fallback, "I'll call back.")
+        XCTAssertEqual(timeoutS, 10)
+        let resolved = try WireCoding.decodeServerMessage(
+            #"{"type":"ask_resolved","ask_id":"a1","spoken":"Yes, 4 pm tomorrow works. Thank you.","source":"user"}"#)
+        XCTAssertEqual(resolved, .askResolved(askID: "a1", spoken: "Yes, 4 pm tomorrow works. Thank you.", source: "user"))
+    }
+
+    func testCallNotesDecode() throws {
+        let notes = try JSONDecoder().decode(
+            CallNotes.self,
+            from: Data(#"{"call_id":"c1","mode":"delegated","ready":true,"brief":"Call on behalf of Asha.","outcome":"booked","summary":["Goal: book a doctor's appointment for Asha."],"open_questions":[],"transcript":[{"speaker":"receptionist","text":"Booked.","at":1.0}],"bolna_summary":null}"#.utf8))
+        XCTAssertEqual(notes.outcome, "booked")
+        XCTAssertEqual(notes.transcript.first?.speaker, .receptionist)
+        XCTAssertTrue(notes.openQuestions.isEmpty)
     }
 
     // MARK: Backend -> app

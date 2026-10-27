@@ -1,0 +1,476 @@
+[
+ {
+  "id": "inc_today_MVI_4615",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/73. Today/MVI_4615.MOV",
+  "label": "today",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_today_MVI_4618",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/73. Today/MVI_4618.MOV",
+  "label": "today",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_today_MVI_5032",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/73. Today/MVI_5032.MOV",
+  "label": "today",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_today_MVI_5471",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/73. Today/MVI_5471.MOV",
+  "label": "today",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_today_MVI_5473",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/73. Today/MVI_5473.MOV",
+  "label": "today",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_today_MVI_9162",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/73. Today/MVI_9162.MP4",
+  "label": "today",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_tomorrow_MVI_4619",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/74. Tomorrow/MVI_4619.MOV",
+  "label": "tomorrow",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_tomorrow_MVI_4622",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/74. Tomorrow/MVI_4622.MOV",
+  "label": "tomorrow",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_tomorrow_MVI_5035",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/74. Tomorrow/MVI_5035.MOV",
+  "label": "tomorrow",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_tomorrow_MVI_5475",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/74. Tomorrow/MVI_5475.MOV",
+  "label": "tomorrow",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_tomorrow_MVI_5477",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/74. Tomorrow/MVI_5477.MOV",
+  "label": "tomorrow",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_tomorrow_MVI_9165",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/74. Tomorrow/MVI_9165.MP4",
+  "label": "tomorrow",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_morning_MVI_4651",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/82. Morning/MVI_4651.MOV",
+  "label": "morning",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_morning_MVI_4654",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/82. Morning/MVI_4654.MOV",
+  "label": "morning",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_morning_MVI_5061",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/82. Morning/MVI_5061.MOV",
+  "label": "morning",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_morning_MVI_5508",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/82. Morning/MVI_5508.MOV",
+  "label": "morning",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_morning_MVI_5510",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/82. Morning/MVI_5510.MOV",
+  "label": "morning",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_morning_MVI_9190",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/82. Morning/MVI_9190.MP4",
+  "label": "morning",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_afternoon_MVI_4655",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/83. Afternoon/MVI_4655.MOV",
+  "label": "afternoon",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_afternoon_MVI_4658",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/83. Afternoon/MVI_4658.MOV",
+  "label": "afternoon",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_afternoon_MVI_5064",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/83. Afternoon/MVI_5064.MOV",
+  "label": "afternoon",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_afternoon_MVI_5512",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/83. Afternoon/MVI_5512.MOV",
+  "label": "afternoon",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_afternoon_MVI_5514",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/83. Afternoon/MVI_5514.MOV",
+  "label": "afternoon",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_afternoon_MVI_9193",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/83. Afternoon/MVI_9193.MP4",
+  "label": "afternoon",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_evening_MVI_4659",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/84. Evening/MVI_4659.MOV",
+  "label": "evening",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_evening_MVI_4662",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/84. Evening/MVI_4662.MOV",
+  "label": "evening",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_evening_MVI_5071",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/84. Evening/MVI_5071.MOV",
+  "label": "evening",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_evening_MVI_5517",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/84. Evening/MVI_5517.MOV",
+  "label": "evening",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_evening_MVI_5519",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/84. Evening/MVI_5519.MOV",
+  "label": "evening",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_evening_MVI_9196",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/84. Evening/MVI_9196.MP4",
+  "label": "evening",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_time_MVI_4667",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/86. Time/MVI_4667.MOV",
+  "label": "time",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_time_MVI_4670",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/86. Time/MVI_4670.MOV",
+  "label": "time",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_time_MVI_5079",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/86. Time/MVI_5079.MOV",
+  "label": "time",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_time_MVI_5525",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/86. Time/MVI_5525.MOV",
+  "label": "time",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_time_MVI_9201",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/86. Time/MVI_9201.MP4",
+  "label": "time",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_time_MVI_9204",
+  "path": "artifacts/gemini_probe/raw/include/Days_and_Time/86. Time/MVI_9204.MP4",
+  "label": "time",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_hello_MVI_0029",
+  "path": "artifacts/gemini_probe/raw/include/Greetings/48. Hello/MVI_0029.MOV",
+  "label": "hello",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_hello_MVI_0037",
+  "path": "artifacts/gemini_probe/raw/include/Greetings/48. Hello/MVI_0037.MOV",
+  "label": "hello",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_hello_MVI_0090",
+  "path": "artifacts/gemini_probe/raw/include/Greetings/48. Hello/MVI_0090.MOV",
+  "label": "hello",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_hello_MVI_9916",
+  "path": "artifacts/gemini_probe/raw/include/Greetings/48. Hello/MVI_9916.MOV",
+  "label": "hello",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_hello_MVI_9956",
+  "path": "artifacts/gemini_probe/raw/include/Greetings/48. Hello/MVI_9956.MOV",
+  "label": "hello",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_hello_MVI_9984",
+  "path": "artifacts/gemini_probe/raw/include/Greetings/48. Hello/MVI_9984.MOV",
+  "label": "hello",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_thankyou_MVI_0006",
+  "path": "artifacts/gemini_probe/raw/include/Greetings/55. Thank you/MVI_0006.MOV",
+  "label": "thankyou",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_thankyou_MVI_0059",
+  "path": "artifacts/gemini_probe/raw/include/Greetings/55. Thank you/MVI_0059.MOV",
+  "label": "thankyou",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_thankyou_MVI_0062",
+  "path": "artifacts/gemini_probe/raw/include/Greetings/55. Thank you/MVI_0062.MOV",
+  "label": "thankyou",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_thankyou_MVI_0113",
+  "path": "artifacts/gemini_probe/raw/include/Greetings/55. Thank you/MVI_0113.MOV",
+  "label": "thankyou",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_thankyou_MVI_9951",
+  "path": "artifacts/gemini_probe/raw/include/Greetings/55. Thank you/MVI_9951.MOV",
+  "label": "thankyou",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_thankyou_MVI_9987",
+  "path": "artifacts/gemini_probe/raw/include/Greetings/55. Thank you/MVI_9987.MOV",
+  "label": "thankyou",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_doctor_MVI_4470",
+  "path": "artifacts/gemini_probe/raw/include/Jobs/87. Doctor/MVI_4470.MOV",
+  "label": "doctor",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_doctor_MVI_4473",
+  "path": "artifacts/gemini_probe/raw/include/Jobs/87. Doctor/MVI_4473.MOV",
+  "label": "doctor",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_doctor_MVI_4755",
+  "path": "artifacts/gemini_probe/raw/include/Jobs/87. Doctor/MVI_4755.MOV",
+  "label": "doctor",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_doctor_MVI_5323",
+  "path": "artifacts/gemini_probe/raw/include/Jobs/87. Doctor/MVI_5323.MOV",
+  "label": "doctor",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_doctor_MVI_5325",
+  "path": "artifacts/gemini_probe/raw/include/Jobs/87. Doctor/MVI_5325.MOV",
+  "label": "doctor",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "inc_doctor_MVI_8876",
+  "path": "artifacts/gemini_probe/raw/include/Jobs/87. Doctor/MVI_8876.MP4",
+  "label": "doctor",
+  "source": "INCLUDE"
+ },
+ {
+  "id": "islrtc_Afternoon",
+  "path": "artifacts/gemini_probe/raw/islrtc/Afternoon.mp4",
+  "label": "afternoon",
+  "source": "ISLRTC"
+ },
+ {
+  "id": "islrtc_Doctor",
+  "path": "artifacts/gemini_probe/raw/islrtc/Doctor.mp4",
+  "label": "doctor",
+  "source": "ISLRTC"
+ },
+ {
+  "id": "islrtc_Evening",
+  "path": "artifacts/gemini_probe/raw/islrtc/Evening.mp4",
+  "label": "evening",
+  "source": "ISLRTC"
+ },
+ {
+  "id": "islrtc_Hello",
+  "path": "artifacts/gemini_probe/raw/islrtc/Hello.mp4",
+  "label": "hello",
+  "source": "ISLRTC"
+ },
+ {
+  "id": "islrtc_Morning",
+  "path": "artifacts/gemini_probe/raw/islrtc/Morning.mp4",
+  "label": "morning",
+  "source": "ISLRTC"
+ },
+ {
+  "id": "islrtc_No",
+  "path": "artifacts/gemini_probe/raw/islrtc/No.mp4",
+  "label": "no",
+  "source": "ISLRTC"
+ },
+ {
+  "id": "islrtc_No_Sign_2",
+  "path": "artifacts/gemini_probe/raw/islrtc/No_(Sign_2).mp4",
+  "label": "no",
+  "source": "ISLRTC"
+ },
+ {
+  "id": "islrtc_Sorry",
+  "path": "artifacts/gemini_probe/raw/islrtc/Sorry.mp4",
+  "label": "sorry",
+  "source": "ISLRTC"
+ },
+ {
+  "id": "islrtc_Sorry_Sign_2",
+  "path": "artifacts/gemini_probe/raw/islrtc/Sorry_(Sign_2).mp4",
+  "label": "sorry",
+  "source": "ISLRTC"
+ },
+ {
+  "id": "islrtc_Sorry_Sign_3",
+  "path": "artifacts/gemini_probe/raw/islrtc/Sorry_(Sign_3).mp4",
+  "label": "sorry",
+  "source": "ISLRTC"
+ },
+ {
+  "id": "islrtc_Thank_You",
+  "path": "artifacts/gemini_probe/raw/islrtc/Thank_You.mp4",
+  "label": "thankyou",
+  "source": "ISLRTC"
+ },
+ {
+  "id": "islrtc_Thank_You_Sign_2",
+  "path": "artifacts/gemini_probe/raw/islrtc/Thank_You_(Sign_2).mp4",
+  "label": "thankyou",
+  "source": "ISLRTC"
+ },
+ {
+  "id": "islrtc_Time",
+  "path": "artifacts/gemini_probe/raw/islrtc/Time.mp4",
+  "label": "time",
+  "source": "ISLRTC"
+ },
+ {
+  "id": "islrtc_Today",
+  "path": "artifacts/gemini_probe/raw/islrtc/Today.mp4",
+  "label": "today",
+  "source": "ISLRTC"
+ },
+ {
+  "id": "islrtc_Tomorrow",
+  "path": "artifacts/gemini_probe/raw/islrtc/Tomorrow.mp4",
+  "label": "tomorrow",
+  "source": "ISLRTC"
+ },
+ {
+  "id": "islrtc_Yes",
+  "path": "artifacts/gemini_probe/raw/islrtc/Yes.mp4",
+  "label": "yes",
+  "source": "ISLRTC"
+ },
+ {
+  "id": "islrtc_Yes_Sign_2",
+  "path": "artifacts/gemini_probe/raw/islrtc/Yes_(Sign_2).mp4",
+  "label": "yes",
+  "source": "ISLRTC"
+ },
+ {
+  "id": "webcam_20261020-082114_001",
+  "path": "artifacts/sessions/20261020-082114/001.mp4",
+  "label": "hello",
+  "source": "webcam-2026-10-20"
+ },
+ {
+  "id": "webcam_20261020-085528_001",
+  "path": "artifacts/sessions/20261020-085528/001.mp4",
+  "label": "hello",
+  "source": "webcam-2026-10-20"
+ },
+ {
+  "id": "webcam_20261020-085528_002",
+  "path": "artifacts/sessions/20261020-085528/002.mp4",
+  "label": "hello",
+  "source": "webcam-2026-10-20"
+ },
+ {
+  "id": "webcam_20261020-085528_003",
+  "path": "artifacts/sessions/20261020-085528/003.mp4",
+  "label": "hello",
+  "source": "webcam-2026-10-20"
+ },
+ {
+  "id": "webcam_20261020-085528_004",
+  "path": "artifacts/sessions/20261020-085528/004.mp4",
+  "label": "hello",
+  "source": "webcam-2026-10-20"
+ },
+ {
+  "id": "webcam_20261020-085528_005",
+  "path": "artifacts/sessions/20261020-085528/005.mp4",
+  "label": "hello",
+  "source": "webcam-2026-10-20"
+ },
+ {
+  "id": "webcam_20261020-090502_001",
+  "path": "artifacts/sessions/20261020-090502/001.mp4",
+  "label": "hello",
+  "source": "webcam-2026-10-20"
+ },
+ {
+  "id": "webcam_20261020-090502_002",
+  "path": "artifacts/sessions/20261020-090502/002.mp4",
+  "label": "hello",
+  "source": "webcam-2026-10-20"
+ }
+]

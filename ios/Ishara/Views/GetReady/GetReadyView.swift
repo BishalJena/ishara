@@ -3,9 +3,13 @@ import SwiftUI
 /// Screen 2: framing checklist and 2 s hands-at-rest calibration, then Start call.
 /// Recognition drives both: from real frames, or on timers when it replays fixed results.
 struct GetReadyView: View {
+    static let callTitle = "I'm ready, start call"
+
     let recognition: any RecognitionController
     /// Which call Start places (demo or live), shown with the calling-number note.
     let modeDescription: String
+    /// "Call for me" (D9) signs the request first instead of starting the call.
+    var startTitle: String = GetReadyView.callTitle
     let onStart: () -> Void
     let onBack: () -> Void
 
@@ -51,7 +55,7 @@ struct GetReadyView: View {
                     // Repeated from Home: this is where the call is actually placed.
                     CallingNumberNote()
                     Button(action: onStart) {
-                        Label("I'm ready, start call", systemImage: "phone.arrow.up.right.fill")
+                        Label(startTitle, systemImage: "phone.arrow.up.right.fill")
                     }
                     .buttonStyle(.bigAction(.green))
                     .disabled(!model.isReady)

@@ -44,6 +44,12 @@ final class StubCallDriver: CallDriver {
     private(set) var startedWith: [CallSetup] = []
     private(set) var closeCount = 0
     var onReconnectStopped: ((ReconnectStop) -> Void)?
+    /// D9 doubles: what `createBrief` and `notes` return or throw, and what they were asked.
+    var briefResult: Result<Brief, Error> = .success(
+        Brief(briefID: "b1", text: "Call on behalf of Riya.", goal: "book a doctor's appointment", constraints: []))
+    var notesResults: [Result<CallNotes, Error>] = []
+    private(set) var briefRequests: [BriefRequest] = []
+    private(set) var notesCalls = 0
 
     init(initialState: CallState = .dialing) {
         let ids = SequentialTurnIDs()
@@ -57,6 +63,19 @@ final class StubCallDriver: CallDriver {
     }
 
     func close() { closeCount += 1 }
+
+    func createBrief(_ request: BriefRequest) async throws -> Brief {
+        briefRequests.append(request)
+        return try briefResult.get()
+    }
+
+    /// Plays `notesResults` in order, repeating the last one.
+    func notes() async throws -> CallNotes {
+        notesCalls += 1
+        guard let next = notesResults.first else { throw CallDriverError.noCall }
+        if notesResults.count > 1 { notesResults.removeFirst() }
+        return try next.get()
+    }
 }
 
 /// A recognizer the test drives by hand.

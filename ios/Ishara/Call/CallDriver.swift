@@ -14,9 +14,21 @@ protocol CallDriver: AnyObject {
     /// Lets go of the connection once the call screen goes away. Sends nothing.
     func close()
 
+    /// D9: the brief the user reads and approves before a delegated call (`POST /briefs`).
+    func createBrief(_ request: BriefRequest) async throws -> Brief
+
+    /// D9: transcript, outcome and summary of the last call this driver placed
+    /// (`GET /calls/{id}/notes`). Still works after `close()`.
+    func notes() async throws -> CallNotes
+
     /// Runs when the driver stops bringing a dropped call connection back, so the screen
     /// can stop promising a reconnect.
     var onReconnectStopped: ((ReconnectStop) -> Void)? { get set }
+}
+
+enum CallDriverError: Error, Equatable {
+    /// Notes were asked for before any call was placed.
+    case noCall
 }
 
 /// Why a driver stopped reconnecting a dropped call socket.

@@ -11,7 +11,12 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-SIGNS = (
+# Decision D8: the recognizer is the public ASL Signs model (250 glosses). TEMPLATE_SIGNS are
+# the original twelve the fixed templates know in full; ASL_SIGNS are the service-call glosses
+# of that model the composer accepts generically (templates say them plainly, Groq phrases them,
+# the validator checks their meaning). Change spikes/recognition/vocabulary.py and
+# ios/Packages/CallSession/.../Vocabulary.swift together with this.
+TEMPLATE_SIGNS = (
     "hello",
     "thankyou",
     "yes",
@@ -25,6 +30,31 @@ SIGNS = (
     "evening",
     "time",
 )
+ASL_SIGNS = (
+    "please",
+    "now",
+    "wait",
+    "night",
+    "yesterday",
+    "later",
+    "can",
+    "where",
+    "who",
+    "why",
+    "have",
+    "finish",
+    "callonphone",
+    "sick",
+    "hungry",
+    "drink",
+    "water",
+    "home",
+    "go",
+    "see",
+    "hear",
+    "read",
+)
+SIGNS = TEMPLATE_SIGNS + ASL_SIGNS
 Sign = Literal[
     "hello",
     "thankyou",
@@ -38,12 +68,35 @@ Sign = Literal[
     "afternoon",
     "evening",
     "time",
+    "please",
+    "now",
+    "wait",
+    "night",
+    "yesterday",
+    "later",
+    "can",
+    "where",
+    "who",
+    "why",
+    "have",
+    "finish",
+    "callonphone",
+    "sick",
+    "hungry",
+    "drink",
+    "water",
+    "home",
+    "go",
+    "see",
+    "hear",
+    "read",
 ]
 PURPOSES = ("doctor_appointment",)
 Purpose = Literal["doctor_appointment"]
 
 MAX_CHIPS = 8
 MAX_SPOKEN_CHARS = 300
+CaptionSpeaker = Literal["receptionist", "agent"]
 TurnId = Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")]
 
 
@@ -68,14 +121,99 @@ class _Message(BaseModel):
 # ---- REST ----
 
 
+CallMode = Literal["live", "delegated"]
+BriefId = Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")]
+
+
 class StartCallRequest(_Message):
     contact_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")
     purpose: Purpose
+    # Decision D9. "live": every sentence is composed from signs and approved with SEND.
+    # "delegated": the agent pursues an approved brief; `brief_id` is required and its
+    # approval is this request. `attended` lets the agent ask the user yes/no/wait
+    # questions during the call; unattended calls never ask.
+    mode: CallMode = "live"
+    brief_id: BriefId | None = None
+    attended: bool = False
 
 
 class StartCallResponse(_Message):
     call_id: str
     state: CallState
+    mode: CallMode = "live"
+
+
+# ---- delegated calls (D9) ----
+
+
+class Profile(_Message):
+    """What the agent may share about the caller. Nothing else is ever said."""
+
+    name: str = Field(min_length=1, max_length=60)
+    callback: str | None = Field(default=None, max_length=40)
+    notes: str | None = Field(default=None, max_length=200)
+
+
+class BriefRequest(_Message):
+    purpose: Purpose
+    chips: list[Sign] = Field(default_factory=list, max_length=MAX_CHIPS)
+    profile: Profile
+
+
+class BriefResponse(_Message):
+    brief_id: str
+    text: str  # what the user approves; the agent pursues exactly this
+    goal: str  # one line, used in the agent prompt and the notes
+    constraints: list[str]  # when/what the caller signed, as plain facts
+
+
+class AskOption(_Message):
+    choice: Literal["yes", "no", "wait"]
+    spoken: str  # exactly what the agent will say if this is chosen
+
+
+class AskMessage(_Message):
+    """Attended delegated call: the agent paused ("one moment, please") and needs the
+    user's answer. Sign or tap one of the options; after `timeout_s` with no answer
+    the agent says the `fallback` line instead."""
+
+    type: Literal["ask"] = "ask"
+    ask_id: str
+    question: str
+    options: list[AskOption]
+    fallback: str
+    timeout_s: float
+
+
+class AnswerMessage(_Message):
+    type: Literal["answer"] = "answer"
+    ask_id: str
+    choice: Literal["yes", "no", "wait"]
+
+
+class AskResolvedMessage(_Message):
+    type: Literal["ask_resolved"] = "ask_resolved"
+    ask_id: str
+    spoken: str
+    source: Literal["user", "timeout"]
+
+
+class TranscriptEntry(_Message):
+    speaker: CaptionSpeaker
+    text: str
+    at: float
+
+
+class CallNotes(_Message):
+    call_id: str
+    mode: CallMode
+    ready: bool
+    brief: str | None = None
+    outcome: str | None = None  # "booked", "declined", "callback", "unclear", "no_answer"
+    summary: list[str] = Field(default_factory=list)
+    open_questions: list[str] = Field(default_factory=list)
+    transcript: list[TranscriptEntry] = Field(default_factory=list)
+    bolna_summary: str | None = None
 
 
 # ---- app -> backend (WebSocket) ----
@@ -104,7 +242,8 @@ class EndMessage(_Message):
 
 
 AppMessage = Annotated[
-    ChipsMessage | ApproveMessage | StopMessage | EndMessage, Field(discriminator="type")
+    ChipsMessage | ApproveMessage | StopMessage | EndMessage | AnswerMessage,
+    Field(discriminator="type"),
 ]
 app_message_adapter: TypeAdapter[AppMessage] = TypeAdapter(AppMessage)
 
@@ -115,9 +254,6 @@ app_message_adapter: TypeAdapter[AppMessage] = TypeAdapter(AppMessage)
 class StatusMessage(_Message):
     type: Literal["status"] = "status"
     state: CallState
-
-
-CaptionSpeaker = Literal["receptionist", "agent"]
 
 
 class CaptionMessage(_Message):
@@ -170,7 +306,9 @@ ServerMessage = Annotated[
     | DraftMessage
     | SpokenMessage
     | NotDeliveredMessage
-    | ErrorMessage,
+    | ErrorMessage
+    | AskMessage
+    | AskResolvedMessage,
     Field(discriminator="type"),
 ]
 server_message_adapter: TypeAdapter[ServerMessage] = TypeAdapter(ServerMessage)

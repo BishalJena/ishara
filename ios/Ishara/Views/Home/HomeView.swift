@@ -8,17 +8,25 @@ struct HomeView: View {
     /// Why CALL can't work right now (for example no backend configured).
     let setupProblem: String?
     let onCall: (CallSetup) -> Void
+    /// D9: the agent makes the call from a brief the user signs and approves.
+    let onCallForMe: ((CallSetup) -> Void)?
 
     init(
         setup: CallSetup = .demo,
         modeDescription: String,
         setupProblem: String? = nil,
-        onCall: @escaping (CallSetup) -> Void
+        onCall: @escaping (CallSetup) -> Void,
+        onCallForMe: ((CallSetup) -> Void)? = nil
     ) {
         _setup = State(initialValue: setup)
         self.modeDescription = modeDescription
         self.setupProblem = setupProblem
         self.onCall = onCall
+        self.onCallForMe = onCallForMe
+    }
+
+    private var canCall: Bool {
+        !setup.details.name.trimmingCharacters(in: .whitespaces).isEmpty && setupProblem == nil
     }
 
     var body: some View {
@@ -82,9 +90,22 @@ struct HomeView: View {
                         Label("CALL", systemImage: "phone.fill")
                     }
                     .buttonStyle(.bigAction(.green))
-                    .disabled(setup.details.name.trimmingCharacters(in: .whitespaces).isEmpty || setupProblem != nil)
+                    .disabled(!canCall)
                     .accessibilityLabel("Call \(setup.contact.name)")
+                    .accessibilityHint("You sign each reply and approve it with SEND")
                     .accessibilityIdentifier("home.call")
+                    if let onCallForMe {
+                        Button {
+                            onCallForMe(setup)
+                        } label: {
+                            Label("CALL FOR ME", systemImage: "person.wave.2.fill")
+                        }
+                        .buttonStyle(.bigAction(.blue))
+                        .disabled(!canCall)
+                        .accessibilityLabel("Let the agent call \(setup.contact.name) for you")
+                        .accessibilityHint("Sign what you need, approve the brief once, and read the notes after")
+                        .accessibilityIdentifier("home.callForMe")
+                    }
                 }
                 .padding()
                 .background(.bar)
