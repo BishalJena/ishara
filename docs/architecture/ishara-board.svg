@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1840" height="2260" viewBox="0 0 1840 2260" font-family="Helvetica, Arial, sans-serif">
+<defs><marker id="head" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto"><path d="M0,0 L12,5 L0,10 z" fill="#1e1e1e"/></marker></defs>
+<rect width="1840" height="2260" fill="#ffffff"/>
+<ellipse cx="130.0" cy="230.0" rx="90.0" ry="55.0" fill="#e9ecef" stroke="#1e1e1e" stroke-width="2"/>
+<text x="130.0" y="217.05" font-size="14" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="130.0" dy="0">You</tspan><tspan x="130.0" dy="17.5">(Deaf or</tspan><tspan x="130.0" dy="17.5">nonspeaking signer)</tspan></text>
+<rect x="262" y="175" width="180" height="110" rx="14" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="352.0" y="215.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="352.0" dy="0">Front camera +</tspan><tspan x="352.0" dy="20.0">MediaPipe Holistic</tspan><tspan x="352.0" dy="20.0">landmarks</tspan></text>
+<rect x="484" y="175" width="180" height="110" rx="14" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="574.0" y="215.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="574.0" dy="0">ASL Signs model</tspan><tspan x="574.0" dy="20.0">250 signs, used</tspan><tspan x="574.0" dy="20.0">as is (LiteRT)</tspan></text>
+<rect x="706" y="175" width="180" height="110" rx="14" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="796.0" y="215.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="796.0" dy="0">Open-set rule (3)</tspan><tspan x="796.0" dy="20.0">chip · did you</tspan><tspan x="796.0" dy="20.0">mean? · [?]</tspan></text>
+<rect x="928" y="175" width="180" height="110" rx="14" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1018.0" y="215.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="1018.0" dy="0">Draft sentence</tspan><tspan x="1018.0" dy="20.0">Groq + validator,</tspan><tspan x="1018.0" dy="20.0">template fallback</tspan></text>
+<rect x="1150" y="175" width="180" height="110" rx="14" fill="#b2f2bb" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1240.0" y="215.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="1240.0" dy="0">You check the</tspan><tspan x="1240.0" dy="20.0">draft and</tspan><tspan x="1240.0" dy="20.0">tap SEND</tspan></text>
+<rect x="1372" y="175" width="180" height="110" rx="14" fill="#d0bfff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1462.0" y="215.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="1462.0" dy="0">Bolna speaks the</tspan><tspan x="1462.0" dy="20.0">exact text</tspan><tspan x="1462.0" dy="20.0">(Sarvam voice)</tspan></text>
+<ellipse cx="1684.0" cy="230.0" rx="90.0" ry="55.0" fill="#e9ecef" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1684.0" y="225.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="1684.0" dy="0">Receptionist</tspan><tspan x="1684.0" dy="20.0">(any phone)</tspan></text>
+<rect x="1372" y="345" width="180" height="80" rx="14" fill="#d0bfff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1462.0" y="380.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="1462.0" dy="0">Deepgram transcript</tspan><tspan x="1462.0" dy="20.0">(Bolna)</tspan></text>
+<rect x="706" y="345" width="402" height="80" rx="14" fill="#96f2d7" stroke="#1e1e1e" stroke-width="2"/>
+<text x="907.0" y="380.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="907.0" dy="0">Captions in the app: what they said,</tspan><tspan x="907.0" dy="20.0">and what was spoken for you</tspan></text>
+<ellipse cx="130.0" cy="590.0" rx="90.0" ry="55.0" fill="#e9ecef" stroke="#1e1e1e" stroke-width="2"/>
+<text x="130.0" y="595.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="130.0" dy="0">You</tspan></text>
+<rect x="262" y="535" width="180" height="110" rx="14" fill="#b2f2bb" stroke="#1e1e1e" stroke-width="2"/>
+<text x="352.0" y="576.125" font-size="15" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="352.0" dy="0">Sign or tap what</tspan><tspan x="352.0" dy="18.75">you need: TOMORROW</tspan><tspan x="352.0" dy="18.75">· MORNING + name</tspan></text>
+<rect x="484" y="535" width="180" height="110" rx="14" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/>
+<text x="574.0" y="575.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="574.0" dy="0">Brief built from</tspan><tspan x="574.0" dy="20.0">exactly that</tspan><tspan x="574.0" dy="20.0">(nothing added)</tspan></text>
+<rect x="706" y="535" width="180" height="110" rx="14" fill="#b2f2bb" stroke="#1e1e1e" stroke-width="2"/>
+<text x="796.0" y="575.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="796.0" dy="0">You approve it</tspan><tspan x="796.0" dy="20.0">once: stay to</tspan><tspan x="796.0" dy="20.0">answer, or not</tspan></text>
+<rect x="928" y="535" width="180" height="110" rx="14" fill="#d0bfff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1018.0" y="576.125" font-size="15" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="1018.0" dy="0">Bolna agent calls,</tspan><tspan x="1018.0" dy="18.75">says who it calls</tspan><tspan x="1018.0" dy="18.75">for, then the brief</tspan></text>
+<rect x="1150" y="535" width="180" height="110" rx="14" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1240.0" y="576.125" font-size="15" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="1240.0" dy="0">Agent follows only</tspan><tspan x="1240.0" dy="18.75">the brief; every</tspan><tspan x="1240.0" dy="18.75">line is checked</tspan></text>
+<ellipse cx="1684.0" cy="590.0" rx="90.0" ry="55.0" fill="#e9ecef" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1684.0" y="595.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="1684.0" dy="0">Receptionist</tspan></text>
+<polygon points="1240.0,700 1330,760.0 1240.0,820 1150,760.0" fill="none" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1240.0" y="755.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="1240.0" dy="0">A decision</tspan><tspan x="1240.0" dy="20.0">that is yours</tspan></text>
+<rect x="686" y="865" width="442" height="90" rx="14" fill="#b2f2bb" stroke="#1e1e1e" stroke-width="2"/>
+<text x="907.0" y="896.125" font-size="15" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="907.0" dy="0">Stayed (attended): the agent says &quot;one moment&quot;,</tspan><tspan x="907.0" dy="18.75">the app asks YES / NO / WAIT; sign or tap</tspan><tspan x="907.0" dy="18.75">(no answer in 10 s: it will call back)</tspan></text>
+<rect x="1372" y="865" width="220" height="90" rx="14" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1482.0" y="896.125" font-size="15" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="1482.0" dy="0">Left it (unattended):</tspan><tspan x="1482.0" dy="18.75">&quot;I&#x27;ll check and call</tspan><tspan x="1482.0" dy="18.75">back&quot;, then hangs up</tspan></text>
+<rect x="40" y="865" width="382" height="90" rx="14" fill="#96f2d7" stroke="#1e1e1e" stroke-width="2"/>
+<text x="231.0" y="896.125" font-size="15" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="231.0" dy="0">Notes after the call: outcome,</tspan><tspan x="231.0" dy="18.75">what they offered, open questions,</tspan><tspan x="231.0" dy="18.75">the full transcript</tspan></text>
+<rect x="40" y="1125" width="200" height="100" rx="14" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="140.0" y="1160.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="140.0" dy="0">The sign ends:</tspan><tspan x="140.0" dy="20.0">hands back at</tspan><tspan x="140.0" dy="20.0">rest for ~0.4 s</tspan></text>
+<rect x="290" y="1125" width="220" height="100" rx="14" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="400.0" y="1160.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="400.0" dy="0">All 250 signs scored;</tspan><tspan x="400.0" dy="20.0">never narrowed to</tspan><tspan x="400.0" dy="20.0">our words first</tspan></text>
+<polygon points="665.0,1115 770,1175.0 665.0,1235 560,1175.0" fill="none" stroke="#1e1e1e" stroke-width="2"/>
+<text x="665.0" y="1170.5" font-size="15" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="665.0" dy="0">Top sign one</tspan><tspan x="665.0" dy="18.75">of our words?</tspan></text>
+<polygon points="940.0,1115 1050,1175.0 940.0,1235 830,1175.0" fill="none" stroke="#1e1e1e" stroke-width="2"/>
+<text x="940.0" y="1161.125" font-size="15" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="940.0" dy="0">p ≥ 0.6 and</tspan><tspan x="940.0" dy="18.75">0.3 ahead of</tspan><tspan x="940.0" dy="18.75">the next?</tspan></text>
+<rect x="1110" y="1125" width="200" height="100" rx="14" fill="#b2f2bb" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1210.0" y="1160.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="1210.0" dy="0">Chip</tspan><tspan x="1210.0" dy="20.0">(can still be</tspan><tspan x="1210.0" dy="20.0">removed with ✕)</tspan></text>
+<rect x="830" y="1295" width="220" height="90" rx="14" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="940.0" y="1326.125" font-size="15" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="940.0" dy="0">p ≥ 0.35: &quot;Did you mean</tspan><tspan x="940.0" dy="18.75">TOMORROW?&quot; counts</tspan><tspan x="940.0" dy="18.75">only if tapped</tspan></text>
+<rect x="560" y="1295" width="210" height="90" rx="14" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="665.0" y="1335.2" font-size="16" text-anchor="middle" font-weight="normal" fill="#1e1e1e"><tspan x="665.0" dy="0">[?] nothing is</tspan><tspan x="665.0" dy="20.0">spoken; sign again</tspan></text>
+<rect x="1370" y="1125" width="430" height="260" rx="14" fill="none" stroke="#1e1e1e" stroke-width="2" stroke-dasharray="8 6"/>
+<text x="1386" y="1184.875" font-size="17" text-anchor="start" font-weight="bold" fill="#1e1e1e"><tspan x="1386" dy="0">Also on the phone</tspan></text>
+<text x="1386" y="1203.625" font-size="15" text-anchor="start" font-weight="normal" fill="#1e1e1e"><tspan x="1386" dy="0"> </tspan><tspan x="1386" dy="18.75">• A hand left the frame for &gt; 0.3 s:</tspan><tspan x="1386" dy="18.75">   [?] with &quot;keep both hands in the frame&quot;</tspan><tspan x="1386" dy="18.75">• Signed YES / NO / WAIT while the agent</tspan><tspan x="1386" dy="18.75">   is asking you: it answers the question</tspan><tspan x="1386" dy="18.75">• 34 words the backend can phrase; 8</tspan><tspan x="1386" dy="18.75">   rehearsed: hello, thank you, yes, no,</tspan><tspan x="1386" dy="18.75">   now, please, tomorrow (+ wait, morning)</tspan></text>
+<rect x="40" y="1515" width="420" height="250" rx="14" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="56" y="1575.2" font-size="18" text-anchor="start" font-weight="bold" fill="#1e1e1e"><tspan x="56" dy="0">iPhone app (SwiftUI)</tspan></text>
+<text x="56" y="1595.2" font-size="16" text-anchor="start" font-weight="normal" fill="#1e1e1e"><tspan x="56" dy="0"> </tspan><tspan x="56" dy="20.0">• Camera, MediaPipe Holistic</tspan><tspan x="56" dy="20.0">• ASL Signs model via LiteRT</tspan><tspan x="56" dy="20.0">• Sign detector and the rule (3)</tspan><tspan x="56" dy="20.0">• Screens: Home, Get ready, Call,</tspan><tspan x="56" dy="20.0">   Brief, Notes</tspan><tspan x="56" dy="20.0">• Holds no API keys</tspan></text>
+<rect x="480" y="1515" width="420" height="250" rx="14" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/>
+<text x="496" y="1575.2" font-size="18" text-anchor="start" font-weight="bold" fill="#1e1e1e"><tspan x="496" dy="0">Backend (FastAPI, Heroku)</tspan></text>
+<text x="496" y="1595.2" font-size="16" text-anchor="start" font-weight="normal" fill="#1e1e1e"><tspan x="496" dy="0"> </tspan><tspan x="496" dy="20.0">• Calls, turns, single-use SEND</tspan><tspan x="496" dy="20.0">• Draft: Groq + validator + templates</tspan><tspan x="496" dy="20.0">• Briefs and the agent&#x27;s brain</tspan><tspan x="496" dy="20.0">   (Groq + rules, every line checked)</tspan><tspan x="496" dy="20.0">• Bolna&#x27;s custom-LLM endpoint</tspan><tspan x="496" dy="20.0">• Status webhook, call notes</tspan></text>
+<rect x="920" y="1515" width="420" height="250" rx="14" fill="#d0bfff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="936" y="1575.2" font-size="18" text-anchor="start" font-weight="bold" fill="#1e1e1e"><tspan x="936" dy="0">Bolna (voice agent)</tspan></text>
+<text x="936" y="1595.2" font-size="16" text-anchor="start" font-weight="normal" fill="#1e1e1e"><tspan x="936" dy="0"> </tspan><tspan x="936" dy="20.0">• Places the call (Plivo number)</tspan><tspan x="936" dy="20.0">• Deepgram transcription</tspan><tspan x="936" dy="20.0">• Sarvam voice</tspan><tspan x="936" dy="20.0">• Speak step says only the</tspan><tspan x="936" dy="20.0">   approved text</tspan><tspan x="936" dy="20.0">• Call summary after the call</tspan></text>
+<rect x="1360" y="1515" width="420" height="250" rx="14" fill="#dee2e6" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1376" y="1575.2" font-size="18" text-anchor="start" font-weight="bold" fill="#1e1e1e"><tspan x="1376" dy="0">Mac (fallback and tools)</tspan></text>
+<text x="1376" y="1595.2" font-size="16" text-anchor="start" font-weight="normal" fill="#1e1e1e"><tspan x="1376" dy="0"> </tspan><tspan x="1376" dy="20.0">• Webcam recognizer into the</tspan><tspan x="1376" dy="20.0">   same backend call</tspan><tspan x="1376" dy="20.0">• Sign Lab: local backend with a</tspan><tspan x="1376" dy="20.0">   scripted receptionist</tspan><tspan x="1376" dy="20.0">• Probe, parity and summary tools</tspan><tspan x="1376" dy="20.0">   for recognition</tspan></text>
+<rect x="40" y="1875" width="880" height="330" rx="14" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="56" y="1945.2" font-size="18" text-anchor="start" font-weight="bold" fill="#1e1e1e"><tspan x="56" dy="0">Safety rules</tspan></text>
+<text x="56" y="1965.2" font-size="16" text-anchor="start" font-weight="normal" fill="#1e1e1e"><tspan x="56" dy="0"> </tspan><tspan x="56" dy="20.0">• Nothing is spoken unless you tapped SEND (live call) or</tspan><tspan x="56" dy="20.0">   approved the brief (call for me).</tspan><tspan x="56" dy="20.0">• Unsure recognition stays silent: [?] or &quot;did you mean&quot;, never a guess.</tspan><tspan x="56" dy="20.0">• The agent never agrees to anything outside the brief: it asks</tspan><tspan x="56" dy="20.0">   you, or says it will call back.</tspan><tspan x="56" dy="20.0">• The draft may reword your signs but never adds a day, time,</tspan><tspan x="56" dy="20.0">   number or name.</tspan><tspan x="56" dy="20.0">• Calls go only to allowlisted, consenting numbers, from</tspan><tspan x="56" dy="20.0">   Ishara&#x27;s number, and say they are for a Deaf caller.</tspan></text>
+<rect x="940" y="1875" width="860" height="330" rx="14" fill="#dee2e6" stroke="#1e1e1e" stroke-width="2"/>
+<text x="956" y="1955.2" font-size="18" text-anchor="start" font-weight="bold" fill="#1e1e1e"><tspan x="956" dy="0">Status, 27 October</tspan></text>
+<text x="956" y="1975.2" font-size="16" text-anchor="start" font-weight="normal" fill="#1e1e1e"><tspan x="956" dy="0"> </tspan><tspan x="956" dy="20.0">• Built and tested in the iOS simulator: both call modes, and the</tspan><tspan x="956" dy="20.0">   ASL model running inside the app.</tspan><tspan x="956" dy="20.0">• App vs Mac on the same 18 ASL test clips: same decision on 17;</tspan><tspan x="956" dy="20.0">   the same chip on all 9 the Mac was sure of.</tspan><tspan x="956" dy="20.0">• End to end against our real backend code with a scripted</tspan><tspan x="956" dy="20.0">   receptionist: brief, question, answer, notes.</tspan><tspan x="956" dy="20.0">• Not yet: phone-camera clips, iPhone speed, a real Bolna call.</tspan><tspan x="956" dy="20.0">• No Deaf user has tested it. ISL is the goal; it is blocked by data.</tspan></text>
+<polyline points="220,230.0 262,230.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="442,230.0 484,230.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="664,230.0 706,230.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="886,230.0 928,230.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="1108,230.0 1150,230.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="1330,230.0 1372,230.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="1552,230.0 1594,230.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="1684.0,285 1684.0,385 1552,385" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="1372,385.0 1108,385.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="706,385 130.0,385 130.0,285" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="220,590.0 262,590.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="442,590.0 484,590.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="664,590.0 706,590.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="886,590.0 928,590.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="1108,590.0 1150,590.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="1330,575 1594,575" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="1594,607 1330,607" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="1240.0,645 1240.0,700" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="1150,760 907.0,760 907.0,865" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="1330,760 1482.0,760 1482.0,865" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="686,910.0 422,910.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="1482.0,955 1482.0,989 231.0,989 231.0,955" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="240,1175.0 290,1175.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="510,1175.0 560,1175.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="770,1175.0 830,1175.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="1050,1175.0 1110,1175.0" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="665.0,1235 665.0,1295" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="940.0,1235 940.0,1295" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<polyline points="830,1340 770,1340" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#head)"/>
+<text x="40" y="64" font-size="34" text-anchor="start" font-weight="bold" fill="#1e1e1e"><tspan x="40" dy="0">Ishara: sign what you need, approve it, and the call is made for you</tspan></text>
+<text x="40" y="94" font-size="16" text-anchor="start" font-weight="normal" fill="#495057"><tspan x="40" dy="0">Architecture as of 27 October 2026 (decisions D1, D8, D9 in PLAN.md). Blue runs on the iPhone, yellow on our backend, purple at Bolna, green is the user&#x27;s own action.</tspan></text>
+<text x="40" y="152" font-size="22" text-anchor="start" font-weight="bold" fill="#1e1e1e"><tspan x="40" dy="0">1. Live call: you sign each reply; it is spoken only after you tap SEND</tspan></text>
+<text x="40" y="451" font-size="14" text-anchor="start" font-weight="normal" fill="#495057"><tspan x="40" dy="0">Bonus (Path A): your own Phone call with Apple&#x27;s Add Audio in Calls plays the approved sentence; no captions in the app.</tspan></text>
+<text x="40" y="512" font-size="22" text-anchor="start" font-weight="bold" fill="#1e1e1e"><tspan x="40" dy="0">2. Call for me: you approve a brief once; the agent makes the call and brings back notes</tspan></text>
+<text x="1344" y="567" font-size="14" text-anchor="start" font-weight="normal" fill="#495057"><tspan x="1344" dy="0">speaks and listens</tspan></text>
+<text x="917.0" y="784" font-size="14" text-anchor="start" font-weight="normal" fill="#495057"><tspan x="917.0" dy="0">you stayed</tspan></text>
+<text x="1492.0" y="784" font-size="14" text-anchor="start" font-weight="normal" fill="#495057"><tspan x="1492.0" dy="0">you left it</tspan></text>
+<text x="40" y="1097" font-size="22" text-anchor="start" font-weight="bold" fill="#1e1e1e"><tspan x="40" dy="0">3. How a sign becomes a chip (on the phone, nothing uploaded)</tspan></text>
+<text x="780" y="1161" font-size="14" text-anchor="start" font-weight="normal" fill="#495057"><tspan x="780" dy="0">yes</tspan></text>
+<text x="1058" y="1161" font-size="14" text-anchor="start" font-weight="normal" fill="#495057"><tspan x="1058" dy="0">yes</tspan></text>
+<text x="672" y="1264" font-size="14" text-anchor="start" font-weight="normal" fill="#495057"><tspan x="672" dy="0">no</tspan></text>
+<text x="948" y="1264" font-size="14" text-anchor="start" font-weight="normal" fill="#495057"><tspan x="948" dy="0">no</tspan></text>
+<text x="778" y="1325" font-size="14" text-anchor="start" font-weight="normal" fill="#495057"><tspan x="778" dy="0">below</tspan></text>
+<text x="40" y="1492" font-size="22" text-anchor="start" font-weight="bold" fill="#1e1e1e"><tspan x="40" dy="0">4. Where each piece runs</tspan></text>
+<text x="40" y="1852" font-size="22" text-anchor="start" font-weight="bold" fill="#1e1e1e"><tspan x="40" dy="0">5. Rules that never bend, and where the build is</tspan></text>
+</svg>

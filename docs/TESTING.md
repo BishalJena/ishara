@@ -1,10 +1,13 @@
 # How to test Ishara
 
-Updated 24 October 2026. The one place that says **how** to test every layer: the exact
+Updated 24 October 2026; the 27 October additions (the ASL model in the app, its simulator
+parity harness, "Call for me" unit and UI tests, the local-backend run) are listed in the
+[handoff](handoffs/2026-10-26-ready-made-asl-recognizer.md#built-on-27-oct-the-mac-only-list).
+The one place that says **how** to test every layer: the exact
 commands, what "pass" means, what runs by itself and what needs a person, a device or
 money, and the latest measured result. [PLAN.md](../PLAN.md) owns the decisions, tasks
 and gates ([§7](../PLAN.md#7-gates-go--no-go), [§8](../PLAN.md#8-testing-plan)); if
-they disagree, PLAN wins. Owners: **[You]** founder, **[Mate]** teammate with the iPhone,
+they disagree, PLAN wins. Owners: **[You]** founder (and the iPhone), **[Mate]** teammate (Mac and simulator),
 **[Build]** engineering, **CI** GitHub Actions on every push and PR.
 
 Rule of thumb: everything that can run without a phone call, a camera or a person runs

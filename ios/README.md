@@ -1,12 +1,14 @@
 # Ishara iOS app
 
-SwiftUI demo app (iOS 17+, iPhone, portrait) with the four workflow screens. It runs in
-two call modes and two recognition modes:
+SwiftUI demo app (iOS 17+, iPhone, portrait). Two ways to call: **CALL** (sign each reply,
+approve it with SEND) and **CALL FOR ME** (approve a brief once; the agent makes the call and
+brings back notes, decision D9). Screens: Home, Get ready, Call, Brief, Notes
+([workflow](../docs/WORKFLOW.md)). It runs with two call drivers and two recognition modes:
 
 | | Fake (default) | Live |
 |---|---|---|
-| **Call** (`-IsharaDriver`) | `FakeCallDriver` plays the PLAN §1 clinic call on timers. Nothing is dialled | `LiveCallDriver` → Ishara backend (`POST /calls` + call WebSocket) → Bolna dials (Path B). **Places a real, paid call** |
-| **Recognition** (`-IsharaRecognition`) | `scripted`: replays fixed results (the fake call's script, `-IsharaReplay`, or the replay menu) | `pipeline`: MediaPipe Holistic → start/stop detector → SignCLIP (Core ML) → matcher. Camera on a device, saved videos in the simulator |
+| **Call** (`-IsharaDriver`) | `FakeCallDriver` plays the PLAN §1 clinic call, or a scripted "Call for me" call, on timers. Nothing is dialled | `LiveCallDriver` → Ishara backend (`POST /briefs`, `POST /calls` + call WebSocket, `GET /calls/{id}/notes`) → Bolna dials (Path B). **Places a real, paid call** |
+| **Recognition** (`-IsharaRecognition`) | `scripted`: replays fixed results (the fake call's script, `-IsharaReplay` such as `hello,tomorrow?,frame,?`, or the replay menu) | `pipeline`: MediaPipe Holistic → start/stop detector → the ASL Signs model via LiteRT → open-set rule (SignCLIP as the fallback when the ASL model isn't installed). Camera on a device, saved videos in the simulator |
 
 Recognition defaults to `scripted` with the fake call and to `pipeline` with the live one.
 
@@ -16,7 +18,7 @@ Views ─▶ ActiveCallViewModel ─▶ TurnStore (CallSession: every SEND safet
               │                     │                 ▼
               │               CallDriver: FakeCallDriver │ LiveCallDriver → LiveCall → backend
               ▼
-     RecognitionController: Scripted │ Pipeline (frames → landmarks → detector → encoder → matcher)
+     RecognitionController: Scripted │ Pipeline (frames → landmarks → detector → ASL model → rule)
 ```
 
 The SEND rules live in one place, `TurnStore` in [CallSession](Packages/CallSession/README.md):
@@ -171,17 +173,17 @@ low confidence → [?], no bundle → [?], rejected attempt → nothing).
 | Path | What |
 |---|---|
 | `Ishara/Models` | Call setup, camera pill state, draft badges |
-| `Ishara/Call` | `CallDriver`, `ActiveCallViewModel`, `LiveCallDriver`, `FakeCallDriver` and the demo script |
-| `Ishara/Recognition` | `RecognitionController`, the scripted and pipeline implementations, `RecognitionSession` (checklist, calibration, detector), `SegmentClassifier`, frame feeds, assets |
-| `Ishara/Views` | Home, Get ready, Active call and shared components |
+| `Ishara/Call` | `CallDriver`, `ActiveCallViewModel`, `LiveCallDriver`, `FakeCallDriver`, the demo script and the scripted "Call for me" call (`DelegatedDemo`) |
+| `Ishara/Recognition` | `RecognitionController`, the scripted and pipeline implementations, `RecognitionSession` (checklist, calibration, detector), `SegmentClassifier` (ASL model or SignCLIP), frame feeds, assets |
+| `Ishara/Views` | Home, Get ready, Active call, Brief and Notes (with their models), and shared components |
 | `Ishara/App` | App entry, navigation, `AppServices` (picks driver and recognizer), config, launch options and Debug fixtures |
 | `Ishara/Config` | `Ishara.xcconfig`, `Secrets.example.xcconfig` (copy to the gitignored `Secrets.xcconfig`) |
 | `Ishara/LocalAssets` | Untracked models and recordings |
 | `IsharaTests` | XCTest for the app |
-| `IsharaUITests` | XCUITest that clicks through the §1 demo call, plus the not-delivered retry |
+| `IsharaUITests` | XCUITests: the §1 demo call, the not-delivered retry, "Call for me", and both against the local demo backend |
 | `Packages/CallSession` | Wire messages, backend client, `TurnStore`, `LiveCall` |
 | `Packages/RecognitionCore` | Start/stop detector, calibration, recognition bundle, matcher |
-| `Packages/SignPipeline` | Frame sources, landmarks, SignCLIP features, Core ML encoder |
+| `Packages/SignPipeline` | Frame sources, landmarks, the ASL model's input layout, and the older SignCLIP features and Core ML encoder |
 | `Packages/SignPipelineMediaPipe` | MediaPipe Holistic landmark provider (iOS only) |
 | `Packages/SignPipelineLiteRT` | LiteRT (TensorFlow Lite) runner for the ASL Signs model (iOS only; downloads its binary) |
 
