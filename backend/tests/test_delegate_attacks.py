@@ -421,3 +421,26 @@ def test_two_calls_at_once_share_no_state(flow) -> None:
     notes_a, notes_b = notes(f, a), notes(f, b)
     assert "Asha Rao" in notes_a["brief"] and "Ravi Kumar" in notes_b["brief"]
     assert all(e["text"] != OFFER for e in notes_b["transcript"])
+
+
+@pytest.mark.parametrize("ending", ["app_end", "webhook_completed"])
+def test_ending_the_call_during_an_ask_cancels_its_timer_and_says_nothing(flow, ending) -> None:
+    f = flow(ask_timeout_s=0.2)
+    call_id = f.start(f.brief(), attended=True)
+    with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
+        f.live(call_id)
+        f.speak_last(call_id)
+        f.listen_turn(call_id, OFFER)
+        ask = f.drain_until(ws, "ask")
+        if ending == "app_end":
+            ws.send_json({"type": "end"})
+        else:
+            status(f, "run-1", "completed")
+        wait_for(lambda: f.drain_until(ws, "status")["state"] == "ended")
+        assert f.manager._ask_timers == {} and f.manager._asks == {}
+        time.sleep(0.4)  # past the ask's deadline
+        assert "ask_resolved" not in [m["type"] for m in quiet(f, ws)]
+        ws.send_json({"type": "answer", "ask_id": ask["ask_id"], "choice": "yes"})
+        assert f.drain_until(ws, "error")["code"] == "unknown_ask"
+        assert f.listen_turn(call_id, "Hello? 5 pm then?") == ""
+    assert spoken_texts(f) == [OPENING]

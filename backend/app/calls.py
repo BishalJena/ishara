@@ -216,8 +216,6 @@ class CallManager(CallLedger):
             return
         before = self._snapshot(session)
         session.advance(line)
-        if session.finished:
-            self._cancel_ask_timers(session.call_id)
         await self._publish(session, before)
 
     # ---- app socket ----
@@ -529,6 +527,10 @@ class CallManager(CallLedger):
             self._cancel_timer(session.call_id)
         if session.state == state:
             return False
+        if session.finished:
+            # However the call ended (the app, Bolna's webhook, the agent), an open
+            # question can no longer be answered or time out into speech.
+            self._cancel_ask_timers(session.call_id)
         await self._send(session, StatusMessage(state=session.state))
         if state in _NOT_YET_LIVE and session.line is CallState.IN_CALL:
             # Bolna plays its static welcome message (the disclosure) as the call
