@@ -13,13 +13,15 @@ Run with spikes/recognition/.venv from spikes/recognition, after the harness:
 Reports per clip: top-1 and its probability on both paths, the bundle's decision on both
 (chip / pick-one / ?), the Mac model run on the app's own landmarks (a runtime check: it
 should equal the app's output), hand and pose tracking fractions, and how far apart the
-two landmarkers put each hand.
+two landmarkers put each hand. Where the decisions differ, `why` swaps one landmark part at a
+time from the Mac into the app's clip (see `attribute`) and names the part that flips it.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import sys
+from collections import Counter
 from pathlib import Path
 
 import numpy as np
@@ -30,7 +32,39 @@ sys.path.insert(0, str(HERE))
 
 FACE, HAND, POSE = 468, 21, 33
 LEFT, POSE0, RIGHT = FACE, FACE + HAND, FACE + HAND + POSE
+POINTS = FACE + HAND + POSE + HAND
+PARTS = {"face": slice(0, FACE), "left_hand": slice(LEFT, LEFT + HAND), "pose": slice(POSE0, POSE0 + POSE),
+         "right_hand": slice(RIGHT, RIGHT + HAND)}
 VIDEO = {".mp4", ".mov", ".m4v"}
+
+
+def attribute(mac_lm: np.ndarray, app_lm: np.ndarray, decide) -> dict:
+    """Why the two paths decide differently: the app's landmarks with one part taken from the Mac
+    (face, left_hand, pose, right_hand, then both hands), with its own hands exchanged
+    (handedness), and the Mac's landmarks cut to the app's frame count (frames). `decide` maps a
+    [T, 543, 3] clip to a decision string. `explained_by` names the swaps that turn the app's
+    decision into the Mac's: single parts first, both hands only if no single part does it."""
+    mac_d, app_d = decide(mac_lm), decide(app_lm)
+    n = min(len(mac_lm), len(app_lm))
+    mac_n, app_n = mac_lm[:n], app_lm[:n]
+    swaps: dict[str, str] = {}
+    for name, part in PARTS.items():
+        hybrid = app_n.copy()
+        hybrid[:, part] = mac_n[:, part]
+        swaps[name] = decide(hybrid)
+    mirrored = app_n.copy()
+    mirrored[:, PARTS["left_hand"]], mirrored[:, PARTS["right_hand"]] = app_n[:, PARTS["right_hand"]], app_n[:, PARTS["left_hand"]]
+    swaps["handedness"] = decide(mirrored)
+    hands = app_n.copy()
+    for side in ("left_hand", "right_hand"):
+        hands[:, PARTS[side]] = mac_n[:, PARTS[side]]
+    swaps["hands"] = decide(hands)
+    explained: list[str] = []
+    if mac_d != app_d:
+        explained = [k for k in (*PARTS, "handedness") if swaps[k] == mac_d] or (["hands"] if swaps["hands"] == mac_d else [])
+        if len(mac_lm) != len(app_lm) and decide(mac_lm[:len(app_lm)]) == app_d:
+            explained.append("frames")
+    return {"mac": mac_d, "app": app_d, "frames": [len(mac_lm), len(app_lm)], "swaps": swaps, "explained_by": explained}
 
 
 def softmax(z) -> np.ndarray:
@@ -65,6 +99,8 @@ def compare(rows: list[dict]) -> dict:
         "confident_agree": sum(r["mac_top1"] == r["app_top1"] for r in confident),
         "decision_agree": sum(r["mac_decision"] == r["app_decision"] for r in rows),
         "runtime_max_abs_logit_diff": max((r["runtime_max_abs_diff"] for r in rows), default=None),
+        "disagreements_explained_by": dict(Counter(
+            "+".join(r["why"]["explained_by"]) or "no single swap" for r in rows if r.get("why"))),
     }
 
 
@@ -85,6 +121,13 @@ def main(argv=None) -> int:
     model = AslModel()
     glosses = model.glosses
     rows = []
+
+    def label(d: dict) -> str:
+        return d["status"] + (f":{d['sign'] or d['candidate']}" if d["status"] != "abstain" else "")
+
+    def decide(lm: np.ndarray) -> str:
+        return label(asl_decision(model.predict(lm), quality(lm), bundle))
+
     try:
         with holistic() as tracker:
             for clip in sorted(p for p in args.clips.iterdir() if p.suffix.lower() in VIDEO):
@@ -99,12 +142,12 @@ def main(argv=None) -> int:
                 mac_on_app = model.predict(app_lm)
                 mac_d = asl_decision(mac_p, quality(mac_lm), bundle)
                 app_d = asl_decision(app_p, quality(app_lm), bundle)
+                why = attribute(mac_lm, app_lm, decide) if label(mac_d) != label(app_d) else None
                 rows.append({
                     "clip": clip.name, "frames": [len(mac_lm), len(app_lm)],
                     "mac_top1": glosses[int(mac_p.argmax())], "mac_p1": round(float(mac_p.max()), 3),
                     "app_top1": glosses[int(app_p.argmax())], "app_p1": round(float(app_p.max()), 3),
-                    "mac_decision": mac_d["status"] + (f":{mac_d['sign'] or mac_d['candidate']}" if mac_d["status"] != "abstain" else ""),
-                    "app_decision": app_d["status"] + (f":{app_d['sign'] or app_d['candidate']}" if app_d["status"] != "abstain" else ""),
+                    "mac_decision": label(mac_d), "app_decision": label(app_d), "why": why,
                     "runtime_max_abs_diff": round(float(np.abs(mac_on_app - app_p).max()), 5),
                     "tracking_mac": tracking(mac_lm), "tracking_app": tracking(app_lm),
                     "left_gap": hand_gap(mac_lm, app_lm, LEFT), "right_gap": hand_gap(mac_lm, app_lm, RIGHT),
@@ -119,7 +162,8 @@ def main(argv=None) -> int:
         gap = "/".join("-" if g is None else f"{g:.3f}" for g in (r["left_gap"], r["right_gap"]))
         print(f"{r['clip']:<34}{r['mac_top1']:>12} {r['mac_p1']:.2f}{r['app_top1']:>12} {r['app_p1']:.2f}  "
               f"{r['mac_decision'] + ' / ' + r['app_decision']:<34}"
-              f"{tm['left']:.2f}/{tm['right']:.2f}".rjust(12) + f"{ta['left']:.2f}/{ta['right']:.2f}".rjust(12) + f"  {gap}")
+              f"{tm['left']:.2f}/{tm['right']:.2f}".rjust(12) + f"{ta['left']:.2f}/{ta['right']:.2f}".rjust(12) + f"  {gap}"
+              + (f"  why: {'+'.join(r['why']['explained_by']) or 'no single swap'}" if r["why"] else ""))
     summary = compare(rows)
     print(json.dumps(summary, indent=1))
     if args.out:
