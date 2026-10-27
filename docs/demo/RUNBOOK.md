@@ -1,0 +1,129 @@
+# Demo-day runbook
+
+For the live demo and for recording the backup video. Pairs with the [demo script](SCRIPT.md).
+Commands follow [AGENTS.md](../../AGENTS.md), [backend/HEROKU.md](../../backend/HEROKU.md) and the
+[handoff](../handoffs/2026-10-26-ready-made-asl-recognizer.md). Written 28 Oct 2026.
+
+> **Before anything here places a call or deploys:** the founder gives an explicit go and
+> gets a cost heads-up first (Bolna about ₹5.5 per minute plus telephony, so a 3-minute
+> rehearsal call is roughly ₹20–30; Groq well under $0.001 per draft; PLAN §10). A line in
+> this runbook is not that go. Never print `.env` values, phone numbers or account ids,
+> not even on a projector.
+
+## 1. Checklist (the evening before, then again 30 minutes before)
+
+Tick each line; if one fails, use the fallback order in section 2.
+
+### Backend (Heroku)
+
+`APP` is the Heroku app name from your shell (never written down in the repo).
+
+- [ ] **D9 is deployed.** On 28 Oct the Call-for-me endpoints were not on Heroku yet.
+      `curl -s -o /dev/null -w "%{http_code}\n" -X POST "$PUBLIC_BASE_URL/briefs"` must
+      print `401` (route exists, no token sent); `404` means the deploy is still missing
+      (deploys follow [backend/HEROKU.md](../../backend/HEROKU.md) and need their own go).
+- [ ] **Dyno is Basic (or larger), never Eco**, and up:
+      `heroku ps:type --app "$APP"` (size column says Basic) and `heroku ps --app "$APP"`
+      (web is `up`). Eco sleeps after 30 idle minutes, and a sleeping custom-LLM endpoint
+      means silence on the call.
+- [ ] **Awake and healthy:** `curl -s "$PUBLIC_BASE_URL/health"` returns
+      `{"status":"ok","missing_config":[]}`. Do this 10 minutes before going on, and again
+      right before the call. Any name in `missing_config` (for example `GROQ_API_KEY`) means
+      that part is off: without Groq the drafts are templates, which is safe.
+- [ ] **Env names set** (names only, never values):
+      `heroku config --app "$APP" --shell | cut -d= -f1` lists every name in
+      [`.env.example`](../../.env.example): `APP_TOKEN`, `BOLNA_API_KEY`, `BOLNA_AGENT_ID`,
+      `CUSTOM_LLM_TOKEN`, `BOLNA_WEBHOOK_SECRET`, `GROQ_API_KEY`, `GROQ_MODEL`,
+      `ALLOWED_RECIPIENTS`, `PUBLIC_BASE_URL` (`SARVAM_API_KEY` is only for Path A).
+      Locally: `cd backend && uv run python -m app.config`.
+- [ ] **Allowlist holds the receptionist only:**
+      `heroku config:get ALLOWED_RECIPIENTS --app "$APP" | tr ',' '\n' | cut -d= -f1`
+      prints the contact ids only (expect `clinic`). The number behind it is the consenting
+      teammate's; check it privately with them, not on screen.
+- [ ] **Bolna agent unchanged** since it was created from `backend/bolna/agent.json`
+      ("hang up on user silence" and "user online detection" off, Sarvam voice, Deepgram
+      nova-3, Plivo). Don't edit the agent on demo day.
+
+### App
+
+- [ ] **iPhone build** (pending: nothing has been installed on the iPhone yet, PLAN T1): the
+      Debug build from Xcode with `ios/Ishara/Config/Secrets.xcconfig` pointing at the Heroku
+      URL and app token, and the scheme's launch argument `-IsharaDriver live` (without it
+      the app runs the scripted demo call and dials nothing). Camera permission granted.
+- [ ] **Simulator build** as the first fallback: same `Secrets.xcconfig`, `-IsharaDriver live`,
+      on your own simulator (`xcrun simctl create`, never `booted`), prefixed with
+      `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
+- [ ] **LocalAssets present** in `ios/Ishara/LocalAssets/` ([README](../../ios/Ishara/LocalAssets/README.md)):
+      `asl-signs.tflite` (`ios/Packages/SignPipelineLiteRT/Scripts/download_asl_model.sh ios/Ishara/LocalAssets`),
+      `holistic_landmarker.task` (`ios/Packages/SignPipelineMediaPipe/Scripts/download_holistic_model.sh ios/Ishara/LocalAssets`),
+      and for the simulator `SampleSigns/rest.mov` plus the clips to replay. The LiteRT library
+      comes from `ios/Packages/SignPipelineLiteRT/Scripts/download_tflite_c.sh` (verify.sh runs it).
+      Without the ASL model the app falls back to the old SignCLIP path.
+- [ ] **Get ready passes** on the stage spot: face, both hands and light, phone about an arm
+      away, both hands inside the portrait frame (hands leaving the frame drop the scores, see
+      the [probe record](../experiments/asl-model-probe.md)).
+- [ ] Home shows contact **City Clinic**, purpose **Doctor's appointment**, name **Riya**;
+      no real callback number typed in.
+- [ ] Phone: Do Not Disturb on, notifications off, battery above 50%, screen lock off.
+
+### People
+
+- [ ] **Receptionist teammate ready:** consented, phone charged and ringer on, in a quiet
+      room, with the printed card of receptionist lines from the [script](SCRIPT.md)
+      ("We have 4 pm tomorrow. Does that work?", and for part (b) also "Yes, 10:30 tomorrow
+      morning."), and knows to stay silent after the YES in part (a).
+- [ ] Their phone's caller ID will show Bolna's number: keep it off the projector and blur it
+      in any recording.
+- [ ] Presenter has rehearsed the signs (hello, no, tomorrow, please, yes, thankyou, and
+      morning) in the stage light.
+- [ ] Narrator has the honest-limits lines from [SLIDES.md](SLIDES.md#5-honest-limits).
+
+## 2. Fallback order
+
+Switch at the first failure; don't debug on stage.
+
+```
+iPhone, live camera ──fails──▶ simulator, replayed clips ──fails──▶ Mac fallback (mac_bridge.py) ──fails──▶ backup video
+       (pending T1)               (same backend)                      (same backend)                   (recorded D2)
+```
+
+| Step | Use when | How | Say on stage |
+|---|---|---|---|
+| 1. **iPhone** | Default, once installed and the phone-clip check is done | The app with `-IsharaDriver live`, the presenter signs to the front camera | Nothing extra |
+| 2. **Simulator, replayed clips** | No iPhone, camera trouble, or recognition misbehaving on the phone | The simulator build with `-IsharaDriver live`; signs come from saved clips in `LocalAssets/SampleSigns` (the simulator has no camera). Replaying saved clips through recognition in the simulator is still being worked on (pending; check before relying on it) | "This is the same app in the simulator, fed with recorded signs." |
+| 3. **Mac fallback** | The app can't run | `spikes/recognition/mac_bridge.py --model asl --live --camera 0` against the same backend: attach to a call with `--call-id <id>`, or start one with `--contact clinic --confirm-cost` (add `--delegated --attended --name "Riya"` for Call for me). Webcam recognition on the Mac, chips and drafts in the terminal, `s` to SEND, `a yes` to answer. Commands: [recognition README](../../spikes/recognition/README.md); a webcam run against the deployed backend is still pending (PLAN A4) | "Recognition runs on the laptop here; it is designed for the phone." |
+| 4. **Backup video** | Nothing live works, or the room has no network | Play the recording (section 3) | "This is a recording from \<date\>." |
+
+If the call itself fails (no ring, silence after the disclosure, "Not delivered" twice):
+end the call, check `/health`, and go to the backup video rather than redialling more than
+once. Every redial is a paid call.
+
+Rehearsal without spending anything: `cd backend && uv run python -m scripts.local_demo` (the
+scripted receptionist plays both PLAN §1 lines) with the app on `-IsharaDriver live` and
+`Secrets.xcconfig` pointed at it (the server prints the two lines; point it back at Heroku
+afterwards), or `scripts/sign_lab.sh --free --model asl` on the Mac.
+
+## 3. Backup video shot list (task D2)
+
+Record after a clean live rehearsal (PLAN D2: rehearse three times, then record). Two sources:
+the iPhone's screen recording, and a second camera on the presenter and the phone; record the
+receptionist's side audio on their phone (speaker on, second recorder) so viewers hear what
+Bolna said. Captions on the screen recording show both sides anyway.
+
+| # | Shot | Length | Must show |
+|---|---|---|---|
+| 1 | Title card | 5 s | "Ishara. Calls placed by Bolna from its own number. Presenter is hearing. Not yet tested with Deaf users." |
+| 2 | Wide: presenter at a table, phone propped about an arm away; cut to the receptionist in another room | 5 s | The setting is a rehearsal with a teammate |
+| 3 | Home screen | 5 s | The calling-number note |
+| 4 | Get ready → Call for me, signing TOMORROW, MORNING (picture-in-picture: presenter + screen) | 15 s | Chips appear; a pick-one tap if it happens |
+| 5 | The brief, then Approve and call | 10 s | The brief text and the "stay and answer questions" switch |
+| 6 | The call: disclosure and opening (receptionist-side audio) | 15 s | The disclosure is heard in full |
+| 7 | Offer → "One moment, please." → AskCard → presenter signs YES (picture-in-picture) | 15 s | The three options with their exact sentences, then the yes |
+| 8 | Receptionist hears "Yes, 4 pm tomorrow works. Thank you."; the agent hangs up | 10 s | Nothing was said that the user didn't choose |
+| 9 | Call notes | 10 s | Outcome, what was offered, what you answered, transcript |
+| 10 | Live mode, part (b): HELLO → SEND; NO · TOMORROW · PLEASE → SEND; YES · THANKYOU → SEND; End | 60 s | Each draft on screen before SEND; Delivered after each |
+| 11 | Safety inserts (simulator screens are fine, labelled "simulator") | 15 s | `?` chip, wrong chip removed with ✕, STOP, "Not delivered — tap SEND again" |
+| 12 | Closing card | 5 s | The honest-limits line from the handoff, word for word |
+
+Before publishing: blur the caller ID and any phone number, check no notification or
+`.env`/token is visible, and label any simulator footage as simulator.
