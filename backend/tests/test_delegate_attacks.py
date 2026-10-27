@@ -640,3 +640,43 @@ def test_only_a_new_day_on_offer_goes_to_the_user(heard, offered) -> None:
     else:
         assert decision.ask is not None
         assert decision.ask[1][0].spoken == f"Yes, {offered} works. Thank you."
+
+
+def test_overlapping_turns_while_the_llm_thinks_give_one_line_and_one_ask(flow) -> None:
+    groq = FakeGroq(llm(PAUSE_LINE, {"question": OFFER, "proposal": "4 pm tomorrow"}), delay_s=0.2)
+    f = flow(brain=Brain(groq, timeout_s=1.0))
+    call_id = f.start(f.brief(), attended=True)
+    with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
+        f.live(call_id)
+        f.speak_last(call_id)
+
+        async def two_turns() -> list[str | None]:
+            return list(
+                await asyncio.gather(
+                    f.manager.delegate_reply(call_id, OFFER),
+                    f.manager.delegate_reply(call_id, "Hello? Did you hear me?"),
+                )
+            )
+
+        said = f.client.portal.call(two_turns)
+        assert said.count(PAUSE_LINE) == 1 and said.count(None) == 1, said
+        assert [m["type"] for m in quiet(f, ws)].count("ask") == 1
+
+
+def test_a_call_that_ends_while_the_llm_thinks_says_and_asks_nothing(flow) -> None:
+    groq = FakeGroq(llm(PAUSE_LINE, {"question": OFFER, "proposal": "4 pm tomorrow"}), delay_s=0.2)
+    f = flow(brain=Brain(groq, timeout_s=1.0))
+    call_id = f.start(f.brief(), attended=True)
+    with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
+        f.live(call_id)
+        f.speak_last(call_id)
+
+        async def hang_up_mid_thought() -> str | None:
+            thinking = asyncio.create_task(f.manager.delegate_reply(call_id, OFFER))
+            await asyncio.sleep(0.05)
+            await f.manager._on_end(f.manager._sessions[call_id])
+            return await thinking
+
+        assert f.client.portal.call(hang_up_mid_thought) is None
+        assert "ask" not in [m["type"] for m in quiet(f, ws)]
+    assert PAUSE_LINE not in [e["text"] for e in notes(f, call_id)["transcript"]]

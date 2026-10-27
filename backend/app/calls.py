@@ -352,7 +352,17 @@ class CallManager(CallLedger):
             # The brief is settled and the agent is about to hang up: nothing new is said,
             # agreed or asked (a different time offered now would otherwise open a second ask).
             return None
-        decision = await self._brain.reply(delegate, heard)
+        if delegate.deciding:
+            # Bolna sent another receptionist turn while the brain (Groq) still thinks
+            # about the last one: one decision at a time, so one line and at most one ask.
+            return None
+        delegate.deciding = True
+        try:
+            decision = await self._brain.reply(delegate, heard)
+        finally:
+            delegate.deciding = False
+        if session.finished:
+            return None  # the call ended while the brain was thinking
         delegate.exchanges.append(Exchange(heard, decision.say))
         delegate.opened = True
         self._note(session, "agent", decision.say)

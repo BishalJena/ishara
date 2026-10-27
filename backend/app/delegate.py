@@ -224,6 +224,7 @@ class DelegateState:
     exchanges: list[Exchange] = field(default_factory=list)
     opened: bool = False
     pending_ask: str | None = None  # ask_id
+    deciding: bool = False  # the brain is working on a receptionist turn
     answers: list[str] = field(default_factory=list)  # what the user chose, in spoken form
     outcome: str | None = None
 
