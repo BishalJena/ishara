@@ -12,10 +12,16 @@ struct NotesView: View {
             List {
                 if let notes = model.notes {
                     Section {
-                        Label(NotesModel.describe(outcome: notes.outcome, ready: notes.ready),
-                              systemImage: notes.outcome == "booked" ? "checkmark.circle.fill" : "info.circle")
-                            .font(.headline)
-                            .accessibilityIdentifier("notes.outcome")
+                        Label {
+                            Text(NotesModel.describe(outcome: notes.outcome, ready: notes.ready))
+                        } icon: {
+                            // VoiceOver read the check mark as a separate "Selected".
+                            Image(systemName: notes.outcome == "booked" ? "checkmark.circle.fill" : "info.circle")
+                                .accessibilityHidden(true)
+                        }
+                        .font(.headline)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityIdentifier("notes.outcome")
                     } header: {
                         Text("Call with \(model.contactName)")
                     }
@@ -77,6 +83,7 @@ struct NotesView: View {
                         Label("Refresh", systemImage: "arrow.clockwise")
                     }
                     .disabled(model.isLoading)
+                    .accessibilityIdentifier("notes.refresh")
                 }
             }
             .task { await model.run() }
