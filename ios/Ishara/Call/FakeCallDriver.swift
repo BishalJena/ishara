@@ -42,6 +42,8 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     private weak var store: TurnStore?
     private var nextStage = 0
     private var approvedTurns: Set<TurnID> = []
+    /// Counts chips messages; a draft goes out only if no newer chips came in meanwhile.
+    private var chipsRevision = 0
     private var failedStages: Set<Int> = []
     private var speakingTurn: TurnID?
     private var speakingTask: Task<Void, Never>?
@@ -115,9 +117,14 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         guard !isOver, !isDisconnected else { return }
         switch message {
         case let .chips(turnID, signs):
+            chipsRevision += 1
+            let revision = chipsRevision
             let draft = DemoScript.draft(for: signs)
-            schedule(after: 0.5) {
-                $0.deliver(.draft(turnID: turnID, text: draft.text, source: draft.source))
+            schedule(after: 0.5) { driver in
+                // Like the backend's draft_is_current: never a draft for chips that have since
+                // changed. Drafts due at almost the same moment can arrive in either order.
+                guard driver.chipsRevision == revision else { return }
+                driver.deliver(.draft(turnID: turnID, text: draft.text, source: draft.source))
             }
         case let .approve(turnID, text):
             approve(turnID: turnID, text: text)

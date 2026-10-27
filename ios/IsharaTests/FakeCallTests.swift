@@ -70,6 +70,28 @@ final class FakeCallTests: XCTestCase {
         XCTAssertEqual(model.captions.filter { $0.speaker == .agent }.count, 2, "only the disclosure and the goodbye")
     }
 
+    /// Like the backend (`draft_is_current`), the fake never sends a draft for chips that have
+    /// since changed. On a busy simulator two signs landed inside one draft delay, their drafts
+    /// came back in the wrong order and the older one stayed on screen (issue #31).
+    func testADraftForChipsThatHaveSinceChangedIsNeverSent() async throws {
+        // Drafts come 1 s after their chips; the chips change again halfway through.
+        let driver = FakeCallDriver(options: .init(timeScale: 2))
+        let store = try await driver.start(.demo)
+        defer { driver.close() }
+        let current = "Hello, I'd like a doctor's appointment tomorrow."
+        store.add(.recognised(.hello))
+        store.add(.recognised(.doctor))
+        try await Task.sleep(for: .milliseconds(500))
+        store.add(.recognised(.tomorrow))
+
+        // The drafts for the old chips were due at 1 s, the current one at 1.5 s.
+        try await Task.sleep(for: .milliseconds(750))
+        XCTAssertTrue(store.draft == nil || store.draft?.text == current,
+                      "a draft for the old chips was shown: \(store.draft?.text ?? "")")
+        let shown = await eventually(timeout: .seconds(5)) { store.draft?.text == current }
+        XCTAssertTrue(shown)
+    }
+
     // MARK: Scripted recognition
 
     func testReplayedSignShowsTheYellowPillThenTheResult() async {
