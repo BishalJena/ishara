@@ -213,28 +213,29 @@ def rest(out: Path) -> None:
     manifest = [r for r in json.loads((out / "manifest.json").read_text()) if r["kind"] != "negative-rest"]
     picked: list[dict] = []
     per_source: dict[str, int] = {}
-    with mp.solutions.holistic.Holistic(static_image_mode=False, model_complexity=1, refine_face_landmarks=False) as tracker:
-        for row in sorted((r for r in manifest if "excluded" not in r), key=lambda r: r["id"]):
-            family = row["source"].split("/")[-1]
-            if len(picked) >= REST_MAX or per_source.get(family, 0) >= REST_PER_SOURCE:
-                continue
+    for row in sorted((r for r in manifest if "excluded" not in r), key=lambda r: r["id"]):
+        family = row["source"].split("/")[-1]
+        if len(picked) >= REST_MAX or per_source.get(family, 0) >= REST_PER_SOURCE:
+            continue
+        with mp.solutions.holistic.Holistic(static_image_mode=False, model_complexity=1,
+                                            refine_face_landmarks=False) as tracker:  # one per clip, no carried state
             data = extract.extract(out / row["landscape"], tracker)
-            landmarks, fps = data["landmarks"], data["fps"] or 30.0
-            if not len(landmarks):
-                continue
-            start, end = longest_run(resting(landmarks))
-            if (end - start) / fps < REST_MIN_S:
-                continue
-            trim = (start / fps, end / fps)
-            name = f"none_rest-{row['id'].split('_', 1)[1]}.mp4"
-            _ffmpeg(out / row["landscape"], out / "landscape" / name, "null", trim)
-            _ffmpeg(out / row["landscape"], out / "portrait" / name, PORTRAIT, trim)
-            per_source[family] = per_source.get(family, 0) + 1
-            picked.append({"id": Path(name).stem, "label": "none", "kind": "negative-rest", "gloss": "rest",
-                           "landscape": f"landscape/{name}", "portrait": f"portrait/{name}", "source": row["source"],
-                           "key": row["key"], "url": row["url"], "licence": row["licence"],
-                           "trim_s": [round(trim[0], 3), round(trim[1], 3)], "cut_from": row["id"]})
-            print(f"{name}: {trim[0]:.2f}-{trim[1]:.2f} s", flush=True)
+        landmarks, fps = data["landmarks"], data["fps"] or 30.0
+        if not len(landmarks):
+            continue
+        start, end = longest_run(resting(landmarks))
+        if (end - start) / fps < REST_MIN_S:
+            continue
+        trim = (start / fps, end / fps)
+        name = f"none_rest-{row['id'].split('_', 1)[1]}.mp4"
+        _ffmpeg(out / row["landscape"], out / "landscape" / name, "null", trim)
+        _ffmpeg(out / row["landscape"], out / "portrait" / name, PORTRAIT, trim)
+        per_source[family] = per_source.get(family, 0) + 1
+        picked.append({"id": Path(name).stem, "label": "none", "kind": "negative-rest", "gloss": "rest",
+                       "landscape": f"landscape/{name}", "portrait": f"portrait/{name}", "source": row["source"],
+                       "key": row["key"], "url": row["url"], "licence": row["licence"],
+                       "trim_s": [round(trim[0], 3), round(trim[1], 3)], "cut_from": row["id"]})
+        print(f"{name}: {trim[0]:.2f}-{trim[1]:.2f} s", flush=True)
     (out / "manifest.json").write_text(json.dumps(manifest + picked, indent=1))
     print(f"{len(picked)} rest clips")
 

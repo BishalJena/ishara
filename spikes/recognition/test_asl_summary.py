@@ -5,9 +5,12 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 
@@ -193,6 +196,35 @@ class VocabularyWhatIf(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp, self.assertRaises(SystemExit) as refused:
             self.run_main(Path(tmp), "--vocabulary", "yes,doctor")
         self.assertIn("doctor", str(refused.exception))
+
+
+class MacLandmarks(unittest.TestCase):
+    """Regression: legacy Holistic in video mode carries its tracking from one clip into the next,
+    so one tracker shared over a folder made each clip's score depend on the clip sorted before it
+    (tomorrow 0.80 alone, 0.37 after its neighbour). Every clip must get a tracker of its own."""
+
+    def test_every_clip_gets_a_fresh_tracker(self):
+        opened: list[object] = []
+        seen: dict[str, object] = {}
+
+        @contextlib.contextmanager
+        def holistic():
+            tracker = object()
+            opened.append(tracker)
+            yield tracker
+
+        def extract(clip, tracker):
+            seen[Path(clip).name] = tracker
+            return {"landmarks": np.zeros((2, 543, 3))}
+
+        clips = [Path(name) for name in ("hello_1.mp4", "hello_2.mp4", "none_1.mp4")]
+        with mock.patch.dict(sys.modules, {"extract": types.SimpleNamespace(extract=extract)}), \
+                mock.patch("detect_clips.holistic", holistic):
+            out = list(s.mac_landmarks(clips))
+        self.assertEqual([c for c, _ in out], clips)
+        self.assertEqual(len(opened), 3)
+        self.assertEqual(len({id(t) for t in seen.values()}), 3, "no two clips may share a tracker")
+        self.assertEqual(out[0][1].dtype, np.float32)
 
 
 class Labels(unittest.TestCase):

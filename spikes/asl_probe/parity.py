@@ -137,10 +137,9 @@ def main(argv=None) -> int:
     parser.add_argument("--out", type=Path)
     args = parser.parse_args(argv)
 
-    import extract as ex
     from asl_matcher import asl_decision, load_asl_bundle
     from asl_model import AslModel, quality
-    from detect_clips import holistic
+    from asl_summary import mac_landmarks
 
     app = {r["clip"]: r for r in json.loads((args.sim / "simulator.json").read_text())}
     bundle = load_asl_bundle()
@@ -154,33 +153,32 @@ def main(argv=None) -> int:
     def decide(lm: np.ndarray) -> str:
         return label(asl_decision(model.predict(lm), quality(lm), bundle))
 
+    clips = sorted(p for p in args.clips.iterdir() if p.suffix.lower() in VIDEO)
+    for clip in clips:
+        if clip.name not in app:
+            print(f"skip {clip.name}: not in simulator.json", file=sys.stderr)
     try:
-        with holistic() as tracker:
-            for clip in sorted(p for p in args.clips.iterdir() if p.suffix.lower() in VIDEO):
-                if clip.name not in app:
-                    print(f"skip {clip.name}: not in simulator.json", file=sys.stderr)
-                    continue
-                mac_lm = ex.extract(clip, tracker)["landmarks"].astype(np.float32)
-                app_row = app[clip.name]
-                app_lm = np.fromfile(args.sim / f"{clip.stem}.f32", dtype="<f4").reshape(-1, FACE + HAND + POSE + HAND, 3)
-                mac_p = model.predict(mac_lm)
-                app_p = softmax(app_row["logits"])
-                mac_on_app = model.predict(app_lm)
-                mac_d = asl_decision(mac_p, quality(mac_lm), bundle)
-                app_d = asl_decision(app_p, quality(app_lm), bundle)
-                why = attribute(mac_lm, app_lm, decide) if label(mac_d) != label(app_d) else None
-                rows.append({
-                    "clip": clip.name, "frames": [len(mac_lm), len(app_lm)],
-                    "mac_top1": glosses[int(mac_p.argmax())], "mac_p1": round(float(mac_p.max()), 3),
-                    "app_top1": glosses[int(app_p.argmax())], "app_p1": round(float(app_p.max()), 3),
-                    "mac_decision": label(mac_d), "app_decision": label(app_d), "why": why,
-                    "runtime_max_abs_diff": round(float(np.abs(mac_on_app - app_p).max()), 5),
-                    "tracking_mac": tracking(mac_lm), "tracking_app": tracking(app_lm),
-                    "left_gap": part_gap(mac_lm, app_lm, "left_hand"), "right_gap": part_gap(mac_lm, app_lm, "right_hand"),
-                    "face_gap": part_gap(mac_lm, app_lm, "face"), "pose_gap": part_gap(mac_lm, app_lm, "pose"),
-                    "mirrored_frames": int(mirrored_frames(mac_lm, app_lm).sum()),
-                    "app_seconds": round(app_row["seconds"], 2),
-                })
+        for clip, mac_lm in mac_landmarks(c for c in clips if c.name in app):
+            app_row = app[clip.name]
+            app_lm = np.fromfile(args.sim / f"{clip.stem}.f32", dtype="<f4").reshape(-1, FACE + HAND + POSE + HAND, 3)
+            mac_p = model.predict(mac_lm)
+            app_p = softmax(app_row["logits"])
+            mac_on_app = model.predict(app_lm)
+            mac_d = asl_decision(mac_p, quality(mac_lm), bundle)
+            app_d = asl_decision(app_p, quality(app_lm), bundle)
+            why = attribute(mac_lm, app_lm, decide) if label(mac_d) != label(app_d) else None
+            rows.append({
+                "clip": clip.name, "frames": [len(mac_lm), len(app_lm)],
+                "mac_top1": glosses[int(mac_p.argmax())], "mac_p1": round(float(mac_p.max()), 3),
+                "app_top1": glosses[int(app_p.argmax())], "app_p1": round(float(app_p.max()), 3),
+                "mac_decision": label(mac_d), "app_decision": label(app_d), "why": why,
+                "runtime_max_abs_diff": round(float(np.abs(mac_on_app - app_p).max()), 5),
+                "tracking_mac": tracking(mac_lm), "tracking_app": tracking(app_lm),
+                "left_gap": part_gap(mac_lm, app_lm, "left_hand"), "right_gap": part_gap(mac_lm, app_lm, "right_hand"),
+                "face_gap": part_gap(mac_lm, app_lm, "face"), "pose_gap": part_gap(mac_lm, app_lm, "pose"),
+                "mirrored_frames": int(mirrored_frames(mac_lm, app_lm).sum()),
+                "app_seconds": round(app_row["seconds"], 2),
+            })
     finally:
         model.close()
 

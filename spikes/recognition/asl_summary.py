@@ -30,7 +30,7 @@ import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any, Iterable, Iterator, Sequence
 
 import numpy as np
 
@@ -277,20 +277,27 @@ def from_app(directory: Path, glosses: Sequence[str]) -> list[Attempt]:
     return out
 
 
-def from_clips(directory: Path) -> list[Attempt]:
+def mac_landmarks(clips: Iterable[Path]) -> Iterator[tuple[Path, np.ndarray]]:
+    """Legacy Holistic landmarks in the Kaggle layout, each clip with a tracker of its own. In video
+    mode the tracker carries its hand and face regions from frame to frame, so one tracker shared
+    over a folder made a clip's landmarks, and its score, depend on the clip sorted before it."""
     sys.path.insert(0, str(HERE.parent / "asl_probe"))
     import extract as ex
-    from asl_model import AslModel, quality
     from detect_clips import holistic
+
+    for clip in clips:
+        with holistic() as tracker:
+            yield clip, ex.extract(clip, tracker)["landmarks"].astype(np.float32)
+
+
+def from_clips(directory: Path) -> list[Attempt]:
+    from asl_model import AslModel, quality
 
     model = AslModel()
     out = []
     try:
-        with holistic() as tracker:
-            for clip in sorted(p for p in directory.iterdir() if p.suffix.lower() in VIDEO):
-                lm = ex.extract(clip, tracker)["landmarks"].astype(np.float32)
-                if not len(lm):
-                    continue
+        for clip, lm in mac_landmarks(sorted(p for p in directory.iterdir() if p.suffix.lower() in VIDEO)):
+            if len(lm):
                 out.append(Attempt(label_of(clip), _top(model.predict(lm), model.glosses), quality(lm), clip.name))
     finally:
         model.close()
