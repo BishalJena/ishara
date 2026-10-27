@@ -14,6 +14,7 @@ import json
 import time
 from collections.abc import Callable
 from functools import partial
+from types import SimpleNamespace
 
 import pytest
 from pydantic import SecretStr
@@ -22,15 +23,21 @@ from app.delegate import (
     CALLBACK_LINE,
     CLOSE_LINE,
     PAUSE_LINE,
+    SYSTEM_PROMPT,
     Brain,
+    Decision,
     DelegateState,
+    Exchange,
     RuleBrain,
+    brief_from,
     build_brain,
+    build_brief,
     build_notes,
+    check_line,
 )
 from app.groq_client import GroqClient, GroqError
 from app.markers import EVENT_END_CALL, SILENCE_MARKER, render_marker_block
-from app.protocol import StartCallRequest, TranscriptEntry
+from app.protocol import BriefRequest, StartCallRequest, TranscriptEntry
 from tests.conftest import APP_TOKEN, WEBHOOK_SECRET, make_settings
 from tests.test_calls import CLINIC
 from tests.test_delegate import AUTH, LLM_AUTH, Flow, brief_request, build_flow, make_brief
@@ -49,8 +56,10 @@ class FakeGroq:
         self.delay_s = delay_s
         self.error = error
         self.prompts: list[str] = []
+        self.systems: list[str] = []
 
     async def complete(self, system: str, user: str) -> str:
+        self.systems.append(system)
         self.prompts.append(user)
         await asyncio.sleep(self.delay_s)
         if self.error is not None:
@@ -164,19 +173,19 @@ def test_two_answers_for_one_ask_speak_only_the_first(flow) -> None:
 
 
 def test_wait_holds_the_line_and_keeps_the_question_open(flow) -> None:
-    f = flow(ask_timeout_s=0.3)
+    f = flow(ask_timeout_s=2.0)
     call_id = f.start(f.brief(), attended=True)
     with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
         f.live(call_id)
         f.speak_last(call_id)
         f.listen_turn(call_id, OFFER)
         ask = f.drain_until(ws, "ask")
-        time.sleep(0.2)
+        time.sleep(1.2)
         ws.send_json({"type": "answer", "ask_id": ask["ask_id"], "choice": "wait"})
         wait_for(lambda: len(f.bolna.replies()) == 2)
         assert spoken_texts(f)[-1] == "One moment, please, I'm checking."
         f.speak_last(call_id)
-        time.sleep(0.2)  # past the first deadline: the wait restarted the timer
+        time.sleep(1.2)  # past the first deadline: the wait restarted the timer
         ws.send_json({"type": "answer", "ask_id": ask["ask_id"], "choice": "yes"})
         resolved = f.drain_until(ws, "ask_resolved")
         assert resolved["source"] == "user"
@@ -316,6 +325,7 @@ async def test_an_llm_ask_on_an_unattended_call_becomes_the_callback_line() -> N
     raw = llm(PAUSE_LINE, {"question": OFFER, "proposal": "4 pm tomorrow"})
     decision = await Brain(FakeGroq(raw)).reply(state(attended=False), OFFER)
     assert decision.say == CALLBACK_LINE and decision.done and decision.ask is None
+    assert decision.source == "llm"
 
 
 # ---- requests and state ----
@@ -740,3 +750,258 @@ def test_a_spoken_answer_is_in_the_transcript_and_the_notes(flow) -> None:
     ]
     assert 'You answered: "Yes, 4 pm tomorrow works. Thank you."' in result["summary"]
     assert result["outcome"] == "booked"
+
+
+# ---- what check_line and the LLM prompt guarantee ----
+
+
+def test_check_line_counts_words_and_keeps_every_reason() -> None:
+    brief = make_brief().brief
+    assert check_line("   ", brief, "") == ["empty"]
+    assert check_line(" ".join(["please"] * 25), brief, "") == []
+    long_line = " ".join(["please"] * 24) + " at 7 with Kiran"
+    assert check_line(long_line, brief, "") == [
+        "too many words: 28",
+        "invented number or time: 7",
+        "invented name: Kiran",
+    ]
+
+
+def test_check_line_reads_facts_at_the_edges_of_what_was_heard() -> None:
+    brief = make_brief().brief
+    # A name or number right at the start or end of the receptionist's words still counts
+    # as heard, across every exchange so far.
+    delegate = make_brief()
+    delegate.exchanges += [
+        Exchange("Hello, you're through to Mehta", "One moment, please."),
+        Exchange("Kiran has 11 free", "Could you tell me what times are available?"),
+    ]
+    heard = delegate.transcript_text()
+    assert check_line("So Mehta or Kiran at 11?", brief, heard) == []
+    assert check_line("So Mehta or Kiran at 11?", brief, "") == [
+        "invented number or time: 11",
+        "invented name: Mehta",
+        "invented name: Kiran",
+    ]
+
+
+def test_check_line_names_the_agreement_it_rejects() -> None:
+    assert check_line("I think that sounds good.", make_brief().brief, "") == [
+        "agrees for the user: that sounds good"
+    ]
+
+
+def test_tomorrow_on_offer_reads_naturally() -> None:
+    delegate = DelegateState(
+        brief_from(
+            BriefRequest(purpose="doctor_appointment", chips=["today"], profile={"name": "Asha"}),
+            build_brief(
+                BriefRequest(
+                    purpose="doctor_appointment", chips=["today"], profile={"name": "Asha"}
+                )
+            ),
+        ),
+        attended=True,
+        opened=True,
+    )
+    decision = RuleBrain().decide(delegate, "Could you come tomorrow instead?")
+    assert decision.ask is not None
+    assert decision.ask[1][0].spoken == "Yes, tomorrow works. Thank you."
+
+
+async def test_the_llm_sees_the_mode_the_brief_recent_turns_and_answers() -> None:
+    groq = FakeGroq(llm("Could you tell me which mornings are free?"))
+    delegate = state(attended=False)
+    delegate.exchanges = [Exchange(f"line {i}", f"reply {i}") for i in range(8)]
+    delegate.answers = ["No, 4 pm tomorrow doesn't work, sorry. Is there another time?"]
+    await Brain(groq).reply(delegate, "Let me check the diary.")
+    assert groq.systems == [SYSTEM_PROMPT]
+    sent = json.loads(groq.prompts[0])
+    assert sent == {
+        "mode": "UNATTENDED",
+        "brief": delegate.brief.text,
+        "conversation": [{"receptionist": f"line {i}", "you": f"reply {i}"} for i in range(2, 8)],
+        "user_answers_so_far": delegate.answers,
+        "receptionist_just_said": "Let me check the diary.",
+    }
+    await Brain(groq).reply(state(attended=True), "Hello?")
+    assert json.loads(groq.prompts[1])["mode"] == "ATTENDED"
+
+
+# ---- the LLM path, in detail ----
+
+
+async def test_each_fallback_says_why_in_the_log(caplog) -> None:
+    caplog.set_level("INFO", logger="app.delegate")
+    await Brain(FakeGroq(error=GroqError("HTTP 500"))).reply(state(), OFFER)
+    raw = llm(PAUSE_LINE, {"question": OFFER, "proposal": "3 pm"})
+    await Brain(FakeGroq(raw)).reply(state(), OFFER)
+    await Brain(FakeGroq(llm("Dr Kiran at 9."))).reply(state(), OFFER)
+    assert [r.getMessage() for r in caplog.records] == [
+        "delegate: LLM unavailable (GroqError), using rules",
+        "delegate: LLM proposal rejected (invented number or time: 3), using rules",
+        "delegate: LLM line rejected (invented number or time: 9; invented name: Kiran), "
+        "using rules",
+    ]
+
+
+async def test_a_reply_in_a_json_code_fence_is_read() -> None:
+    raw = "```json\n" + llm("Could you tell me which mornings are free?") + "\n```"
+    decision = await Brain(FakeGroq(raw)).reply(state(), "Let me check.")
+    assert decision.source == "llm" and decision.say == "Could you tell me which mornings are free?"
+
+
+async def test_an_llm_line_may_repeat_a_name_the_receptionist_just_said() -> None:
+    delegate = state()
+    delegate.exchanges = []
+    decision = await Brain(FakeGroq(llm("So Mehta at 4 pm?"))).reply(
+        delegate, "Mehta can see her at 4 pm."
+    )
+    assert decision.source == "llm" and decision.say == "So Mehta at 4 pm?"
+
+
+async def test_an_llm_line_can_end_the_call() -> None:
+    raw = llm("Thank you, goodbye.", done=True)
+    decision = await Brain(FakeGroq(raw)).reply(state(), "You're all set, bye.")
+    assert decision == Decision("Thank you, goodbye.", done=True, source="llm")
+
+
+@pytest.mark.parametrize(
+    ("ask", "heard", "question", "yes_line"),
+    [
+        (
+            {"question": None, "proposal": None},
+            OFFER,
+            OFFER,
+            "Yes, 4 pm tomorrow works. Thank you.",
+        ),
+        ({"proposal": "4 pm"}, OFFER, OFFER, "Yes, 4 pm works. Thank you."),
+        (
+            {"question": "Is Friday ok?"},
+            "Is Friday ok?",
+            "Is Friday ok?",
+            "Yes, that works. Thank you.",
+        ),
+    ],
+)
+async def test_an_llm_ask_fills_gaps_from_what_was_heard(ask, heard, question, yes_line) -> None:
+    decision = await Brain(FakeGroq(llm(PAUSE_LINE, ask))).reply(state(), heard)
+    assert decision.source == "llm" and decision.ask is not None
+    assert decision.ask[0] == question
+    assert decision.ask[1][0].spoken == yes_line
+
+
+# ---- the rule brain and the brief, word for word ----
+
+
+def test_the_brief_without_extras_is_exactly_what_the_user_approves() -> None:
+    request = BriefRequest(purpose="doctor_appointment", chips=[], profile={"name": "Ravi"})
+    response = build_brief(request)
+    assert response.text == (
+        "Call on behalf of Ravi, who is Deaf and uses the Ishara app, to book a doctor's "
+        "appointment. May share: name (Ravi). Will not agree to anything outside this brief; "
+        "anything else comes back to you as a question."
+    )
+    brief = brief_from(request, response)
+    assert (brief.callback, brief.notes, brief.purpose) == (None, None, "doctor_appointment")
+    assert RuleBrain().opening(DelegateState(brief, attended=False)) == (
+        "I'd like to book a doctor's appointment for Ravi."
+    )
+
+
+def test_the_brief_with_a_callback_and_notes_carries_them() -> None:
+    profile = {"name": "Ravi", "callback": "the number ending 4321", "notes": "a sore knee"}
+    request = BriefRequest(purpose="doctor_appointment", chips=["now"], profile=profile)
+    response = build_brief(request)
+    assert response.text.endswith(
+        "Preferred: today. Reason, if asked: a sore knee May share: name (Ravi), callback "
+        "number. Will not agree to anything outside this brief; anything else comes back to "
+        "you as a question."
+    )
+    brief = brief_from(request, response)
+    assert (brief.callback, brief.notes) == ("the number ending 4321", "a sore knee")
+
+
+def test_build_brain_without_a_groq_setting_is_rules_only() -> None:
+    assert build_brain(SimpleNamespace()).client is None
+
+
+@pytest.mark.parametrize(
+    ("heard", "say"),
+    [
+        ("Let me check.", "Could you tell me what times are available?"),
+        ("Phone?", "You can reach me on the number ending 4321."),
+        ("We have 4 pm. Does that work?", PAUSE_LINE),
+    ],
+)
+def test_rule_lines_word_for_word(heard, say) -> None:
+    decision = RuleBrain().decide(state(), heard)
+    assert decision.say == say
+    if decision.ask is not None:
+        assert decision.ask[1][0].spoken == "Yes, 4 pm works. Thank you."
+
+
+# ---- the notes, word for word ----
+
+
+def entry(speaker: str, text: str) -> TranscriptEntry:
+    return TranscriptEntry(speaker=speaker, text=text, at=1.0)
+
+
+def test_notes_list_only_the_receptionists_offers_and_cap_them() -> None:
+    entries = [entry("receptionist", f"We have {h} pm tomorrow.") for h in (1, 2, 3, 4)]
+    entries += [entry("agent", "Yes, 5 pm tomorrow works. Thank you.")]
+    entries += [entry("receptionist", f"Booked for {h} pm.") for h in (1, 2, 3)]
+    result = build_notes("c1", make_brief().brief, entries, [], None, True)
+    offered = [s for s in result.summary if s.startswith("They offered")]
+    assert offered == [f'They offered: "We have {h} pm tomorrow."' for h in (1, 2, 3)]
+    confirmed = [s for s in result.summary if s.startswith("They confirmed")]
+    assert len(confirmed) == 2
+
+
+@pytest.mark.parametrize(
+    ("entries", "answers", "outcome", "open_questions"),
+    [
+        (
+            [entry("receptionist", "We have 4 pm."), entry("agent", CALLBACK_LINE)],
+            [],
+            "callback",
+            ["The agent promised to call back. Decide on the offer and call again."],
+        ),
+        (
+            [entry("receptionist", "Let me check the diary.")],
+            [],
+            "unclear",
+            ["Nothing was confirmed. Read the transcript and decide the next step."],
+        ),
+        ([], [], "no_answer", ["Nobody answered or nothing was heard."]),
+        (
+            [entry("receptionist", "We have 4 pm tomorrow. Does that work?")],
+            ["No, 4 pm tomorrow doesn't work, sorry. Is there another time?"],
+            "declined",
+            [],
+        ),
+        (
+            [entry("receptionist", "Sorry, we're fully"), entry("receptionist", "booked.")],
+            [],
+            "declined",
+            [],
+        ),
+        (
+            [entry("receptionist", "4 pm? 10:30? 11?")],
+            ["No, 4 pm doesn't work.", "No, 10:30 doesn't work.", "Yes, 11 works."],
+            "booked",
+            [],
+        ),
+        (
+            [entry("receptionist", "You're booked at 4 pm.")],
+            ["Yes, 4 pm works.", "No, 4 pm doesn't work."],
+            "unclear",
+            ["Nothing was confirmed. Read the transcript and decide the next step."],
+        ),
+    ],
+)
+def test_outcomes_and_open_questions_word_for_word(entries, answers, outcome, open_questions):
+    result = build_notes("c1", make_brief().brief, entries, answers, None, True)
+    assert result.outcome == outcome
+    assert result.open_questions == open_questions
