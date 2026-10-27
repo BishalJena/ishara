@@ -22,6 +22,8 @@ import re
 import uuid
 from dataclasses import dataclass, field
 
+from pydantic import BaseModel, ValidationError
+
 from app.groq_client import GroqClient, GroqError
 from app.protocol import (
     MAX_CHIPS,
@@ -281,6 +283,19 @@ def _user_message(state: DelegateState, heard: str) -> str:
     )
 
 
+class _LlmAsk(BaseModel):
+    question: str | None = None
+    proposal: str | None = None
+
+
+class _LlmTurn(BaseModel):
+    """The JSON reply SYSTEM_PROMPT asks for; anything else falls back to the rules."""
+
+    say: str = ""
+    ask_user: _LlmAsk | None = None
+    done: bool = False
+
+
 class Brain:
     """Groq with the rule brain as the fallback; every line is checked before it is spoken."""
 
@@ -297,27 +312,28 @@ class Brain:
             raw = await asyncio.wait_for(
                 self.client.complete(SYSTEM_PROMPT, _user_message(state, heard)), self.timeout_s
             )
-            data = json.loads(raw.strip().strip("`").removeprefix("json"))
-            say = str(data.get("say", "")).strip()
-            ask = data.get("ask_user")
-            done = bool(data.get("done", False))
-        except (TimeoutError, GroqError, ValueError, AttributeError) as exc:
+            turn = _LlmTurn.model_validate_json(raw.strip().strip("`").removeprefix("json"))
+        except (TimeoutError, GroqError, ValidationError) as exc:
             log.info("delegate: LLM unavailable (%s), using rules", type(exc).__name__)
             return fallback
-        reasons = check_line(say, state.brief, state.transcript_text() + " " + heard)
+        transcript = state.transcript_text() + " " + heard
+        if turn.ask_user is not None:
+            if not state.attended:
+                return Decision(CALLBACK_LINE, done=True, source="llm")
+            # The agent says PAUSE_LINE whatever "say" held; what gets spoken later are the
+            # options, which repeat the proposal back, so the proposal is what is checked.
+            proposal = (turn.ask_user.proposal or "").strip() or _proposal_in(heard) or "that"
+            reasons = check_line(proposal, state.brief, transcript)
+            if reasons:
+                log.info("delegate: LLM proposal rejected (%s), using rules", "; ".join(reasons))
+                return fallback
+            question = (turn.ask_user.question or "").strip() or heard.strip()
+            return Decision(PAUSE_LINE, ask=(question, _options_for(proposal)), source="llm")
+        reasons = check_line(turn.say, state.brief, transcript)
         if reasons:
             log.info("delegate: LLM line rejected (%s), using rules", "; ".join(reasons))
             return fallback
-        if ask and state.attended:
-            proposal = str(ask.get("proposal") or _proposal_in(heard) or "that")
-            return Decision(
-                PAUSE_LINE,
-                ask=(str(ask.get("question") or heard), _options_for(proposal)),
-                source="llm",
-            )
-        if ask and not state.attended:
-            return Decision(CALLBACK_LINE, done=True, source="llm")
-        return Decision(say, done=done, source="llm")
+        return Decision(turn.say.strip(), done=turn.done, source="llm")
 
 
 def build_brain(settings) -> Brain:  # noqa: ANN001  (Settings; avoids an import cycle with config)

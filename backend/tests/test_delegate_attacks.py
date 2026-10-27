@@ -471,3 +471,42 @@ def test_two_simultaneous_starts_with_one_brief_dial_once(flow) -> None:
     results = f.client.portal.call(both)
     assert len(f.bolna.started) == 1
     assert sum(isinstance(r, Exception) for r in results) == 1
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "not json at all",
+        "[]",
+        "null",
+        '"just a string"',
+        llm("Okay.", ask="yes"),  # type: ignore[arg-type]
+        llm("Okay.", ask=True),  # type: ignore[arg-type]
+        json.dumps({"ask_user": None}),
+    ],
+)
+async def test_malformed_llm_output_falls_back_to_the_rules(raw: str) -> None:
+    brain = Brain(FakeGroq(raw))
+    decision = await brain.reply(state(), OFFER)
+    assert decision.source == "rules" and decision.say == PAUSE_LINE
+
+
+async def test_a_quoted_false_does_not_end_the_call() -> None:
+    raw = json.dumps({"say": "Could you tell me which mornings are free?", "done": "false"})
+    decision = await Brain(FakeGroq(raw)).reply(state(), "Let me check.")
+    assert decision.source == "llm" and decision.done is False
+
+
+async def test_an_llm_ask_with_a_heard_proposal_is_used() -> None:
+    raw = llm(PAUSE_LINE, {"question": "4 pm tomorrow?", "proposal": "4 pm tomorrow"})
+    decision = await Brain(FakeGroq(raw)).reply(state(), OFFER)
+    assert decision.source == "llm" and decision.say == PAUSE_LINE
+    assert decision.ask is not None and decision.ask[0] == "4 pm tomorrow?"
+    assert decision.ask[1][0].spoken == "Yes, 4 pm tomorrow works. Thank you."
+
+
+async def test_an_llm_ask_with_an_invented_proposal_uses_the_rule_options() -> None:
+    raw = llm(PAUSE_LINE, {"question": OFFER, "proposal": "3 pm on Thursday"})
+    decision = await Brain(FakeGroq(raw)).reply(state(), OFFER)
+    assert decision.ask is not None
+    assert decision.ask[1][0].spoken == "Yes, 4 pm tomorrow works. Thank you."
