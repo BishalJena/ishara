@@ -339,11 +339,16 @@ def test_attended_call_speaks_the_brief_then_asks_the_user_and_speaks_the_answer
         f.live(call_id)
         f.drain_until(ws, "caption")  # the disclosure
 
-        said = f.listen_turn(call_id, "Hello, City Clinic, how can I help?")
-        assert (
-            said == "I'd like to book a doctor's appointment for Asha Rao, tomorrow in the morning."
-        )
+        # The opening is already on its way to the speak node, so the listen node waits.
+        assert f.listen_turn(call_id, "Hello, City Clinic, how can I help?") == ""
         assert f.drain_until(ws, "caption")["text"] == "Hello, City Clinic, how can I help?"
+        opening = "I'd like to book a doctor's appointment for Asha Rao, tomorrow in the morning."
+        assert f.speak_last(call_id) == opening
+        assert f.bolna.replies()[0]["turn_id"] == "delegate-open"
+
+        said = f.listen_turn(call_id, "Sorry, what was that?")
+        assert said == opening
+        assert f.drain_until(ws, "caption")["text"] == "Sorry, what was that?"
         agent = f.drain_until(ws, "caption")
         assert agent["speaker"] == "agent" and agent["text"] == said
 
@@ -379,6 +384,7 @@ def test_settled_call_says_and_asks_nothing_new_before_hanging_up(flow) -> None:
     with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
         assert f.receive(ws)["type"] == "status"
         f.live(call_id)
+        f.speak_last(call_id)  # Bolna says the opening
         f.listen_turn(call_id, "We have 4 pm tomorrow. Does that work?")
         ask = f.drain_until(ws, "ask")
         ws.send_json({"type": "answer", "ask_id": ask["ask_id"], "choice": "yes"})
@@ -399,6 +405,7 @@ def test_unattended_call_never_asks_and_hangs_up_after_the_callback_line(flow) -
     with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
         assert f.receive(ws)["type"] == "status"
         f.live(call_id)
+        f.speak_last(call_id)  # Bolna says the opening
         said = f.listen_turn(call_id, "We only have Thursday at 4 pm. Does that work?")
         assert said == CALLBACK_LINE
         # No ask reaches the app; the call ends on its own shortly after.
@@ -419,6 +426,7 @@ def test_unanswered_ask_times_out_to_the_callback_line(flow) -> None:
     with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
         assert f.receive(ws)["type"] == "status"
         f.live(call_id)
+        f.speak_last(call_id)  # Bolna says the opening
         f.listen_turn(call_id, "We have 4 pm tomorrow, does that work?")
         f.drain_until(ws, "ask")
         resolved = f.drain_until(ws, "ask_resolved")
@@ -464,6 +472,7 @@ def test_user_reply_events_carry_only_text_and_turn(flow) -> None:
     with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
         f.receive(ws)
         f.live(call_id)
+        f.speak_last(call_id)  # Bolna says the opening
         f.listen_turn(call_id, "Is 4 pm tomorrow ok?")
         ask = f.drain_until(ws, "ask")
         ws.send_json({"type": "answer", "ask_id": ask["ask_id"], "choice": "no"})

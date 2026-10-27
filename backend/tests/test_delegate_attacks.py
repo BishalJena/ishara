@@ -680,3 +680,25 @@ def test_a_call_that_ends_while_the_llm_thinks_says_and_asks_nothing(flow) -> No
         assert f.client.portal.call(hang_up_mid_thought) is None
         assert "ask" not in [m["type"] for m in quiet(f, ws)]
     assert PAUSE_LINE not in [e["text"] for e in notes(f, call_id)["transcript"]]
+
+
+def test_listen_stays_silent_while_the_opening_waits_to_be_spoken(flow) -> None:
+    f = flow()
+    call_id = f.start(f.brief(), attended=True)
+    f.live(call_id)
+    wait_for(lambda: bool(f.bolna.replies()))
+    # The receptionist talks before Bolna has said the injected opening (ledger B24).
+    assert f.listen_turn(call_id, "Hello, City Clinic, how can I help?") == ""
+    assert f.speak_last(call_id) == OPENING
+    assert f.listen_turn(call_id, OFFER) == PAUSE_LINE
+    assert spoken_texts(f) == [OPENING]
+
+
+def test_a_caption_before_the_answered_webhook_opens_the_call_once(flow) -> None:
+    f = flow()
+    call_id = f.start(f.brief(), attended=True)
+    # No `in-progress` webhook yet: the first caption is what proves the line is live.
+    said = f.listen_turn(call_id, "Hello, City Clinic.")
+    wait_for(lambda: bool(f.bolna.replies()))
+    openings = [said, *spoken_texts(f)].count(OPENING)
+    assert openings == 1, (said, spoken_texts(f))

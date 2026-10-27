@@ -352,6 +352,10 @@ class CallManager(CallLedger):
             # The brief is settled and the agent is about to hang up: nothing new is said,
             # agreed or asked (a different time offered now would otherwise open a second ask).
             return None
+        if session.in_flight is not None:
+            # A delegated line (the opening, the user's answer) is on its way to Bolna's
+            # speak node; a line from here too would be said twice or over it (B24).
+            return None
         if delegate.deciding:
             # Bolna sent another receptionist turn while the brain (Groq) still thinks
             # about the last one: one decision at a time, so one line and at most one ask.
@@ -555,15 +559,14 @@ class CallManager(CallLedger):
             delegate = session.delegate
             if isinstance(delegate, DelegateState) and not delegate.opened:
                 # D9: the agent states the brief's request right after the disclosure
-                # instead of waiting for the receptionist to speak first.
-                self._spawn(self._open_delegate(session, delegate))
+                # instead of waiting for the receptionist to speak first. Awaited, not
+                # spawned: when a caption made the line live, the listen request that
+                # carried it must already see the opening in flight.
+                opening = self._brain.rules.opening(delegate)
+                delegate.opened = True
+                delegate.exchanges.append(Exchange("", opening))
+                await self._speak_line(session, opening, "delegate-open")
         return True
-
-    async def _open_delegate(self, session: CallSession, delegate: DelegateState) -> None:
-        opening = self._brain.rules.opening(delegate)
-        delegate.opened = True
-        delegate.exchanges.append(Exchange("", opening))
-        await self._speak_line(session, opening, "delegate-open")
 
     async def _send_agent_line(self, session: CallSession, text: str) -> None:
         await self._send(session, CaptionMessage(text=text, at=time.time(), speaker="agent"))
