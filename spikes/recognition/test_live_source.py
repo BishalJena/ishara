@@ -9,8 +9,10 @@ import subprocess
 import sys
 import unittest
 from contextlib import redirect_stderr
+from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 import numpy as np
 
@@ -537,6 +539,38 @@ class BridgeBoundary(unittest.TestCase):
         self.assertEqual(json.loads(lines[0])["segment"], [1.8, 3.0])
 
 
+class Playlist(unittest.TestCase):
+    CLIPS = (("a", ((0.0, "a0"), (0.5, "a1"), (1.0, "a2"))), ("one", ((0.0, "o0"),)), ("b", ((0.0, "b0"), (0.5, "b1"))))
+
+    def play(self, realtime, clock):
+        sleeps = []
+
+        def sleep(seconds):
+            sleeps.append(round(seconds, 6))
+            clock.now += seconds
+
+        clips = dict(self.CLIPS)
+        images = list(ls.playlist_images([Path(name) for name in clips], realtime,
+                                         read=lambda path: iter(clips[path.name]), clock=clock, sleep=sleep))
+        return images, sleeps
+
+    def test_clips_continue_one_clock_one_frame_after_the_last(self):
+        clock = Clock()
+        clock.now = 100.0
+        images, sleeps = self.play(False, clock)
+        self.assertEqual([(t, image) for t, _, image in images],
+                         [(0.0, "a0"), (0.5, "a1"), (1.0, "a2"), (1.5, "o0"),
+                          (1.5 + ls.FALLBACK_FRAME_S, "b0"), (2.0 + ls.FALLBACK_FRAME_S, "b1")])
+        self.assertEqual((sleeps, {wall for _, wall, _ in images}), ([], {100.0}))
+
+    def test_realtime_waits_for_each_frame_on_the_wall_clock(self):
+        clock = Clock()
+        clock.now = 100.0
+        images, sleeps = self.play(True, clock)
+        self.assertEqual([round(wall - 100.0, 6) for _, wall, _ in images], [round(t, 6) for t, _, _ in images])
+        self.assertEqual(len(sleeps), 5)  # every frame after the first waited its turn
+
+
 class CommandLine(unittest.TestCase):
     def test_noise_on_stdout_cannot_corrupt_result_lines(self):
         code = ("import os, live_source\n"
@@ -555,6 +589,68 @@ class CommandLine(unittest.TestCase):
             for argv in (["--replay-videos", directory], ["--replay-videos", f"{directory}/missing"],
                          ["--camera", "0", "--rest-y", "1.2"],
                          ["--camera", "0", "--replay-videos", directory], []):
+                with self.subTest(argv=argv), redirect_stderr(io.StringIO()), \
+                        self.assertRaises(SystemExit) as raised:
+                    ls.main(argv)
+                self.assertEqual(raised.exception.code, 2)
+
+    @staticmethod
+    def fake_videos(clips):
+        """read_video and track stand-ins: each "image" is a scripted detector frame."""
+        by_image = {}
+
+        def read(path):
+            for frame in clips[path.name]:
+                by_image[id(frame)] = frame
+                yield frame.t, frame
+
+        def tracker(images, keep_image):
+            for index, (t, wall, frame) in enumerate(images):
+                yield ls.Observation(wall, replace(by_image[id(frame)], t=t), index)
+
+        return read, tracker
+
+    def run_video(self, clips):
+        """live_source.py --video over fake clips: (result lines, stderr)."""
+        read, tracker = self.fake_videos(clips)
+        results = io.StringIO()
+        with TemporaryDirectory() as directory:
+            paths = [Path(directory, name) for name in clips]
+            for path in paths:
+                path.write_bytes(b"")
+            with patch.object(ls, "read_video", read), patch.object(ls, "track", tracker), \
+                    patch.object(ls, "result_stream", lambda: results), redirect_stderr(io.StringIO()) as err:
+                ls.main(["--video", *map(str, paths), "--no-preview", "--fast",
+                         "--bundle", str(Path(directory, "no-bundle.json"))])
+        return [json.loads(line) for line in results.getvalue().splitlines()], err.getvalue()
+
+    def test_video_clips_play_as_one_camera_with_one_calibration(self):
+        # Public per-word clips have no 2 s rest of their own: --replay-videos calibrates
+        # each clip on its first 2 s and finds no sign, --video calibrates once on the rest clip.
+        clips = {"rest.mp4": Script().hold(2.1).frames,
+                 "doctor.mp4": Script().hold(0.3).hold(1.0, UP_Y).hold(0.6).frames}
+        read, tracker = self.fake_videos(clips)
+        replays = ls.replay_clips([Path(name) for name in clips], realtime=False, keep_image=False,
+                                  tracker=tracker)
+        with patch.object(ls, "read_video", read), redirect_stderr(io.StringIO()):
+            self.assertEqual(list(ls.LiveSource(replays, None, out=lambda line: None)), [])
+
+        [result], err = self.run_video(clips)
+        self.assertEqual(result["segment"], [2.2, 3.4])  # hands up 0.3 s into the second clip
+        self.assertEqual(err.count("rest line y="), 1)
+
+    def test_video_asks_for_a_new_rest_like_the_camera(self):
+        clips = {"away.mp4": Script().hold(2.1, body=False).frames, "rest.mp4": Script().hold(2.1).frames,
+                 "doctor.mp4": Script().hold(0.3).hold(1.0, UP_Y).hold(0.6).frames}
+        [result], err = self.run_video(clips)
+        self.assertEqual(result["segment"], [4.3, 5.5])
+        self.assertIn("Calibration cant_see", err)
+
+    def test_video_needs_existing_clips(self):
+        with TemporaryDirectory() as directory:
+            Path(directory, "notes.txt").write_text("not a clip")
+            for argv in (["--video"], ["--video", f"{directory}/notes.txt"], ["--video", f"{directory}/missing.mp4"],
+                         ["--camera", "0", "--video", f"{directory}/notes.txt"]):
                 with self.subTest(argv=argv), redirect_stderr(io.StringIO()), \
                         self.assertRaises(SystemExit) as raised:
                     ls.main(argv)
