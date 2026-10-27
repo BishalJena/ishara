@@ -444,3 +444,30 @@ def test_ending_the_call_during_an_ask_cancels_its_timer_and_says_nothing(flow, 
         assert f.drain_until(ws, "error")["code"] == "unknown_ask"
         assert f.listen_turn(call_id, "Hello? 5 pm then?") == ""
     assert spoken_texts(f) == [OPENING]
+
+
+def test_a_brief_approves_one_call_only(flow) -> None:
+    f = flow()
+    brief_id = f.brief()
+    assert f.client.post("/calls", json=delegated(brief_id), headers=AUTH).status_code == 200
+    assert f.client.post("/calls", json=delegated(brief_id), headers=AUTH).status_code == 404
+    assert len(f.bolna.started) == 1
+
+
+def test_two_simultaneous_starts_with_one_brief_dial_once(flow) -> None:
+    from app.protocol import StartCallRequest
+
+    f = flow()
+    brief_id = f.brief()
+    request = StartCallRequest(**delegated(brief_id))
+
+    async def both() -> list[object]:
+        return list(
+            await asyncio.gather(
+                f.manager.start_call(request), f.manager.start_call(request), return_exceptions=True
+            )
+        )
+
+    results = f.client.portal.call(both)
+    assert len(f.bolna.started) == 1
+    assert sum(isinstance(r, Exception) for r in results) == 1

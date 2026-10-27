@@ -179,8 +179,11 @@ class CallManager(CallLedger):
         if number is None:
             raise UnknownContact(request.contact_id)
         delegate = None
+        brief = None
         if request.mode == "delegated":
-            brief = self._briefs.get(request.brief_id or "")
+            # Starting the call is the brief's one approval: it is used up here, before
+            # the dial is awaited, so a second request with the same id can't dial too.
+            brief = self._briefs.pop(request.brief_id or "", None)
             if brief is None:
                 raise UnknownBrief(request.brief_id)
             delegate = DelegateState(brief_from(*brief), attended=request.attended)
@@ -193,6 +196,8 @@ class CallManager(CallLedger):
             run_id = await self._bolna.start_call(number, user_data)
         except BolnaError as error:
             session.advance(CallState.ERROR)
+            if brief is not None and request.brief_id is not None:
+                self._briefs[request.brief_id] = brief  # nothing was dialled
             log.warning("call %s: Bolna start failed (%s)", session.call_id, type(error).__name__)
             raise CallStartFailed from error
         session.run_id = run_id
