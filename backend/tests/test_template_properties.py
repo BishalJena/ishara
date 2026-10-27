@@ -119,7 +119,7 @@ def test_every_combination_of_the_rehearsed_words_passes_in_full() -> None:
 @pytest.mark.xfail(
     strict=True,
     reason=(
-        "Open question: with 6-8 chips that include several ASL plain-phrase signs the "
+        "Issue #62: with 6-8 chips that include several ASL plain-phrase signs the "
         "template runs past the validator's 25-word limit (e.g. can, callonphone, who, see, "
         "have, finish, drink, morning -> 41 words). Shortening the phrases changes live-mode "
         "wording mirrored in ios/Ishara/Call/DemoScript.swift."
