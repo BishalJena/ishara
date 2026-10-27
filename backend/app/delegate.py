@@ -83,15 +83,31 @@ _PROPOSAL = re.compile(
 _QUESTION = re.compile(
     r"\?\s*$|\b(does that work|is that (ok|okay|fine)|would that (work|suit))\b", re.I
 )
-_BOOKED = re.compile(r"\b(booked|confirmed|reserved|scheduled|all set|you're set)\b", re.I)
+_BOOKED = re.compile(r"\b(booked|confirmed|reserved|scheduled|all set|you're set)\b")
 # Accepting an offer is the user's decision (an attended answer), never the agent's.
 _COMMITMENT = re.compile(
     r"\b(i'll|we'll|i will|we will) take\b|\bbook (it|that|me|her|him|them)\b|\bplease book\b"
     r"|\bgo ahead\b|\bthat's (fine|good|great|perfect|ok|okay)\b"
 )
 _NO_SLOT = re.compile(
-    r"\b(no (slots?|appointments?|availability)|fully booked|nothing (free|available))\b", re.I
+    r"\b(no (slots?|appointments?|availability)|(fully|all) booked|booked (up|out|solid)"
+    r"|nothing (free|available|left)|not available|unavailable"
+    r"|(can't|cannot|can not|unable to) (do|fit|offer|book|give|see|manage))\b"
 )
+# "That isn't confirmed yet", "not booked": a booking word that denies the booking.
+_NOT_BOOKED = re.compile(
+    r"(\b(not|never)\b|n't\b)[^.?!]{0,20}?\b(booked|confirmed|reserved|scheduled)\b"
+)
+
+
+def _confirms(text: str) -> bool:
+    """The receptionist says it is booked ("fully booked" and "not confirmed" are not)."""
+    words = _NOT_BOOKED.sub(" ", _NO_SLOT.sub(" ", _normalise(text)))
+    return _BOOKED.search(words) is not None
+
+
+def _declines(text: str) -> bool:
+    return _NO_SLOT.search(_normalise(text)) is not None
 
 
 # ---- the brief ----
@@ -244,14 +260,14 @@ class RuleBrain:
     def decide(self, state: DelegateState, heard: str) -> Decision:
         if not state.opened:
             return Decision(self.opening(state))
-        if _BOOKED.search(heard):
+        if _confirms(heard):
             return Decision(CLOSE_LINE, done=True)
         proposal = _proposal_in(heard)
         if proposal:
             if state.attended:
                 return Decision(PAUSE_LINE, ask=(heard.strip(), _options_for(proposal)))
             return Decision(CALLBACK_LINE, done=True)
-        if _NO_SLOT.search(heard):
+        if _declines(heard):
             return Decision(CALLBACK_LINE, done=True)
         if "name" in heard.lower():
             return Decision(f"The name is {state.brief.name}.")
@@ -363,13 +379,14 @@ def outcome_of(entries: list[TranscriptEntry], answers: list[str]) -> str:
     agent = " ".join(e.text for e in entries if e.speaker == "agent")
     if not receptionist:
         return "no_answer"
-    if _BOOKED.search(receptionist) or any(a.startswith("Yes") for a in answers):
+    if _confirms(receptionist) or any(a.startswith("Yes") for a in answers):
         return "booked" if not any(a.startswith("No") for a in answers[-1:]) else "unclear"
-    if CALLBACK_LINE in agent:
-        return "callback"
-    if _NO_SLOT.search(receptionist) or any(a.startswith("No") for a in answers):
+    promised_callback = CALLBACK_LINE in agent
+    if promised_callback and _PROPOSAL.search(receptionist):
+        return "callback"  # an offer is still waiting for the user's decision
+    if _declines(receptionist) or any(a.startswith("No") for a in answers):
         return "declined"
-    return "unclear"
+    return "callback" if promised_callback else "unclear"
 
 
 def build_notes(
@@ -390,9 +407,7 @@ def build_notes(
         summary.append(f'They offered: "{offer.strip()}"')
     for answer in answers:
         summary.append(f'You answered: "{answer}"')
-    confirmations = [
-        e.text for e in entries if e.speaker == "receptionist" and _BOOKED.search(e.text)
-    ]
+    confirmations = [e.text for e in entries if e.speaker == "receptionist" and _confirms(e.text)]
     for line in confirmations[:2]:
         summary.append(f'They confirmed: "{line.strip()}"')
     outcome = outcome_of(entries, answers) if ready else None

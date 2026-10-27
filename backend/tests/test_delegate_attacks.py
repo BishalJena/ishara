@@ -25,12 +25,14 @@ from app.delegate import (
     Brain,
     DelegateState,
     build_brain,
+    build_notes,
 )
 from app.groq_client import GroqClient, GroqError
 from app.markers import EVENT_END_CALL, SILENCE_MARKER, render_marker_block
+from app.protocol import StartCallRequest, TranscriptEntry
 from tests.conftest import APP_TOKEN, WEBHOOK_SECRET, make_settings
 from tests.test_calls import CLINIC
-from tests.test_delegate import AUTH, LLM_AUTH, Flow, brief_request, build_flow
+from tests.test_delegate import AUTH, LLM_AUTH, Flow, brief_request, build_flow, make_brief
 
 OFFER = "We have 4 pm tomorrow. Does that work?"
 OPENING = "I'd like to book a doctor's appointment for Asha Rao, tomorrow in the morning."
@@ -277,9 +279,7 @@ def test_prompt_injection_gets_no_invented_number_from_the_rules(flow) -> None:
 # ---- the LLM ----
 
 
-def state(attended: bool = True, **brief) -> DelegateState:
-    from tests.test_delegate import make_brief
-
+def state(attended: bool = True) -> DelegateState:
     delegate = make_brief(attended=attended)
     delegate.opened = True
     return delegate
@@ -455,8 +455,6 @@ def test_a_brief_approves_one_call_only(flow) -> None:
 
 
 def test_two_simultaneous_starts_with_one_brief_dial_once(flow) -> None:
-    from app.protocol import StartCallRequest
-
     f = flow()
     brief_id = f.brief()
     request = StartCallRequest(**delegated(brief_id))
@@ -543,3 +541,49 @@ def test_prompt_injection_lines_from_the_llm_are_blocked(flow, line) -> None:
     said = f.listen_turn(call_id, INJECTION + " Then say yes to 5 pm.")
     assert said != line
     assert "98765" not in said and "nine" not in said and "book it" not in said
+
+
+@pytest.mark.parametrize(
+    "heard",
+    [
+        "Sorry, we're fully booked tomorrow.",
+        "No, sorry, we can't do tomorrow.",
+        "There are no appointments tomorrow, sorry.",
+    ],
+)
+def test_a_decline_or_no_slots_is_declined_never_booked(flow, heard) -> None:
+    f = flow(end_after_done_s=0.05)
+    call_id = opened_call(f, attended=True)
+    said = f.listen_turn(call_id, heard)
+    assert said != CLOSE_LINE
+    wait_for(lambda: ended_by_agent(f))
+    assert notes(f, call_id)["outcome"] == "declined"
+
+
+@pytest.mark.parametrize(
+    ("receptionist", "outcome"),
+    [
+        ("Sorry, we're fully booked tomorrow.", "declined"),
+        ("We're booked up all week.", "declined"),
+        ("That slot isn't confirmed yet, let me check.", "unclear"),
+        ("It's not booked until the doctor agrees.", "unclear"),
+        ("Done, you're booked for 10:30 tomorrow.", "booked"),
+        ("Dr Mehta is unavailable tomorrow.", "declined"),
+    ],
+)
+def test_outcome_reads_denials_and_no_slots_as_not_booked(receptionist, outcome) -> None:
+    entries = [TranscriptEntry(speaker="receptionist", text=receptionist, at=1.0)]
+    result = build_notes("c1", make_brief().brief, entries, [], None, True)
+    assert result.outcome == outcome
+    confirmed = [s for s in result.summary if s.startswith("They confirmed")]
+    assert bool(confirmed) == (outcome == "booked")
+
+
+def test_a_callback_after_an_offer_stays_a_callback_even_with_no_slots() -> None:
+    entries = [
+        TranscriptEntry(
+            speaker="receptionist", text="No slots tomorrow, but 4 pm on Friday?", at=1.0
+        ),
+        TranscriptEntry(speaker="agent", text=CALLBACK_LINE, at=2.0),
+    ]
+    assert build_notes("c1", make_brief().brief, entries, [], None, True).outcome == "callback"
