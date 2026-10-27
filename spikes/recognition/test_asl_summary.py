@@ -2,6 +2,8 @@
 threshold suggestions behave on hand-made attempts. No model or MediaPipe needed."""
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import tempfile
 import unittest
@@ -146,6 +148,39 @@ class Combine(unittest.TestCase):
         table = s.combined_markdown(s.combine(runs, self.rule))
         row = next(line for line in table.splitlines() if line.startswith("| yes "))
         self.assertEqual(row, "| yes | 2 | 1+0/2 fail | 1+1/2 pass |")
+
+
+class VocabularyWhatIf(unittest.TestCase):
+    """--vocabulary: the same runs judged as if the bundle chipped only these glosses."""
+
+    def run_main(self, tmp: Path, *extra: str) -> dict:
+        yes_as_can = [s.Attempt("yes", (("can", 0.7), ("yes", 0.2)), dict(GOOD), "yes_1.mp4"),
+                      s.Attempt("yes", (("yes", 0.9), ("no", 0.05)), dict(GOOD), "yes_2.mp4")]
+        run = tmp / "run.json"
+        run.write_text(json.dumps({"source": "Mac", "attempts": s.attempts_json(yes_as_can)}))
+        out = tmp / "combined.json"
+        with contextlib.redirect_stdout(io.StringIO()):
+            s.main(["--combine", str(run), "--json", str(out), *extra])
+        return json.loads(out.read_text())
+
+    def test_a_gloss_left_out_of_the_vocabulary_can_no_longer_chip(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            shipped = self.run_main(Path(tmp))
+            narrowed = self.run_main(Path(tmp), "--vocabulary", "yes,no,thankyou")
+        self.assertEqual(shipped["runs"]["Mac"]["rows"]["yes"]["wrong_chip"], 1, "can is in the shipped vocabulary")
+        self.assertEqual(narrowed["runs"]["Mac"]["rows"]["yes"]["wrong_chip"], 0)
+        self.assertEqual(narrowed["runs"]["Mac"]["rows"]["yes"]["chip"], 1)
+
+    def test_the_candidate_bundle_carries_the_narrowed_vocabulary(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = Path(tmp) / "candidate.json"
+            self.run_main(Path(tmp), "--vocabulary", "yes,no", "--write-bundle", str(bundle), "--provisional")
+            self.assertEqual(load_asl_bundle(bundle).vocabulary, frozenset({"yes", "no"}))
+
+    def test_a_gloss_the_model_lacks_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp, self.assertRaises(SystemExit) as refused:
+            self.run_main(Path(tmp), "--vocabulary", "yes,doctor")
+        self.assertIn("doctor", str(refused.exception))
 
 
 class Labels(unittest.TestCase):

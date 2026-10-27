@@ -310,6 +310,8 @@ def main(argv: Iterable[str] | None = None) -> int:
     source.add_argument("--combine", type=Path, nargs="+", metavar="JSON",
                         help="runs saved with --json (e.g. Mac and app path, landscape and portrait), judged together")
     parser.add_argument("--name", help="the run's name in --json (default: the source)")
+    parser.add_argument("--vocabulary", help="comma-separated glosses: judge as if the bundle chipped only these "
+                                             "(a what-if; --write-bundle then carries this vocabulary)")
     parser.add_argument("--bundle", type=Path, default=DEFAULT_BUNDLE)
     parser.add_argument("--markdown", type=Path)
     parser.add_argument("--json", type=Path)
@@ -321,6 +323,12 @@ def main(argv: Iterable[str] | None = None) -> int:
     args = parser.parse_args(list(argv) if argv is not None else None)
 
     document = json.loads(args.bundle.read_text())
+    if args.vocabulary:
+        words = sorted({w.strip() for w in args.vocabulary.split(",") if w.strip()})
+        unknown = [w for w in words if w not in document["glosses"]]
+        if unknown:
+            raise SystemExit(f"not among the model's glosses: {', '.join(unknown)}")
+        document = {**document, "vocabulary": words}
     rule = Rule.from_bundle(document)
     if args.combine:
         runs = dict(from_json(path) for path in args.combine)
