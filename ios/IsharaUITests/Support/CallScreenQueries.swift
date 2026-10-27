@@ -2,10 +2,13 @@ import XCTest
 
 /// Lookups and waits shared by the call UI tests.
 extension XCUIApplication {
-    /// Several caption rows share an identifier; the newest one is last.
+    /// Several caption rows share an identifier; the newest one is last. Images are skipped:
+    /// an identifier on a SwiftUI `Label` that isn't one accessibility element lands on its
+    /// icon too, last, with the symbol's name ("Selected") as its label.
     func element(_ identifier: String) -> XCUIElement {
-        descendants(matching: .any).matching(identifier: identifier).allElementsBoundByIndex.last
-            ?? descendants(matching: .any)[identifier]
+        let matches = descendants(matching: .any).matching(identifier: identifier)
+            .matching(NSPredicate(format: "elementType != %d", XCUIElement.ElementType.image.rawValue))
+        return matches.allElementsBoundByIndex.last ?? matches.firstMatch
     }
 
     /// Home → Get ready → Start call. Checks both screens say the call comes from
