@@ -1173,10 +1173,11 @@ class ClipDrivenFallback(unittest.TestCase):
     def test_attended_call_for_me_is_answered_by_the_yes_clip(self):
         # Clips can't wait for the question the way a signer does, and the recognizer's
         # start-up took 2-15 s here, so the test plays the receptionist (sign_lab's manual
-        # mode) and offers the slot once the recognizer is calibrated: the yes clip then comes
-        # about 4 s into the agent's 10 s wait. The answer itself comes only from recognition.
+        # mode) and offers the slot once the recognizer is calibrated. The yes sign is then
+        # about 50 frames away: 1.7 s at real time, 5.5 s when a busy Mac tracks 3x slower
+        # (seen), both inside the agent's 10 s wait. The answer comes only from recognition.
         backend = ("scripts.sign_lab", "--receptionist", "manual", "--delay", "0.3")
-        with LocalCall(self, "attended", backend, ("rest", "rest", "yes", "rest"),
+        with LocalCall(self, "attended", backend, ("rest", "yes", "rest"),
                        "--delegated", "--attended", "--name", "Asha") as call:
             call_id = call.wait_for(call_id_of, 120, "connection to the call")
             call.wait_for(lambda e: first([m for m in messages(e, "backend", "spoken")
