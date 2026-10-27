@@ -12,6 +12,7 @@ import Observation
 @Observable
 final class ScriptedRecognitionController: RecognitionController {
     nonisolated static let unsureOption = "?"
+    nonisolated static let framingOption = "frame"
 
     let getReady = GetReadyModel()
     let failure: String? = nil
@@ -27,11 +28,18 @@ final class ScriptedRecognitionController: RecognitionController {
 
     /// - Parameters:
     ///   - script: results played in order, about 2 s apart, once signing starts.
-    ///   - offersReplay: list every sign and "?" in the simulator's replay menu.
+    ///   - offersReplay: list every sign, "?", "frame" and a "did you mean" candidate for each
+    ///     rehearsed sign in the simulator's replay menu.
     init(script: [RecognitionResult] = [], offersReplay: Bool = false, timeScale: Double = 1) {
         self.script = script
         self.timeScale = timeScale
-        replayOptions = offersReplay ? Sign.allCases.map(\.rawValue) + [Self.unsureOption] : []
+        replayOptions = offersReplay ? Self.allReplayOptions : []
+    }
+
+    /// "?" and "frame" first: a long menu scrolls, and those are the ones a test of the
+    /// safety rules needs.
+    static var allReplayOptions: [String] {
+        [unsureOption, framingOption] + Sign.allCases.map(\.rawValue) + Sign.rehearsed.map { "\($0.rawValue)?" }
     }
 
     func start() {
@@ -58,11 +66,7 @@ final class ScriptedRecognitionController: RecognitionController {
     }
 
     func replay(_ option: String) {
-        if option == Self.unsureOption {
-            sign(.unsure)
-        } else if let sign = Sign(rawValue: option) {
-            self.sign(.sign(sign))
-        }
+        if let result = RecognitionResult(replayOption: option) { sign(result) }
     }
 
     /// Shows the yellow pill, then the result, then green again.

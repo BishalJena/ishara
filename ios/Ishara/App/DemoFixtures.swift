@@ -18,6 +18,8 @@ final class FixtureCallDriver: CallDriver {
 
     func start(_ setup: CallSetup) async throws -> TurnStore { store }
     func close() {}
+    func createBrief(_ request: BriefRequest) async throws -> Brief { DelegatedDemo.brief(for: request) }
+    func notes() async throws -> CallNotes { throw CallDriverError.noCall }
 }
 
 extension DemoFixture {

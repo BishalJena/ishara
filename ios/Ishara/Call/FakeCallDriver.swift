@@ -28,6 +28,13 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     private var tasks: [Task<Void, Never>] = []
     private var isOver = false
 
+    // Delegated call (D9), played from `DelegatedDemo`.
+    private var setup: CallSetup?
+    private var transcript: [TranscriptEntry] = []
+    private var answers: [String] = []
+    private var openAskID: String?
+    private var askTimer: Task<Void, Never>?
+
     /// The fake call never drops its connection, so this never runs.
     var onReconnectStopped: ((ReconnectStop) -> Void)?
 
@@ -46,6 +53,11 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     func start(_ setup: CallSetup) async throws -> TurnStore {
         let store = TurnStore(sink: self, initialState: .dialing)
         self.store = store
+        self.setup = setup
+        if let delegation = setup.delegation {
+            playDelegated(setup, delegation)
+            return store
+        }
         schedule(after: 1) { $0.deliver(.status(.ringing)) }
         schedule(after: 2.5) { driver in
             driver.deliver(.status(.inCall))
@@ -58,6 +70,20 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
 
     func close() {
         finish()
+    }
+
+    func createBrief(_ request: BriefRequest) async throws -> Brief {
+        DelegatedDemo.brief(for: request)
+    }
+
+    func notes() async throws -> CallNotes {
+        guard let setup else { throw CallDriverError.noCall }
+        guard let delegation = setup.delegation else {
+            return CallNotes(callID: "demo-call", mode: .live, ready: isOver, transcript: transcript)
+        }
+        return DelegatedDemo.notes(
+            goal: delegation.brief.goal, name: setup.details.name, brief: delegation.brief.text,
+            transcript: transcript, answers: answers, ready: isOver)
     }
 
     // MARK: OutgoingMessageSink (what the backend would receive)
@@ -79,11 +105,10 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         case .end:
             // The agent says goodbye as it hangs up. The store ignores events once it has
             // ended, so the caption goes in now, while `end()` is still on its way.
-            deliver(.caption(text: DemoScript.goodbye, at: Date().timeIntervalSince1970, speaker: .agent))
+            say(.agent, DemoScript.goodbye)
             finish()
-        case .answer:
-            // The fake drives live calls only; delegated asks (D9) come from the real backend.
-            break
+        case let .answer(askID, choice):
+            answer(askID: askID, choice: choice)
         }
     }
 
@@ -136,6 +161,87 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
             schedule(after: at) { _ in recognition.sign(sign) }
             at += 2.2
         }
+    }
+
+    // MARK: Delegated script (D9)
+
+    /// Disclosure, the agent's opening from the brief, then the receptionist offers a slot.
+    /// Attended: the agent pauses and asks the user; unattended: it promises a callback.
+    private func playDelegated(_ setup: CallSetup, _ delegation: Delegation) {
+        let opening = DelegatedDemo.opening(
+            name: setup.details.name, goal: delegation.brief.goal,
+            when: delegation.brief.constraints.first { $0.hasPrefix("preferred time: ") }
+                .map { String($0.dropFirst("preferred time: ".count)) })
+        schedule(after: 1) { $0.deliver(.status(.ringing)) }
+        schedule(after: 2.5) { driver in
+            driver.deliver(.status(.inCall))
+            driver.say(.agent, DemoScript.disclosure)
+        }
+        schedule(after: 4.5) { $0.say(.agent, opening) }
+        schedule(after: 7) { driver in
+            driver.say(.receptionist, DelegatedDemo.offer)
+            guard delegation.attended else {
+                driver.say(.agent, DelegatedDemo.callbackLine)
+                driver.schedule(after: 2) { $0.hangUp() }
+                return
+            }
+            driver.say(.agent, DelegatedDemo.pauseLine)
+            driver.openAskID = "demo-ask"
+            driver.deliver(.ask(
+                askID: "demo-ask", question: DelegatedDemo.offer, options: DelegatedDemo.options,
+                fallback: DelegatedDemo.callbackLine, timeoutS: DelegatedDemo.askTimeout))
+            driver.startAskTimer()
+        }
+    }
+
+    private func answer(askID: String, choice: AskChoice) {
+        guard askID == openAskID, let spoken = DelegatedDemo.options.first(where: { $0.choice == choice })?.spoken else {
+            deliver(.error(code: "unknown_ask", message: "That question is no longer open."))
+            return
+        }
+        askTimer?.cancel()
+        guard choice != .wait else {
+            // Like the backend: the agent holds the line and the question stays open.
+            say(.agent, spoken)
+            startAskTimer()
+            return
+        }
+        resolveAsk(spoken: spoken, source: "user")
+        let reply = choice == .yes ? DelegatedDemo.confirmation : DelegatedDemo.declined
+        schedule(after: 2) { driver in
+            driver.say(.receptionist, reply)
+            driver.schedule(after: 1.5) { driver in
+                driver.say(.agent, DelegatedDemo.closeLine)
+                driver.hangUp()
+            }
+        }
+    }
+
+    private func startAskTimer() {
+        askTimer = schedule(after: DelegatedDemo.askTimeout) { driver in
+            driver.resolveAsk(spoken: DelegatedDemo.callbackLine, source: "timeout")
+            driver.schedule(after: 2) { $0.hangUp() }
+        }
+    }
+
+    private func resolveAsk(spoken: String, source: String) {
+        guard let askID = openAskID else { return }
+        openAskID = nil
+        answers.append(spoken)
+        transcript.append(TranscriptEntry(speaker: .agent, text: spoken, at: Date().timeIntervalSince1970))
+        deliver(.askResolved(askID: askID, spoken: spoken, source: source))
+    }
+
+    private func say(_ speaker: CaptionSpeaker, _ text: String) {
+        guard !isOver else { return }
+        let at = Date().timeIntervalSince1970
+        transcript.append(TranscriptEntry(speaker: speaker, text: text, at: at))
+        deliver(.caption(text: text, at: at, speaker: speaker))
+    }
+
+    private func hangUp() {
+        deliver(.status(.ended))
+        finish()
     }
 
     private func deliver(_ message: ServerMessage) {

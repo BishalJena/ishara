@@ -10,7 +10,7 @@ options:
   generateEmptyDirectories: false
 
 # Local Swift packages. SignPipelineMediaPipe pulls MediaPipe (pinned by revision);
-# the others have no dependencies.
+# SignPipelineLiteRT wraps a downloaded LiteRT binary; the others have no dependencies.
 packages:
   CallSession:
     path: Packages/CallSession
@@ -20,6 +20,10 @@ packages:
     path: Packages/SignPipeline
   SignPipelineMediaPipe:
     path: Packages/SignPipelineMediaPipe
+  # LiteRT (TensorFlow Lite) for the ASL Signs model; run
+  # Packages/SignPipelineLiteRT/Scripts/download_tflite_c.sh once before generating or opening.
+  SignPipelineLiteRT:
+    path: Packages/SignPipelineLiteRT
 
 settings:
   base:
@@ -56,6 +60,7 @@ targets:
       - package: RecognitionCore
       - package: SignPipeline
       - package: SignPipelineMediaPipe
+      - package: SignPipelineLiteRT
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.ishara.demo

@@ -14,7 +14,8 @@ struct DemoLaunchOptions {
     enum Recognition: String {
         /// Replays fixed results (the fake call's script, `-IsharaReplay`, or the replay menu).
         case scripted
-        /// MediaPipe + SignCLIP on the camera, or on saved videos in the simulator.
+        /// MediaPipe + the ASL Signs model (or SignCLIP) on the camera, or on saved videos
+        /// in the simulator.
         case pipeline
     }
 
@@ -52,13 +53,10 @@ struct DemoLaunchOptions {
         return options
     }
 
-    /// "hello, doctor, ?" → sign, sign, unsure. Unknown words are dropped.
+    /// "hello, doctor, ?, tomorrow?, frame" → sign, sign, unsure, candidate, hand left the
+    /// frame. Unknown words are dropped.
     static func parseReplay(_ text: String) -> [RecognitionResult] {
-        text.split(separator: ",").compactMap { item in
-            let word = item.trimmingCharacters(in: .whitespaces).lowercased()
-            if word == ScriptedRecognitionController.unsureOption { return .unsure }
-            return Sign(rawValue: word).map(RecognitionResult.sign)
-        }
+        text.split(separator: ",").compactMap { RecognitionResult(replayOption: String($0)) }
     }
 
     var fakeDriverOptions: FakeCallDriver.Options {

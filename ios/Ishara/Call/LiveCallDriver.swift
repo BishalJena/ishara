@@ -17,6 +17,8 @@ final class LiveCallDriver: CallDriver {
     private let sleep: @Sendable (Duration) async throws -> Void
     private let makeTurnID: () -> TurnID
     private var call: LiveCall?
+    /// Kept after `close()` so the notes of an ended call can still be fetched.
+    private var lastCallID: String?
     private var reconnectsUsed = 0
     private var reconnecting: Task<Void, Never>?
 
@@ -39,12 +41,20 @@ final class LiveCallDriver: CallDriver {
     }
 
     func start(_ setup: CallSetup) async throws -> TurnStore {
-        let call = try await LiveCall.start(
-            client: client, contactID: setup.contact.id, purpose: setup.purpose,
-            makeTurnID: makeTurnID)
+        let call = try await LiveCall.start(client: client, request: setup.startRequest, makeTurnID: makeTurnID)
         call.onConnectionLost = { [weak self] in self?.connectionLost() }
         self.call = call
+        lastCallID = call.callID
         return call.store
+    }
+
+    func createBrief(_ request: BriefRequest) async throws -> Brief {
+        try await client.createBrief(request)
+    }
+
+    func notes() async throws -> CallNotes {
+        guard let lastCallID else { throw CallDriverError.noCall }
+        return try await client.notes(callID: lastCallID)
     }
 
     func close() {

@@ -41,12 +41,30 @@ struct SavedDetails: Equatable, Sendable {
     var preferredTime: PreferredTime
 }
 
+/// Decision D9: the brief the user read and approved, and whether they stay on the call to
+/// answer the agent's yes/no/wait questions (attended) or leave it to the agent (unattended).
+struct Delegation: Equatable, Sendable {
+    let brief: Brief
+    let attended: Bool
+}
+
 /// Everything chosen on the Home screen before a call starts.
 struct CallSetup: Equatable, Sendable {
     var contact: Contact
     var purpose: CallPurpose
     var details: SavedDetails
     var voice: CallVoice
+    /// Set for a delegated call (D9); nil for a live call, where every sentence is approved.
+    var delegation: Delegation? = nil
+
+    /// The `POST /calls` body for this call. Starting a delegated call with its brief id is
+    /// the user's one approval of that brief.
+    var startRequest: StartCallRequest {
+        guard let delegation else { return StartCallRequest(contactID: contact.id, purpose: purpose) }
+        return StartCallRequest(
+            contactID: contact.id, purpose: purpose, mode: .delegated,
+            briefID: delegation.brief.briefID, attended: delegation.attended)
+    }
 }
 
 extension Contact {

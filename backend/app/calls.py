@@ -345,6 +345,10 @@ class CallManager(CallLedger):
         if delegate.pending_ask is not None:
             # The receptionist spoke while we wait for the user: hold the line, ask nothing new.
             return None
+        if delegate.outcome is not None:
+            # The brief is settled and the agent is about to hang up: nothing new is said,
+            # agreed or asked (a different time offered now would otherwise open a second ask).
+            return None
         decision = await self._brain.reply(delegate, heard)
         delegate.exchanges.append(Exchange(heard, decision.say))
         delegate.opened = True

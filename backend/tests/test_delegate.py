@@ -335,6 +335,26 @@ def test_attended_call_speaks_the_brief_then_asks_the_user_and_speaks_the_answer
     assert ("agent", PAUSE_LINE) in speakers
 
 
+def test_settled_call_says_and_asks_nothing_new_before_hanging_up(flow) -> None:
+    f = flow()
+    call_id = f.start(f.brief(), attended=True)
+    with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
+        assert f.receive(ws)["type"] == "status"
+        f.live(call_id)
+        f.listen_turn(call_id, "We have 4 pm tomorrow. Does that work?")
+        ask = f.drain_until(ws, "ask")
+        ws.send_json({"type": "answer", "ask_id": ask["ask_id"], "choice": "yes"})
+        f.drain_until(ws, "ask_resolved")
+
+        # Found by the local demo: the receptionist then offers another time.
+        assert f.listen_turn(call_id, "Yes, 10:30 tomorrow morning.") == ""
+        kinds = []
+        with contextlib.suppress(Exception):
+            for _ in range(6):
+                kinds.append(f.receive(ws, timeout=0.3)["type"])
+        assert "ask" not in kinds
+
+
 def test_unattended_call_never_asks_and_hangs_up_after_the_callback_line(flow) -> None:
     f = flow(end_after_done_s=0.05)
     call_id = f.start(f.brief(), attended=False)

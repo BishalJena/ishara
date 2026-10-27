@@ -1,11 +1,14 @@
 import SwiftUI
 
-/// Home → Get ready → Active call, following the workflow's four screens.
+/// Home → Get ready → Active call, following the workflow's four screens. "Call for me"
+/// (decision D9) goes Home → Get ready → Brief → Active call (delegated) → Notes.
 struct AppRootView: View {
     enum Route {
         case home
-        case getReady(any RecognitionController)
+        case getReady(any RecognitionController, delegated: Bool)
+        case brief(BriefModel)
         case activeCall(ActiveCallViewModel)
+        case notes(NotesModel)
     }
 
     @State private var route: Route
@@ -24,26 +27,61 @@ struct AppRootView: View {
                 HomeView(
                     setup: setup,
                     modeDescription: services.modeDescription,
-                    setupProblem: services.setupProblem
-                ) { chosen in
-                    setup = chosen
-                    route = .getReady(services.makeRecognition())
-                }
-            case .getReady(let recognition):
+                    setupProblem: services.setupProblem,
+                    onCall: { chosen in
+                        setup = chosen
+                        route = .getReady(services.makeRecognition(), delegated: false)
+                    },
+                    onCallForMe: { chosen in
+                        setup = chosen
+                        route = .getReady(services.makeRecognition(), delegated: true)
+                    }
+                )
+            case .getReady(let recognition, let delegated):
                 GetReadyView(
                     recognition: recognition,
                     modeDescription: services.modeDescription,
-                    onStart: { startCall(recognition: recognition) },
+                    startTitle: delegated ? "I'm ready, sign my request" : GetReadyView.callTitle,
+                    onStart: {
+                        if delegated {
+                            let driver = services.makeDriver(recognition: recognition)
+                            route = .brief(BriefModel(setup: setup, driver: driver, recognition: recognition))
+                        } else {
+                            startCall(recognition: recognition)
+                        }
+                    },
                     onBack: {
                         recognition.stop()
                         route = .home
                     }
                 )
+            case .brief(let model):
+                BriefView(
+                    model: model,
+                    modeDescription: services.modeDescription,
+                    onApprove: { approved in
+                        route = .activeCall(ActiveCallViewModel(
+                            setup: approved, driver: model.driver, recognition: model.recognition))
+                    },
+                    onBack: {
+                        model.recognition.stop()
+                        route = .home
+                    }
+                )
             case .activeCall(let model):
-                ActiveCallView(model: model, onLeave: {
-                    model.leave()
-                    route = .home
-                })
+                ActiveCallView(
+                    model: model,
+                    onLeave: {
+                        model.leave()
+                        route = .home
+                    },
+                    onShowNotes: model.isDelegated ? {
+                        model.leave()
+                        route = .notes(NotesModel(contactName: model.setup.contact.name, driver: model.driver))
+                    } : nil
+                )
+            case .notes(let model):
+                NotesView(model: model, onDone: { route = .home })
             }
         }
     }
@@ -56,7 +94,7 @@ struct AppRootView: View {
     private static func initialRoute(for services: AppServices) -> Route {
         #if DEBUG
         if let fixture = services.options.fixture {
-            if fixture == .getReady { return .getReady(ScriptedRecognitionController()) }
+            if fixture == .getReady { return .getReady(ScriptedRecognitionController(), delegated: false) }
             if let model = fixture.makeActiveCall() { return .activeCall(model) }
         }
         #endif

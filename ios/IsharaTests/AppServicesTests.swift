@@ -24,6 +24,22 @@ final class AppServicesTests: XCTestCase {
             [.sign(.hello), .sign(.doctor), .unsure, .sign(.thankyou)])
     }
 
+    func testReplayScriptParsesCandidatesAndTheFramingCase() {
+        XCTAssertEqual(
+            DemoLaunchOptions.parseReplay("tomorrow?, frame, banana?, yes"),
+            [.candidate(.tomorrow), .handLeftFrame, .sign(.yes)])
+    }
+
+    func testDelegatedSetupStartsADelegatedCallWithItsBrief() {
+        var setup = CallSetup.demo
+        XCTAssertEqual(setup.startRequest, StartCallRequest(contactID: "clinic", purpose: .doctorAppointment))
+        let brief = Brief(briefID: "b9", text: "…", goal: "book a doctor's appointment", constraints: [])
+        setup.delegation = Delegation(brief: brief, attended: true)
+
+        XCTAssertEqual(setup.startRequest, StartCallRequest(
+            contactID: "clinic", purpose: .doctorAppointment, mode: .delegated, briefID: "b9", attended: true))
+    }
+
     func testLiveModeWithoutConfigCannotCall() {
         var options = DemoLaunchOptions()
         options.driver = .live

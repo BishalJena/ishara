@@ -122,6 +122,13 @@ public struct Brief: Codable, Equatable, Sendable {
     public var goal: String
     public var constraints: [String]
 
+    public init(briefID: String, text: String, goal: String, constraints: [String]) {
+        self.briefID = briefID
+        self.text = text
+        self.goal = goal
+        self.constraints = constraints
+    }
+
     enum CodingKeys: String, CodingKey {
         case briefID = "brief_id"
         case text, goal, constraints
@@ -148,6 +155,12 @@ public struct TranscriptEntry: Codable, Equatable, Sendable {
     public var speaker: CaptionSpeaker
     public var text: String
     public var at: Double
+
+    public init(speaker: CaptionSpeaker, text: String, at: Double) {
+        self.speaker = speaker
+        self.text = text
+        self.at = at
+    }
 }
 
 /// Response of `GET /calls/{id}/notes`.
@@ -161,6 +174,22 @@ public struct CallNotes: Codable, Equatable, Sendable {
     public var openQuestions: [String]
     public var transcript: [TranscriptEntry]
     public var bolnaSummary: String?
+
+    public init(
+        callID: String, mode: CallMode, ready: Bool, brief: String? = nil, outcome: String? = nil,
+        summary: [String] = [], openQuestions: [String] = [], transcript: [TranscriptEntry] = [],
+        bolnaSummary: String? = nil
+    ) {
+        self.callID = callID
+        self.mode = mode
+        self.ready = ready
+        self.brief = brief
+        self.outcome = outcome
+        self.summary = summary
+        self.openQuestions = openQuestions
+        self.transcript = transcript
+        self.bolnaSummary = bolnaSummary
+    }
 
     enum CodingKeys: String, CodingKey {
         case callID = "call_id"
