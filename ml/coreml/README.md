@@ -6,6 +6,11 @@ Converts the frozen multilingual SignCLIP pose encoder used by
 Weights, clips, packages and evidence stay in ignored `ml/coreml/artifacts/`.
 [Plan](../../PLAN.md) · [Measured ML results](../../docs/experiments/recognition.md)
 
+> **Not the demo's recognizer since decision D8 (25 Oct).** The app now runs the public ASL
+> Signs model through LiteRT (`ios/Packages/SignPipelineLiteRT`); this SignCLIP encoder is the
+> fallback the app uses only when that model is not installed. The conversion and its parity
+> results below still hold.
+
 > **Use `.cpuAndGPU` (or `.cpuOnly`) for the FP16 package.** On the Neural Engine
 > (`.all`, `.cpuAndNeuralEngine`) it returns wrong embeddings (cosine 0.63–0.89 on
 > this Mac). See [Neural Engine result](#neural-engine-result).

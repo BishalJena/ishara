@@ -1,7 +1,8 @@
 # Ishara backend
 
-FastAPI service for Path B ([PLAN.md §3](../PLAN.md#3-architecture)): app sessions,
-the Groq composer and Bolna's custom-LLM endpoint. Python 3.11, managed with `uv`.
+FastAPI service for Path B ([PLAN.md §3](../PLAN.md#3-architecture)): app sessions, the Groq
+composer, Bolna's custom-LLM endpoint, and the "Call for me" mode (decision D9: briefs, the
+delegated agent, call notes). Python 3.11, managed with `uv`.
 
 ```sh
 cd backend
@@ -20,11 +21,12 @@ Settings come from the environment or the repo-root `.env` (see `../.env.example
 |---|---|
 | `app/main.py` | `create_app(...)` (injectable, for tests), `build_app(settings)` (real wiring), the lazily built `app` that uvicorn serves, logging, `/health` |
 | `app/config.py` | Settings from env / `.env`; `python -m app.config` lists missing names |
-| `app/protocol.py` | App ↔ backend messages, the 12-sign vocabulary, composer request/draft |
+| `app/protocol.py` | App ↔ backend messages, the 34-sign vocabulary (12 template signs + 22 ASL glosses, D8), composer request/draft, D9 briefs, asks and notes |
 | `app/markers.py` | Marker block in Bolna node prompts that ties custom-LLM requests to a call and turn; event, property and webhook path names |
 | `app/ports.py` | `Composer`, `BolnaClient` (+ its `BolnaError`), `CallLedger` interfaces between modules |
 | `app/auth.py` | `APP_TOKEN` and `CUSTOM_LLM_TOKEN` bearer checks |
-| `app/calls.py` | Session layer I/O: `POST /calls`, app WebSocket, Bolna status webhook, `CallLedger` (V6) |
+| `app/calls.py` | Session layer I/O: `POST /calls` (live or delegated), `POST /briefs`, `GET /calls/{id}/notes`, app WebSocket (incl. asks and answers), Bolna status webhook, `CallLedger` (V6) |
+| `app/delegate.py` | D9: the brief built only from chips and profile, the agent's brain (Groq with a rule brain fallback), the line checker that rejects invented facts, and the notes built from the transcript |
 | `app/sessions.py` | Pure turn and approval rules: stale turns, single-use SEND, single claim |
 | `app/contacts.py` | `ALLOWED_RECIPIENTS` parsing (`contact_id=+E164`) |
 | `app/bolna_status.py` | Bolna execution statuses → call states |

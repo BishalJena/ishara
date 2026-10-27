@@ -24,6 +24,11 @@ Use the [handoff](../HANDOFF.md), [active plan](../../PLAN.md) and
   Bolna speech and device tracks before the 23 October demo build decisions.
 - [Workflow, 20–22 October](2026-10-20-workflow.md): the own-number-call flow and
   Eraser diagram sources before Option C was chosen.
+- [Workflow, 23–26 October](2026-10-23-workflow.md) and the
+  [23 October architecture board](2026-10-23-ishara-board.png)
+  ([Excalidraw source](2026-10-23-ishara-board.excalidraw)): the demo build with personalised
+  ISL recognition (SignCLIP matched to the presenter's recordings), the day-by-day build lanes
+  and the first app mock-ups, before decisions D8 (pure ASL) and D9 (Call for me).
 
 Dates identify the original research or snapshot, not a new validation event.
 Later updates retained inside a snapshot are still historical. Numerical results

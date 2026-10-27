@@ -16,7 +16,7 @@ package with no dependencies. iOS 17+ and macOS 14+.
 
 | File | What it does |
 |---|---|
-| `Vocabulary.swift` | The 12 signs, the call purpose, the backend limits and `TurnID` |
+| `Vocabulary.swift` | The 34 signs the backend accepts (12 template signs + 22 ASL glosses), the rehearsed eight, the call purpose, the backend limits and `TurnID` |
 | `Messages.swift` | `AppMessage` / `ServerMessage` mirroring `backend/app/protocol.py`. Unknown server types decode to `.unknown` |
 | `WebSocketTransport.swift` | Transport protocol and `URLSessionWebSocketTransport` (Authorization on the upgrade request, receive loop as an `AsyncStream`, client ping every 20 s for Heroku) |
 | `BackendClient.swift` | `BackendConfig` (base URL + `APP_TOKEN`, injected), `startCall`, `connect`, `send`, `events` |

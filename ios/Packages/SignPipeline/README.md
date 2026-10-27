@@ -1,9 +1,21 @@
 # SignPipeline
 
 On-device front half of recognition (PLAN P2): camera or saved video → holistic
-landmarks → SignCLIP pose features → Core ML embedding. Matching, the start/stop
-detector and calibration live in RecognitionCore, which consumes the plain
-values exposed here.
+landmarks → model input. Matching, the start/stop detector and calibration live in
+RecognitionCore, which consumes the plain values exposed here.
+
+**Current path (decision D8):** `KaggleLayout` turns an accepted sign's `LandmarkFrame`s into
+the ASL Signs model's input (`[frames, 543, 3]`: face 468, left hand 21, pose 33, right hand 21;
+NaN for a missing part, the Holistic Landmarker's 10 iris points dropped), and a `LogitsModel`
+returns its 250 logits. The production `LogitsModel` is `LiteRTLogitsModel` in
+[`../SignPipelineLiteRT`](../SignPipelineLiteRT/Package.swift) (iOS only; run its
+`Scripts/download_tflite_c.sh` once).
+
+```
+LandmarkFrame × frames ─▶ KaggleLayout.values ─▶ LogitsModel (LiteRTLogitsModel) ─▶ 250 logits ─▶ RecognitionCore.LogitsMatcher
+```
+
+**Earlier path (personalised SignCLIP, kept as the app's fallback):**
 
 ```
 CameraFrameSource ─┐                       ┌─▶ FrameSignals (body, wrists) ──▶ detector
@@ -17,8 +29,9 @@ VideoFileFrameSource┘   (pixels+time)   (MediaPipe Holistic)            └─
 
 | Target | Contents | Platforms |
 |---|---|---|
-| `SignPipeline` | Landmark types, `FeatureBuilder`, `ClipBuffer`, `EncoderInput`, `SignEncoder`, `CoreMLEmbeddingModel`, frame sources, `LandmarkProvider` | iOS 17, macOS 14 |
+| `SignPipeline` | Landmark types, `KaggleLayout`, `LogitsModel`, `FeatureBuilder`, `ClipBuffer`, `EncoderInput`, `SignEncoder`, `CoreMLEmbeddingModel`, frame sources, `LandmarkProvider` | iOS 17, macOS 14 |
 | `SignPipelineMediaPipe` (separate package, [`../SignPipelineMediaPipe`](../SignPipelineMediaPipe/README.md)) | `HolisticLandmarkProvider` (MediaPipe Holistic Landmarker, video mode) | iOS only (compiles empty on macOS) |
+| `SignPipelineLiteRT` (separate package, [`../SignPipelineLiteRT`](../SignPipelineLiteRT/Package.swift)) | `LiteRTLogitsModel` (TensorFlow Lite / LiteRT C library as a binary target) | iOS only (throws on macOS) |
 
 ## Using it
 

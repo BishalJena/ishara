@@ -1,22 +1,30 @@
 # RecognitionCore
 
-Pure Swift logic for on-device recognition (decision D6 in [PLAN.md](../../../PLAN.md#2-decisions)):
-the start/stop sign detector with rest calibration, and the matcher that turns a
-SignCLIP clip embedding into a sign or "unsure". No UIKit, AVFoundation or
-MediaPipe: the app feeds it tracker results and embeddings. Behaviour follows
-[PLAN.md §4](../../../PLAN.md#4-the-turn-when-signing-becomes-words) and tasks R2,
-R2b, P2 and P3 in [§6](../../../PLAN.md#6-schedule-and-todos).
+Pure Swift logic for on-device recognition (decisions D6 and D8 in [PLAN.md](../../../PLAN.md#2-decisions)):
+the start/stop sign detector with rest calibration, and the matchers that turn one accepted sign
+into a chip, a "did you mean" candidate or "unsure". No UIKit, AVFoundation or MediaPipe: the
+app feeds it tracker results and model outputs. Behaviour follows
+[PLAN.md §4](../../../PLAN.md#4-the-turn-when-signing-becomes-words) and the
+[D8 handoff](../../../docs/handoffs/2026-10-26-ready-made-asl-recognizer.md).
 
 ```
 Get ready (2 s hands down) ──▶ SignDetector.calibrate ──▶ restY
 camera frame ──▶ DetectorFrame ──▶ SignDetector.update ──▶ .status(pill colour)
                                                        └─▶ .segment(start, end, accepted, reason)
-accepted clip ──▶ SignCLIP (Core ML) ──▶ embedding ─┐
-clip frames  ──▶ ClipQuality.from ─────────────────┴─▶ SignMatcher.match ──▶ .sign(label) / .unsure(reason)
+accepted clip ──▶ ASL Signs model (LiteRT, in the app) ──▶ 250 logits ─┐
+clip frames  ──▶ ClipQuality.from ────────────────────────────────────┴─▶ LogitsMatcher.match
+                                                     ──▶ .chip / .pickOne / .unsure(reason)
+unsure clip  ──▶ FramingGuard.handLeftFrame ──▶ "a hand left the frame" hint
 ```
+
+The older SignCLIP path (`RecognitionBundle` + `SignMatcher`, personalised references) is kept
+as the app's fallback when the ASL model is not installed.
 
 | Type | Role |
 |---|---|
+| `LogitsBundle` | The version-2 ASL bundle (`ios/Ishara/Resources/asl-bundle.json`): the model's 250 glosses, the vocabulary that may become chips, the thresholds, `provisional`. Decoding validates it |
+| `LogitsMatcher` | The open-set rule over all 250 classes, never narrowed to the vocabulary first; same rule and fixture as `asl_decision` in [`asl_matcher.py`](../../../spikes/recognition/asl_matcher.py) |
+| `FramingGuard` | Explains a `?` when a hand vanished past the left, right or top edge for > 0.3 s |
 | `SignDetector` | States watching / signing / cooldown / can't see. Hands above `restY` for 0.10 s start a clip (0.20 s pre-roll); 0.40 s back at rest end it; under 0.30 s or over 4 s is rejected; 0.50 s without shoulders drops it |
 | `SignDetector.calibrate` | Rest line = median wrist height − 0.08, clamped to 0.50–0.95; 0.80 when no wrist is seen; fails `tooShort` (< 2 s) or `cantSee` (< 80% frames with shoulders) |
 | `RecognitionBundle` | JSON from the Mac tool: references and frozen cut-offs. Decoding validates it |
