@@ -9,7 +9,11 @@ extension XCUIApplication {
     }
 
     /// Home → Get ready → Start call. Checks both screens say the call comes from
-    /// Ishara's number, Start waits for the checks and SEND starts disabled.
+    /// Ishara's number, Start is enabled only once the checks pass and SEND only with a draft.
+    ///
+    /// Get ready and the first draft finish on timers that can beat the test's first look
+    /// at the screen (issue #31), so each rule is read from one snapshot, never as
+    /// "disabled at first look".
     func startCall(file: StaticString = #filePath, line: UInt = #line) {
         let call = buttons["home.call"]
         XCTAssertTrue(call.waitForExistence(timeout: 10), file: file, line: line)
@@ -19,13 +23,24 @@ extension XCUIApplication {
         let start = buttons["getReady.start"]
         XCTAssertTrue(start.waitForExistence(timeout: 5), file: file, line: line)
         assertCallingNumberDisclosed(file: file, line: line)
-        XCTAssertFalse(start.isEnabled, "Start call was enabled before the checks passed", file: file, line: line)
-        waitUntil("Start call to be enabled", file: file, line: line) { start.isEnabled }
+        waitUntil("Start call to be enabled", file: file, line: line) {
+            let screen = screenSnapshot(file: file, line: line)
+            guard screen.contains(where: { $0.identifier == "getReady.start" && $0.isEnabled }) else { return false }
+            let checks = getReadyChecks(in: screen)
+            XCTAssertTrue(!checks.isEmpty && checks.allSatisfy(\.passed),
+                          "Start call was enabled before the checks passed: \(checks)", file: file, line: line)
+            XCTAssertTrue(screen.contains { $0.label.hasPrefix("Hands at rest: calibrated") },
+                          "Start call was enabled before the hands-at-rest calibration", file: file, line: line)
+            return true
+        }
         start.tap()
 
         let send = buttons["call.send"]
         XCTAssertTrue(send.waitForExistence(timeout: 5), file: file, line: line)
-        XCTAssertFalse(send.isEnabled, "SEND was enabled without a draft", file: file, line: line)
+        let screen = screenSnapshot(file: file, line: line)
+        let sendEnabled = screen.contains { $0.identifier == "call.send" && $0.isEnabled }
+        let hasDraft = screen.contains { $0.identifier == "call.draft" && $0.label.hasPrefix("Draft from") }
+        XCTAssertTrue(!sendEnabled || hasDraft, "SEND was enabled without a draft", file: file, line: line)
     }
 
     /// Taps SEND, then expects Delivered, the sentence as the user's caption and the
@@ -78,6 +93,32 @@ extension XCUIApplication {
         waitUntil("\(identifier) to be clear of the action bar", timeout: 5, file: file, line: line) {
             let topOfBar = barControls.allElementsBoundByIndex.map(\.frame.minY).min() ?? .greatestFiniteMagnitude
             return target.exists && target.frame.maxY <= topOfBar
+        }
+    }
+
+    /// The whole screen at one instant, flattened. Two separate queries can straddle one of
+    /// the app's timers; values read from a single snapshot can't.
+    func screenSnapshot(file: StaticString = #filePath, line: UInt = #line) -> [XCUIElementSnapshot] {
+        do {
+            var all: [XCUIElementSnapshot] = []
+            var pending = [try snapshot()]
+            while let next = pending.popLast() {
+                all.append(next)
+                pending += next.children
+            }
+            return all
+        } catch {
+            XCTFail("Couldn't snapshot the screen: \(error)", file: file, line: line)
+            return []
+        }
+    }
+
+    /// Get ready's checklist rows, read as "Face visible: yes" or "Face visible: checking".
+    func getReadyChecks(in screen: [XCUIElementSnapshot]? = nil) -> [(label: String, passed: Bool)] {
+        (screen ?? screenSnapshot()).compactMap { element in
+            if element.label.hasSuffix(": yes") { return (element.label, true) }
+            if element.label.hasSuffix(": checking") { return (element.label, false) }
+            return nil
         }
     }
 
