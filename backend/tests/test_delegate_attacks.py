@@ -772,16 +772,18 @@ def test_check_line_reads_facts_at_the_edges_of_what_was_heard() -> None:
     # A name or number right at the start or end of the receptionist's words still counts
     # as heard, across every exchange so far.
     delegate = make_brief()
-    delegate.exchanges += [
-        Exchange("Hello, you're through to Mehta", "One moment, please."),
-        Exchange("Kiran has 11 free", "Could you tell me what times are available?"),
+    delegate.exchanges = [
+        Exchange("Mehta here, the doctor today is Kiran", "One moment, please."),
+        Exchange("Bose has 11 free", "Could you tell me what times are available?"),
     ]
     heard = delegate.transcript_text()
-    assert check_line("So Mehta or Kiran at 11?", brief, heard) == []
-    assert check_line("So Mehta or Kiran at 11?", brief, "") == [
+    line = "So Mehta, Kiran or Bose at 11?"
+    assert check_line(line, brief, heard) == []
+    assert check_line(line, brief, "") == [
         "invented number or time: 11",
         "invented name: Mehta",
         "invented name: Kiran",
+        "invented name: Bose",
     ]
 
 
@@ -834,12 +836,13 @@ async def test_the_llm_sees_the_mode_the_brief_recent_turns_and_answers() -> Non
 async def test_each_fallback_says_why_in_the_log(caplog) -> None:
     caplog.set_level("INFO", logger="app.delegate")
     await Brain(FakeGroq(error=GroqError("HTTP 500"))).reply(state(), OFFER)
-    raw = llm(PAUSE_LINE, {"question": OFFER, "proposal": "3 pm"})
+    raw = llm(PAUSE_LINE, {"question": OFFER, "proposal": "3 pm with Kiran"})
     await Brain(FakeGroq(raw)).reply(state(), OFFER)
     await Brain(FakeGroq(llm("Dr Kiran at 9."))).reply(state(), OFFER)
     assert [r.getMessage() for r in caplog.records] == [
         "delegate: LLM unavailable (GroqError), using rules",
-        "delegate: LLM proposal rejected (invented number or time: 3), using rules",
+        "delegate: LLM proposal rejected (invented number or time: 3; invented name: Kiran), "
+        "using rules",
         "delegate: LLM line rejected (invented number or time: 9; invented name: Kiran), "
         "using rules",
     ]
@@ -949,7 +952,8 @@ def entry(speaker: str, text: str) -> TranscriptEntry:
 
 
 def test_notes_list_only_the_receptionists_offers_and_cap_them() -> None:
-    entries = [entry("receptionist", f"We have {h} pm tomorrow.") for h in (1, 2, 3, 4)]
+    entries = [entry("receptionist", "Hello, City Clinic.")]
+    entries += [entry("receptionist", f"We have {h} pm tomorrow.") for h in (1, 2, 3, 4)]
     entries += [entry("agent", "Yes, 5 pm tomorrow works. Thank you.")]
     entries += [entry("receptionist", f"Booked for {h} pm.") for h in (1, 2, 3)]
     result = build_notes("c1", make_brief().brief, entries, [], None, True)
