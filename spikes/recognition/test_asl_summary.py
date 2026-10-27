@@ -142,6 +142,18 @@ class Combine(unittest.TestCase):
         self.assertFalse(report["passes"])
         self.assertTrue(s.combine({"Mac": clean, "app": clean}, self.rule)["passes"])
 
+    def test_totals_give_accept_and_false_chip_counts_per_run(self):
+        run = [attempt("yes", ("yes", 0.9), ("no", 0.05)), attempt("yes", ("yes", 0.5), ("no", 0.1)),
+               attempt("no", ("yes", 0.8), ("no", 0.1)), attempt("tomorrow", ("later", 0.9), ("no", 0.05)),
+               attempt("none", ("tomorrow", 0.7), ("later", 0.1)), attempt("none", ("tomorrow", 0.4), ("later", 0.1)),
+               attempt("none", ("mitten", 0.9), ("later", 0.01))]
+        report = s.combine({"Mac": run}, self.rule)
+        self.assertEqual(report["runs"]["Mac"]["totals"],
+                         {"signs": 4, "chip": 1, "pick_one": 1, "wrong_chip": 1, "wrong_pick": 0,
+                          "negatives": 3, "negative_chip": 1, "negative_pick": 1})
+        row = next(line for line in s.combined_markdown(report).splitlines() if line.startswith("| all signs "))
+        self.assertEqual(row, "| all signs | 4 | 1 chips (25%) + 1 one-tap, 1 wrong chips (25%) |")
+
     def test_combined_table_has_one_column_per_run(self):
         runs = {"Mac": [attempt("yes", ("yes", 0.9), ("no", 0.05)), attempt("yes", ("mitten", 0.9), ("yes", 0.01))],
                 "app": [attempt("yes", ("yes", 0.5), ("no", 0.1)), attempt("yes", ("yes", 0.7), ("no", 0.1))]}

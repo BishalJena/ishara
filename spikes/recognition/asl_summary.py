@@ -183,7 +183,13 @@ def combine(runs: dict[str, Sequence[Attempt]], rule: Rule) -> dict[str, Any]:
     out: dict[str, Any] = {"runs": {}}
     for name, attempts in runs.items():
         rows = tally(attempts, rule)
-        out["runs"][name] = {"rows": rows, "gate": gate(rows)}
+        signs = [r for w, r in rows.items() if w != NEGATIVE]
+        negative = rows.get(NEGATIVE, {})
+        totals = {"signs": sum(r["n"] for r in signs), **{k: sum(r[k] for r in signs) for k in
+                                                           ("chip", "pick_one", "wrong_chip", "wrong_pick")},
+                  "negatives": negative.get("n", 0), "negative_chip": negative.get("wrong_chip", 0),
+                  "negative_pick": negative.get("wrong_pick", 0)}
+        out["runs"][name] = {"rows": rows, "gate": gate(rows), "totals": totals}
     out["passes"] = all(r["gate"]["passes"] for r in out["runs"].values())
     out["suggestion"] = suggest([a for attempts in runs.values() for a in attempts], rule)
     return out
@@ -209,6 +215,12 @@ def combined_markdown(report: dict[str, Any]) -> str:
                 cells.append(f"{r['chip']}+{r['pick_one']}/{r['n']} {verdict}{wrong}")
         n = max(run["rows"][word]["n"] for run in runs.values() if word in run["rows"])
         out.append(f"| {word} | {n} | " + " | ".join(cells) + " |")
+    def share(k: int, n: int, what: str) -> str:
+        return f"{k} {what} ({k / n:.0%})" if n else f"{k} {what}"
+    totals = [run["totals"] for run in runs.values()]
+    out.append(f"| all signs | {max(t['signs'] for t in totals)} | " + " | ".join(
+        f"{share(t['chip'], t['signs'], 'chips')} + {t['pick_one']} one-tap, {share(t['wrong_chip'], t['signs'], 'wrong chips')}"
+        for t in totals) + " |")
     gates = "; ".join(f"{name}: {'PASS' if r['gate']['passes'] else 'FAIL'} ({r['gate']['wrong_auto_accepts']} wrong, "
                       f"{r['gate']['negative_auto_accepts']} on negatives)" for name, r in runs.items())
     s = report["suggestion"]
