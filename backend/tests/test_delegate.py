@@ -10,6 +10,7 @@ from __future__ import annotations
 import contextlib
 import json
 from dataclasses import dataclass
+from functools import partial
 
 import anyio
 import pytest
@@ -19,6 +20,7 @@ from app.calls import CallManager
 from app.delegate import (
     CALLBACK_LINE,
     PAUSE_LINE,
+    Brain,
     Brief,
     Decision,
     DelegateState,
@@ -241,6 +243,30 @@ class Flow:
         assert response.status_code == 200, response.text
         return response.json()["choices"][0]["message"]["content"]
 
+    def speak_turn(self, call_id: str, turn_id: str, text: str, heard: str = "") -> str:
+        """Bolna's speak-node request for an injected line (a SEND or a delegated line);
+        returns what the custom LLM told Bolna to say."""
+        block = (
+            render_marker_block("speak")
+            .replace("{{ishara_call_id}}", call_id)
+            .replace("{{turn_id}}", turn_id)
+            .replace("{{reply_text}}", text)
+        )
+        body = {
+            "model": "ishara-relay",
+            "stream": False,
+            "messages": [{"role": "system", "content": block}]
+            + ([{"role": "user", "content": heard}] if heard else []),
+        }
+        response = self.client.post("/v1/chat/completions", json=body, headers=LLM_AUTH)
+        assert response.status_code == 200, response.text
+        return response.json()["choices"][0]["message"]["content"]
+
+    def speak_last(self, call_id: str) -> str:
+        """Bolna picks up the latest injected line and speaks it."""
+        last = self.bolna.replies()[-1]
+        return self.speak_turn(call_id, last["turn_id"], last["reply_text"])
+
     def receive(self, ws, timeout: float = 2.0) -> dict:
         async def next_message() -> dict:
             with anyio.fail_after(timeout):
@@ -258,26 +284,34 @@ class Flow:
         raise AssertionError(f"no {kind} message")
 
 
+def build_flow(
+    stack: contextlib.ExitStack,
+    ask_timeout_s: float = 5.0,
+    end_after_done_s: float = 60.0,
+    brain: Brain | None = None,
+    allowed_recipients: str = f"clinic={CLINIC}",
+    delivery_timeout_s: float = 10.0,
+) -> Flow:
+    settings = make_settings(allowed_recipients=allowed_recipients)
+    bolna, composer = FakeBolna(), FakeComposer()
+    manager = CallManager(
+        settings,
+        composer,
+        bolna,
+        delivery_timeout_s=delivery_timeout_s,
+        ask_timeout_s=ask_timeout_s,
+        end_after_done_s=end_after_done_s,
+        brain=brain,
+    )
+    app = create_app(settings, composer=composer, bolna=bolna, ledger=manager)
+    client = stack.enter_context(TestClient(app))
+    return Flow(client, manager, bolna)
+
+
 @pytest.fixture
 def flow():
-    stack = contextlib.ExitStack()
-
-    def build(ask_timeout_s: float = 5.0, end_after_done_s: float = 60.0) -> Flow:
-        settings = make_settings(allowed_recipients=f"clinic={CLINIC}")
-        bolna, composer = FakeBolna(), FakeComposer()
-        manager = CallManager(
-            settings,
-            composer,
-            bolna,
-            ask_timeout_s=ask_timeout_s,
-            end_after_done_s=end_after_done_s,
-        )
-        app = create_app(settings, composer=composer, bolna=bolna, ledger=manager)
-        client = stack.enter_context(TestClient(app))
-        return Flow(client, manager, bolna)
-
-    with stack:
-        yield build
+    with contextlib.ExitStack() as stack:
+        yield partial(build_flow, stack)
 
 
 def test_delegated_call_needs_an_existing_brief(flow) -> None:
