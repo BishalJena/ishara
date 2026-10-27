@@ -22,6 +22,7 @@ import logging
 import time
 import uuid
 from collections.abc import Coroutine
+from dataclasses import dataclass
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, WebSocket, status
@@ -50,7 +51,6 @@ from app.protocol import (
     AnswerMessage,
     ApproveMessage,
     AskMessage,
-    AskOption,
     AskResolvedMessage,
     BriefRequest,
     BriefResponse,
@@ -121,6 +121,18 @@ class _AppLink:
             await self.websocket.close(code=code)
 
 
+@dataclass
+class _OpenAsk:
+    """A question the attended user hasn't answered yet; `deadline` is loop time."""
+
+    call_id: str
+    message: AskMessage
+    deadline: float
+
+    def left_s(self) -> float:
+        return max(0.0, self.deadline - asyncio.get_running_loop().time())
+
+
 _Snapshot = tuple[CallState, Turn | None]
 _NOT_YET_LIVE = frozenset({CallState.DIALING, CallState.RINGING})
 
@@ -149,7 +161,7 @@ class CallManager(CallLedger):
         self._links: dict[str, _AppLink] = {}
         self._timers: dict[str, asyncio.Task[None]] = {}
         self._ask_timers: dict[str, asyncio.Task[None]] = {}
-        self._asks: dict[str, tuple[str, tuple[AskOption, ...]]] = {}  # ask_id -> call, options
+        self._asks: dict[str, _OpenAsk] = {}
         self._briefs: dict[str, tuple[BriefRequest, BriefResponse]] = {}
         self._tasks: set[asyncio.Task[None]] = set()
 
@@ -236,6 +248,12 @@ class CallManager(CallLedger):
         if old is not None:
             await old.close(CLOSE_REPLACED)
         await link.send(StatusMessage(state=self._sessions[call_id].state))
+        delegate = self._sessions[call_id].delegate
+        if isinstance(delegate, DelegateState) and delegate.pending_ask in self._asks:
+            # A socket that (re)connects while a question is open can still answer it,
+            # with the time that is left.
+            ask = self._asks[delegate.pending_ask]
+            await link.send(ask.message.model_copy(update={"timeout_s": ask.left_s()}))
         return link
 
     async def detach(self, call_id: str, link: _AppLink) -> None:
@@ -384,17 +402,19 @@ class CallManager(CallLedger):
         question, options = decision.ask
         ask_id = uuid.uuid4().hex
         delegate.pending_ask = ask_id
-        self._asks[ask_id] = (session.call_id, options)
-        await self._send(
-            session,
-            AskMessage(
-                ask_id=ask_id,
-                question=question,
-                options=list(options),
-                fallback=CALLBACK_LINE,
-                timeout_s=self._ask_timeout_s,
-            ),
+        message = AskMessage(
+            ask_id=ask_id,
+            question=question,
+            options=list(options),
+            fallback=CALLBACK_LINE,
+            timeout_s=self._ask_timeout_s,
         )
+        self._asks[ask_id] = _OpenAsk(session.call_id, message, 0.0)
+        await self._send(session, message)
+        self._start_ask_timer(session, ask_id)
+
+    def _start_ask_timer(self, session: CallSession, ask_id: str) -> None:
+        self._asks[ask_id].deadline = asyncio.get_running_loop().time() + self._ask_timeout_s
         self._ask_timers[ask_id] = self._spawn(self._ask_timeout(session, ask_id))
 
     async def _ask_timeout(self, session: CallSession, ask_id: str) -> None:
@@ -404,13 +424,17 @@ class CallManager(CallLedger):
     async def _on_answer(self, session: CallSession, message: AnswerMessage) -> None:
         entry = self._asks.get(message.ask_id)
         delegate = session.delegate
-        if entry is None or entry[0] != session.call_id or not isinstance(delegate, DelegateState):
+        if (
+            entry is None
+            or entry.call_id != session.call_id
+            or not isinstance(delegate, DelegateState)
+        ):
             await self._send(
                 session,
                 ErrorMessage(code="unknown_ask", message="That question is no longer open."),
             )
             return
-        spoken = next((o.spoken for o in entry[1] if o.choice == message.choice), None)
+        spoken = next((o.spoken for o in entry.message.options if o.choice == message.choice), None)
         if spoken is None:
             await self._send(
                 session, ErrorMessage(code="bad_choice", message="Not one of the options.")
@@ -421,9 +445,7 @@ class CallManager(CallLedger):
             timer.cancel()
         if message.choice == "wait":
             # The agent holds the line; the question stays open and the timer restarts.
-            self._ask_timers[message.ask_id] = self._spawn(
-                self._ask_timeout(session, message.ask_id)
-            )
+            self._start_ask_timer(session, message.ask_id)
             await self._speak_line(
                 session, spoken, f"ask-{message.ask_id}-wait-{uuid.uuid4().hex[:6]}"
             )
@@ -475,8 +497,8 @@ class CallManager(CallLedger):
             await self._on_end(session)
 
     def _cancel_ask_timers(self, call_id: str) -> None:
-        for ask_id, (owner, _) in list(self._asks.items()):
-            if owner == call_id:
+        for ask_id, ask in list(self._asks.items()):
+            if ask.call_id == call_id:
                 self._asks.pop(ask_id, None)
                 timer = self._ask_timers.pop(ask_id, None)
                 if timer is not None and timer is not asyncio.current_task():

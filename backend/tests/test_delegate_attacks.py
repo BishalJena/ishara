@@ -1010,3 +1010,30 @@ def test_outcomes_and_open_questions_word_for_word(entries, answers, outcome, op
     result = build_notes("c1", make_brief().brief, entries, answers, None, True)
     assert result.outcome == outcome
     assert result.open_questions == open_questions
+
+
+def test_a_socket_that_reconnects_during_an_ask_gets_it_and_can_answer(flow) -> None:
+    f = flow(ask_timeout_s=3.0)
+    call_id = f.start(f.brief(), attended=True)
+    with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
+        f.live(call_id)
+        f.speak_last(call_id)
+        f.listen_turn(call_id, OFFER)
+        ask = f.drain_until(ws, "ask")
+    time.sleep(0.2)  # the app's reconnect delay
+    with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
+        assert f.receive(ws)["type"] == "status"
+        again = f.receive(ws)
+        assert again["type"] == "ask" and again["ask_id"] == ask["ask_id"]
+        assert again["options"] == ask["options"] and again["question"] == OFFER
+        assert 0 < again["timeout_s"] < 3.0
+        ws.send_json({"type": "answer", "ask_id": ask["ask_id"], "choice": "yes"})
+        assert f.drain_until(ws, "ask_resolved")["source"] == "user"
+    assert spoken_texts(f)[-1] == "Yes, 4 pm tomorrow works. Thank you."
+
+
+def test_a_socket_that_connects_with_no_open_ask_gets_only_the_status(flow) -> None:
+    f = flow()
+    call_id = opened_call(f, attended=True)
+    with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
+        assert [m["type"] for m in quiet(f, ws)] == ["status"]
