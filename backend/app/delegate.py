@@ -348,7 +348,8 @@ def _user_message(state: DelegateState, heard: str) -> str:
 
 
 class _LlmAsk(BaseModel):
-    question: str | None = None
+    # SYSTEM_PROMPT also asks for a "question"; it is ignored: the user is always shown
+    # the receptionist's own words, never the LLM's account of them.
     proposal: str | None = None
 
 
@@ -391,8 +392,7 @@ class Brain:
             if reasons:
                 log.info("delegate: LLM proposal rejected (%s), using rules", "; ".join(reasons))
                 return fallback
-            question = (turn.ask_user.question or "").strip() or heard.strip()
-            return Decision(PAUSE_LINE, ask=(question, _options_for(proposal)), source="llm")
+            return Decision(PAUSE_LINE, ask=(heard.strip(), _options_for(proposal)), source="llm")
         reasons = check_line(turn.say, state.brief, transcript)
         if reasons:
             log.info("delegate: LLM line rejected (%s), using rules", "; ".join(reasons))

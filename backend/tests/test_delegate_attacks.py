@@ -508,10 +508,11 @@ async def test_a_quoted_false_does_not_end_the_call() -> None:
 
 
 async def test_an_llm_ask_with_a_heard_proposal_is_used() -> None:
-    raw = llm(PAUSE_LINE, {"question": "4 pm tomorrow?", "proposal": "4 pm tomorrow"})
+    raw = llm(PAUSE_LINE, {"question": "They offer 3 pm, ok?", "proposal": "4 pm tomorrow"})
     decision = await Brain(FakeGroq(raw)).reply(state(), OFFER)
     assert decision.source == "llm" and decision.say == PAUSE_LINE
-    assert decision.ask is not None and decision.ask[0] == "4 pm tomorrow?"
+    # The user reads what the receptionist said, never the LLM's account of it.
+    assert decision.ask is not None and decision.ask[0] == OFFER
     assert decision.ask[1][0].spoken == "Yes, 4 pm tomorrow works. Thank you."
 
 
