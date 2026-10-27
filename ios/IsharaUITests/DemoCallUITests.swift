@@ -71,6 +71,31 @@ final class DemoCallUITests: XCTestCase {
         app.sendAndExpectDelivered(turn3)
     }
 
+    // MARK: Timers
+
+    /// At a fast clock Get ready finishes, and the first draft arrives, before the test first
+    /// reads the screen. The call must still start with its rules checked (issue #31).
+    func testCallStartsWhenTheTimersFinishBeforeTheFirstLook() {
+        launch(timeScale: 0.05)
+        app.startCall()
+        app.waitForDraft(containing: turn1)
+    }
+
+    /// Start call stays disabled while Get ready is checking. The slow clock keeps the checks
+    /// going for over a minute, far longer than the test takes to look.
+    func testStartCallStaysDisabledWhileTheChecksRun() {
+        launch(timeScale: 20)
+        let call = app.buttons["home.call"]
+        XCTAssertTrue(call.waitForExistence(timeout: 10))
+        call.tap()
+        let start = app.buttons["getReady.start"]
+        XCTAssertTrue(start.waitForExistence(timeout: 5))
+        let checks = app.getReadyChecks()
+        XCTAssertFalse(checks.isEmpty, "the checklist is missing")
+        XCTAssertTrue(checks.allSatisfy { !$0.passed }, "a check passed already: \(checks)")
+        XCTAssertFalse(start.isEnabled, "Start call was enabled before the checks passed")
+    }
+
     // MARK: Steps
 
     private static let accessibilityLarge = [
@@ -127,11 +152,11 @@ final class DemoCallUITests: XCTestCase {
         XCTAssertTrue(app.buttons["home.call"].waitForExistence(timeout: 5))
     }
 
-    private func launch(extraArguments: [String] = []) {
+    /// The default 0.5 halves every fake-call and Get ready timer. Faster scales made the
+    /// Delivered banner flash by between polls.
+    private func launch(timeScale: Double = 0.5, extraArguments: [String] = []) {
         app = XCUIApplication()
-        // Halves every fake-call and Get ready timer. Faster scales made the
-        // Delivered banner flash by between polls.
-        app.launchArguments = ["-IsharaFakeTimeScale", "0.5"] + extraArguments
+        app.launchArguments = ["-IsharaFakeTimeScale", String(timeScale)] + extraArguments
         app.launch()
     }
 }
