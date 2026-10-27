@@ -460,9 +460,9 @@ scripts/sign_lab.sh --bridge-only --model asl --port 8799 -- --video \
 # Call for me, attended: clips can't wait for the question, so be the receptionist yourself
 (cd backend && uv run python -m scripts.sign_lab --port 8799 --receptionist manual)   # terminal 1
 scripts/sign_lab.sh --bridge-only --model asl --port 8799 -- --video \
-  $C/rest.mp4 $C/rest.mp4 $C/yes.mp4 $C/rest.mp4 --delegated --attended --name Asha    # terminal 2
+  $C/rest.mp4 $C/yes.mp4 $C/rest.mp4 --delegated --attended --name Asha    # terminal 2
 # when terminal 2 prints "rest line y=...", type in terminal 1: We have 4 pm tomorrow. Does that work?
-# the yes clip answers about 4 s later; then type: Yes, 10:30 tomorrow morning.  (the agent closes)
+# the yes clip answers about 2 s later; then type: Yes, 10:30 tomorrow morning.  (the agent closes)
 ```
 
 `scripts/sign_lab.sh --free --model asl` starts both in one terminal (webcam by default;
@@ -490,7 +490,8 @@ up, but the app doesn't show its call id, and joining replaces the phone's conne
 (the backend keeps one app socket per call). So on demo day the Mac places its own call.
 `--recognizer-python .venv/bin/python` matters: the bridge's default is the SignCLIP venv.
 Rest both hands for 2 s when the recognizer starts. It needs a few seconds to load after
-the call starts (2–15 s measured on a busy Mac). If recognition misbehaves, type the signs
+the call starts (2–15 s measured on a busy Mac), and on a busy Mac played clips fall behind
+real time (tracking was 3x slower than the video once), so close heavy apps before the demo. If recognition misbehaves, type the signs
 (`hello`, `no tomorrow please`, …) or `a yes`; nothing is ever spoken without `s` or an answer.
 
 ### Automated check
