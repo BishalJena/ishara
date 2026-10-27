@@ -4,11 +4,15 @@ import io
 import itertools
 import json
 import os
+import shutil
+import subprocess
 import sys
+import threading
 import unittest
 import urllib.error
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from datetime import datetime
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
@@ -714,10 +718,14 @@ class CommandLine(unittest.TestCase):
                          [*head, "--camera", "2", "--bundle", "b.json", "--rest-y", "0.8"])
         self.assertEqual(command("--replay-videos", "clips", "--recognizer-python", "/v/python"),
                          ["/v/python", head[1], "--replay-videos", "clips"])
+        self.assertEqual(command("--video", "rest.mp4", "hello.mp4", "--model", "asl"),
+                         [*head, "--model", "asl", "--video", "rest.mp4", "hello.mp4"])
 
     def test_live_options_need_live_and_one_input(self):
         for argv in (["--camera", "1"], ["--replay-videos", "clips"], ["--bundle", "b.json"],
-                     ["--rest-y", "0.8"], ["--live", "--camera", "1", "--replay-videos", "clips"]):
+                     ["--rest-y", "0.8"], ["--live", "--camera", "1", "--replay-videos", "clips"],
+                     ["--video", "rest.mp4"], ["--live", "--camera", "1", "--video", "rest.mp4"],
+                     ["--live", "--video"]):
             with self.subTest(argv=argv), self.assertRaises(SystemExit):
                 self.main("--base-url", "https://b", "--call-id", "c7", *argv)
         self.assertEqual((self.posts, self.connects), ([], []))
@@ -897,3 +905,61 @@ class DelegatedStart(unittest.TestCase):
         args = mb.parse_args(["--base-url", "https://b", "--contact", "clinic", "--delegated", "--attended"])
         self.assertTrue(args.delegated and args.attended)
         self.assertEqual(args.brief_chips, ["tomorrow", "morning"])
+
+
+# ---- sign_lab.sh hands the bridge saved clips instead of the webcam ----
+
+HERE = Path(__file__).resolve().parent
+REPO = HERE.parents[1]
+SIGN_LAB = REPO / "scripts" / "sign_lab.sh"
+
+
+@contextmanager
+def health_server():
+    """A stand-in backend that only answers /health, for sign_lab.sh --bridge-only."""
+    class Health(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200 if self.path == "/health" else 404)
+            self.end_headers()
+            self.wfile.write(b'{"status":"ok"}')
+
+        def log_message(self, *args):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Health)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        yield server.server_address[1]
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def executable(path, body):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("#!/bin/sh\n" + body)
+    path.chmod(0o755)
+
+
+@unittest.skipIf(shutil.which("bash") is None or shutil.which("curl") is None, "needs bash and curl")
+class SignLabVideo(unittest.TestCase):
+    def test_video_clips_replace_the_camera(self):
+        with TemporaryDirectory() as folder, health_server() as port:
+            recognition, out = Path(folder, "recognition"), Path(folder, "bridge.out")
+            executable(recognition / "artifacts/signclip/.venv/bin/python", "exit 0\n")
+            executable(recognition / "artifacts/bridge/.venv/bin/python", 'echo "$*" > "$FAKE_BRIDGE_OUT"\n')
+            (recognition / "mac_bridge.py").write_text("")
+            bundle = recognition / "artifacts/evidence/recognition-bundle-signclip.json"
+            bundle.parent.mkdir(parents=True)
+            bundle.write_text("{}")
+            done = subprocess.run(
+                ["bash", str(SIGN_LAB), "--bridge-only", "--port", str(port), "--recognition-dir",
+                 str(recognition), "--", "--video", "rest.mp4", "hello.mp4"],
+                capture_output=True, text=True, timeout=60, check=False,
+                env={**os.environ, "FAKE_BRIDGE_OUT": str(out)})
+            self.assertEqual(done.returncode, 0, done.stderr)
+            bridge_args = out.read_text().split()
+        self.assertNotIn("--camera", bridge_args)
+        self.assertIn("--live", bridge_args)
+        self.assertEqual(bridge_args[-3:], ["--video", "rest.mp4", "hello.mp4"])
+

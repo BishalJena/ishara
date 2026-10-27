@@ -727,6 +727,8 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     clips.add_argument("--camera", type=int, help="webcam index (default 0)")
     clips.add_argument("--replay-videos", type=Path, metavar="DIR",
                        help="rehearse with saved clips through the same live path")
+    clips.add_argument("--video", type=Path, nargs="+", metavar="CLIP",
+                       help="play these clips in order as if they were the webcam (start with a rest clip)")
     live.add_argument("--model", choices=("signclip", "asl"), default="signclip",
                       help="live_source.py recognizer: personalised SignCLIP references, or the public "
                            "ASL Signs model with the open-set rule (default: %(default)s)")
@@ -736,8 +738,9 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
                       help="Python of the SignCLIP venv (default: %(default)s)")
     args = parser.parse_args(argv)
     if not args.live and (args.model != "signclip" or any(getattr(args, name) is not None
-                                                           for name in ("camera", "replay_videos", "bundle", "rest_y"))):
-        parser.error("--camera, --replay-videos, --model, --bundle and --rest-y need --live")
+                                                           for name in ("camera", "replay_videos", "video",
+                                                                        "bundle", "rest_y"))):
+        parser.error("--camera, --replay-videos, --video, --model, --bundle and --rest-y need --live")
     if args.delegated and not args.contact:
         parser.error("--delegated starts a new call, so it needs --contact")
     if not args.delegated and (args.attended or args.brief_notes):
@@ -768,6 +771,8 @@ def live_command(args: argparse.Namespace) -> list[str]:
         command += ["--model", args.model]
     if args.replay_videos is not None:
         command += ["--replay-videos", str(args.replay_videos)]
+    elif args.video is not None:
+        command += ["--video", *map(str, args.video)]
     else:
         command += ["--camera", str(0 if args.camera is None else args.camera)]
     if args.bundle is not None:
