@@ -103,7 +103,11 @@ def test_check_line_rejects_what_the_brief_never_said(line: str, reason: str) ->
 def test_check_line_allows_the_receptionists_own_facts() -> None:
     state = make_brief()
     heard = "We have 10:30 tomorrow morning with Dr Mehta."
-    assert check_line("Yes, 10:30 tomorrow morning with Dr Mehta works.", state.brief, heard) == []
+    assert check_line("So 10:30 tomorrow morning with Dr Mehta?", state.brief, heard) == []
+    # Accepting the offer is the user's answer, never the agent's own line.
+    assert check_line("Yes, 10:30 tomorrow morning with Dr Mehta works.", state.brief, heard) == [
+        "agrees for the user: yes"
+    ]
     assert (
         check_line(
             "I'd like to book a doctor's appointment for Asha Rao, tomorrow morning.",

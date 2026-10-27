@@ -9,7 +9,8 @@ instead. Nothing here dials, speaks or stores secrets.
 
 Safety: every line the brain produces goes through `check_line`, which reuses the
 composer's validator pieces: no number, time, name or booking claim that neither the
-brief nor the receptionist said, no meta text, at most 25 words. A rejected LLM line is
+brief nor the receptionist said, no agreeing to an offer (only the user's answer does
+that), no meta text, at most 25 words. A rejected LLM line is
 replaced by the rule-based brain's line, never spoken as is.
 """
 
@@ -36,6 +37,7 @@ from app.protocol import (
     TranscriptEntry,
 )
 from app.validator import (
+    _AGREEMENT,
     MAX_WORDS,
     _booking_claims,
     _invented_names,
@@ -82,6 +84,11 @@ _QUESTION = re.compile(
     r"\?\s*$|\b(does that work|is that (ok|okay|fine)|would that (work|suit))\b", re.I
 )
 _BOOKED = re.compile(r"\b(booked|confirmed|reserved|scheduled|all set|you're set)\b", re.I)
+# Accepting an offer is the user's decision (an attended answer), never the agent's.
+_COMMITMENT = re.compile(
+    r"\b(i'll|we'll|i will|we will) take\b|\bbook (it|that|me|her|him|them)\b|\bplease book\b"
+    r"|\bgo ahead\b|\bthat's (fine|good|great|perfect|ok|okay)\b"
+)
 _NO_SLOT = re.compile(
     r"\b(no (slots?|appointments?|availability)|fully booked|nothing (free|available))\b", re.I
 )
@@ -156,6 +163,11 @@ def check_line(line: str, brief: Brief, transcript_text: str) -> list[str]:
     reasons += _invented_numbers(text, known)
     reasons += _invented_names(text, known)
     reasons += _booking_claims(_normalise(text), _normalise(transcript_text))
+    reasons += [
+        f"agrees for the user: {m.group(0)}"
+        for pattern in (_AGREEMENT, _COMMITMENT)
+        for m in pattern.finditer(_normalise(text))
+    ]
     reasons += _meta_text(text)
     # A day or part of day the brief and the receptionist never mentioned.
     allowed = temporal_facts(known)
