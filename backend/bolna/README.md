@@ -46,7 +46,7 @@ Nothing here has been run against the live API yet.
 | Fact | Label | Source |
 |---|---|---|
 | Create is `POST /v2/agent`, returns **201** `{agent_id, state: "created", version_id}` | Documented | [create](https://www.bolna.ai/docs/api-reference/agent/v2/create.md), [AGENTS.md](https://www.bolna.ai/docs/agents-md.md) |
-| Full update is `PUT /v2/agent/{agent_id}` (replaces the whole config), returns 200 `{agent_id, status: "updated"}`; `PATCH` only touches name, welcome message, webhook, voice, prompts | Documented | [update](https://www.bolna.ai/docs/api-reference/agent/v2/update.md), [patch](https://www.bolna.ai/docs/api-reference/agent/v2/patch_update.md) |
+| Full update is `PUT /v2/agent/{agent_id}` (replaces the whole config), returns 200 `{agent_id, status: "updated"}`; `PATCH` only touches name, welcome message, webhook, voice, prompts, ingest source, telephony provider, calling guardrails and `call_summary_enabled` (list checked 28 Oct) | Documented | [update](https://www.bolna.ai/docs/api-reference/agent/v2/update.md), [patch](https://www.bolna.ai/docs/api-reference/agent/v2/patch_update.md) |
 | Get is `GET /v2/agent/{agent_id}` | Documented | [get](https://www.bolna.ai/docs/api-reference/agent/v2/get.md) |
 | Body is `{agent_config, agent_prompts}`; both are required by the schema | Documented | [create](https://www.bolna.ai/docs/api-reference/agent/v2/create.md) |
 | Graph config lives in `tasks[0].tools_config.llm_agent` with `agent_type: "graph_agent"`; `llm_config` holds `agent_information`, `current_node_id`, `nodes[]` | Documented | [graph intro](https://www.bolna.ai/docs/graph-agent/introduction.md), [full example](https://www.bolna.ai/docs/graph-agent/full-example.md) |
@@ -84,7 +84,9 @@ Nothing here has been run against the live API yet.
 | `hangup_after_LLMCall` (prompt-based hangup) | false | Documented; keeps end-of-call checks away from our custom LLM | [create](https://www.bolna.ai/docs/api-reference/agent/v2/create.md) |
 | `voicemail` | false | Documented; keeps voicemail checks away from our custom LLM | same |
 | `backchanneling` ("Mm-hmm" fillers) | false | Documented; nothing may be spoken without SEND | same |
-| Agent-level `number_of_words_for_interruption` (default 2) | not set | Documented; applies to the welcome message and `listen` | same |
+| Agent-level `number_of_words_for_interruption` (default 2) | not set | Documented default 2, but **the live agent reads 1** (GET, 28 Oct); applies to the welcome message and `listen` | same |
+| `discard_pre_welcome_utterance` ("Ignore user speech before welcome message") | not set (live: false) | Field name seen only in the live GET (28 Oct); the create schema doesn't list it, the [agent tab](https://www.bolna.ai/docs/agent-setup/agent-tab.md) documents the toggle. Proposed true for D9, see [go-live check](../../docs/status/2026-10-28-live.md#3-what-d9-needs-from-bolna) | live GET |
+| Agent-level `call_summary_enabled` | not set (live: false) | Documented: off by default; when on, the final webhook carries `summary`. D9 notes need it on | [create](https://www.bolna.ai/docs/api-reference/agent/v2/create.md) |
 
 ### Custom LLM (ledger B08, B23)
 
