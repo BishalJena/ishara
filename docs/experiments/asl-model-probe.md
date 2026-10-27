@@ -145,6 +145,27 @@ forward-and-down a forearm length, slower.
 | Frame rate 15 / 60 fps (resampled) | essentially unchanged; `morning` 0.62 → 0.75 / 0.84 at 15 / 60 |
 | Simulated 9:16 phone window (landmarks outside become NaN) | `no` 0.64 → 0.42, `tomorrow` 0.36 → 0.17, `morning` 0.62 → `tree`: **hands must stay in frame** on a phone |
 
+## Run 4: the app's path in the simulator vs the Mac (27 Oct)
+
+The same 18 Lifeprint clips (the YouTube ones re-encoded to H.264: the simulator can't decode
+VP9), fed whole through both paths. **Mac:** legacy MediaPipe Holistic 0.10.21 → Kaggle layout →
+`ai-edge-litert`. **App:** the Holistic Landmarker task the iPhone runs → `KaggleLayout` → LiteRT
+2.17.0 on iOS (`SignPipelineLiteRT`), in the iOS simulator (`IsharaTests/ASLParityHarness`).
+Compared by `spikes/asl_probe/parity.py`;
+[evidence](evidence/asl-model-probe/parity-simulator-lifeprint.json).
+
+| Measure | Result |
+|---|---|
+| Clips where the Mac is confident (p ≥ 0.6) | 9; the app gives the same top-1 on **9/9** and the same chip on 9/9 (no ×2, now ×2, tomorrow ×2, please, wait, yes) |
+| Decision (chip / pick-one / `?`) under the bundle's rule | same on 17/18; the other is `yt_morning` 1: Mac `?` (happy 0.16), app pick-one MORNING 0.41 |
+| Top-1 overall | same on 14/18; the 4 differences are all low-confidence clips that are `?` on both |
+| Runtime | the Mac model on the app's own landmarks reproduces the app's probabilities exactly (max difference 0.0 at 5 decimals); a fixed input gives logits within 0.001 and the same top-5 (`SignPipelineLiteRT` test) |
+| Landmarks | the same hands detected on the same sides in every clip; hand positions within 0.001–0.07 of the image width where both see a hand |
+| Speed | ≈ 11 ms per frame for landmarker + model in the simulator on the Mac's CPU; says nothing about the iPhone |
+
+So the landmarker swap (legacy → task) and the runtime swap (Python → iOS) don't change what the
+model decides on these clips. Not shown: portrait phone footage, a live camera, device speed.
+
 ## Decision rule for the app (proposed, to be frozen on the phone session)
 
 1. Full 250-way softmax. Never restrict to the vocabulary first.
@@ -171,8 +192,8 @@ Script: hello → (purpose says doctor) → offered slot → no → tomorrow · 
 ## Limitations
 
 - One presenter, one laptop webcam, one free-form session with inferred labels: **not** the
-  Gate 2 number. The labelled measurement happens on the iPhone (portrait, Tasks Holistic
-  Landmarker) on Thursday; everything here predicts, nothing here proves.
+  Gate 2 number. The labelled measurement is the phone clips (portrait front camera, scored on
+  both paths with `spikes/recognition/asl_summary.py`); everything here predicts, nothing here proves.
 - Lifeprint clips: one signer, 1–2 clips per word, standard YouTube licence, local only.
 - INCLUDE/ISLRTC clips are landscape studio recordings; the presenter's October takes were
   recorded for a different experiment.
@@ -196,6 +217,13 @@ artifacts/asl_signs/.venv/bin/python ../asl_probe/infer.py --manifest artifacts/
 .venv/bin/python ../asl_probe/live_probe.py --camera 0 --attempts 5          # guided webcam session
 (cd artifacts/asl_signs && .venv/bin/python ../../../asl_probe/offline_analysis.py --session <id> --labels <labels.json>)
 python3 ../asl_probe/teach.py && (cd artifacts && python3 -m http.server 8765)   # lesson page
+# Run 4: app path in the simulator (H.264 clips in DIR), then the comparison
+TEST_RUNNER_ISHARA_PARITY_CLIPS=DIR TEST_RUNNER_ISHARA_PARITY_OUT=OUT xcodebuild test \
+  -project ../../ios/Ishara.xcodeproj -scheme Ishara -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -only-testing:IsharaTests/ASLParityHarness
+.venv/bin/python ../asl_probe/parity.py --clips DIR --sim OUT --out parity.json
+# per-word summary, gate and suggested thresholds for a labelled session
+.venv/bin/python asl_summary.py --clips DIR      # or --records records.json, or --app OUT
 ```
 
 Paid calls: none. Downloads: the model, 54 INCLUDE clips, 17 ISLRTC clips, 11 Lifeprint videos,

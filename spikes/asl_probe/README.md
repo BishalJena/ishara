@@ -17,6 +17,11 @@ Two Python environments, on purpose: landmarks come from `spikes/recognition/.ve
 | `live_probe.py` | recognition `.venv` | guided webcam session: banner says which word to sign, detector cuts the sign, model scores it, `.npy` + `.mp4` per cut, `records.json`, per-word summary; `--portrait` simulates a phone front camera |
 | `offline_analysis.py` | asl_signs `.venv` | re-score saved cuts: TTA, repeat accumulation, 9:16 crop, 15/60 fps, latency |
 | `teach.py` | any python3 | writes `artifacts/teach.html`, the lesson page (local clips only) |
+| `parity.py` | recognition `.venv` | Mac path vs the app's path (from `ios/IsharaTests/ASLParityHarness`) on the same clips: top-1, decisions, landmark gaps, and the Mac model on the app's landmarks |
+
+Per-word summaries, the gate check and threshold suggestions for a labelled session (live probe
+records, one clip per attempt, or the app path's output) are in
+[`spikes/recognition/asl_summary.py`](../recognition/asl_summary.py), next to the bundle it freezes.
 
 Setup and the exact commands are in the experiment record's *Reproduce* section. Everything the
 scripts download or write lives under the gitignored `spikes/recognition/artifacts/`.

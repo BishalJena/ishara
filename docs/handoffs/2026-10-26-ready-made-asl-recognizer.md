@@ -1,6 +1,7 @@
 # Handoff: the ready-made ASL recognizer, and the delegated-call mode (26–28 Oct)
 
-Written 25 October 2026 for the teammate, revised the same evening after the measurements.
+Written 25 October 2026 for the teammate, revised the same evening after the measurements, and
+on 27 October after the simulator-side work landed (see [Built on 27 Oct](#built-on-27-oct-the-mac-only-list)).
 Supersedes the recognition track (R1–R4, G2) of [PLAN.md](../../PLAN.md); decisions D8 and D9
 point here. Everything else in the plan (Bolna Path B, composer, call safety, iPhone gates) stands.
 
@@ -57,6 +58,8 @@ slot → **no** → **tomorrow · please** → "10:30 tomorrow morning?" → **y
    exactly like `PROVISIONAL_BANNER` today.
 
 Probe defaults and their evidence are in the record; the first labelled session is on the phone.
+The rule is implemented three times against the same bundle and tested to agree: Python
+(`asl_matcher.asl_decision`), Swift (`LogitsMatcher`), and the threshold sweep in `asl_summary.py`.
 
 ## What is built (25 Oct, evening) and what is left
 
@@ -83,54 +86,84 @@ the agent's question; sign **yes** or type `a yes`, and the agent says "Yes, 4 p
 works. Thank you." Add `--brief-chips tomorrow morning` to change the brief; drop
 `--attended` for the unattended version (the agent promises a callback and hangs up).
 
-### Left for the teammate (Mac and simulator), in order
+### Built on 27 Oct: the Mac-only list
 
-1. **LiteRT in the app.** Wrap `model.tflite` (11 MB, from the Hugging Face mirror; ship it in the
-   app bundle with its SHA-256 checked against the bundle's `model.sha256`) behind a
-   `LogitsModel` in `SignPipeline`: input `[frames, 543, 3]` float32 in the **Kaggle layout**
-   (face 468, left hand 21, pose 33, right hand 21; NaN for a missing part), output 250
-   logits; `LogitsMatcher` does the rest. CocoaPods `TensorFlowLiteSwift` (Metal subspec
-   optional) or Bazel; see R21. The Tasks Holistic Landmarker output must be re-ordered to
-   that layout; `asl_model.kaggle_frame` is the reference. **Parity in the simulator:** feed
-   the same 20 saved cuts (`artifacts/asl_probe/live/<session>/*.mp4`, via the existing
-   `VideoFileFrameSource`) through the Mac path and the simulator path and compare top-1 and
-   p; that is PLAN P3 as far as a simulator can take it.
-2. **Pick-one tile.** `LogitsMatchResult.pickOne` is produced by the matcher but the app's
-   `SegmentClassifier` still maps results to `.sign` / `.unsure`; add a `.candidate(Sign)`
-   recognition event, a tappable tile in `SigningPanel`, and accept only on tap.
-3. **Brief and Notes screens.** Home: a "Call for me" button → profile fields (name,
-   optional callback, reason) + the signed/tapped chips → `BackendClient.createBrief` →
-   show `Brief.text` with "Approve and call" (attended toggle) → `startCall(StartCallRequest(
-   mode: .delegated, briefID:, attended:))`. After `status ended`, `notes(callID:)` →
-   a Notes screen: outcome, summary bullets, open questions, transcript, Bolna summary.
-   The simulator plus `scripts/sign_lab.sh --backend-only` exercises the whole flow with the
-   scripted receptionist, as the end-to-end test does.
-4. **Framing guard.** Warn when a hand is out of frame for > 0.3 s during a sign (portrait
-   is narrow: simulated 9:16 cropping dropped `no` 0.64 → 0.42); say "hand left the frame"
-   as the `?` reason. Testable in the simulator with the saved cuts cropped to 9:16.
-5. **Probe export**: ground-truth labels in `live_probe.py` output are already there; add a
-   per-word summary export the slide can use.
+Everything that was on the Mac-and-simulator list is now on this branch, built and tested in
+the simulator. Nothing below has run on an iPhone or against real Bolna.
 
-### Left for the founder (iPhone), in order
+| Was left | What landed | Verified |
+|---|---|---|
+| **LiteRT in the app** | `SignPipeline/KaggleLayout` (Holistic Landmarker → `[frames, 543, 3]`, NaN for a missing part, the 10 iris points dropped) and the `LogitsModel` protocol; a new package `SignPipelineLiteRT` wrapping Google's prebuilt LiteRT C library (the binary behind the `TensorFlowLiteC` 2.17.0 pod, used directly because the iOS runtime is CocoaPods-only and this project is Swift packages only); `asl-signs.tflite` in `LocalAssets`; the shipped `Resources/asl-bundle.json`; `SegmentClassifier` runs the ASL engine whenever the model is installed (SignCLIP stays as the fallback) | Runtime: the iOS logits match the Mac runtime on a fixed input to < 0.001 with the same top-5; ≈ 15 ms per 1.5 s clip in the simulator. Its symbols don't overlap MediaPipe's embedded TensorFlow Lite (checked with `nm`), and the app links both. |
+| **Parity in the simulator** | `IsharaTests/ASLParityHarness` runs saved clips through the app's own path (Holistic Landmarker task → LiteRT) and writes what it saw; `spikes/asl_probe/parity.py` runs the Mac path (legacy Holistic → the same model) on the same clips and compares | 18 Lifeprint ASL clips: on all 9 clips the Mac is confident about, the app gives the same top-1 and the same chip (no ×2, now ×2, tomorrow ×2, please, wait, yes); decisions agree on 17/18, the one difference being Mac `?` vs app "did you mean MORNING?"; the Mac model on the app's landmarks reproduces the app's output exactly. [Evidence](../experiments/evidence/asl-model-probe/parity-simulator-lifeprint.json). |
+| **Pick-one tile** | `RecognitionResult.candidate(Sign)`; a "Did you mean TOMORROW?" tile under the camera on the call and brief screens; it becomes a chip, or answers the agent's question, only when tapped; the next sign or ✕ drops it | app tests |
+| **Brief and Notes screens** | Home → **CALL FOR ME** → Get ready → Brief (sign or tap the day and time, name / callback / reason, "Prepare the request" → the backend's brief, "I'll stay and answer questions" switch, "Approve and call") → the call screen without SEND, chips or quick replies (the camera and the question card only when attended) → "See the call notes" → outcome, what happened, still open, the brief, the transcript, Bolna's summary marked as possibly wrong. Editing anything after the brief was built hides it until rebuilt. The fake driver plays a delegated call too, so it works with no backend. | app and UI tests; **end to end against the real backend code** (`backend/scripts/local_demo.py`, scripted receptionist): the agent opened with the brief, asked, the tapped yes went out on the call, the notes said Booked |
+| **Framing guard** | `RecognitionCore/FramingGuard`: a hand whose landmarks vanish while the pose's wrist is past the left, right or top edge for > 0.3 s explains the `?` ("A hand left the picture. Keep both hands inside the frame.") | unit tests on synthetic tracks; not yet on real portrait footage |
+| **Probe export** | `spikes/recognition/asl_summary.py`: per-word table (chip, one-tap, `?`, wrong), the gate check, and suggested thresholds from a session (`--records` from the live probe, `--clips` for one clip per attempt, `--app` for the app path's view of the same clips); `--write-bundle` writes the frozen bundle | tests, including that its rule matches `asl_decision` on 400 random vectors |
 
-1. **Install and the labelled phone session** (next section), **Monday or Tuesday**: 8 words ×
-   5 attempts, guided, portrait. `live_probe.py --portrait` on the Mac is the rehearsal.
-2. **Freeze the thresholds** from that session (per-word values if needed) and set the
-   bundle's `provisional` to false; the teammate wires the frozen bundle in.
-3. **Real device parity and speed** (PLAN G3/G4 on the phone): camera preview, Tasks
-   Landmarker frame rate, chip latency.
-4. **The first real delegated call** to a consenting teammate, with a cost heads-up: the
-   welcome message is Bolna's static disclosure; the opening goes out as a `user_reply` event
-   right after `in-progress`, so watch for a `not_delivered` if Bolna is still speaking (B24)
-   and re-send once by hand if so.
+Also found and fixed on the way: a settled delegated call could open a second question if the
+receptionist spoke again before the hang-up; it now says nothing new.
 
-## The phone session (Mon 26 or Tue 27 Oct): the one measurement that matters
+**Set-up for a fresh checkout** (once; nothing here is committed):
 
-8 words × 5 attempts, guided prompt, portrait, phone at the distance a user holds it, same
-decision rule. This is simultaneously the product-condition test, the landmarker parity check
-(G3) and the number for the slide. Gate: ≥ 6/10 per script sign counting one-tap pick-one, 0 wrong
-auto-accepts, 0 auto-accepts on negatives, < 2 s. Then freeze thresholds (and any per-word value)
-from this session only and set the bundle's `provisional` to false.
+```sh
+ios/Packages/SignPipelineLiteRT/Scripts/download_tflite_c.sh            # LiteRT, checksum-verified
+ios/Packages/SignPipelineLiteRT/Scripts/download_asl_model.sh ios/Ishara/LocalAssets
+ios/Packages/SignPipelineMediaPipe/Scripts/download_holistic_model.sh ios/Ishara/LocalAssets
+```
+
+`scripts/verify.sh` runs the first one itself. Without `asl-signs.tflite` the app falls back to
+the old SignCLIP path; without the holistic model the pipeline can't start (Get ready says why).
+
+### Left for the teammate (Mac and simulator)
+
+1. **Review and merge this PR**; the rest builds on it.
+2. **Try to break it in the simulator**: the scripted demo (`CALL FOR ME` with the default fake
+   call), the replay menu's `?`, `frame` and `tomorrow?` options, and the real backend code:
+   `cd backend && uv run python -m scripts.local_demo --port 8799 --delay 0.3` plus the
+   `Secrets.xcconfig` in `LocalBackendCallUITests`, then `-IsharaDriver live`.
+3. **Backend deploy**, once the founder authorises it: the D9 endpoints are not on Heroku yet
+   (`backend/HEROKU.md`).
+4. **Demo script and slides.**
+
+### Left for the founder (needs the iPhone)
+
+1. **Record the phone clips**, when the phone is available (next section). The iPhone's own
+   Camera app is enough; the app does not need to be installed for this.
+2. **Run them through both paths and freeze**: `asl_summary.py --clips` (Mac path) and the
+   parity harness plus `asl_summary.py --app` (the phone's landmarker, in the simulator), then
+   `--write-bundle`; review the result and ship it as `ios/Ishara/Resources/asl-bundle.json`
+   (and `fixtures/asl/`). Until then the app says the thresholds are provisional.
+3. **Install on the iPhone** for what only the device can show: live camera, frame rate and
+   chip latency (PLAN G4).
+4. **The first real delegated call** to a consenting teammate, after a cost heads-up. It doesn't
+   need the iPhone: the simulator or the Mac bridge can start it against the deployed backend.
+   The opening goes out as a `user_reply` event right after `in-progress`, so watch for a
+   `not_delivered` if Bolna is still speaking (B24) and re-send once by hand if so.
+
+## The phone clips: the one measurement still missing
+
+**What:** the 8 rehearsed words × 5 attempts, plus 5 negatives (scratch your face, wave
+vaguely, rest your hands), each a separate short video from the iPhone **front camera, portrait**,
+held where a user would hold it; rest, sign once, rest. Name them `<word>_<n>.mov`
+(`tomorrow_3.mov`, `none_2.mov`) and AirDrop them to the Mac. About 15 minutes.
+
+**Then, on the Mac:**
+
+```sh
+cd spikes/recognition
+.venv/bin/python asl_summary.py --clips ~/phone-clips --markdown /tmp/mac.md        # Mac path
+TEST_RUNNER_ISHARA_PARITY_CLIPS=~/phone-clips TEST_RUNNER_ISHARA_PARITY_OUT=/tmp/app \
+  xcodebuild test -project ../../ios/Ishara.xcodeproj -scheme Ishara \
+  -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:IsharaTests/ASLParityHarness
+.venv/bin/python ../asl_probe/parity.py --clips ~/phone-clips --sim /tmp/app       # path parity
+.venv/bin/python asl_summary.py --app /tmp/app --write-bundle /tmp/asl-bundle.json  # app path, frozen bundle
+```
+
+Convert anything that isn't H.264 first (`ffmpeg -i in.mov -c:v libx264 out.mp4`): the simulator
+could not decode VP9. **Gate:** ≥ 6/10 per script sign counting a correct one-tap pick-one, 0 wrong
+auto-accepts, 0 auto-accepts on negatives. The suggested cut-off never goes below the bundle's
+0.6 globally; per-word values only go down (not below 0.45) where they add right chips and no
+wrong one. Latency (< 2 s) is measured on the device, not in the simulator.
 
 ## D9 (approved 25 Oct, built): the delegated call, with optional steering
 
@@ -182,11 +215,15 @@ WebSocket `ask` {ask_id, question, options[{choice, spoken}], fallback, timeout_
 
 ## Open questions for the teammate
 
-1. CocoaPods in the iOS project for LiteRT: acceptable, or Bazel, or Mac bridge for the demo?
-2. Tasks Holistic Landmarker on iOS: confirm it exposes face (468), pose (33) and both hands (21)
-   in a form we can re-order to the Kaggle layout, and what it reports for a missing hand.
-3. D9: do you see a problem with an "ask the user" node waiting on an injected event in the graph
-   agent? If the graph can't wait, the fallback is a backend-driven custom-LLM node like today's.
+1. ~~CocoaPods for LiteRT?~~ Answered: neither CocoaPods nor Bazel; the pod's prebuilt C
+   library as a Swift package binary target (see the package's `Package.swift` and download script).
+2. ~~Does the Tasks Holistic Landmarker fit the Kaggle layout?~~ Answered: 478 face points (the
+   first 468 are the layout), 33 pose, 21 per hand, an empty list for a missing part; left and
+   right hands land on the same sides as legacy Holistic in all 18 parity clips.
+3. D9: the backend drives the "ask the user" step from the custom-LLM listen node (it holds the
+   line while an answer is pending), so the graph never waits on an event. Worth a look before
+   the first real call: what Bolna does when an injected `user_reply` arrives while the
+   receptionist is still talking (B24).
 
 ## Claim ledger
 

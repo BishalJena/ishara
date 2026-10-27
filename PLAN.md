@@ -55,7 +55,7 @@ Agreed on 23 October 2026. Raise any change explicitly; don't switch silently.
 
 | # | Topic | Decision | Why |
 |---|---|---|---|
-| D1 | Who carries the call | **Option C.** Build **Path B** first: Bolna places the call through its default number. **Path A** (user's own number + Apple call-audio injection) is a Thursday bonus | B is testable before a device is available, gives the app real captions and uses Bolna centrally. A keeps the native-call story if it works |
+| D1 | Who carries the call | **Option C.** Build **Path B** first: Bolna places the call through its default number. **Path A** (user's own number + Apple call-audio injection) is a bonus if everything else lands by Wednesday | B is testable before a device is available, gives the app real captions and uses Bolna centrally. A keeps the native-call story if it works |
 | D2 | Voice (TTS) | **Sarvam Bulbul** (v4 Flash, English-India voice). Cartesia Sonic is the backup | Sponsor, inside Bolna's flat rate, Indian voice |
 | D3 | Call language | **English (India)** only. Hindi is "next" | Lowest effort |
 | D4 | Chips → sentence | **Groq LLM** (OpenAI-compatible API, model `openai/gpt-oss-120b`) drafts the sentence using the chips plus the live transcript, then a **validator** checks it. Fixed **templates** are the fallback. Replaced Cerebras on 23 Oct | Fast, context-aware wording; templates catch meaning drift. Cerebras is not free; Groq is billed per token at a low rate (§10) |
@@ -377,13 +377,15 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 
 - [x] **R5a [Build]** Measure the ready-made ASL model: ISL clips, Lifeprint ASL clips, presenter
   webcam session, offline analysis. *Done 25 Oct:* [record](docs/experiments/asl-model-probe.md).
-- [ ] **R5 [Mate]** ASL recognizer in the app (simulator): LiteRT, Kaggle layout from the Tasks
-  Landmarker, parity on saved cuts, pick-one tile, framing guard, Brief/Notes screens. *Done:* the
-  [teammate list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-the-teammate-mac-and-simulator-in-order).
+- [x] **R5 [Mate]** ASL recognizer in the app (simulator): LiteRT, Kaggle layout from the Tasks
+  Landmarker, parity on saved cuts, pick-one tile, framing guard, Brief/Notes screens. *Done 27 Oct*
+  ([what landed](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#built-on-27-oct-the-mac-only-list));
+  what is left for the teammate is review, simulator testing and the deploy
+  ([list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-the-teammate-mac-and-simulator)).
   Replaces R1–R4.
-- [ ] **R7 [You]** iPhone (Mon–Tue): install, the labelled phone session, frozen thresholds, device
-  parity and speed, the first real delegated call. *Done:* the
-  [founder list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-the-founder-iphone-in-order).
+- [ ] **R7 [You]** iPhone, when it is available: the phone clips (the Camera app is enough), frozen
+  thresholds, device speed, the first real delegated call. *Done:* the
+  [founder list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-the-founder-needs-the-iphone).
 - [ ] ~~**R4 [You]** Final test session: 10 × 12 signs plus 50 negatives.~~ Superseded by D8.
 - [ ] **G2 Gate 2** (see §7, revised 25 Oct).
 - [x] **V6 [Build]** Call session layer: `POST /calls` with the allowlist, the WebSocket messages (§3),
@@ -392,12 +394,12 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 
 ### Tue 27 Oct: on-device pipeline → Gate 3
 
-- [ ] **R6 [Build]** ASL recognizer on device, Day 2: LiteRT in `SignPipeline`, Tasks Landmarker →
-  Kaggle layout, simulator parity on saved cuts, hand-out-of-frame guard, docs. *Done:* items
-  1–4 of the [teammate list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-the-teammate-mac-and-simulator-in-order).
+- [x] **R6 [Build]** ASL recognizer in the app, Day 2: LiteRT (`SignPipelineLiteRT`), Tasks
+  Landmarker → Kaggle layout, simulator parity on saved clips, hand-out-of-frame guard, docs.
+  *Done 27 Oct;* on-device speed stays with R7.
 - [x] **V7 [Build]** D9 delegated call, backend and Mac bridge: briefs, delegated/attended
-  calls, asks and answers, notes; Sign Lab end-to-end test. (25 Oct; iOS Brief/Notes screens
-  and the real call remain: see the handoff)
+  calls, asks and answers, notes; Sign Lab end-to-end test. (25 Oct; the iOS Brief/Notes screens
+  landed 27 Oct and passed end to end against the local demo backend; the real call remains)
 - [x] **R5 (Mac half)** ASL matcher behind `--model asl`, bundle v2, composer vocabulary, #34,
   iOS wire types, `LogitsMatcher`, `AskCard`. (25 Oct)
 
@@ -413,7 +415,13 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
   iOS extractor rather than copying Mac embeddings. Also re-check the Core ML embeddings on
   the iPhone with `.cpuAndGPU` (the Neural Engine failed on the Mac, P1).
   *Done:* both give the same accepted label (or "?") on every calibration clip.
-- [ ] **G3 Gate 3** (see §7).
+  *27 Oct, ASL model (D8):* 18 Lifeprint clips, whole: the same chip on all 9 clips the Mac is
+  confident about, decisions agree on 17/18 (the other: Mac `?`, app pick-one MORNING), the Mac
+  model on the app's landmarks reproduces the app exactly
+  ([evidence](docs/experiments/evidence/asl-model-probe/parity-simulator-lifeprint.json)). The
+  SignCLIP part of P3 is moot under D8. Repeat on the phone clips once they exist.
+- [ ] **G3 Gate 3** (see §7). Met in the simulator for the ASL model on the Lifeprint clips;
+  the phone clips are the remaining check.
 - [x] **A2 [Build]** Wire the app to the backend: start call, chips → draft, SEND, captions,
   status, STOP, End. Uses the replay-video recognizer in the simulator.
   (done 24 Oct: #20/#27, `LiveCallDriver` over `POST /calls` and the call WebSocket, tested
@@ -436,12 +444,12 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 
 ### Thu 29 Oct: real iPhone → Gate 4
 
-- [ ] **T1 [Mate]** Install on the iPhone (Xcode, dev team). Record the iOS version, enable
+- [ ] **T1 [You]** Install on the iPhone (Xcode, dev team). Record the iOS version, enable
   **Add Audio in Calls**, and grant camera and injection permissions.
-- [ ] **T2 [Mate + You]** Path B full script live on the phone camera, plus the edge-case run:
+- [ ] **T2 [You + Mate]** Path B full script live on the phone camera, plus the edge-case run:
   long pause, fidgeting, wrong chip, out of frame, double SEND, receptionist
   interrupting, network off, End.
-- [ ] **T3 [Mate]** Path A bonus: own-number call, play a Sarvam clip, recipient repeats what they
+- [ ] **T3 [You]** Path A bonus: own-number call, play a Sarvam clip, recipient repeats what they
   heard; camera and Live Captions on at the same time.
 - [ ] **G4 Gate 4** (see §7).
 

@@ -7,8 +7,9 @@ folder into the app; anything missing just turns that part off.
 | File | From | Without it |
 |---|---|---|
 | `holistic_landmarker.task` | `ios/Packages/SignPipelineMediaPipe/Scripts/download_holistic_model.sh ios/Ishara/LocalAssets` | The recognition pipeline can't start (Get ready says why). Use `-IsharaRecognition scripted` |
-| `SignCLIPEncoder.mlmodelc` or `SignCLIPEncoder.mlpackage` | `ml/coreml` conversion (PR #21). Compile once with `xcrun coremlcompiler compile SignCLIPEncoder.mlpackage .` to skip the first-launch compile | Every sign shows [?] |
-| `recognition-bundle.json` | `retrieval.py export-bundle --encoder signclip` (PR #12), re-embedded with the iOS extractor for P3. The Sign Lab's `--provisional` try bundle is refused | Every sign shows [?] |
+| `asl-signs.tflite` | `ios/Packages/SignPipelineLiteRT/Scripts/download_asl_model.sh ios/Ishara/LocalAssets` (the public ASL Signs 1st-place model, decision D8; its thresholds are the committed `Resources/asl-bundle.json`) | The app falls back to the SignCLIP files below |
+| `SignCLIPEncoder.mlmodelc` or `SignCLIPEncoder.mlpackage` | `ml/coreml` conversion (PR #21). Compile once with `xcrun coremlcompiler compile SignCLIPEncoder.mlpackage .` to skip the first-launch compile | Without the ASL model too: every sign shows [?] |
+| `recognition-bundle.json` | `retrieval.py export-bundle --encoder signclip` (PR #12), re-embedded with the iOS extractor for P3. The Sign Lab's `--provisional` try bundle is refused | Without the ASL model too: every sign shows [?] |
 | `SampleSigns/rest.mov` | 2–3 s of the signer's hands resting on the table | The simulator can't calibrate on Get ready |
 | `SampleSigns/<name>.mov` (`.mp4`, `.m4v`) | Saved sign recordings, e.g. `hello_01.mov` | Nothing to replay in the simulator |
 
