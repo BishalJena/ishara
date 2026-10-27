@@ -38,6 +38,8 @@ from app.protocol import (
 )
 from app.validator import (
     _AGREEMENT,
+    _MONTHS,
+    _WEEKDAYS,
     MAX_WORDS,
     _booking_claims,
     _invented_names,
@@ -249,6 +251,27 @@ def _proposal_in(text: str) -> str | None:
     return f"{match.group(0).strip()} {day}" if day else match.group(0).strip()
 
 
+# Days a receptionist can offer instead of the brief's ("today" and "now" are left out:
+# "how can I help you today?" is a greeting, not an offer).
+_OFFER_DAYS = frozenset(("tomorrow", "day after tomorrow", "may", *_WEEKDAYS, *_MONTHS))
+_OFFERING = re.compile(r"\?|\b(how about|what about|instead|could|can|would|available|free)\b")
+
+
+def _day_offer(text: str, brief: Brief) -> str | None:
+    """A day the receptionist offers that the brief never asked for ("Friday instead?")."""
+    if not _OFFERING.search(_normalise(text)):
+        return None
+    new_facts = temporal_facts(text) - temporal_facts(brief.text)
+    days = [f.split(":", 1)[1] for f in new_facts if f.startswith("day:")]
+    days = [d for d in days if d in _OFFER_DAYS]
+    if len(days) != 1:
+        return "that" if days else None
+    day = days[0]
+    if day == "day after tomorrow":
+        return "the day after tomorrow"
+    return day if day == "tomorrow" else day.capitalize()
+
+
 class RuleBrain:
     """No LLM: opens with the brief, hands every proposal to the user (attended) or
     promises a callback (unattended), closes when the receptionist confirms."""
@@ -274,7 +297,7 @@ class RuleBrain:
             # The brief shares only the name and the callback number: never guess the rest,
             # and never answer "insurance number" with the phone number.
             return Decision(CALLBACK_LINE, done=True)
-        proposal = _proposal_in(heard)
+        proposal = _proposal_in(heard) or _day_offer(heard, state.brief)
         if proposal:
             if state.attended:
                 return Decision(PAUSE_LINE, ask=(heard.strip(), _options_for(proposal)))

@@ -24,6 +24,7 @@ from app.delegate import (
     PAUSE_LINE,
     Brain,
     DelegateState,
+    RuleBrain,
     build_brain,
     build_notes,
 )
@@ -600,3 +601,42 @@ def test_out_of_brief_requests_get_the_callback_line_and_a_hang_up(flow, heard, 
     assert "4321" not in said and "Asha" not in said
     wait_for(lambda: ended_by_agent(f))
     assert notes(f, call_id)["outcome"] == "callback"
+
+
+def test_a_different_day_goes_to_the_attended_user(flow) -> None:
+    f = flow()
+    call_id = f.start(f.brief(), attended=True)
+    with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
+        f.live(call_id)
+        f.speak_last(call_id)
+        assert f.listen_turn(call_id, DIFFERENT_DAY) == PAUSE_LINE
+        ask = f.drain_until(ws, "ask")
+        assert ask["question"] == DIFFERENT_DAY
+        assert ask["options"][0]["spoken"] == "Yes, Friday works. Thank you."
+
+
+def test_a_different_day_ends_an_unattended_call_with_the_callback_line(flow) -> None:
+    f = flow(end_after_done_s=0.05)
+    call_id = opened_call(f, attended=False)
+    assert f.listen_turn(call_id, DIFFERENT_DAY) == CALLBACK_LINE
+    wait_for(lambda: ended_by_agent(f))
+
+
+@pytest.mark.parametrize(
+    ("heard", "offered"),
+    [
+        ("Could you come on Friday instead?", "Friday"),
+        ("How about the day after tomorrow?", "the day after tomorrow"),
+        ("Would Monday or Tuesday suit?", "that"),
+        ("Is tomorrow morning still good?", None),  # the brief's own day
+        ("How can I help you today?", None),  # a greeting, not an offer
+        ("We're closed on Friday.", None),  # no offer
+    ],
+)
+def test_only_a_new_day_on_offer_goes_to_the_user(heard, offered) -> None:
+    decision = RuleBrain().decide(state(), heard)
+    if offered is None:
+        assert decision.ask is None
+    else:
+        assert decision.ask is not None
+        assert decision.ask[1][0].spoken == f"Yes, {offered} works. Thank you."
