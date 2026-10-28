@@ -562,6 +562,15 @@ async def test_an_llm_proposal_of_the_time_on_offer_is_used(
     assert decision.ask[1][0].spoken == yes_line
 
 
+async def test_an_llm_proposal_may_name_a_time_offered_in_an_earlier_turn() -> None:
+    delegate = state()
+    delegate.exchanges.append(Exchange("We have 4 pm tomorrow.", "Sorry, could you repeat?"))
+    raw = llm(PAUSE_LINE, {"question": None, "proposal": "4 pm tomorrow"})
+    decision = await Brain(FakeGroq(raw)).reply(delegate, "Does that still work for her?")
+    assert decision.source == "llm" and decision.ask is not None
+    assert decision.ask[1][0].spoken == "Yes, 4 pm tomorrow works. Thank you."
+
+
 def test_the_system_prompt_asks_for_the_time_on_offer_not_a_refused_one() -> None:
     assert "never a time the receptionist says they can't do" in SYSTEM_PROMPT
     assert 'more than one time, use "that"' in SYSTEM_PROMPT
