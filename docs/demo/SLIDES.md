@@ -18,7 +18,7 @@ and must be said as written.
 
 - **Live mode:** you sign each reply, Ishara drafts a sentence, and **nothing is spoken until
   you tap SEND**. You read the receptionist's words as captions.
-- **Call for me:** you sign what you need (e.g. TOMORROW · MORNING), approve a short brief
+- **Call for me:** you sign what you need (e.g. TOMORROW), approve a short brief
   **once**, and the call agent makes the call. When a decision is yours (a time is offered),
   it says "One moment, please." and asks you: sign or tap **yes / no / wait**. No answer in
   10 s, or you're not watching: it says it will call back, never decides for you.
@@ -44,14 +44,16 @@ captions · notes                         approvals; Bolna's custom LLM        o
 
 - Recognition: **(exact)** *"a published, signer-independent ASL model trained on public data
   from 21 Deaf signers"*: the Kaggle ASL Signs 1st-place model, used as is (no training, no
-  fine-tuning). Full 250-way softmax; a chip only at p ≥ 0.6 with margin ≥ 0.3 for a
-  vocabulary word; "Did you mean …?" between 0.35 and 0.6 (counts only when tapped);
-  otherwise `?`.
-- Rehearsed words: hello, thankyou, yes, no, now, please, tomorrow (candidates: morning, wait).
+  fine-tuning). Full 250-way softmax over every sign; only the eight rehearsed words can
+  become a chip, at p ≥ 0.65 (per-word 0.45–0.6) with margin ≥ 0.3; "Did you mean …?" from
+  0.35 up to that cut-off (counts only when tapped); every other sign, however confident, is
+  `?`. Cut-offs are provisional until the iPhone clips.
+- Chip words: hello, thankyou, yes, no, now, please, tomorrow, wait (wait is a candidate).
+  MORNING is pending the iPhone test: the model learned a one-handed form of it.
 - Voice: Bolna places the call from its default number; our backend is Bolna's custom LLM,
   so apart from its fixed welcome (the disclosure) and goodbye, Bolna says what the backend
-  returns; approved text goes in through Bolna's event injection. *By design; not yet run on
-  a real call.*
+  returns; approved text goes in through Bolna's event injection. Real Bolna calls for live
+  mode and Call for me (attended and unattended) passed on 28 Oct.
 - Partners: Bolna (agent, call, events, call summary), Sarvam Bulbul v4 Flash (voice),
   Deepgram nova-3 (speech-to-text), Plivo (phone line), Groq `openai/gpt-oss-120b` (draft
   wording).
@@ -85,11 +87,13 @@ Say all of these.
   continuous signing, not general translation.
 - **Calls come from a Bolna number, not the user's own number.**
 - What is measured so far is small: 6 of 11 Lifeprint clips and four of the presenter's signs
-  on the first try, on a Mac; 0 wrong auto-accepts at p ≥ 0.6 on the clips we have. The
-  thresholds are provisional until the phone-clip check.
-- **Pending on 28 Oct (update before the deck is final):** first real Bolna call, iPhone run
-  (speed, live camera), D9 on Heroku. If any of these are still pending on demo day, say so on
-  this slide.
+  on the first try, on a Mac; on 142 public dictionary clips, 0 wrong chips with chips limited
+  to the rehearsed words (the cut-offs were fitted on those same clips, so this is
+  optimistic). YES and HELLO from public signers are often missed. The thresholds are
+  provisional until the phone-clip check.
+- **Pending on 28 Oct (update before the deck is final):** iPhone install, live camera and
+  speed; the phone-clip thresholds; MORNING on the iPhone. If any of these are still pending on
+  demo day, say so on this slide.
 
 ## 6. What's next
 
