@@ -10,7 +10,8 @@ import SwiftUI
 /// The user is asked to sign the answer, so the card must leave the camera in view above
 /// it: the answers sit two per row with their sentences in small type, and the question
 /// shows at most two lines (VoiceOver reads all of it), whatever the transcriber made of
-/// the receptionist's words.
+/// the receptionist's words. Above XL text the sentences no longer fit in the buttons,
+/// so the card takes the accessibility layout below, limited to `maxHeight`.
 ///
 /// At accessibility text sizes the question and the sentences no longer fit with their
 /// buttons, and the answer has a 10 s timeout, so the buttons must never scroll away:
@@ -20,9 +21,13 @@ struct AskCard: View {
     let question: OpenQuestion
     /// The tallest the scrolling question box may grow at accessibility text sizes.
     var detailsMaxHeight: CGFloat = 240
+    /// The tallest the whole card may be at the large standard text sizes; nil for no limit.
+    var maxHeight: CGFloat?
     let onAnswer: (AskChoice) -> Void
 
     @Environment(\.dynamicTypeSize) private var typeSize
+    /// The short answer buttons, measured so the sentences get the rest of `maxHeight`.
+    @State private var shortAnswersHeight: CGFloat?
 
     private static let padding: CGFloat = 12
     private static let compactSpacing: CGFloat = 10
@@ -31,12 +36,19 @@ struct AskCard: View {
         Group {
             if typeSize.isAccessibilitySize {
                 compact(detailsMaxHeight: detailsMaxHeight)
+            } else if typeSize > .xLarge {
+                compact(detailsMaxHeight: maxHeight.map(sentencesMaxHeight(cardMaxHeight:)) ?? detailsMaxHeight)
             } else {
                 regular
             }
         }
         .padding(Self.padding)
         .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func sentencesMaxHeight(cardMaxHeight: CGFloat) -> CGFloat {
+        let answers = (shortAnswersHeight ?? 0) + Self.compactSpacing
+        return max(60, cardMaxHeight - 2 * Self.padding - answers)
     }
 
     private var regular: some View {
@@ -74,16 +86,19 @@ struct AskCard: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            if question.options.count > 3 {
-                // Four answers (an open "when?") stacked one per row push WAIT off screen:
-                // two per row, the words shrinking to fit.
-                answerGrid(shortButton)
-            } else {
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 10) { shortButtons }
-                    VStack(spacing: 10) { shortButtons }
+            Group {
+                if question.options.count > 3 {
+                    // Four answers (an open "when?") stacked one per row push WAIT off screen:
+                    // two per row, the words shrinking to fit.
+                    answerGrid(shortButton)
+                } else {
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 10) { shortButtons }
+                        VStack(spacing: 10) { shortButtons }
+                    }
                 }
             }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { shortAnswersHeight = $0 }
         }
     }
 
