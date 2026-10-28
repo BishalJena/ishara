@@ -53,11 +53,12 @@ jobs:
       - name: call_flow tests (stdlib only)
         run: |
           "$LIGHT_PY" -m unittest discover -s spikes/call_flow -p 'test_*.py'
+      # light_tests.py is the one list scripts/verify.sh runs too: every test_*.py in
+      # spikes/recognition and spikes/asl_probe except the exclusions it names (e.g. test_mini).
       - name: Recognition tests (light deps)
         working-directory: spikes/recognition
         run: |
-          "$LIGHT_PY" -m unittest -v test_retrieval test_detector test_detect_clips test_mac_bridge test_live_source test_record_session test_video_eval
-          echo "::notice::test_mini is not run in CI: it imports torch and transformers (requirements.txt)."
+          "$LIGHT_PY" -m unittest -v light_tests
 
   scripts:
     runs-on: ubuntu-latest

@@ -17,7 +17,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 FOLDERS = (HERE, HERE.parent / "asl_probe")
-HEAVY_MODULES = {"test_mini": "imports torch and transformers (requirements.txt)"}
+HEAVY_MODULES = {"test_mini": "imports torch and transformers from requirements.txt"}
 OWN_CATEGORY = {"test_mac_bridge.ClipDrivenFallback":
                 'about 1.5 min with local venvs, model and clips; scripts/verify.sh "clip-driven fallback"'}
 

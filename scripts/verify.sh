@@ -108,23 +108,28 @@ check_call_flow() {
   step python3 -m unittest discover -s spikes/call_flow -p 'test_*.py'
 }
 
-# test_retrieval needs numpy and cv2 only. The full README venv (.venv) or a light one built
-# from requirements-light.txt (.venv-light) both work; test_mini needs torch and is not run.
-check_recognition_light() {
-  local python=""
+# cd into spikes/recognition and set $python: the full README venv (.venv), else a light one
+# built from requirements-light.txt (.venv-light).
+enter_recognition() {
+  local candidate
   cd spikes/recognition 2>/dev/null || skip "no spikes/recognition"
   for candidate in .venv/bin/python .venv-light/bin/python; do
     if [[ -x $candidate ]]; then
       python=$candidate
-      break
+      return
     fi
   done
-  if [[ -z $python ]]; then
-    echo "  to enable: cd spikes/recognition && uv venv --python 3.11 .venv-light" \
-      "&& uv pip install --python .venv-light/bin/python -r requirements-light.txt"
-    skip "no spikes/recognition/.venv or .venv-light"
-  fi
-  step "$python" -m unittest test_retrieval test_detector test_detect_clips test_mac_bridge test_live_source test_record_session test_video_eval test_asl_matcher test_asl_summary
+  echo "  to enable: cd spikes/recognition && uv venv --python 3.11 .venv-light" \
+    "&& uv pip install --python .venv-light/bin/python -r requirements-light.txt"
+  skip "no spikes/recognition/.venv or .venv-light"
+}
+
+# light_tests.py is the one list (CI runs it too): every test_*.py in spikes/recognition and
+# spikes/asl_probe except the exclusions it names (test_mini needs torch).
+check_recognition_light() {
+  local python
+  enter_recognition
+  step "$python" -m unittest light_tests
 }
 
 # SignPipelineLiteRT can't load until its LiteRT binary is downloaded (checksum-verified, once).
