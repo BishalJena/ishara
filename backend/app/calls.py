@@ -22,6 +22,7 @@ import logging
 import time
 import uuid
 from collections.abc import Coroutine
+from dataclasses import dataclass
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, WebSocket, status
@@ -50,7 +51,6 @@ from app.protocol import (
     AnswerMessage,
     ApproveMessage,
     AskMessage,
-    AskOption,
     AskResolvedMessage,
     BriefRequest,
     BriefResponse,
@@ -121,6 +121,18 @@ class _AppLink:
             await self.websocket.close(code=code)
 
 
+@dataclass
+class _OpenAsk:
+    """A question the attended user hasn't answered yet; `deadline` is loop time."""
+
+    call_id: str
+    message: AskMessage
+    deadline: float
+
+    def left_s(self) -> float:
+        return max(0.0, self.deadline - asyncio.get_running_loop().time())
+
+
 _Snapshot = tuple[CallState, Turn | None]
 _NOT_YET_LIVE = frozenset({CallState.DIALING, CallState.RINGING})
 
@@ -149,7 +161,7 @@ class CallManager(CallLedger):
         self._links: dict[str, _AppLink] = {}
         self._timers: dict[str, asyncio.Task[None]] = {}
         self._ask_timers: dict[str, asyncio.Task[None]] = {}
-        self._asks: dict[str, tuple[str, tuple[AskOption, ...]]] = {}  # ask_id -> call, options
+        self._asks: dict[str, _OpenAsk] = {}
         self._briefs: dict[str, tuple[BriefRequest, BriefResponse]] = {}
         self._tasks: set[asyncio.Task[None]] = set()
 
@@ -179,8 +191,11 @@ class CallManager(CallLedger):
         if number is None:
             raise UnknownContact(request.contact_id)
         delegate = None
+        brief = None
         if request.mode == "delegated":
-            brief = self._briefs.get(request.brief_id or "")
+            # Starting the call is the brief's one approval: it is used up here, before
+            # the dial is awaited, so a second request with the same id can't dial too.
+            brief = self._briefs.pop(request.brief_id or "", None)
             if brief is None:
                 raise UnknownBrief(request.brief_id)
             delegate = DelegateState(brief_from(*brief), attended=request.attended)
@@ -193,6 +208,8 @@ class CallManager(CallLedger):
             run_id = await self._bolna.start_call(number, user_data)
         except BolnaError as error:
             session.advance(CallState.ERROR)
+            if brief is not None and request.brief_id is not None:
+                self._briefs[request.brief_id] = brief  # nothing was dialled
             log.warning("call %s: Bolna start failed (%s)", session.call_id, type(error).__name__)
             raise CallStartFailed from error
         session.run_id = run_id
@@ -216,8 +233,6 @@ class CallManager(CallLedger):
             return
         before = self._snapshot(session)
         session.advance(line)
-        if session.finished:
-            self._cancel_ask_timers(session.call_id)
         await self._publish(session, before)
 
     # ---- app socket ----
@@ -233,6 +248,12 @@ class CallManager(CallLedger):
         if old is not None:
             await old.close(CLOSE_REPLACED)
         await link.send(StatusMessage(state=self._sessions[call_id].state))
+        delegate = self._sessions[call_id].delegate
+        if isinstance(delegate, DelegateState) and delegate.pending_ask in self._asks:
+            # A socket that (re)connects while a question is open can still answer it,
+            # with the time that is left.
+            ask = self._asks[delegate.pending_ask]
+            await link.send(ask.message.model_copy(update={"timeout_s": ask.left_s()}))
         return link
 
     async def detach(self, call_id: str, link: _AppLink) -> None:
@@ -349,7 +370,21 @@ class CallManager(CallLedger):
             # The brief is settled and the agent is about to hang up: nothing new is said,
             # agreed or asked (a different time offered now would otherwise open a second ask).
             return None
-        decision = await self._brain.reply(delegate, heard)
+        if session.in_flight is not None:
+            # A delegated line (the opening, the user's answer) is on its way to Bolna's
+            # speak node; a line from here too would be said twice or over it (B24).
+            return None
+        if delegate.deciding:
+            # Bolna sent another receptionist turn while the brain (Groq) still thinks
+            # about the last one: one decision at a time, so one line and at most one ask.
+            return None
+        delegate.deciding = True
+        try:
+            decision = await self._brain.reply(delegate, heard)
+        finally:
+            delegate.deciding = False
+        if session.finished:
+            return None  # the call ended while the brain was thinking
         delegate.exchanges.append(Exchange(heard, decision.say))
         delegate.opened = True
         self._note(session, "agent", decision.say)
@@ -367,17 +402,19 @@ class CallManager(CallLedger):
         question, options = decision.ask
         ask_id = uuid.uuid4().hex
         delegate.pending_ask = ask_id
-        self._asks[ask_id] = (session.call_id, options)
-        await self._send(
-            session,
-            AskMessage(
-                ask_id=ask_id,
-                question=question,
-                options=list(options),
-                fallback=CALLBACK_LINE,
-                timeout_s=self._ask_timeout_s,
-            ),
+        message = AskMessage(
+            ask_id=ask_id,
+            question=question,
+            options=list(options),
+            fallback=CALLBACK_LINE,
+            timeout_s=self._ask_timeout_s,
         )
+        self._asks[ask_id] = _OpenAsk(session.call_id, message, 0.0)
+        await self._send(session, message)
+        self._start_ask_timer(session, ask_id)
+
+    def _start_ask_timer(self, session: CallSession, ask_id: str) -> None:
+        self._asks[ask_id].deadline = asyncio.get_running_loop().time() + self._ask_timeout_s
         self._ask_timers[ask_id] = self._spawn(self._ask_timeout(session, ask_id))
 
     async def _ask_timeout(self, session: CallSession, ask_id: str) -> None:
@@ -387,13 +424,17 @@ class CallManager(CallLedger):
     async def _on_answer(self, session: CallSession, message: AnswerMessage) -> None:
         entry = self._asks.get(message.ask_id)
         delegate = session.delegate
-        if entry is None or entry[0] != session.call_id or not isinstance(delegate, DelegateState):
+        if (
+            entry is None
+            or entry.call_id != session.call_id
+            or not isinstance(delegate, DelegateState)
+        ):
             await self._send(
                 session,
                 ErrorMessage(code="unknown_ask", message="That question is no longer open."),
             )
             return
-        spoken = next((o.spoken for o in entry[1] if o.choice == message.choice), None)
+        spoken = next((o.spoken for o in entry.message.options if o.choice == message.choice), None)
         if spoken is None:
             await self._send(
                 session, ErrorMessage(code="bad_choice", message="Not one of the options.")
@@ -404,9 +445,7 @@ class CallManager(CallLedger):
             timer.cancel()
         if message.choice == "wait":
             # The agent holds the line; the question stays open and the timer restarts.
-            self._ask_timers[message.ask_id] = self._spawn(
-                self._ask_timeout(session, message.ask_id)
-            )
+            self._start_ask_timer(session, message.ask_id)
             await self._speak_line(
                 session, spoken, f"ask-{message.ask_id}-wait-{uuid.uuid4().hex[:6]}"
             )
@@ -422,7 +461,6 @@ class CallManager(CallLedger):
         if entry is None or not isinstance(delegate, DelegateState) or session.finished:
             return
         delegate.pending_ask = None
-        delegate.answers.append(spoken)
         await self._send(session, AskResolvedMessage(ask_id=ask_id, spoken=spoken, source=source))  # type: ignore[arg-type]
         await self._speak_line(session, spoken, f"ask-{ask_id}")
         if source == "timeout" or spoken.startswith("Yes"):
@@ -459,8 +497,8 @@ class CallManager(CallLedger):
             await self._on_end(session)
 
     def _cancel_ask_timers(self, call_id: str) -> None:
-        for ask_id, (owner, _) in list(self._asks.items()):
-            if owner == call_id:
+        for ask_id, ask in list(self._asks.items()):
+            if ask.call_id == call_id:
                 self._asks.pop(ask_id, None)
                 timer = self._ask_timers.pop(ask_id, None)
                 if timer is not None and timer is not asyncio.current_task():
@@ -510,8 +548,13 @@ class CallManager(CallLedger):
         before = self._snapshot(session)
         spoken_text = session.in_flight.approved_text if session.in_flight is not None else None
         if session.mark_spoken(turn_id):
-            if spoken_text and not turn_id.startswith("ask-"):
-                self._note(session, "agent", spoken_text)  # delegated asks were noted when decided
+            if spoken_text:
+                self._note(session, "agent", spoken_text)
+                delegate = session.delegate
+                if turn_id.startswith("ask-") and isinstance(delegate, DelegateState):
+                    # Only an answer the receptionist heard counts in the notes; one that
+                    # was never delivered must not turn into "booked".
+                    delegate.answers.append(spoken_text)
             await self._send(session, SpokenMessage(turn_id=turn_id))
         await self._publish(session, before)
 
@@ -529,6 +572,10 @@ class CallManager(CallLedger):
             self._cancel_timer(session.call_id)
         if session.state == state:
             return False
+        if session.finished:
+            # However the call ended (the app, Bolna's webhook, the agent), an open
+            # question can no longer be answered or time out into speech.
+            self._cancel_ask_timers(session.call_id)
         await self._send(session, StatusMessage(state=session.state))
         if state in _NOT_YET_LIVE and session.line is CallState.IN_CALL:
             # Bolna plays its static welcome message (the disclosure) as the call
@@ -538,15 +585,14 @@ class CallManager(CallLedger):
             delegate = session.delegate
             if isinstance(delegate, DelegateState) and not delegate.opened:
                 # D9: the agent states the brief's request right after the disclosure
-                # instead of waiting for the receptionist to speak first.
-                self._spawn(self._open_delegate(session, delegate))
+                # instead of waiting for the receptionist to speak first. Awaited, not
+                # spawned: when a caption made the line live, the listen request that
+                # carried it must already see the opening in flight.
+                opening = self._brain.rules.opening(delegate)
+                delegate.opened = True
+                delegate.exchanges.append(Exchange("", opening))
+                await self._speak_line(session, opening, "delegate-open")
         return True
-
-    async def _open_delegate(self, session: CallSession, delegate: DelegateState) -> None:
-        opening = self._brain.rules.opening(delegate)
-        delegate.opened = True
-        delegate.exchanges.append(Exchange("", opening))
-        await self._speak_line(session, opening, "delegate-open")
 
     async def _send_agent_line(self, session: CallSession, text: str) -> None:
         await self._send(session, CaptionMessage(text=text, at=time.time(), speaker="agent"))

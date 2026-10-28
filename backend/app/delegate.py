@@ -9,7 +9,8 @@ instead. Nothing here dials, speaks or stores secrets.
 
 Safety: every line the brain produces goes through `check_line`, which reuses the
 composer's validator pieces: no number, time, name or booking claim that neither the
-brief nor the receptionist said, no meta text, at most 25 words. A rejected LLM line is
+brief nor the receptionist said, no agreeing to an offer (only the user's answer does
+that), no meta text, at most 25 words. A rejected LLM line is
 replaced by the rule-based brain's line, never spoken as is.
 """
 
@@ -21,6 +22,8 @@ import logging
 import re
 import uuid
 from dataclasses import dataclass, field
+
+from pydantic import BaseModel, ValidationError
 
 from app.groq_client import GroqClient, GroqError
 from app.protocol import (
@@ -34,6 +37,9 @@ from app.protocol import (
     TranscriptEntry,
 )
 from app.validator import (
+    _AGREEMENT,
+    _MONTHS,
+    _WEEKDAYS,
     MAX_WORDS,
     _booking_claims,
     _invented_names,
@@ -79,10 +85,39 @@ _PROPOSAL = re.compile(
 _QUESTION = re.compile(
     r"\?\s*$|\b(does that work|is that (ok|okay|fine)|would that (work|suit))\b", re.I
 )
-_BOOKED = re.compile(r"\b(booked|confirmed|reserved|scheduled|all set|you're set)\b", re.I)
-_NO_SLOT = re.compile(
-    r"\b(no (slots?|appointments?|availability)|fully booked|nothing (free|available))\b", re.I
+_BOOKED = re.compile(r"\b(booked|confirmed|reserved|scheduled|all set|you're set)\b")
+# Accepting an offer is the user's decision (an attended answer), never the agent's.
+_COMMITMENT = re.compile(
+    r"\b(i'll|we'll|i will|we will) take\b|\bbook (it|that|me|her|him|them)\b|\bplease book\b"
+    r"|\bgo ahead\b|\bthat's (fine|good|great|perfect|ok|okay)\b"
 )
+_NO_SLOT = re.compile(
+    r"\b(no (slots?|appointments?|availability)|(fully|all) booked|booked (up|out|solid)"
+    r"|nothing (free|available|left)|not available|unavailable"
+    r"|(can't|cannot|can not|unable to) (do|fit|offer|book|give|see|manage))\b"
+)
+# Details a receptionist may ask for that no brief carries (the profile has only a name,
+# a callback number and a reason).
+_OUT_OF_BRIEF = re.compile(
+    r"\b(date of birth|birth ?date|birthday|born|dob|how old|age|insurance|policy|card"
+    r"|credit|debit|bank|account|payment|pay|deposit|address|post ?code|zip|pin ?code"
+    r"|e-?mail|aadhaar|social security|ssn|id number|medical (history|records?)"
+    r"|allerg(y|ies)|medications?|password|otp)\b"
+)
+# "That isn't confirmed yet", "not booked": a booking word that denies the booking.
+_NOT_BOOKED = re.compile(
+    r"(\b(not|never)\b|n't\b)[^.?!]{0,20}?\b(booked|confirmed|reserved|scheduled)\b"
+)
+
+
+def _confirms(text: str) -> bool:
+    """The receptionist says it is booked ("fully booked" and "not confirmed" are not)."""
+    words = _NOT_BOOKED.sub(" ", _NO_SLOT.sub(" ", _normalise(text)))
+    return _BOOKED.search(words) is not None
+
+
+def _declines(text: str) -> bool:
+    return _NO_SLOT.search(_normalise(text)) is not None
 
 
 # ---- the brief ----
@@ -102,7 +137,8 @@ def build_brief(request: BriefRequest) -> BriefResponse:
     if when:
         lines.append(f"Preferred: {' '.join(dict.fromkeys(when))}.")
     if request.profile.notes:
-        lines.append(f"Reason, if asked: {request.profile.notes.strip()}")
+        reason = request.profile.notes.strip()
+        lines.append(f"Reason, if asked: {reason}{'' if reason.endswith(('.', '!', '?')) else '.'}")
     share = [f"name ({name})"] + (["callback number"] if request.profile.callback else [])
     lines.append("May share: " + ", ".join(share) + ".")
     lines.append(
@@ -154,6 +190,11 @@ def check_line(line: str, brief: Brief, transcript_text: str) -> list[str]:
     reasons += _invented_numbers(text, known)
     reasons += _invented_names(text, known)
     reasons += _booking_claims(_normalise(text), _normalise(transcript_text))
+    reasons += [
+        f"agrees for the user: {m.group(0)}"
+        for pattern in (_AGREEMENT, _COMMITMENT)
+        for m in pattern.finditer(_normalise(text))
+    ]
     reasons += _meta_text(text)
     # A day or part of day the brief and the receptionist never mentioned.
     allowed = temporal_facts(known)
@@ -184,6 +225,7 @@ class DelegateState:
     exchanges: list[Exchange] = field(default_factory=list)
     opened: bool = False
     pending_ask: str | None = None  # ask_id
+    deciding: bool = False  # the brain is working on a receptionist turn
     answers: list[str] = field(default_factory=list)  # what the user chose, in spoken form
     outcome: str | None = None
 
@@ -211,6 +253,27 @@ def _proposal_in(text: str) -> str | None:
     return f"{match.group(0).strip()} {day}" if day else match.group(0).strip()
 
 
+# Days a receptionist can offer instead of the brief's ("today" and "now" are left out:
+# "how can I help you today?" is a greeting, not an offer).
+_OFFER_DAYS = frozenset(("tomorrow", "day after tomorrow", "may", *_WEEKDAYS, *_MONTHS))
+_OFFERING = re.compile(r"\?|\b(how about|what about|instead|could|can|would|available|free)\b")
+
+
+def _day_offer(text: str, brief: Brief) -> str | None:
+    """A day the receptionist offers that the brief never asked for ("Friday instead?")."""
+    if not _OFFERING.search(_normalise(text)):
+        return None
+    new_facts = temporal_facts(text) - temporal_facts(brief.text)
+    days = [f.split(":", 1)[1] for f in new_facts if f.startswith("day:")]
+    days = [d for d in days if d in _OFFER_DAYS]
+    if len(days) != 1:
+        return "that" if days else None
+    day = days[0]
+    if day == "day after tomorrow":
+        return "the day after tomorrow"
+    return day if day == "tomorrow" else day.capitalize()
+
+
 class RuleBrain:
     """No LLM: opens with the brief, hands every proposal to the user (attended) or
     promises a callback (unattended), closes when the receptionist confirms."""
@@ -230,14 +293,18 @@ class RuleBrain:
     def decide(self, state: DelegateState, heard: str) -> Decision:
         if not state.opened:
             return Decision(self.opening(state))
-        if _BOOKED.search(heard):
+        if _confirms(heard):
             return Decision(CLOSE_LINE, done=True)
-        proposal = _proposal_in(heard)
+        if _OUT_OF_BRIEF.search(_normalise(heard)):
+            # The brief shares only the name and the callback number: never guess the rest,
+            # and never answer "insurance number" with the phone number.
+            return Decision(CALLBACK_LINE, done=True)
+        proposal = _proposal_in(heard) or _day_offer(heard, state.brief)
         if proposal:
             if state.attended:
                 return Decision(PAUSE_LINE, ask=(heard.strip(), _options_for(proposal)))
             return Decision(CALLBACK_LINE, done=True)
-        if _NO_SLOT.search(heard):
+        if _declines(heard):
             return Decision(CALLBACK_LINE, done=True)
         if "name" in heard.lower():
             return Decision(f"The name is {state.brief.name}.")
@@ -281,6 +348,20 @@ def _user_message(state: DelegateState, heard: str) -> str:
     )
 
 
+class _LlmAsk(BaseModel):
+    # SYSTEM_PROMPT also asks for a "question"; it is ignored: the user is always shown
+    # the receptionist's own words, never the LLM's account of them.
+    proposal: str | None = None
+
+
+class _LlmTurn(BaseModel):
+    """The JSON reply SYSTEM_PROMPT asks for; anything else falls back to the rules."""
+
+    say: str = ""
+    ask_user: _LlmAsk | None = None
+    done: bool = False
+
+
 class Brain:
     """Groq with the rule brain as the fallback; every line is checked before it is spoken."""
 
@@ -297,27 +378,27 @@ class Brain:
             raw = await asyncio.wait_for(
                 self.client.complete(SYSTEM_PROMPT, _user_message(state, heard)), self.timeout_s
             )
-            data = json.loads(raw.strip().strip("`").removeprefix("json"))
-            say = str(data.get("say", "")).strip()
-            ask = data.get("ask_user")
-            done = bool(data.get("done", False))
-        except (TimeoutError, GroqError, ValueError, AttributeError) as exc:
+            turn = _LlmTurn.model_validate_json(raw.strip().strip("`").removeprefix("json"))
+        except (TimeoutError, GroqError, ValidationError) as exc:
             log.info("delegate: LLM unavailable (%s), using rules", type(exc).__name__)
             return fallback
-        reasons = check_line(say, state.brief, state.transcript_text() + " " + heard)
+        transcript = state.transcript_text() + " " + heard
+        if turn.ask_user is not None:
+            if not state.attended:
+                return Decision(CALLBACK_LINE, done=True, source="llm")
+            # The agent says PAUSE_LINE whatever "say" held; what gets spoken later are the
+            # options, which repeat the proposal back, so the proposal is what is checked.
+            proposal = (turn.ask_user.proposal or "").strip() or _proposal_in(heard) or "that"
+            reasons = check_line(proposal, state.brief, transcript)
+            if reasons:
+                log.info("delegate: LLM proposal rejected (%s), using rules", "; ".join(reasons))
+                return fallback
+            return Decision(PAUSE_LINE, ask=(heard.strip(), _options_for(proposal)), source="llm")
+        reasons = check_line(turn.say, state.brief, transcript)
         if reasons:
             log.info("delegate: LLM line rejected (%s), using rules", "; ".join(reasons))
             return fallback
-        if ask and state.attended:
-            proposal = str(ask.get("proposal") or _proposal_in(heard) or "that")
-            return Decision(
-                PAUSE_LINE,
-                ask=(str(ask.get("question") or heard), _options_for(proposal)),
-                source="llm",
-            )
-        if ask and not state.attended:
-            return Decision(CALLBACK_LINE, done=True, source="llm")
-        return Decision(say, done=done, source="llm")
+        return Decision(turn.say.strip(), done=turn.done, source="llm")
 
 
 def build_brain(settings) -> Brain:  # noqa: ANN001  (Settings; avoids an import cycle with config)
@@ -335,13 +416,14 @@ def outcome_of(entries: list[TranscriptEntry], answers: list[str]) -> str:
     agent = " ".join(e.text for e in entries if e.speaker == "agent")
     if not receptionist:
         return "no_answer"
-    if _BOOKED.search(receptionist) or any(a.startswith("Yes") for a in answers):
+    if _confirms(receptionist) or any(a.startswith("Yes") for a in answers):
         return "booked" if not any(a.startswith("No") for a in answers[-1:]) else "unclear"
-    if CALLBACK_LINE in agent:
-        return "callback"
-    if _NO_SLOT.search(receptionist) or any(a.startswith("No") for a in answers):
+    promised_callback = CALLBACK_LINE in agent
+    if promised_callback and _PROPOSAL.search(receptionist):
+        return "callback"  # an offer is still waiting for the user's decision
+    if _declines(receptionist) or any(a.startswith("No") for a in answers):
         return "declined"
-    return "unclear"
+    return "callback" if promised_callback else "unclear"
 
 
 def build_notes(
@@ -362,9 +444,7 @@ def build_notes(
         summary.append(f'They offered: "{offer.strip()}"')
     for answer in answers:
         summary.append(f'You answered: "{answer}"')
-    confirmations = [
-        e.text for e in entries if e.speaker == "receptionist" and _BOOKED.search(e.text)
-    ]
+    confirmations = [e.text for e in entries if e.speaker == "receptionist" and _confirms(e.text)]
     for line in confirmations[:2]:
         summary.append(f'They confirmed: "{line.strip()}"')
     outcome = outcome_of(entries, answers) if ready else None

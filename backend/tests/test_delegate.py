@@ -10,6 +10,7 @@ from __future__ import annotations
 import contextlib
 import json
 from dataclasses import dataclass
+from functools import partial
 
 import anyio
 import pytest
@@ -19,6 +20,7 @@ from app.calls import CallManager
 from app.delegate import (
     CALLBACK_LINE,
     PAUSE_LINE,
+    Brain,
     Brief,
     Decision,
     DelegateState,
@@ -101,7 +103,11 @@ def test_check_line_rejects_what_the_brief_never_said(line: str, reason: str) ->
 def test_check_line_allows_the_receptionists_own_facts() -> None:
     state = make_brief()
     heard = "We have 10:30 tomorrow morning with Dr Mehta."
-    assert check_line("Yes, 10:30 tomorrow morning with Dr Mehta works.", state.brief, heard) == []
+    assert check_line("So 10:30 tomorrow morning with Dr Mehta?", state.brief, heard) == []
+    # Accepting the offer is the user's answer, never the agent's own line.
+    assert check_line("Yes, 10:30 tomorrow morning with Dr Mehta works.", state.brief, heard) == [
+        "agrees for the user: yes"
+    ]
     assert (
         check_line(
             "I'd like to book a doctor's appointment for Asha Rao, tomorrow morning.",
@@ -241,6 +247,30 @@ class Flow:
         assert response.status_code == 200, response.text
         return response.json()["choices"][0]["message"]["content"]
 
+    def speak_turn(self, call_id: str, turn_id: str, text: str, heard: str = "") -> str:
+        """Bolna's speak-node request for an injected line (a SEND or a delegated line);
+        returns what the custom LLM told Bolna to say."""
+        block = (
+            render_marker_block("speak")
+            .replace("{{ishara_call_id}}", call_id)
+            .replace("{{turn_id}}", turn_id)
+            .replace("{{reply_text}}", text)
+        )
+        body = {
+            "model": "ishara-relay",
+            "stream": False,
+            "messages": [{"role": "system", "content": block}]
+            + ([{"role": "user", "content": heard}] if heard else []),
+        }
+        response = self.client.post("/v1/chat/completions", json=body, headers=LLM_AUTH)
+        assert response.status_code == 200, response.text
+        return response.json()["choices"][0]["message"]["content"]
+
+    def speak_last(self, call_id: str) -> str:
+        """Bolna picks up the latest injected line and speaks it."""
+        last = self.bolna.replies()[-1]
+        return self.speak_turn(call_id, last["turn_id"], last["reply_text"])
+
     def receive(self, ws, timeout: float = 2.0) -> dict:
         async def next_message() -> dict:
             with anyio.fail_after(timeout):
@@ -258,26 +288,34 @@ class Flow:
         raise AssertionError(f"no {kind} message")
 
 
+def build_flow(
+    stack: contextlib.ExitStack,
+    ask_timeout_s: float = 5.0,
+    end_after_done_s: float = 60.0,
+    brain: Brain | None = None,
+    allowed_recipients: str = f"clinic={CLINIC}",
+    delivery_timeout_s: float = 10.0,
+) -> Flow:
+    settings = make_settings(allowed_recipients=allowed_recipients)
+    bolna, composer = FakeBolna(), FakeComposer()
+    manager = CallManager(
+        settings,
+        composer,
+        bolna,
+        delivery_timeout_s=delivery_timeout_s,
+        ask_timeout_s=ask_timeout_s,
+        end_after_done_s=end_after_done_s,
+        brain=brain,
+    )
+    app = create_app(settings, composer=composer, bolna=bolna, ledger=manager)
+    client = stack.enter_context(TestClient(app))
+    return Flow(client, manager, bolna)
+
+
 @pytest.fixture
 def flow():
-    stack = contextlib.ExitStack()
-
-    def build(ask_timeout_s: float = 5.0, end_after_done_s: float = 60.0) -> Flow:
-        settings = make_settings(allowed_recipients=f"clinic={CLINIC}")
-        bolna, composer = FakeBolna(), FakeComposer()
-        manager = CallManager(
-            settings,
-            composer,
-            bolna,
-            ask_timeout_s=ask_timeout_s,
-            end_after_done_s=end_after_done_s,
-        )
-        app = create_app(settings, composer=composer, bolna=bolna, ledger=manager)
-        client = stack.enter_context(TestClient(app))
-        return Flow(client, manager, bolna)
-
-    with stack:
-        yield build
+    with contextlib.ExitStack() as stack:
+        yield partial(build_flow, stack)
 
 
 def test_delegated_call_needs_an_existing_brief(flow) -> None:
@@ -301,11 +339,16 @@ def test_attended_call_speaks_the_brief_then_asks_the_user_and_speaks_the_answer
         f.live(call_id)
         f.drain_until(ws, "caption")  # the disclosure
 
-        said = f.listen_turn(call_id, "Hello, City Clinic, how can I help?")
-        assert (
-            said == "I'd like to book a doctor's appointment for Asha Rao, tomorrow in the morning."
-        )
+        # The opening is already on its way to the speak node, so the listen node waits.
+        assert f.listen_turn(call_id, "Hello, City Clinic, how can I help?") == ""
         assert f.drain_until(ws, "caption")["text"] == "Hello, City Clinic, how can I help?"
+        opening = "I'd like to book a doctor's appointment for Asha Rao, tomorrow in the morning."
+        assert f.speak_last(call_id) == opening
+        assert f.bolna.replies()[0]["turn_id"] == "delegate-open"
+
+        said = f.listen_turn(call_id, "Sorry, what was that?")
+        assert said == opening
+        assert f.drain_until(ws, "caption")["text"] == "Sorry, what was that?"
         agent = f.drain_until(ws, "caption")
         assert agent["speaker"] == "agent" and agent["text"] == said
 
@@ -324,6 +367,7 @@ def test_attended_call_speaks_the_brief_then_asks_the_user_and_speaks_the_answer
         replies = f.bolna.replies()
         assert replies and replies[-1]["reply_text"] == "Yes, 4 pm tomorrow works. Thank you."
         assert replies[-1]["turn_id"].startswith("ask-")
+        assert f.speak_last(call_id) == "Yes, 4 pm tomorrow works. Thank you."
 
     f.finish(summary="Appointment agreed for 4 pm tomorrow.")
     notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
@@ -341,6 +385,7 @@ def test_settled_call_says_and_asks_nothing_new_before_hanging_up(flow) -> None:
     with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
         assert f.receive(ws)["type"] == "status"
         f.live(call_id)
+        f.speak_last(call_id)  # Bolna says the opening
         f.listen_turn(call_id, "We have 4 pm tomorrow. Does that work?")
         ask = f.drain_until(ws, "ask")
         ws.send_json({"type": "answer", "ask_id": ask["ask_id"], "choice": "yes"})
@@ -361,6 +406,7 @@ def test_unattended_call_never_asks_and_hangs_up_after_the_callback_line(flow) -
     with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
         assert f.receive(ws)["type"] == "status"
         f.live(call_id)
+        f.speak_last(call_id)  # Bolna says the opening
         said = f.listen_turn(call_id, "We only have Thursday at 4 pm. Does that work?")
         assert said == CALLBACK_LINE
         # No ask reaches the app; the call ends on its own shortly after.
@@ -381,6 +427,7 @@ def test_unanswered_ask_times_out_to_the_callback_line(flow) -> None:
     with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
         assert f.receive(ws)["type"] == "status"
         f.live(call_id)
+        f.speak_last(call_id)  # Bolna says the opening
         f.listen_turn(call_id, "We have 4 pm tomorrow, does that work?")
         f.drain_until(ws, "ask")
         resolved = f.drain_until(ws, "ask_resolved")
@@ -426,6 +473,7 @@ def test_user_reply_events_carry_only_text_and_turn(flow) -> None:
     with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
         f.receive(ws)
         f.live(call_id)
+        f.speak_last(call_id)  # Bolna says the opening
         f.listen_turn(call_id, "Is 4 pm tomorrow ok?")
         ask = f.drain_until(ws, "ask")
         ws.send_json({"type": "answer", "ask_id": ask["ask_id"], "choice": "no"})
