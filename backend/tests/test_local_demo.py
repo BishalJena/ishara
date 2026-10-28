@@ -23,7 +23,7 @@ from typing import Any
 import httpx
 import pytest
 
-from app.delegate import CALLBACK_LINE
+from app.delegate import CALLBACK_LINE, PAUSE_LINE
 from app.markers import DISCLOSURE, GOODBYE, HOLDING_LINE
 from app.protocol import (
     CallState,
@@ -205,7 +205,10 @@ async def test_a_long_pause_shows_the_holding_line_in_the_app() -> None:
 
 # ---- Call for me (D9) with the delegated receptionist scripts ----
 
+QUESTION, OFFER, BYE = RECEPTIONIST_SCRIPTS["open-question"]
 OPENING = "I'd like to book a doctor's appointment for Riya, tomorrow."
+TOMORROW_LINE = "Tomorrow, please. What times are available?"
+YES_LINE = "Yes, 4 pm tomorrow works. Thank you."
 Message = dict[str, Any]
 
 
@@ -286,6 +289,35 @@ async def _delegated_call(
                 return notes
             await asyncio.sleep(0.05)
     pytest.fail("the notes never became ready")
+
+
+async def test_open_question_waits_for_the_users_time_word_then_offers_and_books() -> None:
+    """Regression: the receptionist used to answer the agent's "One moment, please." with
+    her next line, so the offer came (and was dropped) before the user had answered."""
+    logged: list[str] = []
+    demo = build_local_demo(pauses=FAST, receptionist="open-question", log=logged.append)
+
+    async def app(call: DelegatedApp) -> None:
+        ask = await call.expect(_is_ask)
+        assert ask["question"] == QUESTION
+        assert [o["choice"] for o in ask["options"]] == ["tomorrow", "morning", "now", "wait"]
+        # She waits on "One moment, please." however long the user takes.
+        assert not [m for m in await call.quiet_for(10 * FAST.reply_s) if m["type"] == "caption"]
+
+        assert (await call.answer(ask, "tomorrow"))["spoken"] == TOMORROW_LINE
+        offer = await call.expect(_is_ask)
+        assert offer["question"] == OFFER
+        assert (await call.answer(offer, "yes"))["spoken"] == YES_LINE
+        await call.expect(lambda m: m["type"] == "caption" and m["text"] == BYE)
+        await call.socket.send_text(json.dumps({"type": "end"}))
+        await call.expect(lambda m: m["type"] == "status" and m["state"] == "ended")
+        assert call.captions("receptionist") == [QUESTION, OFFER, BYE]
+
+    notes = await _delegated_call(demo, attended=True, script=app)
+
+    assert notes["outcome"] == "booked"
+    spoken = [line.removeprefix("agent says: ") for line in logged if "agent says: " in line]
+    assert spoken == [DISCLOSURE, OPENING, PAUSE_LINE, TOMORROW_LINE, PAUSE_LINE, YES_LINE, GOODBYE]
 
 
 async def test_unattended_offer_ends_in_a_callback() -> None:

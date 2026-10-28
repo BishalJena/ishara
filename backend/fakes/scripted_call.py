@@ -7,7 +7,7 @@ so this subclass acts on its own, with pauses that feel like a phone call:
 - every approved reply the agent speaks: after `Pauses.reply_s` the receptionist says
   the next line of `RECEPTIONIST_LINES` (T2 after T1, T4 after T3), then stays quiet.
   Delegated calls (D9) pick one of `RECEPTIONIST_SCRIPTS` instead; there she answers
-  the agent's own lines too.
+  the agent's own lines too, but never one that asks her to hold on (`WAIT_FOR_AGENT`).
 - `talk_over_once` (ledger B24): the first SEND of each call lands while the
   receptionist is talking, so Bolna skips it. `Pauses.talk_over_s` later she finishes
   with `TALK_OVER_LINE`, which reaches the stale speak node and must stay silent.
@@ -31,6 +31,7 @@ from typing import Any
 import httpx
 
 from app.bolna_agent import SILENCE_REPEAT_S
+from app.delegate import PAUSE_LINE, WAIT_LINE
 from app.markers import EVENT_USER_REPLY, HOLDING_LINE
 from fakes.fake_bolna import FakeBolna, FakeRun, RunEnded
 
@@ -51,6 +52,8 @@ RECEPTIONIST_SCRIPTS: dict[str, tuple[str, ...]] = {
     ),
 }
 TALK_OVER_LINE = "Sorry, go ahead."
+# The agent's lines that ask the receptionist to hold on: she says nothing back.
+WAIT_FOR_AGENT = frozenset((HOLDING_LINE, PAUSE_LINE, WAIT_LINE))
 ANSWERED_STATUS = "in-progress"
 
 
@@ -134,11 +137,12 @@ class ScriptedBolna(FakeBolna):
         self._spawn(self._receptionist_turn(run, TALK_OVER_LINE, self.pauses.talk_over_s))
 
     async def _respond(self, run: FakeRun, event_notice: str | None = None) -> str:
-        approved_reply = run.node == "speak"
         reply = await super()._respond(run, event_notice)
         # The receptionist answers approved replies and, on a delegated call (D9), the
-        # agent's own lines from the listen node; never the holding line.
-        if reply and (approved_reply or reply != HOLDING_LINE):
+        # agent's own lines from the listen node. A line that asks her to hold on gets no
+        # answer: she waits, as a person on the phone would, so a delegated call's next
+        # line comes only after the user's answer is spoken.
+        if reply and reply not in WAIT_FOR_AGENT:
             self._answer_later(run)
         return reply
 
