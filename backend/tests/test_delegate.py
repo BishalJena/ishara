@@ -142,6 +142,41 @@ def test_rule_brain_opens_with_the_brief_then_hands_proposals_to_the_user() -> N
     assert options[1].spoken.startswith("No, 4 pm tomorrow doesn't work")
 
 
+# The live transcriber writes spoken times in words; the first real Call for me
+# (28 Oct) repeated its opening because "four pm" was never seen as an offer.
+@pytest.mark.parametrize(
+    ("heard", "proposal"),
+    [
+        ("we have four pm tomorrow does that work", "4 pm tomorrow"),
+        ("yes at ten thirty tomorrow morning does that work", "10:30 tomorrow"),
+        ("how about nine a.m. tomorrow", "9 am tomorrow"),
+    ],
+)
+def test_rule_brain_hands_a_time_said_in_words_to_the_user(heard: str, proposal: str) -> None:
+    state = make_brief(attended=True)
+    state.opened = True
+    offer = RuleBrain().decide(state, heard)
+    assert offer.say == PAUSE_LINE and offer.ask is not None
+    assert offer.ask[1][0].spoken == f"Yes, {proposal} works. Thank you."
+
+
+def test_check_line_accepts_a_proposal_the_receptionist_said_in_words() -> None:
+    state = make_brief()
+    assert check_line("4 pm tomorrow", state.brief, "we have four pm tomorrow") == []
+    assert check_line("5 pm tomorrow", state.brief, "we have four pm tomorrow") != []
+
+
+def test_notes_list_an_offer_said_in_words() -> None:
+    state = make_brief(attended=False)
+    entries = [
+        TranscriptEntry(speaker="receptionist", text="we have four pm tomorrow", at=1.0),
+        TranscriptEntry(speaker="agent", text=CALLBACK_LINE, at=2.0),
+    ]
+    notes = build_notes("c1", state.brief, entries, [], None, True)
+    assert 'They offered: "we have four pm tomorrow"' in notes.summary
+    assert notes.outcome == "callback"
+
+
 def test_rule_brain_unattended_never_asks_and_promises_a_callback() -> None:
     state = make_brief(attended=False)
     state.opened = True
