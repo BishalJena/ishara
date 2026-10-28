@@ -131,8 +131,10 @@ extension XCUIApplication {
                  timeout: TimeInterval = 20, file: StaticString = #filePath, line: UInt = #line) {
         waitUntil("an element whose label contains \u{201C}\(text)\u{201D}", timeout: timeout,
                   file: file, line: line) {
-            let current = element()
-            return current.exists && current.label.contains(text)
+            // One snapshot per look: a caption row can scroll away between `exists` and
+            // `label`, and reading a vanished row fails the test instead of returning false.
+            guard let current = try? element().snapshot() else { return false }
+            return current.label.contains(text)
         }
     }
 }

@@ -198,7 +198,74 @@ IOS_DESTINATION=... scripts/e2e_video_to_speech.sh open-question                
   (local server, no TTS); question shown → answer said 5.9–6.6 s, most of it XCUITest
   opening the replay menu; picking the clip → answer said 0.5–1.0 s.
 - What it can't prove: the iPhone camera and its framing, real Bolna/Sarvam audio and
-  timing, Deepgram transcripts, the telephone line. Those stay with L12/L13.
+  timing, Deepgram transcripts, the telephone line. Those stay with L12/L13 and the real
+  call below.
+
+### The same flows on a real call (deployed backend, real Bolna)
+
+The same four tests with the app built against the deployed backend (the
+`Secrets.xcconfig` as it is, never swapped) and real Bolna dialling the allowlisted
+contact. A person answers and says the receptionist's lines; the terminal tells them what
+to say and when. **One paid call per run, one flow per run.**
+
+```
+clip ─▶ app (simulator) ─▶ Heroku backend ─▶ Bolna ─▶ phone line ─▶ the person answering
+                                       ◀─ Deepgram captions ◀─ their lines ◀┘
+checked on the app's screen: Delivered, the user's captions, the receptionist's captions,
+the agent's question and the signed answer, the notes
+```
+
+```sh
+export IOS_DESTINATION="platform=iOS Simulator,id=<your udid>"
+scripts/e2e_video_to_speech.sh --real --flow live --dry-run        # cost + the lines; nothing built or dialled
+scripts/e2e_video_to_speech.sh --rehearse --flow live              # the same test and prompts on local_demo: free
+scripts/e2e_video_to_speech.sh --real --flow live --confirm-cost   # ONE real call
+```
+
+- Flows: `live`, `attended`, `open-question` (or `open`), `unattended`. Without
+  `--confirm-cost` it prints the cost and refuses to dial. It also refuses a
+  `Secrets.xcconfig` that isn't https or points at this Mac (an interrupted local run), and
+  stops before dialling when the backend's `/health` doesn't answer.
+- **Before a real run:** the founder's go-ahead for that call, a cost heads-up (Bolna
+  about ₹5.5/min plus telephony, 1–3 min per flow, plus a few Groq drafts), the phone
+  verified in Bolna (trial accounts dial only verified numbers) and set as `clinic` in
+  `ALLOWED_RECIPIENTS` on Heroku, and Heroku on a `main` that has the app's features
+  (`open-question` needs the open time question, PR "hand open time questions to the user").
+- **What the terminal prints:** the cost and the plan, `==> deployed backend healthy`,
+  then timestamped prompts from the test: `RING: … ANSWER and say nothing yet`,
+  `SAY NOW (once the voice has said “…”): “<line>”`, `heard: “<the caption>”`, `Stay
+  quiet: …`, a reminder every 20 s while it waits, `notes: “Booked”` and `FINISHED:
+  passed|FAILED. Hang up if the call is still on.` Then the step timings and `PASS` or
+  `FAIL`. A failing step ends the call from the app.
+- **Waits:** up to `E2E_HUMAN_WAIT` (90 s) to answer and for each line. The agent's 10 s
+  question window starts when the line is transcribed, so the test signs the answer
+  straight away (question shown → answer said was 5.8–6.7 s in the rehearsals).
+
+**The receptionist's lines** (the 28 Oct live calls; `flow_lines` in the script):
+
+| Flow | Line 1 | Line 2 |
+|---|---|---|
+| live | after the voice says “Hello.”: **“We have 4 pm tomorrow. Does that work?”** | after the reply asking for tomorrow: **“Yes, 10:30 tomorrow morning.”** |
+| attended | after “I'd like to book a doctor's appointment for Riya, tomorrow.”: **“We have 4 pm tomorrow. Does that work?”** | none: stay quiet, the agent says the signed YES and hangs up |
+| open-question | after the same opening: **“What time would you like to come in?”** | after “Tomorrow, please. What times are available?”: **“We have 4 pm tomorrow. Does that work?”** |
+| unattended | after the same opening: **“We have 4 pm tomorrow. Does that work?”** | none: the agent promises a callback and hangs up |
+
+Answer the call and say nothing until the first prompt; don't confirm after the signed
+YES (the agent has already settled the brief and hangs up by itself).
+
+- **Pass (on screen):** each SEND reaches Delivered and becomes the user's caption, never
+  before SEND and with nothing said while the draft settles (3 s unchanged); a template
+  draft equals the template, an LLM draft keeps its key word (tomorrow, thank); the rest
+  clip adds nothing and the unknown sign stays `[?]`; the receptionist's lines show as
+  captions (matched by key words: Deepgram writes “4 PM” or “four”); the agent's question
+  shows with YES (an offer) or the time words (“what time?”), and the signed answer becomes
+  the user's caption within 10 s, never the callback line; the notes say Booked (attended,
+  open-question) or call back (unattended).
+- What it can't check: the exact audio (the person listening is the check, write down
+  anything odd), and the 10 s window is measured from when the app shows the question,
+  not from the backend's clock.
+- Latest: 28 Oct, `--rehearse` on the iPhone 17 / iOS 27.0 simulator: **4 / 4 passed**.
+  Real calls: not run yet.
 
 ### iOS visual review
 
@@ -318,6 +385,8 @@ uv run python -m scripts.fake_app --base-url https://<app>.herokuapp.com \
   once, holding line after silence, captions reach the backend. Record SEND → `spoken`
   (the tool) and SEND → first audio (a stopwatch) in
   [voice.md](experiments/voice.md), which the runner appends to.
+- The app itself on a real call, signs from saved videos and a person answering:
+  [the same flows on a real call](#the-same-flows-on-a-real-call-deployed-backend-real-bolna).
 
 ### L13 Real iPhone (T1–T3 → Gate 4) and L14 demo
 
