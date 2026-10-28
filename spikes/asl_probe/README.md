@@ -21,6 +21,7 @@ Two Python environments, on purpose: landmarks come from `spikes/recognition/.ve
 | `public_clips.py` | python3 / recognition `.venv` | Run 5 data: public per-word ASL clips (Lifeprint, ASL Signbank, SignASL.org dictionaries) fetched, converted to H.264 landscape and 9:16 portrait, and rest-only negatives cut, with a manifest; local evaluation only |
 
 Tests: `cd spikes/asl_probe && ../recognition/.venv/bin/python -m unittest test_parity test_public_clips` (numpy only).
+They also run in the recognition light tests (`spikes/recognition/light_tests.py`), so `scripts/verify.sh` and CI pick up every `test_*.py` here.
 
 Per-word summaries, the gate check and threshold suggestions for a labelled session (live probe
 records, one clip per attempt, or the app path's output) are in
