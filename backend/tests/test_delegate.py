@@ -175,6 +175,7 @@ def test_rule_brain_hands_a_time_said_in_words_to_the_user(heard: str, proposal:
         # More than one time on offer: the agent never picks one for the user.
         ("we have four pm or five pm tomorrow", "that"),
         ("we cant do four pm five pm works", "that"),
+        ("We can't do 4 pm 5 pm works. 6 pm is also free.", "that"),
         # The same time said twice is still one offer.
         ("four pm yes four pm tomorrow works for us", "4 pm tomorrow"),
     ],
