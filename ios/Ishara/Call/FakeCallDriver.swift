@@ -13,7 +13,27 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         /// Script stages (0-based) whose first approval comes back "not delivered",
         /// as when the receptionist is still talking (ledger B24).
         var undeliveredStages: Set<Int> = []
+        /// Script stages whose first reply the receptionist talks over while it is being
+        /// spoken. Ordinary talk doesn't cut the reply off (docs/WORKFLOW.md), so it is
+        /// still delivered.
+        var interruptedStages: Set<Int> = []
+        /// Lose the backend connection mid-call: on a live call once the first draft is on
+        /// screen, on a delegated call once the agent has asked its question.
+        var connectionDrop: ConnectionDrop?
     }
+
+    /// How a simulated lost connection plays out, like `LiveCallDriver`'s reconnects.
+    enum ConnectionDrop: String, Sendable {
+        /// The socket comes back and the backend reports the call status again.
+        case reconnects
+        /// Every reconnect fails, and the backend stays unreachable (notes too).
+        case staysDown
+    }
+
+    /// What the receptionist says over the reply in an interrupted stage.
+    static let interruption = "Sorry, who's calling?"
+    static let dropDelay = 1.5
+    static let reconnectDelay = 3.0
 
     private let options: Options
     private let stages: [DemoScript.Stage]
@@ -27,6 +47,8 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     private var speakingTask: Task<Void, Never>?
     private var tasks: [Task<Void, Never>] = []
     private var isOver = false
+    /// The simulated connection is down: nothing the app sends arrives.
+    private var isDisconnected = false
 
     // Delegated call (D9), played from `DelegatedDemo`.
     private var setup: CallSetup?
@@ -35,7 +57,7 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     private var openAskID: String?
     private var askTimer: Task<Void, Never>?
 
-    /// The fake call never drops its connection, so this never runs.
+    /// Runs only when `Options.connectionDrop` is `.staysDown`.
     var onReconnectStopped: ((ReconnectStop) -> Void)?
 
     init(
@@ -78,6 +100,7 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
 
     func notes() async throws -> CallNotes {
         guard let setup else { throw CallDriverError.noCall }
+        if isDisconnected { throw URLError(.cannotConnectToHost) }
         guard let delegation = setup.delegation else {
             return CallNotes(callID: "demo-call", mode: .live, ready: isOver, transcript: transcript)
         }
@@ -89,7 +112,7 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     // MARK: OutgoingMessageSink (what the backend would receive)
 
     func send(_ message: AppMessage) {
-        guard !isOver else { return }
+        guard !isOver, !isDisconnected else { return }
         switch message {
         case let .chips(turnID, signs):
             let draft = DemoScript.draft(for: signs)
@@ -125,6 +148,9 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         let stage = nextStage - 1
         let shouldFail = options.undeliveredStages.contains(stage) && failedStages.insert(stage).inserted
         let duration = max(1.5, Double(text.count) * 0.06)
+        if options.interruptedStages.contains(stage) {
+            schedule(after: duration / 2) { $0.deliver(.caption(text: Self.interruption, at: Date().timeIntervalSince1970)) }
+        }
         speakingTask = schedule(after: duration) { driver in
             driver.finishSpeaking(turnID: turnID, delivered: !shouldFail)
         }
@@ -161,6 +187,28 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
             schedule(after: at) { _ in recognition.sign(sign) }
             at += 2.2
         }
+        // The first turn's chips and draft are on screen by now.
+        if nextStage == 1, let drop = options.connectionDrop {
+            schedule(after: at) { $0.loseConnection(drop) }
+        }
+    }
+
+    /// The app's socket goes away. The backend side of the call carries on (the delegated
+    /// question's timer keeps running), but nothing reaches the app and nothing the app
+    /// sends arrives, until the socket comes back or the app gives up.
+    private func loseConnection(_ drop: ConnectionDrop) {
+        isDisconnected = true
+        store?.connectionLost()
+        switch drop {
+        case .reconnects:
+            schedule(after: Self.reconnectDelay) { driver in
+                driver.isDisconnected = false
+                // Like the backend on a new socket: the call's status, nothing else.
+                driver.deliver(.status(.inCall))
+            }
+        case .staysDown:
+            schedule(after: Self.reconnectDelay) { $0.onReconnectStopped?(.attemptsUsedUp) }
+        }
     }
 
     // MARK: Delegated script (D9)
@@ -191,6 +239,9 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
                 askID: "demo-ask", question: DelegatedDemo.offer, options: DelegatedDemo.options,
                 fallback: DelegatedDemo.callbackLine, timeoutS: DelegatedDemo.askTimeout))
             driver.startAskTimer()
+            if let drop = driver.options.connectionDrop {
+                driver.schedule(after: Self.dropDelay) { $0.loseConnection(drop) }
+            }
         }
     }
 
@@ -245,7 +296,7 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     }
 
     private func deliver(_ message: ServerMessage) {
-        guard !isOver else { return }
+        guard !isOver, !isDisconnected else { return }
         store?.receive(message)
     }
 

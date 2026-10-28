@@ -155,7 +155,8 @@ private struct CallActionBar: View {
             }
         case .signing, .speaking, .connectionLost:
             if let question = model.openQuestion {
-                AskCard(question: question, onAnswer: model.answer)
+                // Leaves room for the answer buttons and the status bar with End above.
+                AskCard(question: question, detailsMaxHeight: sentenceMaxHeight * 0.5, onAnswer: model.answer)
             }
         }
     }
@@ -227,7 +228,7 @@ private struct CallActionBar: View {
 
 /// Shows the sentence at its natural height when it fits in `maxHeight`, and only
 /// otherwise lets it scroll inside the bar, so the buttons below it stay on screen.
-private struct PinnedSentence<Content: View>: View {
+struct PinnedSentence<Content: View>: View {
     let maxHeight: CGFloat
     @ViewBuilder let content: Content
 

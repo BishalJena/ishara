@@ -27,6 +27,11 @@ struct DemoLaunchOptions {
     var replayScript: [RecognitionResult] = []
     /// Make the fake call report the first reply of turn 2 as not delivered.
     var fakeNotDelivered = false
+    /// Make the receptionist talk over the fake call's first reply while it is spoken.
+    var fakeInterrupt = false
+    /// Make the fake call lose its backend connection mid-call, e.g.
+    /// `-IsharaFakeConnectionDrop staysDown`.
+    var fakeConnectionDrop: FakeCallDriver.ConnectionDrop?
     /// Speed up (below 1) or slow down the simulated timers: the Get ready
     /// checklist and the fake call.
     var fakeTimeScale = 1.0
@@ -43,6 +48,9 @@ struct DemoLaunchOptions {
         options.recognitionOverride = defaults.string(forKey: "IsharaRecognition").flatMap(Recognition.init(rawValue:))
         options.replayScript = parseReplay(defaults.string(forKey: "IsharaReplay") ?? "")
         options.fakeNotDelivered = defaults.bool(forKey: "IsharaFakeNotDelivered")
+        options.fakeInterrupt = defaults.bool(forKey: "IsharaFakeInterrupt")
+        options.fakeConnectionDrop = defaults.string(forKey: "IsharaFakeConnectionDrop")
+            .flatMap(FakeCallDriver.ConnectionDrop.init(rawValue:))
         let scale = defaults.double(forKey: "IsharaFakeTimeScale")
         if scale > 0 {
             options.fakeTimeScale = scale
@@ -62,7 +70,9 @@ struct DemoLaunchOptions {
     var fakeDriverOptions: FakeCallDriver.Options {
         FakeCallDriver.Options(
             timeScale: fakeTimeScale,
-            undeliveredStages: fakeNotDelivered ? [1] : []
+            undeliveredStages: fakeNotDelivered ? [1] : [],
+            interruptedStages: fakeInterrupt ? [0] : [],
+            connectionDrop: fakeConnectionDrop
         )
     }
 }
@@ -71,4 +81,6 @@ struct DemoLaunchOptions {
 enum DemoFixture: String, CaseIterable {
     case home, getReady, signing, speaking, delivered, notDelivered, ended, connectionLost
     case composing, stopped, stopTooLate, deliveredDespiteStop, backendError, endedNoCaptions, hangUpUnconfirmed
+    /// The notes of a booked delegated call (D9), with the call service's own summary.
+    case notes
 }

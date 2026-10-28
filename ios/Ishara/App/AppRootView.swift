@@ -96,6 +96,7 @@ struct AppRootView: View {
         if let fixture = services.options.fixture {
             if fixture == .getReady { return .getReady(ScriptedRecognitionController(), delegated: false) }
             if let model = fixture.makeActiveCall() { return .activeCall(model) }
+            if let model = fixture.makeNotes() { return .notes(model) }
         }
         #endif
         return .home

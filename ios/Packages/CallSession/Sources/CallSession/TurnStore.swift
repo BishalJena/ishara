@@ -419,20 +419,25 @@ public final class TurnStore {
         draft = nil
     }
 
+    /// Wipes what could still be sent, the agent's open question included: the backend may
+    /// resolve it (its timeout line) while the app can't hear, so an answer tapped after a
+    /// reconnect could be stale. The backend re-sends nothing on a new socket.
     private func goSilent() {
         sink.discardPending()
         state = .error
         notice = Self.disconnectedNotice
         settle(.idle)
         beginNewTurn()
+        openQuestion = nil
     }
 
     /// Captions stay as a read-only transcript of the call; everything that could still be
-    /// sent (chips, draft, a pending approval) is wiped.
+    /// sent (chips, draft, a pending approval, an open question) is wiped.
     private func finish() {
         state = .ended
         settle(.idle)
         notice = nil
         beginNewTurn()
+        openQuestion = nil
     }
 }
