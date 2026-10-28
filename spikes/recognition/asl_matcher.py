@@ -23,7 +23,7 @@ from detect_clips import holistic, to_frame
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_ASL_BUNDLE = ROOT / "fixtures" / "asl" / "asl-bundle-provisional.json"
-PROVISIONAL_BANNER = "PROVISIONAL — probe defaults, not frozen on a labelled session"
+PROVISIONAL_BANNER = "PROVISIONAL — public-clip candidate, not frozen on the iPhone clips"
 TOP_K = 3
 
 
