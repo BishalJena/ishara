@@ -191,4 +191,4 @@ the opening caption and offered-time fix (#93).
 
 Also seen: the app fetched the call notes once, right after the line dropped, while Bolna's
 summary arrives with the final `completed` webhook a little later, so the app showed no
-Bolna summary although the backend had it.
+Bolna summary although the backend had it ([#96](https://github.com/BishalJena/ishara/issues/96)).
