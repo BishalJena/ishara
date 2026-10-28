@@ -16,6 +16,10 @@ from vocabulary import ASL_SIGNS, REHEARSED, SIGNS, TEMPLATE_SIGNS  # noqa: E402
 
 BUNDLE = am.load_asl_bundle()
 GOOD = {"pose_fraction": 1.0, "hand_fraction": 0.9}
+# The model learned the one-handed MORNING; it stays out of the chips until the iPhone test.
+HELD_BACK = {"morning"}
+# Public-clip Gate 2 (Run 5): the confident wrong words, all unrehearsed glosses.
+UNREHEARSED_TRAPS = ("can", "hungry", "time")
 
 
 def probs(**mass: float) -> np.ndarray:
@@ -36,9 +40,16 @@ class BundleTests(unittest.TestCase):
         self.assertTrue(BUNDLE.provisional)
         self.assertTrue(BUNDLE.vocabulary <= set(BUNDLE.glosses))
         self.assertTrue(BUNDLE.vocabulary <= set(SIGNS), BUNDLE.vocabulary - set(SIGNS))
-        for word in REHEARSED:
-            self.assertIn(word, BUNDLE.vocabulary)
         self.assertLessEqual(BUNDLE.thresholds["pick_one_p"], BUNDLE.thresholds["p"])
+
+    def test_only_the_rehearsed_words_minus_morning_may_chip(self) -> None:
+        self.assertEqual(BUNDLE.vocabulary, set(REHEARSED) - HELD_BACK)
+
+    def test_thresholds_are_the_provisional_public_clip_candidate(self) -> None:
+        self.assertTrue(BUNDLE.provisional, "the iPhone clips decide the final values")
+        self.assertEqual(BUNDLE.thresholds, {"p": 0.65, "margin": 0.3, "pick_one_p": 0.35})
+        self.assertEqual(BUNDLE.per_word, {"hello": 0.5, "no": 0.45, "now": 0.45, "thankyou": 0.6,
+                                           "tomorrow": 0.45, "wait": 0.45, "yes": 0.5})
 
     def test_vocabulary_module_matches_backend(self) -> None:
         backend = Path(__file__).resolve().parents[2] / "backend" / "app" / "protocol.py"
@@ -86,6 +97,30 @@ class DecisionTests(unittest.TestCase):
         self.assertIsNone(verdict["candidate"])
         self.assertIn("not in vocabulary", verdict["reason"])
 
+    def test_confident_unrehearsed_word_is_never_a_chip_or_a_tile(self) -> None:
+        for gloss in UNREHEARSED_TRAPS:
+            for p1 in (0.9, 0.5):
+                verdict = am.asl_decision(probs(**{gloss: p1}), GOOD, BUNDLE)
+                self.assertEqual((verdict["status"], verdict["sign"], verdict["candidate"]),
+                                 ("abstain", None, None), f"{gloss} at {p1}")
+                self.assertIn(f"not in vocabulary: {gloss}", verdict["reason"])
+
+    def test_yes_read_as_can_is_unsure_not_the_runner_up_yes(self) -> None:
+        # Signbank YES scored can 0.62 with yes second: still the full softmax, so "?".
+        verdict = am.asl_decision(probs(can=0.62, yes=0.3), GOOD, BUNDLE)
+        self.assertEqual((verdict["status"], verdict["sign"], verdict["candidate"]), ("abstain", None, None))
+
+    def test_morning_is_never_a_chip_or_a_tile(self) -> None:
+        for p1 in (0.95, 0.5):
+            verdict = am.asl_decision(probs(morning=p1), GOOD, BUNDLE)
+            self.assertEqual((verdict["status"], verdict["sign"], verdict["candidate"]), ("abstain", None, None))
+
+    def test_shipped_cutoffs_per_word_and_global(self) -> None:
+        self.assertEqual(am.asl_decision(probs(tomorrow=0.46), GOOD, BUNDLE)["status"], "chip")
+        self.assertEqual(am.asl_decision(probs(tomorrow=0.44), GOOD, BUNDLE)["status"], "pick_one")
+        self.assertEqual(am.asl_decision(probs(please=0.66), GOOD, BUNDLE)["status"], "chip")
+        self.assertEqual(am.asl_decision(probs(please=0.64), GOOD, BUNDLE)["status"], "pick_one")
+
     def test_restricting_to_the_vocabulary_first_would_have_been_wrong(self) -> None:
         # ISL "evening" clips: flat output, the best vocabulary word at p 0.01. Must be "?".
         p = probs(vacuum=0.12, pool=0.1, no=0.01)
@@ -108,7 +143,7 @@ class DecisionTests(unittest.TestCase):
         tuned = am.AslBundle(BUNDLE.glosses, BUNDLE.vocabulary, BUNDLE.thresholds, {"tomorrow": 0.45},
                              BUNDLE.quality, True, BUNDLE.model_sha256)
         self.assertEqual(am.asl_decision(probs(tomorrow=0.5, another=0.1), GOOD, tuned)["status"], "chip")
-        self.assertEqual(am.asl_decision(probs(morning=0.5, another=0.1), GOOD, tuned)["status"], "pick_one")
+        self.assertEqual(am.asl_decision(probs(please=0.5, another=0.1), GOOD, tuned)["status"], "pick_one")
 
     def test_invalid_vectors_abstain(self) -> None:
         self.assertEqual(am.asl_decision(np.zeros(10), GOOD, BUNDLE)["status"], "abstain")
