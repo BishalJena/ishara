@@ -9,7 +9,8 @@ import SignPipeline
 /// - `asl` (decision D8): Kaggle-layout landmarks → the public ASL Signs model → 250 logits →
 ///   the open-set rule in `LogitsMatcher` (chip, pick-one, or `?`).
 /// - `signCLIP`: SignCLIP features → Core ML embedding → nearest enrolled reference.
-/// Never guesses: without a model or bundle, or when any step fails, the result is `.unsure`.
+/// Never guesses: without a model or bundle, or when any step fails, the result is `.unsure`;
+/// when a hand left the picture during the sign or as it ended, it is `.handLeftFrame`.
 struct SegmentClassifier {
     enum Engine {
         case signCLIP(encoder: SignEncoder?, matcher: SignMatcher?)
@@ -35,9 +36,12 @@ struct SegmentClassifier {
         case let .asl(model, matcher):
             result = Self.classify(frames, model: model, matcher: matcher)
         }
-        guard result == .unsure, FramingGuard.handLeftFrame(Self.framing(of: frames), restY: clip.restY) else {
+        // The rest after the cut counts too: a hand that leaves the picture ends the sign there.
+        // A sign read while a hand was out of the picture is never a chip or a tile.
+        guard FramingGuard.handLeftFrame(Self.framing(of: frames + clip.restAfter), restY: clip.restY) else {
             return result
         }
+        recognitionLog.info("hand left the picture: \(String(describing: result), privacy: .public) shown as ?")
         return .handLeftFrame
     }
 

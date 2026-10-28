@@ -47,6 +47,26 @@ enum Landmarks {
         run(from: start, seconds: seconds, wristY: signingY) + run(from: start + seconds, seconds: 0.6)
     }
 
+    /// A one-handed sign: the right hand signs for 0.8 s (the left stays down, untracked), then
+    /// its hand landmarks vanish for 0.6 s while the pose still puts its wrist at `wristAfter`.
+    static func oneHandedSign(wristAfter: (x: Float, y: Float)) -> (Double) -> [LandmarkFrame] {
+        { start in
+            (0..<42).map { index in
+                let signing = index < 24
+                var frame = Self.frame(t: start + Double(index) / 30, wristY: signing ? signingY : restY)
+                frame.leftHand = nil
+                frame.pose?[15] = Landmark(x: 0.7, y: 1.2, z: 0, visibility: 0.1)
+                if signing {
+                    frame.pose?[16] = Landmark(x: 0.4, y: signingY, z: 0, visibility: 0.9)
+                } else {
+                    frame.rightHand = nil
+                    frame.pose?[16] = Landmark(x: wristAfter.x, y: wristAfter.y, z: 0, visibility: 0.2)
+                }
+                return frame
+            }
+        }
+    }
+
     /// Hands up, then the body leaves the frame mid-sign: a lost-tracking rejection.
     static func lostMidSign(from start: Double) -> [LandmarkFrame] {
         run(from: start, seconds: 0.5, wristY: signingY)

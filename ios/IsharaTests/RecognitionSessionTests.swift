@@ -76,6 +76,19 @@ final class RecognitionSessionTests: XCTestCase {
         XCTAssertEqual(clip.restY, Landmarks.calibratedRestY, accuracy: 1e-6)
     }
 
+    func testAcceptedSignAlsoHandsBackTheRestThatEndedIt() throws {
+        let (_, outputs) = run(Landmarks.calibratedStream { Landmarks.sign(from: $0) })
+
+        let clip = try XCTUnwrap(clips(outputs).first)
+        let end = try XCTUnwrap(clip.frames.last).timestamp
+        XCTAssertTrue(clip.restAfter.allSatisfy { $0.timestamp > end }, "no frame twice")
+        XCTAssertEqual(try XCTUnwrap(clip.restAfter.first).timestamp, end + 1.0 / 30, accuracy: 1e-6,
+                       "starts right after the cut")
+        XCTAssertEqual(try XCTUnwrap(clip.restAfter.last).timestamp - end, 0.4, accuracy: 0.02,
+                       "up to the frame that ended the sign, 0.4 s of rest later")
+        XCTAssertTrue(clip.restAfter.allSatisfy { $0.leftHand?.first?.y == Landmarks.restY })
+    }
+
     func testRejectedAttemptGivesNothingToMatch() {
         let (_, outputs) = run(Landmarks.calibratedStream { Landmarks.lostMidSign(from: $0) })
 

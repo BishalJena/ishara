@@ -10,8 +10,8 @@ enum RecognitionResult: Equatable, Sendable {
     case candidate(Sign)
     /// Something was signed but nothing matched well enough: a [?] chip, never spoken.
     case unsure
-    /// Like `unsure`, and a hand left the picture during the sign, so the user is told to
-    /// keep both hands inside the frame.
+    /// Like `unsure`, because a hand left the picture during the sign or as it ended (even
+    /// when the model was confident), so the user is told to keep both hands inside the frame.
     case handLeftFrame
 }
 

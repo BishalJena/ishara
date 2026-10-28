@@ -15,6 +15,10 @@ struct RecognitionSession {
     struct SignClip: Equatable {
         /// From the detector's start to its end: the frames the model reads.
         var frames: [LandmarkFrame]
+        /// The rest frames after `end`, up to the frame that made the detector end the sign
+        /// (about `endRestS`). Only the framing guard reads them: a hand leaving the picture
+        /// counts as rest, so a sign whose hand left ends right there (issue #58).
+        var restAfter: [LandmarkFrame]
         /// The calibrated rest line, so the framing guard can tell a resting hand from one that left.
         var restY: Double
     }
@@ -100,7 +104,8 @@ struct RecognitionSession {
         case .segment(let segment):
             guard segment.accepted else { return nil }
             let frames = recent.filter { segment.start <= $0.timestamp && $0.timestamp <= segment.end }
-            return .segment(SignClip(frames: frames, restY: restY))
+            let restAfter = recent.filter { $0.timestamp > segment.end }
+            return .segment(SignClip(frames: frames, restAfter: restAfter, restY: restY))
         }
     }
 
