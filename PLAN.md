@@ -216,6 +216,8 @@ Captions (the app can't read them), so the composer gets chips only and no trans
    drafts a sentence from the chips, the last receptionist caption and the call purpose.
    The **validator** rejects drafts that miss a chip's meaning, add a day, time, number
    or name that neither the user signed nor the receptionist said, or run past 25 words.
+   The 25-word limit is for LLM drafts only: a template sentence is deterministic and the
+   user reads it before SEND, so with many signs it may run longer (issue #62).
    Booking words ("booked", "confirmed") pass only when the receptionist's caption said
    them, so Ishara never claims a booking on its own.
    A rejected draft, or no reply within 1.5 s, falls back to the template sentence.

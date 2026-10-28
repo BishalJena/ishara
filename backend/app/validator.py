@@ -3,6 +3,10 @@
 PLAN §4: reject a draft that misses a chip's meaning, adds a day, time, number or
 name that neither the user signed nor the receptionist said, or runs past 25
 words. `validate` returns the reasons; an empty list means the draft may be shown.
+Only LLM drafts go through it at runtime. Template sentences meet every other rule
+(tests/test_template_properties.py) but are exempt from the 25-word limit (issue #62):
+they are deterministic, the user reads them before SEND, and with many plain-phrase
+signs they run longer.
 Facts copied from the receptionist's caption are allowed. Known blind spots: a
 name at the very start of a sentence or written in lower case is not detected.
 """
