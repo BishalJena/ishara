@@ -326,7 +326,7 @@ async def test_an_llm_ask_on_an_unattended_call_becomes_the_callback_line() -> N
     raw = llm(PAUSE_LINE, {"question": OFFER, "proposal": "4 pm tomorrow"})
     decision = await Brain(FakeGroq(raw)).reply(state(attended=False), OFFER)
     assert decision.say == CALLBACK_LINE and decision.done and decision.ask is None
-    assert decision.source == "llm"
+    assert decision.callback and decision.source == "llm"
 
 
 # ---- requests and state ----
@@ -585,7 +585,7 @@ def test_a_decline_or_no_slots_is_declined_never_booked(flow, heard) -> None:
 )
 def test_outcome_reads_denials_and_no_slots_as_not_booked(receptionist, outcome) -> None:
     entries = [TranscriptEntry(speaker="receptionist", text=receptionist, at=1.0)]
-    result = build_notes("c1", make_brief().brief, entries, [], None, True)
+    result = build_notes("c1", make_brief().brief, entries, [], None, True, promised_callback=False)
     assert result.outcome == outcome
     confirmed = [s for s in result.summary if s.startswith("They confirmed")]
     assert bool(confirmed) == (outcome == "booked")
@@ -598,7 +598,8 @@ def test_a_callback_after_an_offer_stays_a_callback_even_with_no_slots() -> None
         ),
         TranscriptEntry(speaker="agent", text=CALLBACK_LINE, at=2.0),
     ]
-    assert build_notes("c1", make_brief().brief, entries, [], None, True).outcome == "callback"
+    result = build_notes("c1", make_brief().brief, entries, [], None, True, promised_callback=True)
+    assert result.outcome == "callback"
 
 
 @pytest.mark.parametrize("attended", [True, False])
@@ -684,6 +685,35 @@ def test_an_unanswered_ask_is_a_callback_in_the_notes(flow) -> None:
     result = finished_notes(f, call_id)
     assert result["outcome"] == "callback"
     assert result["open_questions"] == [CALLBACK_QUESTION]
+
+
+@pytest.mark.parametrize(
+    ("attended", "heard", "callback"),
+    [
+        (False, OFFER, True),
+        (False, "Could you come on Friday instead?", True),
+        (True, "What's your insurance number?", True),
+        (True, "Sorry, we're fully booked tomorrow.", True),
+        (True, "You're booked for 10:30 tomorrow morning.", False),
+        (True, OFFER, False),  # handed to the user, nothing promised yet
+        (True, "Let me check.", False),
+    ],
+)
+def test_the_rule_brain_marks_each_callback_it_promises(attended, heard, callback) -> None:
+    decision = RuleBrain().decide(state(attended=attended), heard)
+    assert decision.callback is callback
+    assert (decision.say == CALLBACK_LINE) is callback
+
+
+def test_notes_read_the_promised_callback_not_the_agents_words() -> None:
+    offer = entry("receptionist", "We have 4 pm tomorrow.")
+    brief = make_brief().brief
+    own_words = [offer, entry("agent", RIYA_CALLBACK)]
+    rule_words = [offer, entry("agent", CALLBACK_LINE)]
+    promised = build_notes("c1", brief, own_words, [], None, True, promised_callback=True)
+    assert promised.outcome == "callback"
+    unpromised = build_notes("c1", brief, rule_words, [], None, True, promised_callback=False)
+    assert unpromised.outcome == "unclear"
 
 
 def test_a_different_day_goes_to_the_attended_user(flow) -> None:
@@ -1029,7 +1059,7 @@ def test_notes_list_only_the_receptionists_offers_and_cap_them() -> None:
     entries += [entry("receptionist", f"We have {h} pm tomorrow.") for h in (1, 2, 3, 4)]
     entries += [entry("agent", "Yes, 5 pm tomorrow works. Thank you.")]
     entries += [entry("receptionist", f"Booked for {h} pm.") for h in (1, 2, 3)]
-    result = build_notes("c1", make_brief().brief, entries, [], None, True)
+    result = build_notes("c1", make_brief().brief, entries, [], None, True, promised_callback=False)
     offered = [s for s in result.summary if s.startswith("They offered")]
     assert offered == [f'They offered: "We have {h} pm tomorrow."' for h in (1, 2, 3)]
     confirmed = [s for s in result.summary if s.startswith("They confirmed")]
@@ -1037,49 +1067,59 @@ def test_notes_list_only_the_receptionists_offers_and_cap_them() -> None:
 
 
 @pytest.mark.parametrize(
-    ("entries", "answers", "outcome", "open_questions"),
+    ("entries", "answers", "promised", "outcome", "open_questions"),
     [
         (
             [entry("receptionist", "We have 4 pm."), entry("agent", CALLBACK_LINE)],
             [],
+            True,
             "callback",
             ["The agent promised to call back. Decide on the offer and call again."],
         ),
         (
             [entry("receptionist", "Let me check the diary.")],
             [],
+            False,
             "unclear",
             ["Nothing was confirmed. Read the transcript and decide the next step."],
         ),
-        ([], [], "no_answer", ["Nobody answered or nothing was heard."]),
+        ([], [], False, "no_answer", ["Nobody answered or nothing was heard."]),
         (
             [entry("receptionist", "We have 4 pm tomorrow. Does that work?")],
             ["No, 4 pm tomorrow doesn't work, sorry. Is there another time?"],
+            False,
             "declined",
             [],
         ),
         (
             [entry("receptionist", "Sorry, we're fully"), entry("receptionist", "booked.")],
             [],
+            False,
             "declined",
             [],
         ),
         (
             [entry("receptionist", "4 pm? 10:30? 11?")],
             ["No, 4 pm doesn't work.", "No, 10:30 doesn't work.", "Yes, 11 works."],
+            False,
             "booked",
             [],
         ),
         (
             [entry("receptionist", "You're booked at 4 pm.")],
             ["Yes, 4 pm works.", "No, 4 pm doesn't work."],
+            False,
             "unclear",
             ["Nothing was confirmed. Read the transcript and decide the next step."],
         ),
     ],
 )
-def test_outcomes_and_open_questions_word_for_word(entries, answers, outcome, open_questions):
-    result = build_notes("c1", make_brief().brief, entries, answers, None, True)
+def test_outcomes_and_open_questions_word_for_word(
+    entries, answers, promised, outcome, open_questions
+):
+    result = build_notes(
+        "c1", make_brief().brief, entries, answers, None, True, promised_callback=promised
+    )
     assert result.outcome == outcome
     assert result.open_questions == open_questions
 
