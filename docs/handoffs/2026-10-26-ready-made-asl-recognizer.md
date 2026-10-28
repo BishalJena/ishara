@@ -28,6 +28,8 @@ the demo. The pitch says all of this plainly.
 - **Chips:** only **hello, thankyou, yes, no, now, please, tomorrow, wait** can become a chip or
   a tile, at provisional cut-offs from the public-clip Gate 2 (#66): global p 0.65, per word
   0.45–0.6, margin 0.3, pick-one 0.35 (#83). Every other gloss is `?` at any confidence.
+  That public-clip run failed for `yes` and `hello` (they miss on public signers), so the
+  presenter's phone clips decide whether they stay.
 - **MORNING is out** of the chip vocabulary: the model learned the one-handed form (one flat
   hand rising from the belly to stand upright beside the face), not the two-handed dictionary
   form. It can still be tapped. The iPhone test of the one-handed form decides
