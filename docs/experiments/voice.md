@@ -1,12 +1,13 @@
 # Voice experiment record
 
-**Status: Not yet run.** No V4 spike call has been placed. Every "Executed" line below
-is empty until a run is recorded; until then only the documented behaviour applies.
-Pre-flight on 28 Oct (no call): Heroku now runs `main` with the D9 routes (release v9),
-the live Bolna agent matches `agent.json` with the call summary on and speech before the
-welcome message ignored, and the free smoke tests pass; see
+**Status: real calls ran on 28 Oct.** The first Path B calls failed for five reasons, each
+fixed at its root; after that Live mode and all three Call-for-me flows passed on real calls,
+first from a script client and then end to end from the simulator app driven by sign videos
+(see [Runs](#runs)). The nine-check V4 spike (`voice_spike.py`) itself has not been run, so
+STOP, B24, B25 and the timings are still open. Before the calls: Heroku ran `main` with the
+D9 routes, the live Bolna agent matched `agent.json` and the free smoke tests passed; see
 [Deployed state before the first call](#deployed-state-before-the-first-call) and the
-[go-live check](../status/2026-10-28-live.md).
+[go-live check](../status/2026-10-28-live.md). Day summary: [status, 28 Oct](../status/2026-10-28.md).
 This file is the authoritative summary of Path B voice measurements (task V4,
 [Gate 1](../../PLAN.md#7-gates-go--no-go), testing layer 3 in
 [PLAN.md §8](../../PLAN.md#8-testing-plan)). [Plan](../../PLAN.md) ·
@@ -51,7 +52,9 @@ showed. Keep them separate.
   agent can use a custom LLM at all is undocumented ([B23](../CLAIM-LEDGER.md)).
 - **Measured by the runner:** captions, `spoken` events and `speaking` statuses inside
   the talking window.
-- **Executed:** not yet run.
+- **Executed (28 Oct, real calls, not the runner):** on the passing Live runs the person
+  answering heard only the disclosure, the approved sentences, the holding line and the
+  goodbye; nothing before a SEND. B23 holds live: the hosted graph agent calls our custom LLM.
 
 ### 2. A `user_reply` event speaks the exact text
 
@@ -59,7 +62,8 @@ showed. Keep them separate.
   ([B18](../CLAIM-LEDGER.md)). **Contradicted live (28 Oct):** they are not, so the
   custom LLM now speaks the call's approved in-flight turn, not text from the prompt.
 - **Measured by the runner:** outcome and SEND → spoken for a fixed test sentence.
-- **Executed:** not yet run.
+- **Executed (28 Oct):** failed first (every SEND `not_delivered`), passed after #80: the
+  approved text was heard word for word and the app showed Delivered.
 
 ### 3. Holding line after silence
 
@@ -77,7 +81,9 @@ showed. Keep them separate.
   partial captions ([B11](../CLAIM-LEDGER.md)).
 - **Measured by the runner:** caption count and time from the tester pressing Enter
   (teammate finished speaking) to the first caption.
-- **Executed:** not yet run.
+- **Executed (28 Oct):** the receptionist's lines reached the app as captions on every
+  passing call, in the transcriber's style: lowercase, no punctuation, times in words
+  ("four pm"), which #81 now reads as digits.
 
 ### 5. Sending the same `turn_id` twice speaks only once
 
@@ -100,7 +106,8 @@ showed. Keep them separate.
 - **Documented:** the `end_call` event moves to a static goodbye node that ends the
   call ([PLAN §3](../../PLAN.md#3-architecture)).
 - **Measured by the runner:** time from `end` to `status ended`. Always run last.
-- **Executed:** not yet run.
+- **Executed (28 Oct, not timed):** the passing Live run ended from the app's End; the
+  passing Call-for-me runs hung up by themselves once the brief was settled.
 
 ### 8. SEND while the teammate is still talking (B24)
 
@@ -133,9 +140,10 @@ Fill in from the runs below once at least one run exists.
 
 ## Gate 1 verdict
 
-Not decided: no run yet. Gate 1 passes on exact text spoken, no double speech, a quiet
-agent otherwise and captions reaching the backend
-([PLAN §7](../../PLAN.md#7-gates-go--no-go)).
+**Passed on 28 Oct**, after #80 and the one-worker fix (#82): exact text spoken, each
+approved sentence heard once, the agent quiet otherwise, and captions reaching the backend
+and the app ([PLAN §7](../../PLAN.md#7-gates-go--no-go)). Still open from V4: STOP during
+speech, SEND while the receptionist talks (B24), talk-over with "wait" (B25) and the timings.
 
 ## Deployed state before the first call
 
@@ -150,4 +158,37 @@ Recorded on 28 Oct after the deploy go; **no call placed**. Details in the
 
 ## Runs
 
-No runs yet. `scripts/voice_spike.py` appends one dated section per run below.
+`scripts/voice_spike.py` appends one dated section per run below; it has not been run yet.
+The 28 Oct calls used the script clients and the app instead. Only dates and pass/fail
+are recorded here: no call ids, numbers or provider responses.
+
+### 28 Oct: first real calls (Path B, to the founder's verified phone as `clinic`)
+
+**First calls: what failed, and the fix for each**
+
+| # | Symptom | Root cause | Fix |
+|---|---|---|---|
+| a | `POST /calls` failed before dialling | The Bolna account is on trial and only dials verified numbers | Recipient verified in the Bolna dashboard (account setting, no code) |
+| b | Every SEND ended `not_delivered`; nothing approved was spoken | Bolna does not put `user_reply` event properties into node prompts (the docs say it does): the speak prompt arrived with a literal `{turn_id}`. [B18](../CLAIM-LEDGER.md) is contradicted | #80: the speak node names only the call; the custom LLM claims the call's one approved in-flight turn |
+| c | The app stayed on "ringing" after the disclosure; earlier calls failed in different ways | Heroku ran two uvicorn workers, and call state is in memory per process | `WEB_CONCURRENCY=1` on Heroku, then #82 (`--workers 1` in the Procfile) |
+| d | Call for me repeated its opening instead of asking about the offer | The live transcriber writes times in words ("four pm"); offers only matched digits | #81: clock times said in words are read as digits |
+| e | An unattended call's notes said "unclear" instead of "callback" | The notes matched the rule brain's exact callback sentence; the Groq brain promised the callback in its own words | #85: the decision records the callback; the notes read that |
+
+**Then: what passed**
+
+| Flow | From a script client | End to end from the simulator app, sign videos as the camera (#89, #90) |
+|---|---|---|
+| Live mode (hello · no · tomorrow · please · yes · thankyou, End) | pass | pass |
+| Call for me, attended (YES to "4 pm tomorrow") | pass | pass, notes Booked |
+| Call for me, unattended | pass | pass, notes "call back" |
+| Call for me, open time question (#87: TOMORROW, then YES) | pass | 1st run fail: the ask card covered the camera card and the replay menu (#88); 2nd fail: the call was not answered within the test's wait; 3rd stopped by hand while waiting for the agent's question (cause not recorded); 4th **pass**, notes Booked |
+
+The app runs used `scripts/e2e_video_to_speech.sh --real --flow <flow> --confirm-cost`
+against the deployed backend (iPhone 17 / iOS 27.0 simulator). Live, attended and
+unattended ran before #93–#95 landed. The passing open-question run used `main` with the
+camera-visible ask card (#95), the framing hint for one-handed signs (#94) and, on Heroku,
+the opening caption and offered-time fix (#93).
+
+Also seen: the app fetched the call notes once, right after the line dropped, while Bolna's
+summary arrives with the final `completed` webhook a little later, so the app showed no
+Bolna summary although the backend had it ([#96](https://github.com/BishalJena/ishara/issues/96)).

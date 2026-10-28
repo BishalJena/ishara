@@ -4,6 +4,15 @@ Local diagnostics, not a deployed recognition service.
 [Handoff](../../docs/HANDOFF.md) · [Measured results](../../docs/experiments/recognition.md) ·
 [Active gates](../../PLAN.md) · [Historical notebook](../../docs/archive/2026-10-20-recognition-notes.md)
 
+> **Current path (decision D8, 25 Oct): the public ASL Signs model, used as is.** It runs
+> behind the same detector with `--model asl` (`live_source.py`, `mac_bridge.py`,
+> `scripts/sign_lab.sh`); the rule is in `asl_matcher.py`, its bundle in `fixtures/asl/`, and
+> `asl_summary.py` scores a labelled session. Setup and results:
+> [ASL model probe](../../docs/experiments/asl-model-probe.md), tools in
+> [`../asl_probe`](../asl_probe/README.md). Most of this runbook covers the earlier ISL work
+> (the browser miniature, SL-GCN, personalised SignCLIP references), kept because SignCLIP is
+> still the app's fallback and the measurements depend on it.
+
 Commands below run from `spikes/recognition` on the tested Mac/Python 3.11 setup.
 Git and `uv` are prerequisites. Weights, videos, caches and generated evidence
 stay under ignored `artifacts/`; no credentials are needed for the public models.
