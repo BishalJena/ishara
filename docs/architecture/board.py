@@ -6,6 +6,10 @@ one description below, so the two never drift. Render the PNG from the SVG:
       --force-device-scale-factor=2 --window-size=1840,2260 --default-background-color=ffffffff \
       --screenshot=docs/architecture/ishara-board.png docs/architecture/ishara-board.svg
 
+Without Chrome, macOS Quick Look works too: it renders a square thumbnail, so pad the SVG to a
+2260 x 2260 viewBox (`viewBox="-210 0 2260 2260"`, white background), run
+`qlmanage -t -s 4520 -o /tmp <padded.svg>`, then `sips -c 4520 3680` the result (centre crop).
+
 Edit the content here, not in Excalidraw, or the next run overwrites the edits.
 """
 from __future__ import annotations
@@ -106,7 +110,7 @@ class Board:
 def build() -> Board:
     b = Board()
     b.text("title", 40, 30, "Ishara: sign what you need, approve it, and the call is made for you", size=34, bold=True)
-    b.text("subtitle", 40, 78, "Architecture as of 27 October 2026 (decisions D1, D8, D9 in PLAN.md). "
+    b.text("subtitle", 40, 78, "Architecture as of 28 October 2026 (decisions D1, D8, D9 in PLAN.md). "
            "Blue runs on the iPhone, yellow on our backend, purple at Bolna, green is the user's own action.",
            size=16, color=MUTED)
 
@@ -137,7 +141,7 @@ def build() -> Board:
            size=22, bold=True)
     y2 = 535
     you2 = b.box("d-you", xs[0], y2, w, h, "You", "person", kind="ellipse")
-    ask = b.box("d-req", xs[1], y2, w, h, "Sign or tap what\nyou need: TOMORROW\n· MORNING + name", "you", size=15)
+    ask = b.box("d-req", xs[1], y2, w, h, "Sign or tap what\nyou need, e.g.\nTOMORROW + name", "you", size=15)
     brief = b.box("d-brief", xs[2], y2, w, h, "Brief built from\nexactly that\n(nothing added)", "backend")
     ok = b.box("d-ok", xs[3], y2, w, h, "You approve it\nonce: stay to\nanswer, or not", "you")
     calls = b.box("d-call", xs[4], y2, w, h, "Bolna agent calls,\nsays who it calls\nfor, then the brief", "bolna", size=15)
@@ -151,7 +155,7 @@ def build() -> Board:
     decide = b.box("d-dec", xs[5], y2 + 165, w, 120, "A decision\nthat is yours", "none", kind="diamond")
     b.link("d-a5", brain, decide, side="y")
     att = b.box("d-att", xs[3] - 20, y2 + 330, w * 2 + gap + 40, 90,
-                "Stayed (attended): the agent says \"one moment\",\nthe app asks YES / NO / WAIT; sign or tap\n(no answer in 10 s: it will call back)", "you", size=15)
+                "Stayed: \"one moment\"; the app asks YES / NO /\nWAIT, or a time word for \"when?\"; sign or\ntap (no answer in 10 s: it will call back)", "you", size=15)
     un = b.box("d-un", xs[6], y2 + 330, w + 40, 90, "Left it (unattended):\n\"I'll check and call\nback\", then hangs up", "stop", size=15)
     b.arrow("d-a6", (decide.x, decide.y + 60), (att.x + att.w / 2, decide.y + 60), (att.x + att.w / 2, att.y))
     b.arrow("d-a7", (decide.x + decide.w, decide.y + 60), (un.x + un.w / 2, decide.y + 60), (un.x + un.w / 2, un.y))
@@ -170,7 +174,7 @@ def build() -> Board:
     ends = b.box("r-end", 40, y3b, 200, 100, "The sign ends:\nhands back at\nrest for ~0.4 s")
     soft = b.box("r-soft", 290, y3b, 220, 100, "All 250 signs scored;\nnever narrowed to\nour words first")
     inv = b.box("r-inv", 560, y3b - 10, 210, 120, "Top sign one\nof our words?", "none", kind="diamond", size=15)
-    conf = b.box("r-conf", 830, y3b - 10, 220, 120, "p ≥ 0.6 and\n0.3 ahead of\nthe next?", "none", kind="diamond", size=15)
+    conf = b.box("r-conf", 830, y3b - 10, 220, 120, "p ≥ cut-off\n(0.45–0.65), 0.3\nahead of next?", "none", kind="diamond", size=15)
     chip = b.box("r-chip", 1110, y3b, 200, 100, "Chip\n(can still be\nremoved with ✕)", "you")
     maybe = b.box("r-maybe", 830, y3b + 170, 220, 90, "p ≥ 0.35: \"Did you mean\nTOMORROW?\" counts\nonly if tapped", "phone", size=15)
     unsure = b.box("r-unsure", 560, y3b + 170, 210, 90, "[?] nothing is\nspoken; sign again", "stop")
@@ -187,9 +191,9 @@ def build() -> Board:
     b.text("r-l4", 948, y3b + 125, "no", size=14, color=MUTED)
     b.text("r-l5", 778, y3b + 186, "below", size=14, color=MUTED)
     b.box("r-side", 1370, y3b, 430, 260,
-          "Also on the phone\n\n• A hand left the frame for > 0.3 s:\n   [?] with \"keep both hands in the frame\"\n"
-          "• Signed YES / NO / WAIT while the agent\n   is asking you: it answers the question\n"
-          "• 34 words the backend can phrase; 8\n   rehearsed: hello, thank you, yes, no,\n   now, please, tomorrow (+ wait, morning)",
+          "Also on the phone\n\n• A hand left the picture during or as the\n   sign ends: [?] with a framing hint\n"
+          "• A signed answer the agent's question\n   offers (YES, TOMORROW, ...) answers it\n"
+          "• 8 chip words: hello, thank you, yes,\n   no, now, please, tomorrow, wait\n   (morning: iPhone test pending)",
           "none", size=15, align="left", dashed=True)
 
     # ---- 4. Where each piece runs ----
@@ -221,13 +225,13 @@ def build() -> Board:
           "• Unsure recognition stays silent: [?] or \"did you mean\", never a guess.\n"
           "• The agent never agrees to anything outside the brief: it asks\n   you, or says it will call back.\n"
           "• The draft may reword your signs but never adds a day, time,\n   number or name.\n"
-          "• Calls go only to allowlisted, consenting numbers, from\n   Ishara's number, and say they are for a Deaf caller.",
+          "• Calls go only to allowlisted, consenting numbers, from\n   Ishara's calling number (Bolna's), and say they are for a Deaf caller.",
           "stop", size=16, align="left")
     b.box("status", 940, y5 + 45, 860, 330,
-          "Status, 27 October\n\n• Built and tested in the iOS simulator: both call modes, and the\n   ASL model running inside the app.\n"
-          "• App vs Mac on the same 18 ASL test clips: same decision on 17;\n   the same chip on all 9 the Mac was sure of.\n"
-          "• End to end against our real backend code with a scripted\n   receptionist: brief, question, answer, notes.\n"
-          "• Not yet: phone-camera clips, iPhone speed, a real Bolna call.\n"
+          "Status, 28 October\n\n• Built and tested in the iOS simulator: both call modes, and the\n   ASL model running inside the app.\n"
+          "• Public ASL clips, app and Mac: 0 wrong chips with the shipped\n   settings; same decision on 17 of 18 parity clips.\n"
+          "• Real Bolna calls passed: Live and all three Call-for-me flows,\n   from the simulator app with sign videos as the camera.\n"
+          "• Not yet: the iPhone (camera, speed, phone clips, final cut-offs).\n"
           "• No Deaf user has tested it. ISL is the goal; it is blocked by data.",
           "mac", size=16, align="left")
     return b
