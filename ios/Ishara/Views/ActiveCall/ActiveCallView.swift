@@ -36,20 +36,59 @@ struct ActiveCallView: View {
     /// Grows with Dynamic Type so a whole caption still fits at large sizes, but is
     /// capped so the chips, draft and SEND keep most of the screen.
     @ScaledMetric(relativeTo: .body) private var captionHeight: CGFloat = 150
-    /// Heights of the whole screen and of the action bar. Neither depends on the caption
-    /// box, so sizing the captions from them can't feed back into a layout loop.
+    /// Heights of the whole screen, the status bar and the action bar. None depends on the
+    /// caption box, so sizing the captions from them can't feed back into a layout loop.
     @State private var screenHeight: CGFloat?
+    @State private var statusBarHeight: CGFloat?
     @State private var actionBarHeight: CGFloat?
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    private static let minCaptionHeight: CGFloat = 80
+    /// What the scrolling panel needs above the action bar while the agent asks the user:
+    /// the whole live camera card (`CameraCard`: a 170 pt preview in 10 pt of padding) and
+    /// a little space under it.
+    private static let cameraRoom: CGFloat = 190 + 8
 
     private var stage: ActiveCallStage { ActiveCallStage(model) }
 
     /// At large text sizes the action bar (draft or spoken sentence plus buttons) takes
     /// much of the screen; the captions then give up space so the chips stay reachable.
+    /// While the agent asks, they also give up what the camera needs.
     private var captionBoxHeight: CGFloat {
         let preferred = min(captionHeight, 240)
         guard let screenHeight, let actionBarHeight else { return preferred }
-        return max(80, min(preferred, (screenHeight - actionBarHeight) * 0.4))
+        var height = min(preferred, (screenHeight - actionBarHeight) * 0.4)
+        if keepsCameraInView, let statusBarHeight {
+            height = min(height, screenHeight - actionBarHeight - Self.chromeHeight(statusBar: statusBarHeight)
+                - Self.cameraRoom)
+        }
+        return max(Self.minCaptionHeight, height)
     }
+
+    /// The user signs the answer to the agent's question, so the camera must stay in view
+    /// above the question card. At accessibility sizes the card's answers come first and
+    /// the camera may shrink.
+    private var keepsCameraInView: Bool {
+        model.isDelegated && model.watchesSigns && model.openQuestion != nil && !typeSize.isAccessibilitySize
+    }
+
+    /// The tallest the question card may be with the captions at their smallest and the
+    /// camera's room left above the bar (its padding included).
+    private var askCardMaxHeight: CGFloat? {
+        guard keepsCameraInView, let screenHeight, let statusBarHeight else { return nil }
+        return screenHeight - Self.chromeHeight(statusBar: statusBarHeight) - Self.minCaptionHeight
+            - Self.cameraRoom - 2 * Self.actionBarPadding
+    }
+
+    /// Everything above the scrolling panel but the captions: the top padding, the status
+    /// bar and the two gaps around the captions.
+    private static func chromeHeight(statusBar: CGFloat) -> CGFloat {
+        topPadding + statusBar + 2 * spacing
+    }
+
+    private static let topPadding: CGFloat = 8
+    private static let spacing: CGFloat = 12
+    private static let actionBarPadding: CGFloat = 16
 
     /// Room for the pinned sentence in the action bar. Past this it scrolls inside its
     /// card, which only happens for very long sentences at the largest text sizes.
@@ -58,7 +97,7 @@ struct ActiveCallView: View {
     }
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Self.spacing) {
             CallStatusBar(
                 contactName: model.setup.contact.name,
                 phase: model.phase,
@@ -66,6 +105,7 @@ struct ActiveCallView: View {
                 connectedAt: model.connectedAt,
                 onEnd: model.end
             )
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { statusBarHeight = $0 }
             CaptionHistory(captions: model.captions, isCallOver: model.isCallOver)
                 .frame(height: captionBoxHeight)
 
@@ -83,13 +123,15 @@ struct ActiveCallView: View {
             }
         }
         .padding(.horizontal)
-        .padding(.top, 8)
+        .padding(.top, Self.topPadding)
         .safeAreaInset(edge: .bottom) {
-            CallActionBar(model: model, stage: stage, sentenceMaxHeight: sentenceMaxHeight, onLeave: onLeave,
-                          onShowNotes: onShowNotes)
-                .padding()
+            CallActionBar(model: model, stage: stage, sentenceMaxHeight: sentenceMaxHeight,
+                          askCardMaxHeight: askCardMaxHeight, onLeave: onLeave, onShowNotes: onShowNotes)
+                .padding(Self.actionBarPadding)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { actionBarHeight = $0 }
                 .background(.bar)
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("call.actionBar")
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { screenHeight = $0 }
         // Past AX-XL the status bar, a whole sentence and SEND or STOP no longer fit on
@@ -124,6 +166,7 @@ private struct CallActionBar: View {
     let model: ActiveCallViewModel
     let stage: ActiveCallStage
     let sentenceMaxHeight: CGFloat
+    let askCardMaxHeight: CGFloat?
     let onLeave: () -> Void
     let onShowNotes: (() -> Void)?
 
@@ -155,8 +198,10 @@ private struct CallActionBar: View {
             }
         case .signing, .speaking, .connectionLost:
             if let question = model.openQuestion {
-                // Leaves room for the answer buttons and the status bar with End above.
-                AskCard(question: question, detailsMaxHeight: sentenceMaxHeight * 0.5, onAnswer: model.answer)
+                // Leaves room for the answer buttons and the status bar with End above, and
+                // at standard text sizes for the camera too.
+                AskCard(question: question, detailsMaxHeight: sentenceMaxHeight * 0.5, maxHeight: askCardMaxHeight,
+                        onAnswer: model.answer)
             }
         }
     }

@@ -7,6 +7,10 @@ enum EdgeCaseLaunch {
     /// banners flash by between polls.
     static let halfSpeed = ["-IsharaFakeTimeScale", "0.5"]
     static let largestText = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+    /// A standard text size: "L" (the default), "XL", "XXL" or "XXXL".
+    static func textSize(_ size: String) -> [String] {
+        ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategory\(size)"]
+    }
 
     static func fixture(_ name: String) -> [String] { ["-IsharaFixture", name] }
 }
@@ -78,6 +82,35 @@ extension XCUIApplication {
         XCTAssertTrue(element.isHittable, "\(name) can't be tapped", file: file, line: line)
         XCTAssertTrue(windows.firstMatch.frame.contains(element.frame),
                       "\(name) runs off screen: \(element.frame)", file: file, line: line)
+    }
+
+    /// The call screen's live camera card (a 170 pt preview in 10 pt of padding on the
+    /// iPhone). The simulator's stand-in card is shorter, so the room above the action bar
+    /// is what's checked: the iPhone's preview must fit there.
+    static let callCameraHeight: CGFloat = 190
+
+    /// While the agent asks the user, the camera stays in view above the action bar (the
+    /// user signs the answer), and with it the simulator's replay menu.
+    func assertCameraInViewAboveActionBar(file: StaticString = #filePath, line: UInt = #line) {
+        let camera = element("call.camera")
+        let bar = element("call.actionBar")
+        XCTAssertTrue(camera.exists, "the camera card is missing", file: file, line: line)
+        XCTAssertTrue(bar.exists, "the action bar is missing", file: file, line: line)
+        let cameraFrame = camera.frame
+        let barTop = bar.frame.minY
+        XCTAssertGreaterThanOrEqual(cameraFrame.minY, windows.firstMatch.frame.minY,
+                                    "the camera card runs off the top: \(cameraFrame)", file: file, line: line)
+        XCTAssertLessThanOrEqual(cameraFrame.maxY, barTop,
+                                 "the action bar covers the camera card: card \(cameraFrame), bar top \(barTop)",
+                                 file: file, line: line)
+        XCTAssertGreaterThanOrEqual(barTop - cameraFrame.minY, Self.callCameraHeight,
+                                    "only \(barTop - cameraFrame.minY) pt for the camera above the action bar",
+                                    file: file, line: line)
+        let menu = buttons["replayMenu"]
+        if menu.exists {
+            XCTAssertLessThanOrEqual(menu.frame.maxY, barTop, "the replay menu is under the action bar",
+                                     file: file, line: line)
+        }
     }
 
     /// A text containing `text`, scrolled into view if it is further down a list.

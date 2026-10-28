@@ -34,7 +34,8 @@ struct DemoLaunchOptions {
     var fakeConnectionDrop: FakeCallDriver.ConnectionDrop?
     /// Make the fake Call for me receptionist ask "when?" before offering a time:
     /// `-IsharaFakeOpenQuestion tomorrow` signs that time word in answer (any `AskChoice`
-    /// time word), `-IsharaFakeOpenQuestion tap` leaves the answer to a tap.
+    /// time word), `-IsharaFakeOpenQuestion tap` leaves the answer to a tap. Its wording
+    /// can be changed with `-IsharaFakeOpenQuestionText "what time would you like to come in"`.
     var fakeOpenQuestion: FakeCallDriver.OpenTimeQuestion?
     /// Speed up (below 1) or slow down the simulated timers: the Get ready
     /// checklist and the fake call.
@@ -60,7 +61,9 @@ struct DemoLaunchOptions {
         options.fakeConnectionDrop = defaults.string(forKey: "IsharaFakeConnectionDrop")
             .flatMap(FakeCallDriver.ConnectionDrop.init(rawValue:))
         options.fakeOpenQuestion = defaults.string(forKey: "IsharaFakeOpenQuestion").map {
-            FakeCallDriver.OpenTimeQuestion(signedAnswer: Sign(rawValue: $0))
+            var question = FakeCallDriver.OpenTimeQuestion(signedAnswer: Sign(rawValue: $0))
+            if let text = defaults.string(forKey: "IsharaFakeOpenQuestionText") { question.question = text }
+            return question
         }
         options.sampleSigns = defaults.string(forKey: "IsharaSampleSigns").map { URL(fileURLWithPath: $0, isDirectory: true) }
         let scale = defaults.double(forKey: "IsharaFakeTimeScale")

@@ -46,7 +46,8 @@ final class VideoToSpeechUITests: XCTestCase {
     // backend/fakes/scripted_call.py RECEPTIONIST_SCRIPTS.
     private let clinicOffer = "We have 4 pm tomorrow. Does that work?"
     private let clinicCounter = "Yes, 10:30 tomorrow morning."
-    private let openQuestion = "what time would you like to come in"
+    // Word for word the 28 Oct real call's transcript (issue #88).
+    private let openQuestion = "what time would will would you like to come in"
     private let offerInWords = "we have four pm tomorrow does that work"
     // backend/app/delegate.py: the rule brain's lines for the brief [tomorrow], profile Riya.
     private let opening = "I'd like to book a doctor's appointment for Riya, tomorrow."
@@ -181,8 +182,9 @@ final class VideoToSpeechUITests: XCTestCase {
         XCTAssertFalse(spokenLines().contains(callbackLine), "the ask timed out into a callback")
     }
 
-    /// Attended, version B: "what time would you like to come in" gets the time words; a
-    /// signed TOMORROW is said for the user, then the offer in words gets a signed YES.
+    /// Attended, version B: "what time would will would you like to come in" gets the time
+    /// words, with the camera and its replay menu still in view above them; a signed TOMORROW
+    /// is said for the user, then the offer in words gets a signed YES.
     func testOpenTimeQuestionAnsweredBySignVideos() throws {
         try requireReceptionist("open-question")
         let before = startCallForMe(attended: true)
@@ -193,6 +195,7 @@ final class VideoToSpeechUITests: XCTestCase {
             XCTAssertTrue(app.buttons["ask.\(choice)"].exists, "no \(choice) answer")
         }
         XCTAssertFalse(app.buttons["ask.yes"].exists, "yes is no answer to \"what time?\"")
+        app.assertCameraInViewAboveActionBar()
         app.keepScreenshot("e2e-open-question", in: self)
         answerBySigning("tomorrow", expecting: tomorrowAnswer, askedAt: timeAsk)
         expectSpoken([intro, opening, pauseLine, tomorrowAnswer], after: before)
@@ -482,7 +485,6 @@ final class VideoToSpeechUITests: XCTestCase {
     /// option's sentence for the user, not the timeout's callback line.
     private func answerBySigning(_ clip: String, expecting sentence: String, askedAt: Date,
                                  file: StaticString = #filePath, line: UInt = #line) {
-        revealReplayMenu(file: file, line: line)
         app.replay(clip, file: file, line: line)
         let tapped = Date()
         app.waitFor(app.element("caption.you"), labelContains: sentence, timeout: 15, file: file, line: line)
@@ -496,26 +498,6 @@ final class VideoToSpeechUITests: XCTestCase {
         XCTAssertFalse(receptionistCaption().isEmpty, "the receptionist's words never showed as a caption",
                        file: file, line: line)
         app.keepScreenshot("e2e-answered-\(clip)", in: self)
-    }
-
-    /// The four-answer card of an open "when?" covers all but a strip of the camera card,
-    /// with the simulator's replay menu just under its top edge (a tap there lands on the
-    /// card). Scroll the camera card up into the strip above the card, as a user would.
-    private func revealReplayMenu(file: StaticString = #filePath, line: UInt = #line) {
-        let menu = app.buttons["replayMenu"]
-        let panel = app.scrollViews.containing(.button, identifier: "replayMenu").firstMatch
-        let header = app.staticTexts["The agent is asking you"]
-        guard menu.exists, panel.exists, header.exists else { return }
-        // The card's top edge: its padding and the bar's above the header.
-        let cardTop = header.frame.minY - 32
-        guard menu.frame.maxY > cardTop else { return }
-        let lift = menu.frame.minY - (panel.frame.minY + 6)
-        let start = panel.coordinate(withNormalizedOffset: .zero)
-            .withOffset(CGVector(dx: 30, dy: min(cardTop, panel.frame.minY + 40) - panel.frame.minY - 4))
-        start.press(forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -lift)),
-                    withVelocity: .slow, thenHoldForDuration: 0.2)
-        XCTAssertLessThanOrEqual(menu.frame.maxY, cardTop, "the replay menu is still under the ask card",
-                                 file: file, line: line)
     }
 
     private func expectNotes(_ outcome: String, file: StaticString = #filePath, line: UInt = #line) {

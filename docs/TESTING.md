@@ -86,7 +86,7 @@ cd backend
 uv run python -m scripts.local_demo            # http://127.0.0.1:8000, token ishara-local-demo
 uv run python -m scripts.local_demo --b24      # receptionist talks over the first SEND
 uv run python -m scripts.local_demo --receptionist offer           # Call for me: "we have four pm tomorrow does that work"
-uv run python -m scripts.local_demo --receptionist open-question   # Call for me: "what time would you like to come in" first
+uv run python -m scripts.local_demo --receptionist open-question   # Call for me: "what time would will would you like to come in" first
 APP_TOKEN=ishara-local-demo uv run python -m scripts.fake_app \
   --base-url http://127.0.0.1:8000 script --contact clinic --confirm-cost   # scripted app, still free here
 ```
@@ -187,7 +187,9 @@ IOS_DESTINATION=... scripts/e2e_video_to_speech.sh open-question                
 - Flows (`IsharaUITests/VideoToSpeechUITests`): **live** (HELLO; NO · rest · unknown sign ·
   TOMORROW · PLEASE; YES · THANK-YOU, SEND each, End), **attended** Call for me (TOMORROW
   into the brief, "we have four pm tomorrow does that work", signed YES), **open-question**
-  ("what time would you like to come in", signed TOMORROW, then the offer and a signed YES),
+  ("what time would will would you like to come in", the 28 Oct real call's transcript, signed
+  TOMORROW with the replay menu still in view above the question card, then the offer and a
+  signed YES),
   **unattended** (callback).
 - **Pass:** every flow prints `PASS`: each SEND speaks exactly the draft on screen and
   nothing is spoken before it; the rest clip adds nothing and the unknown sign shows `[?]`

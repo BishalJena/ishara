@@ -42,11 +42,13 @@ RECEPTIONIST_LINES = (
 # Call for me (D9) scripts, written the way the live transcriber hands them over
 # (lowercase, no punctuation, the time in words). The last line is neutral, so the
 # notes' outcome comes from the user's answer (attended) or the callback (unattended).
+# The open question is word for word the 28 Oct real call's transcript: its stutter
+# made the app's question card taller than the clean wording (issue #88).
 RECEPTIONIST_SCRIPTS: dict[str, tuple[str, ...]] = {
     "clinic": RECEPTIONIST_LINES,
     "offer": ("we have four pm tomorrow does that work", "okay thank you bye"),
     "open-question": (
-        "what time would you like to come in",
+        "what time would will would you like to come in",
         "we have four pm tomorrow does that work",
         "okay thank you bye",
     ),
