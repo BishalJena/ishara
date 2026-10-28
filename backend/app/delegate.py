@@ -350,6 +350,18 @@ def _proposal_in(text: str) -> str | None:
     return f"{heard.single} {day}" if day else heard.single
 
 
+def _not_on_offer(proposal: str, heard: str) -> list[str]:
+    """Reasons an LLM proposal names a time from `heard` that is not the one on offer: a
+    refused time, or one of several."""
+    times = _times_heard(heard)
+    single = re.sub(r"\s+", "", times.single) if times.single else None
+    return [
+        f"not the time on offer: {time_said}"
+        for key, time_said in _clock_times(proposal).items()
+        if key in times.said and key != single
+    ]
+
+
 # Days a receptionist can offer instead of the brief's ("today" and "now" are left out:
 # "how can I help you today?" is a greeting, not an offer).
 _OFFER_DAYS = frozenset(("tomorrow", "day after tomorrow", "may", *_WEEKDAYS, *_MONTHS))
@@ -431,7 +443,8 @@ SYSTEM_PROMPT = """\
 You speak on a phone call on behalf of a Deaf caller, through the Ishara app. You pursue ONE brief
 and nothing else. Reply with JSON only: {"say": <one or two short sentences, at most 25 words>,
 "ask_user": null or {"kind": "offer", "question": <the receptionist's proposal in plain words>,
-"proposal": <the time/day offered>} or {"kind": "time"}, "done": true|false}.
+"proposal": <the one time/day offered now; never a time the receptionist says they can't do;
+if they offer more than one time, use "that">} or {"kind": "time"}, "done": true|false}.
 Rules:
 - Pursue only the brief. Never agree to, book, confirm or promise anything the brief does not cover.
 - When the receptionist proposes a specific time or day, or asks a yes/no question about one:
@@ -517,6 +530,7 @@ class Brain:
             # options, which repeat the proposal back, so the proposal is what is checked.
             proposal = (turn.ask_user.proposal or "").strip() or _proposal_in(heard) or "that"
             reasons = check_line(proposal, state.brief, transcript)
+            reasons += _not_on_offer(proposal, heard)
             if reasons:
                 log.info("delegate: LLM proposal rejected (%s), using rules", "; ".join(reasons))
                 return fallback
