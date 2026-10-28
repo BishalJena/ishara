@@ -613,6 +613,79 @@ def test_out_of_brief_requests_get_the_callback_line_and_a_hang_up(flow, heard, 
     assert notes(f, call_id)["outcome"] == "callback"
 
 
+# ---- a promised callback in the notes, whatever words promised it ----
+
+CALLBACK_QUESTION = "The agent promised to call back. Decide on the offer and call again."
+RIYA = {"chips": ["tomorrow"], "profile": {"name": "Riya"}}
+RIYA_CALLBACK = "I will check with Riya and call you back to confirm."
+
+
+def finished_notes(f: Flow, call_id: str) -> dict:
+    """The notes after the agent hung up and Bolna reported the call completed."""
+    wait_for(lambda: ended_by_agent(f))
+    status(f, "run-1", "completed")
+    return notes(f, call_id)
+
+
+def test_an_unattended_llm_callback_in_its_own_words_is_a_callback(flow) -> None:
+    # The live call of 28 Oct: Groq promised the callback in its own words with done=true
+    # and no ask; the notes matched only the rule brain's sentence and said "unclear".
+    groq = FakeGroq(llm(RIYA_CALLBACK, done=True))
+    f = flow(brain=Brain(groq, timeout_s=1.0), end_after_done_s=0.05)
+    call_id = opened_call(f, attended=False, **RIYA)
+    assert notes(f, call_id)["transcript"][-1]["text"] == (
+        "I'd like to book a doctor's appointment for Riya, tomorrow."
+    )
+    assert f.listen_turn(call_id, "we have four pm tomorrow does that work") == RIYA_CALLBACK
+    result = finished_notes(f, call_id)
+    assert result["outcome"] == "callback"
+    assert result["open_questions"] == [CALLBACK_QUESTION]
+
+
+def test_an_attended_llm_callback_in_its_own_words_is_a_callback(flow) -> None:
+    line = "I will check that with Riya and call you back."
+    f = flow(brain=Brain(FakeGroq(llm(line, done=True)), timeout_s=1.0), end_after_done_s=0.05)
+    call_id = opened_call(f, attended=True, **RIYA)
+    assert f.listen_turn(call_id, "What's your insurance number?") == line
+    result = finished_notes(f, call_id)
+    assert result["outcome"] == "callback"
+    assert result["open_questions"] == [CALLBACK_QUESTION]
+
+
+def test_an_llm_goodbye_after_a_confirmation_is_booked_not_a_callback(flow) -> None:
+    line = "Thank you so much, goodbye."
+    f = flow(brain=Brain(FakeGroq(llm(line, done=True)), timeout_s=1.0), end_after_done_s=0.05)
+    call_id = opened_call(f, attended=False, **RIYA)
+    assert f.listen_turn(call_id, "You're booked for 4 pm tomorrow.") == line
+    result = finished_notes(f, call_id)
+    assert result["outcome"] == "booked" and result["open_questions"] == []
+
+
+def test_an_llm_line_that_settles_nothing_promises_no_callback(flow) -> None:
+    line = "Could you tell me which other times are free?"
+    f = flow(brain=Brain(FakeGroq(llm(line)), timeout_s=1.0))
+    call_id = opened_call(f, attended=False, **RIYA)
+    assert f.listen_turn(call_id, "We have 4 pm tomorrow.") == line
+    assert not ended_by_agent(f)
+    status(f, "run-1", "completed")
+    assert notes(f, call_id)["outcome"] == "unclear"
+
+
+def test_an_unanswered_ask_is_a_callback_in_the_notes(flow) -> None:
+    f = flow(ask_timeout_s=0.2, end_after_done_s=0.3)
+    call_id = f.start(f.brief(), attended=True)
+    with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
+        f.live(call_id)
+        f.speak_last(call_id)
+        assert f.listen_turn(call_id, OFFER) == PAUSE_LINE
+        f.drain_until(ws, "ask")
+        assert f.drain_until(ws, "ask_resolved")["source"] == "timeout"
+        assert f.speak_last(call_id) == CALLBACK_LINE
+    result = finished_notes(f, call_id)
+    assert result["outcome"] == "callback"
+    assert result["open_questions"] == [CALLBACK_QUESTION]
+
+
 def test_a_different_day_goes_to_the_attended_user(flow) -> None:
     f = flow()
     call_id = f.start(f.brief(), attended=True)
