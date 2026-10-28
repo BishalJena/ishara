@@ -17,6 +17,7 @@ import urllib.parse
 import urllib.request
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Mapping, Sequence
+from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -304,6 +305,23 @@ def parse_result_line(line: str) -> Result:
     return sign
 
 
+# The start-up handshake (live_source.py --handshake): the recognizer's first stdout line
+# says it is calibrated, then it holds until the bridge writes GO on its stdin (the call is
+# connected). EOF on its stdin instead means there is no call: it stops.
+GO = "go"
+
+
+def ready_line(rest_y: float) -> str:
+    return json.dumps({"event": "ready", "rest_y": round(rest_y, 4)})
+
+
+def parse_ready_line(line: str) -> dict[str, Any]:
+    details: dict[str, Any] = json.loads(line)
+    if details.get("event") != "ready":
+        raise ValueError(f"expected the recognizer's ready line first, got {line.strip()!r}")
+    return details
+
+
 CHECK_WORDS = {"similarity": "low similarity", "margin": "low margin",
                "pose": "body seen in too few frames", "hands": "hands seen in too few frames"}
 
@@ -344,21 +362,52 @@ def describe_result(details: Mapping[str, Any]) -> str:
     return line
 
 
+class RecognizerNotReady(RuntimeError):
+    """The live recognizer stopped before its ready line, so no call was placed."""
+
+
 class SubprocessSource:
     """Results from a recognizer running in another Python (the SignCLIP venv has torch,
-    this one does not). Its stdout carries `result_line`s; its stderr goes straight to the
-    terminal; its stdin is closed so it never competes with typed commands."""
+    this one does not). Its stdout carries the ready line, then `result_line`s; its stderr
+    goes straight to the terminal. Its stdin is a private pipe that carries only GO (it
+    never competes with typed commands) and is closed right after."""
 
     def __init__(self, argv: Sequence[str], out: Callable[[str], None] = print,
                  log: SessionLog | None = None) -> None:
         self.argv, self.out, self.log = tuple(argv), out, log or SessionLog(out)
         self._warned_provisional = False
+        self._process: asyncio.subprocess.Process | None = None
+
+    async def start(self) -> None:
+        """Starts the recognizer and returns once it is calibrated and holding for GO."""
+        self._process = await asyncio.create_subprocess_exec(
+            *self.argv, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE)
+        assert self._process.stdout is not None  # requested as a pipe above
+        raw = await self._process.stdout.readline()
+        if not raw:
+            code = await self._process.wait()
+            raise RecognizerNotReady(f"the live recognizer stopped before it was ready (exit {code}); "
+                                     "no call was placed")
+        details = parse_ready_line(raw.decode())
+        self.log.record("recognizer", details)
+        self.log.show(f"live recognizer ready (rest line y={details['rest_y']:.3f})")
+
+    async def stop(self) -> None:
+        if self._process is not None and self._process.returncode is None:
+            self._process.terminate()
+            await self._process.wait()
 
     async def results(self) -> AsyncIterator[Result]:
-        process = await asyncio.create_subprocess_exec(
-            *self.argv, stdin=asyncio.subprocess.DEVNULL, stdout=asyncio.subprocess.PIPE)
+        """Sends GO (the call is connected), then yields the recognizer's results."""
+        process = self._process
+        if process is None:
+            raise RuntimeError("start() the recognizer before reading its results")
         try:
-            assert process.stdout is not None  # requested as a pipe above
+            assert process.stdin is not None and process.stdout is not None  # pipes, see start()
+            process.stdin.write(f"{GO}\n".encode())
+            with suppress(BrokenPipeError, ConnectionResetError):  # it died: reported below
+                await process.stdin.drain()
+            process.stdin.close()
             async for raw in process.stdout:
                 details = parse_result_details(raw.decode())
                 if details.get("provisional") and not self._warned_provisional:
@@ -370,9 +419,7 @@ class SubprocessSource:
             if code := await process.wait():
                 self.out(f"! live recognizer stopped (exit {code}); type signs instead")
         finally:
-            if process.returncode is None:
-                process.terminate()
-                await process.wait()
+            await self.stop()
 
 
 # ---- backend client ----
@@ -577,6 +624,7 @@ RECOGNIZER_PYTHON = ARTIFACTS / "signclip" / ".venv" / "bin" / "python"
 
 COST_HEADS_UP = ("Cost heads-up: starting a call makes Bolna dial a real phone from its default "
                  "number (about ₹5.5/min plus telephony). Only allowlisted, consenting numbers.")
+COST_NOT_CONFIRMED = "Not starting a call: re-run with --confirm-cost to accept the cost."
 PURPOSE = "doctor_appointment"
 
 
@@ -626,7 +674,7 @@ def start_call(base_url: str, contact: str, token: str, confirm_cost: bool,
     and approved by starting the call with its id."""
     out(COST_HEADS_UP)
     if not confirm_cost:
-        raise SystemExit("Not starting a call: re-run with --confirm-cost to accept the cost.")
+        raise SystemExit(COST_NOT_CONFIRMED)
     body: Message = {"contact_id": contact, "purpose": PURPOSE}
     if delegated is not None:
         profile = {"name": delegated["name"]}
@@ -721,7 +769,8 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
                         help="append recognizer results, chips, drafts, captions and spoken "
                              "confirmations as JSONL (default PATH: artifacts/lab/session-<time>.jsonl)")
     live = parser.add_argument_group(
-        "live recognition", "runs live_source.py in the SignCLIP venv; its signs become chips")
+        "live recognition", "runs live_source.py in the SignCLIP venv; its signs become chips. It starts "
+        "and calibrates first: the call is placed (or joined) only once it is ready")
     live.add_argument("--live", action="store_true", help="recognise signs from a webcam or clips")
     clips = live.add_mutually_exclusive_group()
     clips.add_argument("--camera", type=int, help="webcam index (default 0)")
@@ -766,7 +815,7 @@ def session_log_path(value: str, now: Callable[[], datetime] = datetime.now) -> 
 
 def live_command(args: argparse.Namespace) -> list[str]:
     """The recognizer child's argv; it inherits this process's working directory."""
-    command = [str(args.recognizer_python), str(ROOT / "live_source.py")]
+    command = [str(args.recognizer_python), str(ROOT / "live_source.py"), "--handshake"]
     if args.model != "signclip":
         command += ["--model", args.model]
     if args.replay_videos is not None:
@@ -792,28 +841,42 @@ def main(argv: list[str] | None = None, env: Mapping[str, str] = os.environ,
         out(f"session log: {args.log}")
     sources: tuple[RecognitionSource, ...] = (
         (ReplaySource.from_json(args.replay.read_text()),) if args.replay else ())
+    recognizer = None
     if args.live:
         if not args.recognizer_python.is_file():
             raise SystemExit(f"No SignCLIP venv at {args.recognizer_python}; set it up first "
                              "(README: Set up SignCLIP separately) or pass --recognizer-python.")
-        sources += (SubprocessSource(live_command(args), out, log),)
+        recognizer = SubprocessSource(live_command(args), out, log)
+        sources += (recognizer,)
     token = env.get("APP_TOKEN")
     if not token:
         raise SystemExit("APP_TOKEN is not set in the environment.")
+    if args.contact and not args.confirm_cost:  # refuse before the recognizer warms up for nothing
+        out(COST_HEADS_UP)
+        raise SystemExit(COST_NOT_CONFIRMED)
+    delegated = ({"name": args.name, "chips": args.brief_chips, "attended": args.attended,
+                  "notes": args.brief_notes} if args.delegated else None)
 
-    async def session(call_id: str) -> None:
-        transport = await connect(ws_url(args.base_url, call_id), auth_headers(token))
-        out(f"connected to call {call_id}")
-        log.record("bridge", {"type": "connected", "call_id": call_id})
-        await Bridge(transport, out=out, log=log).run(lines(), sources)
+    async def session() -> None:
+        try:
+            if recognizer is not None:
+                # Start-up takes seconds; doing it first means the Mac sees signs from the call's start.
+                then = "the call is placed" if args.contact else "the bridge joins the call"
+                out(f"starting the live recognizer (rest both hands for 2 s); {then} once it is ready")
+                await recognizer.start()
+            call_id = args.call_id or await asyncio.to_thread(
+                start_call, args.base_url, args.contact, token, args.confirm_cost, post, out, delegated)
+            transport = await connect(ws_url(args.base_url, call_id), auth_headers(token))
+            out(f"connected to call {call_id}")
+            log.record("bridge", {"type": "connected", "call_id": call_id})
+            await Bridge(transport, out=out, log=log).run(lines(), sources)
+        finally:
+            if recognizer is not None:
+                await recognizer.stop()
 
     try:
-        delegated = ({"name": args.name, "chips": args.brief_chips, "attended": args.attended,
-                      "notes": args.brief_notes} if args.delegated else None)
-        call_id = args.call_id or start_call(args.base_url, args.contact, token,
-                                             args.confirm_cost, post, out, delegated)
-        asyncio.run(session(call_id))
-    except BackendError as error:
+        asyncio.run(session())
+    except (BackendError, RecognizerNotReady) as error:
         out(f"! {error}")
         return 1
     return 0

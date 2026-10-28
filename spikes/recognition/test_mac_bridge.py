@@ -274,9 +274,17 @@ class Sources(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await collect(source), ["yes", None, "thankyou"])
 
 
-def child(code):
-    """argv for a throwaway recognizer process that runs `code`."""
-    return [sys.executable, "-c", "import json, os, sys, time\n" + code]
+READY = 'print(json.dumps({"event": "ready", "rest_y": 0.82}), flush=True)\n'
+
+
+def child(code, ready=True):
+    """argv for a throwaway recognizer process that says it is ready, then runs `code`."""
+    return [sys.executable, "-c", "import json, os, sys, time\n" + (READY if ready else "") + code]
+
+
+async def run_source(source):
+    await source.start()
+    return await collect(source)
 
 
 class DescribeResult(unittest.TestCase):
@@ -382,15 +390,51 @@ class SubprocessSourceTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(KeyError):
             mb.parse_result_line('{"latency_ms": 1}')
 
-    async def test_yields_child_results_with_stdin_closed(self):
+    def test_ready_line_round_trips_and_nothing_else_passes_for_it(self):
+        self.assertEqual(mb.parse_ready_line(mb.ready_line(0.81234)), {"event": "ready", "rest_y": 0.8123})
+        for bad in (mb.result_line("hello"), '{"event": "started"}'):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                mb.parse_ready_line(bad)
+
+    async def test_start_returns_on_the_ready_line_and_go_releases_the_results(self):
         lines = []
         source = mb.SubprocessSource(child(
-            'assert sys.stdin.read() == ""\n'
+            'assert sys.stdin.read() == "go\\n"  # then EOF: the pipe carries nothing else\n'
             'for sign in ("hello", None, "doctor"):\n'
             '    print(json.dumps({"sign": sign, "latency_ms": 5}), flush=True)\n'), lines.append)
+        await asyncio.wait_for(source.start(), 30)
+        self.assertEqual([line[9:] for line in lines], ["live recognizer ready (rest line y=0.820)"])
         self.assertEqual(await asyncio.wait_for(collect(source), 30), ["hello", None, "doctor"])
-        self.assertEqual([line[9:] for line in lines],
+        self.assertEqual([line[9:] for line in lines[1:]],
                          ["✓ hello  (0.01 s)", "? unsure  (0.01 s)", "✓ doctor  (0.01 s)"])
+
+    async def test_start_waits_while_the_recognizer_calibrates(self):
+        source = mb.SubprocessSource(child('time.sleep(60)\n', ready=False), [].append)
+        starting = asyncio.ensure_future(source.start())
+        await asyncio.sleep(0.5)
+        self.assertFalse(starting.done(), "no ready line yet, so the call must not be placed")
+        starting.cancel()
+        with suppress(asyncio.CancelledError):
+            await starting
+        await source.stop()
+
+    async def test_a_recognizer_that_stops_before_ready_is_an_error(self):
+        source = mb.SubprocessSource(child('sys.exit(4)', ready=False), [].append)
+        with self.assertRaises(mb.RecognizerNotReady) as raised:
+            await asyncio.wait_for(source.start(), 30)
+        self.assertIn("exit 4", str(raised.exception))
+        self.assertIn("no call was placed", str(raised.exception))
+
+    async def test_a_result_before_the_ready_line_fails_loudly(self):
+        source = mb.SubprocessSource(child('print(json.dumps({"sign": "hello"}), flush=True)\n'
+                                           'time.sleep(60)', ready=False), [].append)
+        with self.assertRaises(ValueError):
+            await asyncio.wait_for(source.start(), 30)
+        await source.stop()
+
+    async def test_results_need_a_started_recognizer(self):
+        with self.assertRaises(RuntimeError):
+            await collect(mb.SubprocessSource(child("")))
 
     async def test_results_are_timestamped_and_logged_whole(self):
         lines = []
@@ -399,10 +443,12 @@ class SubprocessSourceTests(unittest.IsolatedAsyncioTestCase):
             row = {"sign": "time", "top": [{"sign": "time", "similarity": 0.91}], "margin": 0.3}
             source = mb.SubprocessSource(child(f'print(json.dumps({row!r}), flush=True)'),
                                          lines.append, mb.SessionLog(lines.append, path, noon))
-            self.assertEqual(await asyncio.wait_for(collect(source), 30), ["time"])
-            self.assertEqual(lines, ["12:00:05 ✓ time  (time 0.91; margin 0.30)"])
-            self.assertEqual(read_log(path), [{"time": "2026-10-24T12:00:05.250",
-                                               "from": "recognizer", "message": row}])
+            self.assertEqual(await asyncio.wait_for(run_source(source), 30), ["time"])
+            self.assertEqual(lines[1:], ["12:00:05 ✓ time  (time 0.91; margin 0.30)"])
+            self.assertEqual(read_log(path), [
+                {"time": "2026-10-24T12:00:05.250", "from": "recognizer",
+                 "message": {"event": "ready", "rest_y": 0.82}},
+                {"time": "2026-10-24T12:00:05.250", "from": "recognizer", "message": row}])
 
     async def test_each_result_is_shown_and_a_provisional_bundle_is_announced_once(self):
         lines = []
@@ -410,8 +456,8 @@ class SubprocessSourceTests(unittest.IsolatedAsyncioTestCase):
                 {"sign": None, "provisional": True, "failed_checks": ["margin"]}]
         source = mb.SubprocessSource(child(
             f'for row in {rows!r}:\n    print(json.dumps(row), flush=True)\n'), lines.append)
-        self.assertEqual(await asyncio.wait_for(collect(source), 30), ["doctor", None])
-        self.assertEqual([line[9:] for line in lines], [f"!!! {mb.PROVISIONAL_BANNER} !!!",
+        self.assertEqual(await asyncio.wait_for(run_source(source), 30), ["doctor", None])
+        self.assertEqual([line[9:] for line in lines[1:]], [f"!!! {mb.PROVISIONAL_BANNER} !!!",
                                  "✓ doctor  (doctor 0.90)  [PROVISIONAL]",
                                  "? unsure  (low margin)  [PROVISIONAL]"])
 
@@ -419,14 +465,14 @@ class SubprocessSourceTests(unittest.IsolatedAsyncioTestCase):
         lines = []
         source = mb.SubprocessSource(child('print(json.dumps({"sign": "yes"}))\nsys.exit(3)'),
                                      lines.append)
-        self.assertEqual(await asyncio.wait_for(collect(source), 30), ["yes"])
-        self.assertEqual([lines[0][9:], lines[1]],
+        self.assertEqual(await asyncio.wait_for(run_source(source), 30), ["yes"])
+        self.assertEqual([lines[1][9:], lines[2]],
                          ["✓ yes", "! live recognizer stopped (exit 3); type signs instead"])
 
     async def test_an_unknown_sign_from_the_child_fails_loudly(self):
-        source = mb.SubprocessSource(child('print(json.dumps({"sign": "hospital"}))'))
+        source = mb.SubprocessSource(child('print(json.dumps({"sign": "hospital"}))'), [].append)
         with self.assertRaises(ValueError):
-            await asyncio.wait_for(collect(source), 30)
+            await asyncio.wait_for(run_source(source), 30)
 
     async def test_stopping_the_bridge_terminates_the_child(self):
         with TemporaryDirectory() as directory:
@@ -434,6 +480,7 @@ class SubprocessSourceTests(unittest.IsolatedAsyncioTestCase):
             source = mb.SubprocessSource(child(
                 f'open({str(pid_file)!r}, "w").write(str(os.getpid()))\n'
                 'print(json.dumps({"sign": "hello"}), flush=True)\ntime.sleep(60)'), [].append)
+            await asyncio.wait_for(source.start(), 30)
             results = source.results()
             self.assertEqual(await asyncio.wait_for(anext(results), 30), "hello")
             pid = int(pid_file.read_text())
@@ -720,12 +767,12 @@ class CommandLine(unittest.TestCase):
         def command(*argv):
             return mb.live_command(mb.parse_args(["--base-url", "https://b", "--call-id", "c7",
                                                   "--live", *argv]))
-        head = [str(mb.RECOGNIZER_PYTHON), str(mb.ROOT / "live_source.py")]
+        head = [str(mb.RECOGNIZER_PYTHON), str(mb.ROOT / "live_source.py"), "--handshake"]
         self.assertEqual(command(), [*head, "--camera", "0"])
         self.assertEqual(command("--camera", "2", "--bundle", "b.json", "--rest-y", "0.8"),
                          [*head, "--camera", "2", "--bundle", "b.json", "--rest-y", "0.8"])
         self.assertEqual(command("--replay-videos", "clips", "--recognizer-python", "/v/python"),
-                         ["/v/python", head[1], "--replay-videos", "clips"])
+                         ["/v/python", *head[1:], "--replay-videos", "clips"])
         self.assertEqual(command("--video", "rest.mp4", "hello.mp4", "--model", "asl"),
                          [*head, "--model", "asl", "--video", "rest.mp4", "hello.mp4"])
 
@@ -752,7 +799,9 @@ class CommandLine(unittest.TestCase):
                 f"#!{sys.executable}\n"
                 "import json, sys\n"
                 "assert sys.argv[1].endswith('live_source.py'), sys.argv\n"
-                "assert sys.argv[2:] == ['--camera', '3', '--bundle', 'b.json'], sys.argv\n"
+                "assert sys.argv[2:] == ['--handshake', '--camera', '3', '--bundle', 'b.json'], sys.argv\n"
+                f"{READY}"
+                "assert sys.stdin.readline() == 'go\\n'\n"
                 "for sign in ('hello', None, 'doctor'):\n"
                 "    print(json.dumps({'sign': sign, 'latency_ms': 500}), flush=True)\n")
             recognizer.chmod(0o755)
@@ -762,12 +811,84 @@ class CommandLine(unittest.TestCase):
         self.assertEqual(self.transport.sent, [chips(turn_id, "hello"),
                                                chips(turn_id, "hello", "doctor"), {"type": "end"}])
 
+    @staticmethod
+    def warm_up_recognizer(folder, before_ready="", ready=True):
+        """A fake live_source.py --handshake that stamps files: started, ready (just before
+        its ready line) and go (when the bridge released it)."""
+        stamp = Path(folder)
+        recognizer = stamp / "python"
+        recognizer.write_text(
+            f"#!{sys.executable}\nimport json, sys, time\nfrom pathlib import Path\n"
+            f"Path({str(stamp / 'started')!r}).touch()\n{before_ready}"
+            + (f"Path({str(stamp / 'ready')!r}).touch()\n{READY}"
+               "assert sys.stdin.readline() == 'go\\n'\n"
+               f"Path({str(stamp / 'go')!r}).touch()\n"
+               "print(json.dumps({'sign': 'hello'}), flush=True)\n" if ready else ""))
+        recognizer.chmod(0o755)
+        return recognizer
+
+    def stamps(self, folder):
+        return sorted(name for name in ("started", "ready", "go") if Path(folder, name).exists())
+
+    def test_the_call_is_placed_only_once_the_recognizer_is_ready(self):
+        live = ["--live", "--video", "rest.mp4", "hello.mp4"]
+        for argv in (["--contact", "clinic", "--confirm-cost"],
+                     ["--contact", "clinic", "--confirm-cost", "--delegated", "--attended", "--name", "Asha"],
+                     ["--call-id", "c7"]):
+            with self.subTest(argv=argv), TemporaryDirectory() as folder:
+                self.posts, self.connects, self.transport = [], [], FakeTransport()
+                seen = []
+                recognizer = self.warm_up_recognizer(folder, before_ready="time.sleep(1)\n")
+
+                def post(url, body, headers, folder=folder):
+                    seen.append((url.rsplit("/", 1)[1], self.stamps(folder)))
+                    return ({"brief_id": "b1", "text": "Call for Asha."} if url.endswith("/briefs")
+                            else {"call_id": "c42", "state": "dialing"})
+
+                async def connect(url, headers, folder=folder):
+                    seen.append(("ws", self.stamps(folder)))
+                    return self.transport
+
+                self.post, self.connect = post, connect
+                self.assertEqual(self.main("--base-url", "https://b", *argv, *live,
+                                           "--recognizer-python", str(recognizer), after=1), 0)
+                requests = ["briefs", "calls"] if "--delegated" in argv else ["calls"]
+                if "--call-id" in argv:
+                    requests = []
+                self.assertEqual(seen, [(name, ["ready", "started"]) for name in [*requests, "ws"]],
+                                 "every request waits for the ready line; the go waits for the connection")
+                self.assertEqual(self.stamps(folder), ["go", "ready", "started"])
+                self.assertEqual(self.transport.sent[0]["chips"], ["hello"])
+
+    def test_a_recognizer_that_fails_to_start_places_no_call(self):
+        for argv in (["--contact", "clinic", "--confirm-cost"], ["--call-id", "c7"]):
+            with self.subTest(argv=argv), TemporaryDirectory() as folder:
+                recognizer = self.warm_up_recognizer(folder, before_ready="sys.exit(1)\n", ready=False)
+                code = self.main("--base-url", "https://b", *argv, "--live", "--camera", "0",
+                                 "--recognizer-python", str(recognizer))
+                self.assertEqual(code, 1)
+                self.assertEqual((self.posts, self.connects), ([], []))
+                self.assertEqual(self.lines[-1], "! the live recognizer stopped before it was ready "
+                                                 "(exit 1); no call was placed")
+                self.assertNotIn(mb.COST_HEADS_UP, self.lines, "no call, so no cost heads-up either")
+
+    def test_an_unconfirmed_call_is_refused_before_the_recognizer_starts(self):
+        with TemporaryDirectory() as folder:
+            recognizer = self.warm_up_recognizer(folder)
+            with self.assertRaises(SystemExit) as raised:
+                self.main("--base-url", "https://b", "--contact", "clinic", "--live",
+                          "--recognizer-python", str(recognizer))
+            self.assertEqual(self.stamps(folder), [])
+        self.assertEqual(str(raised.exception), mb.COST_NOT_CONFIRMED)
+        self.assertEqual(self.lines, [mb.COST_HEADS_UP])
+        self.assertEqual((self.posts, self.connects), ([], []))
+
     def test_log_option_writes_the_whole_session_under_artifacts_lab(self):
         with TemporaryDirectory() as folder, patch.object(mb, "ARTIFACTS", Path(folder)):
             recognizer = Path(folder, "python")
             rows = [{"sign": "hello", "top": [{"sign": "hello", "similarity": 0.9}], "margin": 0.4},
                     {"sign": None, "failed_checks": ["margin"]}, {"sign": "doctor"}]
-            recognizer.write_text(f"#!{sys.executable}\nimport json\n"
+            recognizer.write_text(f"#!{sys.executable}\nimport json\n{READY}"
                                   f"for row in {rows!r}:\n    print(json.dumps(row), flush=True)\n")
             recognizer.chmod(0o755)
             self.transport.push(type="caption", text="Hello, clinic.", at=0.5)
@@ -776,12 +897,13 @@ class CommandLine(unittest.TestCase):
             [path] = Path(folder, "lab").glob("session-*.jsonl")
             entries = read_log(path)
         self.assertIn(f"session log: {path}", self.lines)
-        self.assertEqual((entries[0]["from"], entries[0]["message"]),
-                         ("bridge", {"type": "connected", "call_id": "c7"}))
+        self.assertEqual([(e["from"], e["message"]) for e in entries[:2]],
+                         [("recognizer", {"event": "ready", "rest_y": 0.82}),
+                          ("bridge", {"type": "connected", "call_id": "c7"})])
         by_source = {}
         for entry in entries:
             by_source.setdefault(entry["from"], []).append(entry["message"])
-        self.assertEqual(by_source["recognizer"], rows)
+        self.assertEqual(by_source["recognizer"], [{"event": "ready", "rest_y": 0.82}, *rows])
         self.assertEqual(by_source["backend"], [{"type": "caption", "text": "Hello, clinic.", "at": 0.5}])
         self.assertEqual([m["type"] for m in by_source["bridge"]], ["connected", "chips", "chips", "end"])
         self.assertTrue(any(line.endswith("? unsure  (low margin)") for line in self.lines))
@@ -1078,10 +1200,6 @@ class LocalCall:
         self.backend.stdin.write(line + "\n")
         self.backend.stdin.flush()
 
-    def recognizer_calibrated(self, entries):
-        """True once live_source has its rest line, i.e. the played clips reached the first sign."""
-        return True if "rest line y=" in self.bridge_out.read_text() else None
-
     def finish(self):
         """Close the terminal and wait for the bridge (and its recognizer) to exit."""
         self.bridge.stdin.close()
@@ -1098,6 +1216,18 @@ def messages(entries, source, kind=None):
     """Messages the backend sent ("backend"), the bridge sent ("bridge") or the recognizer gave."""
     return [e["message"] for e in entries
             if e["from"] == source and (kind is None or e["message"].get("type") == kind)]
+
+
+def recognized(entries):
+    """The recognizer's results, without its ready line."""
+    return [m["sign"] for m in messages(entries, "recognizer") if "sign" in m]
+
+
+def ready_before_the_call(test, entries):
+    """The recognizer was calibrated (its ready line) before the bridge joined the call."""
+    kinds = [e["message"].get("event") or e["message"].get("type") for e in entries]
+    test.assertEqual(kinds[:2], ["ready", "connected"], "the recognizer was ready before the call")
+    test.assertEqual(kinds.count("ready"), 1)
 
 
 def first(items):
@@ -1155,7 +1285,8 @@ class ClipDrivenFallback(unittest.TestCase):
             entries, notes = call.entries(), call.notes(call_id)
 
         script = [sign for signs in turns for sign in signs]
-        self.assertEqual([m["sign"] for m in messages(entries, "recognizer")], script)
+        ready_before_the_call(self, entries)
+        self.assertEqual(recognized(entries), script)
         self.assertEqual([m["text"] for m in approvals], [d["text"] for d in drafts])
         sent = messages(entries, "bridge", "chips")
         self.assertEqual({sign for m in sent for sign in m["chips"]}, set(script), "no other chip was sent")
@@ -1171,18 +1302,19 @@ class ClipDrivenFallback(unittest.TestCase):
         self.assertEqual(notes["mode"], "live")
 
     def test_attended_call_for_me_is_answered_by_the_yes_clip(self):
-        # Clips can't wait for the question the way a signer does, and the recognizer's
-        # start-up took 2-15 s here, so the test plays the receptionist (sign_lab's manual
-        # mode) and offers the slot once the recognizer is calibrated. The yes sign is then
-        # about 50 frames away: 1.7 s at real time, 5.5 s when a busy Mac tracks 3x slower
-        # (seen), both inside the agent's 10 s wait. The answer comes only from recognition.
+        # Clips can't wait for the question the way a signer does, so the test plays the
+        # receptionist (sign_lab's manual mode) and offers the slot right after the opening
+        # line. The recognizer calibrates on the rest clip before the call and the clips
+        # resume when the bridge joins it: the question comes about 0.7 s later, the yes
+        # chip about 2.2 s later at real time (measured), and about 6 s later when a busy
+        # Mac tracks 3x slower (seen once), still inside the agent's 10 s wait. The answer
+        # comes only from recognition.
         backend = ("scripts.sign_lab", "--receptionist", "manual", "--delay", "0.3")
         with LocalCall(self, "attended", backend, ("rest", "yes", "rest"),
                        "--delegated", "--attended", "--name", "Asha") as call:
             call_id = call.wait_for(call_id_of, 120, "connection to the call")
             call.wait_for(lambda e: first([m for m in messages(e, "backend", "spoken")
                                            if m["turn_id"] == "delegate-open"]), 30, "opening line")
-            call.wait_for(call.recognizer_calibrated, 120, "recognizer calibration")
             call.receptionist_says("We have 4 pm tomorrow. Does that work?")
             ask = call.wait_for(lambda e: first(messages(e, "backend", "ask")), 30, "question from the agent")
             resolved = call.wait_for(lambda e: first(messages(e, "backend", "ask_resolved")), 30, "answer")
@@ -1193,8 +1325,9 @@ class ClipDrivenFallback(unittest.TestCase):
             entries, notes = call.entries(), call.notes(call_id)
 
         yes = next(o["spoken"] for o in ask["options"] if o["choice"] == "yes")
-        self.assertEqual([m["sign"] for m in messages(entries, "recognizer")], ["yes"])
-        order = [e["from"] for e in entries if e["from"] == "recognizer" or e["message"].get("type") == "ask"]
+        ready_before_the_call(self, entries)
+        self.assertEqual(recognized(entries), ["yes"])
+        order = [e["from"] for e in entries if "sign" in e["message"] or e["message"].get("type") == "ask"]
         self.assertEqual(order, ["backend", "recognizer"], "the yes clip is recognised after the agent asked")
         self.assertEqual(messages(entries, "bridge", "answer"),
                          [{"type": "answer", "ask_id": ask["ask_id"], "choice": "yes"}])

@@ -5,6 +5,7 @@ index as their "landmarks", so each test can check exactly which frames were mat
 """
 import io
 import json
+import os
 import subprocess
 import sys
 import unittest
@@ -406,6 +407,125 @@ class Calibration(unittest.TestCase):
         self.assertEqual(shown, ["calibrating"] * 10)
 
 
+class Gate:
+    """A fake mac_bridge end of --handshake: the go (or stop) comes after `waits` polls."""
+
+    def __init__(self, waits, answer=True):
+        self.waits, self.answer, self.events, self.pulled = waits, answer, [], 0
+
+    def frames(self, observations):
+        """Counts the frames the recognizer has read, to see what it read while holding."""
+        for observation in observations:
+            self.pulled += 1
+            yield observation
+
+    def ready(self, rest_y):
+        self.events.append(("ready", round(rest_y, 3), self.pulled))
+
+    def wait(self, timeout):
+        if self.waits:
+            self.waits -= 1
+            return None
+        self.events.append(("go" if self.answer else "stop", self.pulled))
+        return self.answer
+
+    def handshake(self, playback=None):
+        return ls.Handshake(self.ready, self.wait, playback)
+
+
+class StartUpHandshake(unittest.TestCase):
+    """mac_bridge places the call only after the ready line; nothing is recognised before its go."""
+
+    def test_clips_say_ready_after_calibration_then_pause_until_the_go(self):
+        script = Script().sign(1.0)
+        gate = Gate(waits=5)
+        model = FakeModel(sign_vector("doctor"))
+        results, lines, _ = run([gate.frames(script.observations())], model,
+                                handshake=gate.handshake(ls.PlaybackClock(Clock())))
+        calibrated = round(2.0 * FPS) + 1  # the 2 s rest ends on this frame
+        self.assertEqual(gate.events, [("ready", 0.82, calibrated), ("go", calibrated)],
+                         "ready once calibrated, and not one clip frame read while holding")
+        self.assertEqual([r.sign for r in results], ["doctor"])
+        first_result = next(line for line in lines if line.startswith("#1"))
+        self.assertLess(lines.index(ls.HOLD_MESSAGE), lines.index(first_result))
+
+    def test_a_camera_keeps_running_while_holding_but_nothing_it_sees_is_a_sign(self):
+        held = Script().hold(2.1).hold(1.0, UP_Y).hold(0.6)  # signs while the call connects
+        script = Script().hold(2.1).hold(1.0, UP_Y).hold(0.6).sign(1.0)
+        model = FakeModel(sign_vector("doctor"))
+        unheld, _, _ = run([script.observations()], FakeModel(sign_vector("doctor")))
+        self.assertEqual(len(unheld), 2)  # without the handshake the early sign counts
+
+        calibrated = round(2.0 * FPS) + 1
+        gate = Gate(waits=len(held.frames) - calibrated - 1)  # the go comes with the last held frame
+        results, _, _ = run([gate.frames(script.observations())], model, handshake=gate.handshake(),
+                            retry_calibration=True)
+        self.assertEqual(gate.events, [("ready", 0.82, calibrated + 1), ("go", len(held.frames))])
+        self.assertEqual([r.sign for r in results], ["doctor"])
+        [matched] = model.calls
+        held_frames = set(range(calibrated, len(held.frames)))
+        self.assertFalse(held_frames & set(matched), "frames seen while holding never become a sign")
+
+    def test_eof_instead_of_go_stops_without_a_result_and_skips_later_clips(self):
+        gate = Gate(waits=0, answer=False)
+        results, lines, source = run([gate.frames(Script().sign(1.0).observations()),
+                                      gate.frames(Script().sign(1.0).observations())],
+                                     FakeModel(sign_vector("doctor")), handshake=gate.handshake(ls.PlaybackClock()))
+        self.assertEqual(results, [])
+        self.assertEqual([event[0] for event in gate.events], ["ready", "stop"])
+        self.assertIn("no call: the bridge closed the start-up handshake", lines)
+        self.assertEqual(gate.pulled, round(2.0 * FPS) + 1, "the second clip was never opened")
+
+    def test_without_a_calibration_there_is_no_ready_line(self):
+        gate = Gate(waits=0)
+        results, _, _ = run([gate.frames(Script().hold(2.1, body=False).observations())],
+                            FakeModel(sign_vector("doctor")), handshake=gate.handshake(ls.PlaybackClock()))
+        self.assertEqual((results, gate.events), ([], []))
+        camera = Gate(waits=0)
+        run([iter(())], FakeModel(sign_vector("doctor")), rest_y=0.82, handshake=camera.handshake())
+        self.assertEqual(camera.events, [], "a camera that gives no frame is not ready")
+
+    def test_replayed_clips_hold_once_before_the_first_clip(self):
+        gate = Gate(waits=2)
+        results, _, _ = run([gate.frames(Script().sign(1.0).observations()),
+                             gate.frames(Script().sign(1.0).observations())],
+                            FakeModel(sign_vector("time")), handshake=gate.handshake(ls.PlaybackClock()))
+        self.assertEqual([r.sign for r in results], ["time", "time"])
+        self.assertEqual([event[0] for event in gate.events], ["ready", "go"])
+
+    def test_a_paused_clip_resumes_at_its_own_pace(self):
+        def play(hold_s, playback):
+            sleeps = []
+
+            def sleep(seconds):
+                sleeps.append(round(seconds, 6))
+                wall.now += seconds
+
+            frames = [(i * 0.5, f"f{i}") for i in range(4)]
+            images = ls.playlist_images([Path("a")], True, read=lambda path: iter(frames),
+                                        clock=playback, sleep=sleep)
+            played = [next(images)]
+            with playback.held():
+                wall.now += hold_s  # the recognizer holds for the go
+            played += list(images)
+            return [round(t_wall - played[0][1], 6) for _, t_wall, _ in played], sleeps
+
+        wall = Clock()
+        self.assertEqual(play(5.0, ls.PlaybackClock(wall)), ([0.0, 0.5, 1.0, 1.5], [0.5, 0.5, 0.5]))
+
+    def test_start_signal_reads_go_or_eof_from_its_stream(self):
+        self.assertTrue(ls.StartSignal(io.StringIO("go\n")).wait(5))
+        self.assertFalse(ls.StartSignal(io.StringIO("")).wait(5))
+        self.assertFalse(ls.StartSignal(io.StringIO("stop\n")).wait(5))
+        read_end, write_end = os.pipe()
+        with os.fdopen(read_end) as pending, os.fdopen(write_end, "w") as bridge:
+            signal = ls.StartSignal(pending)
+            self.assertIsNone(signal.wait(0.05))
+            bridge.write("go\n")
+            bridge.flush()
+            self.assertTrue(signal.wait(5))
+
+
 def with_images(observations):
     return (ls.Observation(o.wall, o.frame, o.landmarks, image=o.landmarks) for o in observations)
 
@@ -610,7 +730,7 @@ class CommandLine(unittest.TestCase):
 
         return read, tracker
 
-    def run_video(self, clips):
+    def run_video(self, clips, *extra, stdin=""):
         """live_source.py --video over fake clips: (result lines, stderr)."""
         read, tracker = self.fake_videos(clips)
         results = io.StringIO()
@@ -619,10 +739,24 @@ class CommandLine(unittest.TestCase):
             for path in paths:
                 path.write_bytes(b"")
             with patch.object(ls, "read_video", read), patch.object(ls, "track", tracker), \
-                    patch.object(ls, "result_stream", lambda: results), redirect_stderr(io.StringIO()) as err:
+                    patch.object(ls, "result_stream", lambda: results), patch("sys.stdin", io.StringIO(stdin)), \
+                    redirect_stderr(io.StringIO()) as err:
                 ls.main(["--video", *map(str, paths), "--no-preview", "--fast",
-                         "--bundle", str(Path(directory, "no-bundle.json"))])
+                         "--bundle", str(Path(directory, "no-bundle.json")), *extra])
         return [json.loads(line) for line in results.getvalue().splitlines()], err.getvalue()
+
+    def test_handshake_puts_the_ready_line_first_and_waits_for_go(self):
+        clips = {"rest.mp4": Script().hold(2.1).frames,
+                 "doctor.mp4": Script().hold(0.3).hold(1.0, UP_Y).hold(0.6).frames}
+        lines, _ = self.run_video(clips, "--handshake", stdin="go\n")
+        self.assertEqual(lines[0], {"event": "ready", "rest_y": 0.82})
+        self.assertEqual(mb.parse_ready_line(json.dumps(lines[0]))["rest_y"], 0.82)
+        self.assertEqual([line["segment"] for line in lines[1:]], [[2.2, 3.4]])
+        lines, err = self.run_video(clips, "--handshake", stdin="")  # the bridge placed no call
+        self.assertEqual(lines, [{"event": "ready", "rest_y": 0.82}])
+        self.assertIn("no call", err)
+        lines, _ = self.run_video(clips)  # without it, nothing changes
+        self.assertEqual([line["segment"] for line in lines], [[2.2, 3.4]])
 
     def test_video_clips_play_as_one_camera_with_one_calibration(self):
         # Public per-word clips have no 2 s rest of their own: --replay-videos calibrates
