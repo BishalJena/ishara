@@ -180,9 +180,9 @@ class VocabularyWhatIf(unittest.TestCase):
 
     def test_a_gloss_left_out_of_the_vocabulary_can_no_longer_chip(self):
         with tempfile.TemporaryDirectory() as tmp:
-            shipped = self.run_main(Path(tmp))
+            wide = self.run_main(Path(tmp), "--vocabulary", "yes,no,thankyou,can")
             narrowed = self.run_main(Path(tmp), "--vocabulary", "yes,no,thankyou")
-        self.assertEqual(shipped["runs"]["Mac"]["rows"]["yes"]["wrong_chip"], 1, "can is in the shipped vocabulary")
+        self.assertEqual(wide["runs"]["Mac"]["rows"]["yes"]["wrong_chip"], 1, "can is in the wide vocabulary")
         self.assertEqual(narrowed["runs"]["Mac"]["rows"]["yes"]["wrong_chip"], 0)
         self.assertEqual(narrowed["runs"]["Mac"]["rows"]["yes"]["chip"], 1)
 
