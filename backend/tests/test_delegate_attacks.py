@@ -522,6 +522,60 @@ async def test_an_llm_ask_with_an_invented_proposal_uses_the_rule_options() -> N
     assert decision.ask[1][0].spoken == "Yes, 4 pm tomorrow works. Thank you."
 
 
+REFUSED_THEN_OFFERED = "we cant do four pm but five pm works"  # live style (#60)
+TWO_TIMES = "we have four pm or five pm tomorrow"
+
+
+@pytest.mark.parametrize(
+    ("heard", "proposal", "yes_line"),
+    [
+        (REFUSED_THEN_OFFERED, "4 pm", "Yes, 5 pm works. Thank you."),
+        (REFUSED_THEN_OFFERED, "four pm", "Yes, 5 pm works. Thank you."),
+        (REFUSED_THEN_OFFERED, "4 pm or 5 pm", "Yes, 5 pm works. Thank you."),
+        (TWO_TIMES, "4 pm tomorrow", "Yes, that works. Thank you."),
+    ],
+)
+async def test_an_llm_proposal_naming_a_time_not_on_offer_uses_the_rule_options(
+    heard: str, proposal: str, yes_line: str
+) -> None:
+    raw = llm(PAUSE_LINE, {"question": heard, "proposal": proposal})
+    decision = await Brain(FakeGroq(raw)).reply(state(), heard)
+    assert decision.source == "rules" and decision.ask is not None
+    assert decision.ask[1][0].spoken == yes_line
+
+
+@pytest.mark.parametrize(
+    ("proposal", "yes_line"),
+    [
+        ("5 pm", "Yes, 5 pm works. Thank you."),
+        ("five pm today", "Yes, five pm today works. Thank you."),
+        (None, "Yes, 5 pm today works. Thank you."),
+    ],
+)
+async def test_an_llm_proposal_of_the_time_on_offer_is_used(
+    proposal: str | None, yes_line: str
+) -> None:
+    raw = llm(PAUSE_LINE, {"question": None, "proposal": proposal})
+    heard = REFUSED_THEN_OFFERED + " today"
+    decision = await Brain(FakeGroq(raw)).reply(state(), heard)
+    assert decision.source == "llm" and decision.ask is not None
+    assert decision.ask[1][0].spoken == yes_line
+
+
+async def test_an_llm_proposal_may_name_a_time_offered_in_an_earlier_turn() -> None:
+    delegate = state()
+    delegate.exchanges.append(Exchange("We have 4 pm tomorrow.", "Sorry, could you repeat?"))
+    raw = llm(PAUSE_LINE, {"question": None, "proposal": "4 pm tomorrow"})
+    decision = await Brain(FakeGroq(raw)).reply(delegate, "Does that still work for her?")
+    assert decision.source == "llm" and decision.ask is not None
+    assert decision.ask[1][0].spoken == "Yes, 4 pm tomorrow works. Thank you."
+
+
+def test_the_system_prompt_asks_for_the_time_on_offer_not_a_refused_one() -> None:
+    assert "never a time the receptionist says they can't do" in SYSTEM_PROMPT
+    assert 'more than one time, use "that"' in SYSTEM_PROMPT
+
+
 @pytest.mark.parametrize(
     "line",
     [

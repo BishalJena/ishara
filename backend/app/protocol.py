@@ -269,10 +269,11 @@ class CaptionMessage(_Message):
 
     `speaker` is always serialised:
     - "receptionist": the other person's words from Bolna's transcript.
-    - "agent": a fixed line the voice says without a SEND (the opening disclosure, the
-      holding line during a long pause, the goodbye after `end`), so the Deaf user
-      sees the whole conversation. Approved replies are not echoed as agent captions:
-      the app already shows them once `spoken` arrives.
+    - "agent": a line the voice says without a SEND (the opening disclosure, the
+      holding line during a long pause, the goodbye after `end`, a delegated agent's
+      own lines; its opening once Bolna has said it), so the Deaf user sees the whole
+      conversation. Approved replies are not echoed as agent captions: the app already
+      shows them once `spoken` arrives.
     """
 
     type: Literal["caption"] = "caption"
