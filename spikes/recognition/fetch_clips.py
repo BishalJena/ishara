@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import io
 import json
+import shutil
 import sys
 import urllib.request
 import zipfile
@@ -114,17 +115,31 @@ def fetch(wanted: list[str]) -> list[Path]:
                 if member not in names:
                     continue
                 dest = _dest(member)
-                if not dest.is_file():
-                    info = zf.getinfo(names[member])
+                info = zf.getinfo(names[member])
+                if not (dest.is_file() and dest.stat().st_size == info.file_size):
                     print(f"  {member} -> {dest.relative_to(ARTIFACTS)} ({info.file_size / 1e6:.1f} MB)")
-                    dest.parent.mkdir(parents=True, exist_ok=True)
-                    with zf.open(info) as src, dest.open("wb") as dst:
-                        dst.write(src.read())
+                    _extract(zf, info, dest)
                 pending.discard(member)
                 out.append(dest)
         for member in pending:
             print(f"  NOT FOUND in any {category} zip: {member}", file=sys.stderr)
     return out
+
+
+def _extract(zf: zipfile.ZipFile, info: zipfile.ZipInfo, dest: Path) -> None:
+    """Write the member to a sibling temp file and move it into place only once it is complete,
+    so an interrupted range read never leaves a partial clip that a rerun would skip."""
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    part = dest.with_name(dest.name + ".part")
+    try:
+        with zf.open(info) as src, part.open("wb") as dst:
+            shutil.copyfileobj(src, dst)
+        written = part.stat().st_size
+        if written != info.file_size:
+            raise OSError(f"short read for {info.filename}: {written} of {info.file_size} bytes")
+        part.replace(dest)
+    finally:
+        part.unlink(missing_ok=True)
 
 
 def _dest(member: str) -> Path:
