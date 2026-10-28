@@ -2,6 +2,9 @@
 
 **Status: Not yet run.** No V4 spike call has been placed. Every "Executed" line below
 is empty until a run is recorded; until then only the documented behaviour applies.
+Pre-flight on 28 Oct (read-only, no call): Heroku runs a 24 Oct backend without the D9
+routes, and the live Bolna agent matches `agent.json` but has the call summary off; see the
+[go-live check](../status/2026-10-28-live.md) for the deploy and call plan.
 This file is the authoritative summary of Path B voice measurements (task V4,
 [Gate 1](../../PLAN.md#7-gates-go--no-go), testing layer 3 in
 [PLAN.md §8](../../PLAN.md#8-testing-plan)). [Plan](../../PLAN.md) ·
