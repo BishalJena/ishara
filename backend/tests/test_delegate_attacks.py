@@ -118,8 +118,9 @@ def notes(f: Flow, call_id: str) -> dict:
     return response.json()
 
 
-def spoken_texts(f: Flow) -> list[str]:
-    return [r["reply_text"] for r in f.bolna.replies()]
+def spoken_texts(f: Flow) -> list[str | None]:
+    """The lines sent to Bolna's speak node: the backend's in-flight text per event."""
+    return list(f.bolna.injected)
 
 
 # ---- while an ask is open ----

@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from app.custom_llm import stream_completion
 from app.main import create_app
 from app.markers import HOLDING_LINE, SILENCE_MARKER, render_marker_block
+from app.ports import ClaimedReply
 from app.shape_log import SHAPE_LOG_ENV
 from tests.conftest import APP_TOKEN, CUSTOM_LLM_TOKEN, make_settings
 
@@ -20,11 +21,10 @@ REPLY = "No, sorry — 4 pm doesn't work.\nIs there anything tomorrow morning?"
 
 
 class FakeLedger:
-    """Single-use approvals, like the real CallLedger contract."""
+    """One approved in-flight turn per call, claimed once, like the real CallLedger."""
 
-    def __init__(self, approvals: dict[tuple[str, str], str] | None = None) -> None:
-        self.approvals = dict(approvals or {})
-        self.claimed: set[tuple[str, str]] = set()
+    def __init__(self, in_flight: dict[str, tuple[str, str]] | None = None) -> None:
+        self.in_flight = dict(in_flight or {})
         self.events: list[tuple[str, ...]] = []
 
     @property
@@ -41,13 +41,10 @@ class FakeLedger:
     async def record_agent_line(self, call_id: str, text: str) -> None:
         self.events.append(("agent_line", call_id, text))
 
-    async def claim_reply(self, call_id: str, turn_id: str, text: str) -> bool:
-        self.events.append(("claim", call_id, turn_id, text))
-        key = (call_id, turn_id)
-        if key in self.claimed or self.approvals.get(key) != text:
-            return False
-        self.claimed.add(key)
-        return True
+    async def claim_in_flight(self, call_id: str) -> ClaimedReply | None:
+        self.events.append(("claim", call_id))
+        turn = self.in_flight.pop(call_id, None)
+        return ClaimedReply(*turn) if turn is not None else None
 
     async def mark_spoken(self, call_id: str, turn_id: str) -> None:
         self.events.append(("spoken", call_id, turn_id))
@@ -59,10 +56,8 @@ def _fill(template: str, **values: str) -> str:
     return template
 
 
-def speak_prompt(reply: str = REPLY, call_id: str = CALL, turn_id: str = TURN) -> str:
-    block = _fill(
-        render_marker_block("speak"), ishara_call_id=call_id, turn_id=turn_id, reply_text=reply
-    )
+def speak_prompt(call_id: str = CALL) -> str:
+    block = _fill(render_marker_block("speak"), ishara_call_id=call_id)
     return f"You relay a Deaf caller's approved reply.\n\n{block}\n\n## Conversation History"
 
 
@@ -79,7 +74,7 @@ def body(system: str, *turns: tuple[str, str], stream: bool = True, **extra: obj
 
 @pytest.fixture
 def ledger() -> FakeLedger:
-    return FakeLedger({(CALL, TURN): REPLY})
+    return FakeLedger({CALL: (TURN, REPLY)})
 
 
 @pytest.fixture
@@ -163,12 +158,12 @@ def test_unknown_fields_are_tolerated(client: TestClient, ledger: FakeLedger) ->
     ],
 )
 def test_speak_streams_approved_text_verbatim_then_marks_spoken(text: str) -> None:
-    ledger = FakeLedger({(CALL, TURN): text})
+    ledger = FakeLedger({CALL: (TURN, text)})
     client = TestClient(create_app(make_settings(), ledger=ledger))
-    response = post(client, body(speak_prompt(text), ("user", "Which day suits you?")))
+    response = post(client, body(speak_prompt(), ("user", "Which day suits you?")))
     assert response.headers["content-type"].startswith("text/event-stream")
     assert reply_text(response) == text
-    assert ledger.events[-2:] == [("claim", CALL, TURN, text), ("spoken", CALL, TURN)]
+    assert ledger.events[-2:] == [("claim", CALL), ("spoken", CALL, TURN)]
 
 
 def test_speak_non_stream_returns_completion_and_marks_spoken(
@@ -182,26 +177,33 @@ def test_speak_non_stream_returns_completion_and_marks_spoken(
 
 
 @pytest.mark.parametrize("stream", [True, False])
-@pytest.mark.parametrize(
-    ("turn_id", "text"),
-    [("unknown-turn", REPLY), (TURN, REPLY + " And one more thing.")],
-    ids=["unapproved turn", "text differs from approval"],
-)
-def test_refused_claim_speaks_nothing(
-    client: TestClient, ledger: FakeLedger, stream: bool, turn_id: str, text: str
-) -> None:
-    response = post(client, body(speak_prompt(text, turn_id=turn_id), stream=stream))
+@pytest.mark.parametrize("call_id", ["other-call", CALL], ids=["other call", "nothing approved"])
+def test_refused_claim_speaks_nothing(stream: bool, call_id: str) -> None:
+    ledger = FakeLedger({"other-call": (TURN, REPLY)} if call_id == CALL else {})
+    client = TestClient(create_app(make_settings(), ledger=ledger))
+    response = post(client, body(speak_prompt(call_id), stream=stream))
     assert reply_text(response) == ""
     assert ledger.spoken == []
+
+
+def test_speak_ignores_any_reply_text_left_in_the_prompt(
+    client: TestClient, ledger: FakeLedger
+) -> None:
+    # The speak prompt of the agent before the fix, as live Bolna sent it: the reply
+    # slots unfilled. Only the ledger decides what is said.
+    prompt = speak_prompt() + "\nISHARA_TURN_ID: {turn_id}\nISHARA_REPLY_START\n{reply_text}"
+    assert reply_text(post(client, body(prompt))) == REPLY
+    assert ledger.spoken == [(CALL, TURN)]
 
 
 def test_stale_speak_request_still_forwards_the_new_caption(
     client: TestClient, ledger: FakeLedger
 ) -> None:
     # Ledger B24: after a skipped speak, Bolna stays on the speak node and answers the
-    # receptionist's next words with the old prompt. The claim is refused, but the
-    # words must still reach the app as a caption.
-    payload = body(speak_prompt(turn_id="undelivered-turn"), ("user", "Sorry, go ahead."))
+    # receptionist's next words with the old prompt. With the turn already revoked the
+    # claim is refused, but the words must still reach the app as a caption.
+    ledger.in_flight.clear()
+    payload = body(speak_prompt(), ("user", "Sorry, go ahead."))
 
     assert reply_text(post(client, payload)) == ""
     assert ledger.captions == ["Sorry, go ahead."]
@@ -244,12 +246,11 @@ async def test_abandoned_stream_never_marks_spoken() -> None:
     assert calls == []
 
 
-def test_unfilled_reply_block_is_not_a_speak_request(
-    client: TestClient, ledger: FakeLedger
+@pytest.mark.parametrize("call_id", ["{{ishara_call_id}}", "{ishara_call_id}"])
+def test_unfilled_call_id_is_not_a_speak_request(
+    client: TestClient, ledger: FakeLedger, call_id: str
 ) -> None:
-    unfilled = _fill(render_marker_block("speak"), ishara_call_id=CALL, turn_id=TURN)
-    assert "{{reply_text}}" in unfilled
-    response = post(client, body(unfilled, ("user", "Hello?")))
+    response = post(client, body(speak_prompt(call_id), ("user", "Hello?")))
     assert reply_text(response) == ""
     assert ledger.events == []
 
@@ -339,7 +340,7 @@ def test_speak_request_also_records_new_captions(client: TestClient, ledger: Fak
     assert reply_text(post(client, payload)) == REPLY
     assert ledger.captions == ["Which day?", "Morning or evening?"]
     assert ledger.events.index(("caption", CALL, "Morning or evening?")) < ledger.events.index(
-        ("claim", CALL, TURN, REPLY)
+        ("claim", CALL)
     )
 
 
@@ -441,7 +442,7 @@ def test_shape_log_has_no_transcript_reply_or_token(
         ('Reply only with JSON {"hangup": "Yes" or "No"}', "Bye.", "json_no"),
         ('Reply only with JSON {"is_voicemail": "Yes" or "No"}', "Beep.", "json_no"),
         ("Speak in English.", "Hello?", "silent"),
-        (speak_prompt(turn_id="unknown-turn"), "Hello?", "claim_refused"),
+        (speak_prompt("unknown-call"), "Hello?", "claim_refused"),
         (speak_prompt(), "Hello?", "reply"),
     ],
     ids=["hangup", "voicemail", "no marker", "refused claim", "reply"],

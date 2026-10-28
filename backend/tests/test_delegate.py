@@ -308,6 +308,12 @@ def build_flow(
         end_after_done_s=end_after_done_s,
         brain=brain,
     )
+
+    def in_flight_text(run_id: str) -> str | None:
+        session = manager._sessions[manager._call_by_run[run_id]]
+        return session.in_flight.approved_text if session.in_flight is not None else None
+
+    bolna.in_flight_text = in_flight_text
     app = create_app(settings, composer=composer, bolna=bolna, ledger=manager)
     client = stack.enter_context(TestClient(app))
     return Flow(client, manager, bolna)
@@ -365,9 +371,8 @@ def test_attended_call_speaks_the_brief_then_asks_the_user_and_speaks_the_answer
         assert resolved["source"] == "user"
         assert resolved["spoken"] == "Yes, 4 pm tomorrow works. Thank you."
         # The answer went to Bolna through the verbatim speak node, exactly like a SEND.
-        replies = f.bolna.replies()
-        assert replies and replies[-1]["reply_text"] == "Yes, 4 pm tomorrow works. Thank you."
-        assert replies[-1]["turn_id"].startswith("ask-")
+        assert f.bolna.injected[-1] == "Yes, 4 pm tomorrow works. Thank you."
+        assert f.bolna.replies()[-1]["turn_id"].startswith("ask-")
         assert f.speak_last(call_id) == "Yes, 4 pm tomorrow works. Thank you."
 
     f.finish(summary="Appointment agreed for 4 pm tomorrow.")
@@ -433,7 +438,7 @@ def test_unanswered_ask_times_out_to_the_callback_line(flow) -> None:
         f.drain_until(ws, "ask")
         resolved = f.drain_until(ws, "ask_resolved")
         assert resolved["source"] == "timeout" and resolved["spoken"] == CALLBACK_LINE
-        assert f.bolna.replies()[-1]["reply_text"] == CALLBACK_LINE
+        assert f.bolna.injected[-1] == CALLBACK_LINE
 
 
 def test_answering_an_unknown_ask_is_an_error_and_speaks_nothing(flow) -> None:
@@ -468,7 +473,7 @@ def test_notes_need_the_app_token_and_a_known_call(flow) -> None:
     assert f.client.get("/calls/nope/notes").status_code in (401, 403)
 
 
-def test_user_reply_events_carry_only_text_and_turn(flow) -> None:
+def test_user_reply_events_carry_only_the_turn(flow) -> None:
     f = flow()
     call_id = f.start(f.brief(), attended=True)
     with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
@@ -481,5 +486,5 @@ def test_user_reply_events_carry_only_text_and_turn(flow) -> None:
         f.drain_until(ws, "ask_resolved")
     for _, event, props in f.bolna.events:
         if event == EVENT_USER_REPLY:
-            assert set(props) == {"reply_text", "turn_id"}
+            assert set(props) == {"turn_id"}
             assert CLINIC not in json.dumps(props)

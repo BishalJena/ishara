@@ -100,21 +100,27 @@ def test_approval_for_brand_new_turn_without_chips_is_accepted() -> None:
     rejected(Rejection.STALE_TURN, lambda: session.set_chips("t1", ["no"]))
 
 
-def test_claim_true_once_with_exact_text_only() -> None:
+def test_claim_returns_the_approved_turn_exactly_once() -> None:
     session = live_session()
-    session.approve("t1", TEXT)
-    assert not session.claim("t1", TEXT + " ")
-    assert not session.claim("t1", TEXT.lower())
-    assert not session.claim("t2", TEXT)
-    assert session.claim("t1", TEXT)
-    assert not session.claim("t1", TEXT)
-    assert session.in_flight is not None and session.in_flight.phase is TurnPhase.CLAIMED
+    turn = session.approve("t1", TEXT)
+    claimed = session.claim()
+    assert claimed is turn and claimed.approved_text == TEXT
+    assert turn.phase is TurnPhase.CLAIMED and session.in_flight is turn
+    assert session.claim() is None
 
 
-def test_claim_false_for_unapproved_turn() -> None:
+def test_claim_after_a_superseding_approval_gets_the_newer_turn() -> None:
+    session = live_session()
+    first = session.approve("t1", TEXT)
+    second = session.approve("t2", "No.")
+    assert first.phase is TurnPhase.CANCELLED
+    assert session.claim() is second
+
+
+def test_claim_none_for_unapproved_turn() -> None:
     session = live_session()
     session.set_chips("t1", ["hello"])
-    assert not session.claim("t1", TEXT)
+    assert session.claim() is None
 
 
 def test_stop_before_claim_cancels() -> None:
@@ -122,14 +128,14 @@ def test_stop_before_claim_cancels() -> None:
     turn = session.approve("t1", TEXT)
     assert session.stop() is turn
     assert turn.phase is TurnPhase.CANCELLED and session.state is CallState.IN_CALL
-    assert not session.claim("t1", TEXT)
+    assert session.claim() is None
     rejected(Rejection.ALREADY_APPROVED, lambda: session.approve("t1", TEXT))
 
 
 def test_stop_after_claim_cannot_interrupt() -> None:
     session = live_session()
     turn = session.approve("t1", TEXT)
-    session.claim("t1", TEXT)
+    session.claim()
     rejected(Rejection.CANNOT_INTERRUPT, session.stop)
     assert session.in_flight is turn and turn.phase is TurnPhase.CLAIMED
 
@@ -144,13 +150,13 @@ def test_new_turn_revokes_unclaimed_approval() -> None:
     turn = session.approve("t1", TEXT)
     session.set_chips("t2", ["no"])
     assert turn.phase is TurnPhase.CANCELLED and session.in_flight is None
-    assert not session.claim("t1", TEXT)
+    assert session.claim() is None
 
 
 def test_new_turn_keeps_a_reply_that_is_already_being_spoken() -> None:
     session = live_session()
     turn = session.approve("t1", TEXT)
-    session.claim("t1", TEXT)
+    session.claim()
     session.set_chips("t2", ["no"])
     assert session.in_flight is turn and session.state is CallState.SPEAKING
     rejected(Rejection.BUSY_SPEAKING, lambda: session.approve("t2", "No."))
@@ -163,7 +169,7 @@ def test_mark_spoken_only_after_claim() -> None:
     session = live_session()
     turn = session.approve("t1", TEXT)
     assert not session.mark_spoken("t1")
-    session.claim("t1", TEXT)
+    session.claim()
     assert not session.mark_spoken("t2")
     assert session.mark_spoken("t1")
     assert turn.phase is TurnPhase.SPOKEN and session.state is CallState.IN_CALL
@@ -176,14 +182,14 @@ def test_failed_delivery_blocks_late_claim() -> None:
     assert not session.fail_delivery("t2")
     assert session.fail_delivery("t1")
     assert turn.phase is TurnPhase.UNDELIVERED and session.state is CallState.IN_CALL
-    assert not session.claim("t1", TEXT)
+    assert session.claim() is None
     assert not session.fail_delivery("t1")
 
 
 def test_failed_delivery_after_claim_ignores_late_spoken() -> None:
     session = live_session()
     session.approve("t1", TEXT)
-    session.claim("t1", TEXT)
+    session.claim()
     assert session.fail_delivery("t1")
     assert not session.mark_spoken("t1")
 
@@ -191,12 +197,12 @@ def test_failed_delivery_after_claim_ignores_late_spoken() -> None:
 def test_revoke_unclaimed_leaves_claimed_reply() -> None:
     session = live_session()
     session.approve("t1", TEXT)
-    session.claim("t1", TEXT)
+    session.claim()
     assert session.revoke_unclaimed() is None
     assert session.in_flight is not None
     other = live_session()
     turn = other.approve("t1", TEXT)
-    assert other.revoke_unclaimed() is turn and not other.claim("t1", TEXT)
+    assert other.revoke_unclaimed() is turn and other.claim() is None
 
 
 def test_end_wipes_pending_turns_and_blocks_claim() -> None:
@@ -205,14 +211,14 @@ def test_end_wipes_pending_turns_and_blocks_claim() -> None:
     assert session.advance(CallState.ENDED)
     assert session.current is None and session.in_flight is None
     assert session.state is CallState.ENDED
-    assert not session.claim("t1", TEXT)
+    assert session.claim() is None
 
 
-def test_claim_false_once_call_finished_even_if_in_flight_kept() -> None:
+def test_claim_none_once_call_finished_even_if_in_flight_kept() -> None:
     session = live_session()
     session.approve("t1", TEXT)
     session.line = CallState.ENDED
-    assert not session.claim("t1", TEXT)
+    assert session.claim() is None
 
 
 def test_caption_marks_line_live_and_is_remembered() -> None:

@@ -56,10 +56,11 @@ LISTEN_PROMPT = (
     f"If the last message is {SILENCE_MARKER}, say exactly: {HOLDING_LINE}"
 )
 
+# Bolna puts no event properties in a prompt, so this node can't carry the reply: the
+# backend answers with the call's approved in-flight turn, word for word.
 SPEAK_PROMPT = (
     f"{render_marker_block('speak')}\n\n"
-    "Say exactly the text between ISHARA_REPLY_START and ISHARA_REPLY_END, word for "
-    "word, and nothing else."
+    "Say the Deaf caller's approved reply, word for word, and nothing else."
 )
 
 

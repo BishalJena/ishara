@@ -6,9 +6,9 @@ Rules (PLAN.md §4, docs/WORKFLOW.md edge cases):
 - An approval (SEND) is single use, tied to its turn and only accepted while the
   call is live. At most one approved turn is in flight (sent to Bolna, not yet
   spoken) at a time.
-- Bolna's custom-LLM request may claim an in-flight approval exactly once, with the
-  exact approved text. Stop, a new turn, a delivery timeout or the end of the call
-  revoke an unclaimed approval.
+- Bolna's speak-node request claims the in-flight approval exactly once and gets its
+  approved text (Bolna can't carry the text itself). Stop, a new turn, a delivery
+  timeout or the end of the call revoke an unclaimed approval.
 
 Every rejecting method raises before it mutates anything.
 """
@@ -162,18 +162,13 @@ class CallSession:
 
     # ---- Bolna side ----
 
-    def claim(self, turn_id: str, text: str) -> bool:
+    def claim(self) -> Turn | None:
+        """Claim the approved in-flight turn for speaking; None if there is none."""
         turn = self.in_flight
-        if (
-            self.finished
-            or turn is None
-            or turn.turn_id != turn_id
-            or turn.phase is not TurnPhase.APPROVED
-            or turn.approved_text != text
-        ):
-            return False
+        if self.finished or turn is None or turn.phase is not TurnPhase.APPROVED:
+            return None
         turn.phase = TurnPhase.CLAIMED
-        return True
+        return turn
 
     def mark_spoken(self, turn_id: str) -> bool:
         turn = self.in_flight
