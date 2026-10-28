@@ -90,6 +90,8 @@ struct ActiveCallView: View {
                 .padding()
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { actionBarHeight = $0 }
                 .background(.bar)
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("call.actionBar")
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { screenHeight = $0 }
         // Past AX-XL the status bar, a whole sentence and SEND or STOP no longer fit on

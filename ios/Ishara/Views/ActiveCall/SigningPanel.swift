@@ -17,6 +17,8 @@ struct SigningPanel: View {
                     .overlay(alignment: .bottomTrailing) {
                         ReplayMenu(recognition: model.recognition).padding(10)
                     }
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("call.camera")
             }
             if let message = model.errorMessage {
                 CallErrorBanner(message: message)

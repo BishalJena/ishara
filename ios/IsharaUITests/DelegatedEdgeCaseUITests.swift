@@ -97,6 +97,89 @@ final class DelegatedEdgeCaseUITests: XCTestCase {
         app.waitFor(app.element("notes.outcome"), labelContains: "call back")
     }
 
+    // MARK: Camera above the question (issue #88)
+
+    /// The receptionist's question as the live transcriber wrote it on the 28 Oct real call.
+    private let realTranscript = "what time would will would you like to come in"
+    private let longerTranscript = "sorry about the wait so what time would will would you like to come in "
+        + "tomorrow or would the morning or later on in the afternoon suit her better do you think"
+
+    /// The user signs the answer, so the camera stays in view above the four time answers,
+    /// with the question worded as the real call's transcript.
+    func testCameraStaysInViewAboveTheTimeQuestionAsTranscribed() {
+        expectCameraInViewAboveTimeQuestion(realTranscript)
+    }
+
+    /// However long the transcribed question, the card doesn't grow over the camera.
+    func testCameraStaysInViewAboveALongerTimeQuestion() {
+        expectCameraInViewAboveTimeQuestion(longerTranscript)
+    }
+
+    /// The same at XL text, the largest size whose answer buttons hold their sentences.
+    func testCameraStaysInViewAboveALongerTimeQuestionAtXLText() {
+        expectCameraInViewAboveTimeQuestion(longerTranscript, textSize: EdgeCaseLaunch.textSize("XL"))
+    }
+
+    /// And at the largest size below the accessibility sizes, where the sentences scroll
+    /// in the card above short answer buttons.
+    func testCameraStaysInViewAboveALongerTimeQuestionAtTheLargestStandardTextSize() {
+        expectCameraInViewAboveTimeQuestion(longerTranscript, textSize: EdgeCaseLaunch.textSize("XXXL"))
+    }
+
+    /// The yes / no / wait card too.
+    func testCameraStaysInViewAboveTheYesNoQuestion() {
+        launch(["-IsharaFakeTimeScale", "2"])
+        openBrief()
+        prepare()
+        approve()
+        app.waitFor(app.element("ask.question"), labelContains: offer, timeout: 30)
+        app.assertCameraInViewAboveActionBar()
+        expectAnswers(["yes": "Yes, 10:30 tomorrow works. Thank you.",
+                       "no": "No, 10:30 tomorrow doesn't work, sorry. Is there another time?",
+                       "wait": waitSentence])
+        app.keepScreenshot("delegated-ask-camera", in: self)
+    }
+
+    // Call/DelegatedDemo.swift: the open "when?" answers.
+    private let waitSentence = "One moment, please, I'm checking."
+    private var timeAnswers: [String: String] {
+        ["tomorrow": "Tomorrow, please. What times are available?",
+         "morning": "In the morning, please. What times are available?",
+         "now": "Today, as soon as possible, please. What times are available?",
+         "wait": waitSentence]
+    }
+
+    /// Each answer is a big enough target, wholly on screen, and its exact sentence is on
+    /// the card (on the button, or in the card's scrolling sentences at large sizes).
+    private func expectAnswers(_ sentences: [String: String], file: StaticString = #filePath, line: UInt = #line) {
+        for (choice, sentence) in sentences {
+            let button = app.buttons["ask.\(choice)"]
+            app.assertReachable(button, choice, file: file, line: line)
+            XCTAssertGreaterThanOrEqual(button.frame.height, 44, "\(choice) is too small to tap", file: file, line: line)
+            XCTAssertGreaterThanOrEqual(button.frame.width, 44, "\(choice) is too small to tap", file: file, line: line)
+            let shown = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", sentence))
+            XCTAssertGreaterThan(shown.count, 0, "\(choice)'s sentence \u{201C}\(sentence)\u{201D} isn't on the card",
+                                 file: file, line: line)
+        }
+    }
+
+    private func expectCameraInViewAboveTimeQuestion(_ question: String, textSize: [String] = [],
+                                                     file: StaticString = #filePath, line: UInt = #line) {
+        launch(textSize + ["-IsharaFakeTimeScale", "2", "-IsharaFakeOpenQuestion", "tap",
+                           "-IsharaFakeOpenQuestionText", question])
+        openBrief()
+        prepare()
+        approve()
+        // The card may show the question in short; VoiceOver still reads all of it.
+        app.waitFor(app.element("ask.question"), labelContains: question, timeout: 30, file: file, line: line)
+        app.assertCameraInViewAboveActionBar(file: file, line: line)
+        expectAnswers(timeAnswers, file: file, line: line)
+        app.assertReachable(app.buttons["call.end"], "End", file: file, line: line)
+        app.keepScreenshot("delegated-time-ask-camera", in: self)
+        app.buttons["ask.tomorrow"].tap()
+        app.waitFor(app.element("caption.you"), labelContains: "Tomorrow, please.", file: file, line: line)
+    }
+
     // MARK: Unattended
 
     /// The agent calls back instead of asking: no camera, no question card, at any point.
@@ -230,14 +313,15 @@ final class DelegatedEdgeCaseUITests: XCTestCase {
     }
 
     /// The open "when?" card's four answers (TOMORROW is the longest word) also stay on
-    /// screen and tappable at the largest text size.
+    /// screen and tappable at the largest text size, with a long transcribed question.
     func testTimeWordAnswersStayReachableAtTheLargestTextSize() {
-        launch(EdgeCaseLaunch.largestText + ["-IsharaFakeTimeScale", "2", "-IsharaFakeOpenQuestion", "tap"])
+        launch(EdgeCaseLaunch.largestText + ["-IsharaFakeTimeScale", "2", "-IsharaFakeOpenQuestion", "tap",
+                                             "-IsharaFakeOpenQuestionText", longerTranscript])
         openBrief()
         prepare()
         approve()
 
-        XCTAssertTrue(app.element("ask.question").waitForExistence(timeout: 30))
+        app.waitFor(app.element("ask.question"), labelContains: longerTranscript, timeout: 30)
         for choice in ["tomorrow", "morning", "now", "wait"] {
             app.assertReachable(app.buttons["ask.\(choice)"], choice)
         }
