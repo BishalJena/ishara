@@ -1,12 +1,13 @@
 # Ishara workflow: what the user does and what the app does
 
-Updated 27 October 2026 (decisions D8 and D9). Decisions and tasks live in
+Updated 28 October 2026 (decisions D8 and D9). Decisions and tasks live in
 [PLAN.md](../PLAN.md); the visual version is the [architecture board](architecture/README.md).
 This is the demo flow, not a validated product: no Deaf participant has reviewed it.
 
-**Built so far (27 Oct):** every screen below exists and is tested in the iOS simulator, on a
-scripted demo call and against the real backend code with a scripted receptionist. Nothing has
-run on an iPhone or on a real Bolna call yet.
+**Built so far (28 Oct):** every screen below exists and is tested in the iOS simulator, on a
+scripted demo call and against the real backend code with a scripted receptionist. On 28 Oct
+both modes also passed on **real Bolna calls**, driven from the simulator app with sign videos
+([voice record](experiments/voice.md#runs)). Nothing has run on an iPhone yet.
 
 ## Two ways to call
 
@@ -19,12 +20,12 @@ run on an iPhone or on a real Bolna call yet.
 
 | Screen | What the user sees and does | What happens underneath |
 |---|---|---|
-| **1 Home** | Picks who to call (e.g. City Clinic), the purpose (doctor's appointment), their name and preferred time; then **CALL** (they sign each reply) or **CALL FOR ME** (the agent calls from a brief). Both say the call comes from Ishara's number, not theirs | Contacts are ids; the numbers live only on the backend's allowlist |
+| **1 Home** | Picks who to call (e.g. City Clinic), the purpose (doctor's appointment), their name and preferred time; then **CALL** (they sign each reply) or **CALL FOR ME** (the agent calls from a brief). Both say the call comes from "Ishara's calling number", not theirs (that number is Bolna's) | Contacts are ids; the numbers live only on the backend's allowlist |
 | **2 Get ready** | Props the phone about an arm away. Checklist: face, both hands, light. Rests their hands for 2 s | The rest position calibrates the start/stop detector. Recognition starts here |
 | **3 Call: signing** | Reads the receptionist's caption, signs, checks the chips and the draft, taps **SEND**. Quick replies: Yes, No, Wait, Repeat | Each finished sign becomes a chip (or a "did you mean" tile, or [?]); every chip change recomposes the draft (Groq + validator, templates as fallback) |
 | **4 Call: speaking** | "Speaking now…" with the exact sentence; SEND becomes **STOP**; then "✓ Delivered" | The backend sends a Bolna event; Bolna speaks it with the Sarvam voice; chips and draft are wiped so old text can't replay |
-| **5 Brief** | Signs or taps what they need (TOMORROW · MORNING), checks their name, an optional callback number and reason, taps **Prepare the request**, reads the brief, chooses **I'll stay and answer questions** or not, taps **Approve and call** | The backend builds the brief only from those chips and fields. Editing anything hides the brief until it is rebuilt, so the approval always matches what is on screen |
-| **6 Call: agent** | Captions of both sides. No draft or SEND. If they stayed: a question card with YES / NO / WAIT, each showing exactly what the agent will say; they sign or tap one | The agent opens with the brief, answers from it, and pauses ("one moment, please") when the receptionist offers something that needs the user. Unattended, it says it will call back |
+| **5 Brief** | Signs or taps what they need (TOMORROW; MORNING can only be tapped for now), checks their name, an optional callback number and reason, taps **Prepare the request**, reads the brief, chooses **I'll stay and answer questions** or not, taps **Approve and call** | The backend builds the brief only from those chips and fields. Editing anything hides the brief until it is rebuilt, so the approval always matches what is on screen |
+| **6 Call: agent** | Captions of both sides, including the agent's opening once it has been said. No draft or SEND. If they stayed: a question card with YES / NO / WAIT, or TOMORROW / MORNING / NOW / WAIT when the receptionist asks "when?", each showing exactly what the agent will say; they sign or tap one. The camera stays in view above the card | The agent opens with the brief, answers from it, and pauses ("one moment, please") when the receptionist offers something that needs the user, naming the time actually offered. Unattended, it says it will call back |
 | **7 Notes** | Outcome (booked, needs a callback, declined, unclear), what they offered, what is still open, the brief, the full transcript, and Bolna's own summary marked as possibly wrong | Built from the transcript; the summary quotes it |
 
 Camera pill: **green** = watching (hands at rest), **yellow** = sign in progress,
@@ -37,14 +38,17 @@ All on the phone; nothing is uploaded.
 
 ```
 hands rise ──▶ sign ──▶ hands back at rest ~0.4 s ──▶ landmarks of that sign ──▶ ASL model (250 signs)
-   ──▶ top sign one of our words, p ≥ 0.6 and 0.3 ahead of the next ──▶ chip
-   ──▶ one of our words, p ≥ 0.35                                    ──▶ "Did you mean …?" (counts only if tapped)
-   ──▶ anything else                                                  ──▶ [?]  (nothing spoken)
+   ──▶ top sign one of our words, p ≥ its cut-off and 0.3 ahead of the next ──▶ chip
+   ──▶ one of our words, p ≥ 0.35                                          ──▶ "Did you mean …?" (counts only if tapped)
+   ──▶ anything else                                                        ──▶ [?]  (nothing spoken)
 ```
 
 The model scores all 250 signs it knows and is never narrowed to our words first: a confident
-"something else" stays [?] instead of becoming the nearest word on our list. These cut-offs are
-provisional until the phone-camera clips are measured.
+"something else" stays [?] instead of becoming the nearest word on our list. "Our words" are the
+8 chip words: hello, thank you, yes, no, now, please, tomorrow, wait. Cut-offs: p ≥ 0.65, or a
+lower per-word value (0.45–0.6). They are provisional until the phone-camera clips are measured.
+MORNING is not a chip word for now: the model learned the one-handed form, and the iPhone test
+decides whether it comes back.
 
 ## One live-call turn, step by step
 
@@ -62,11 +66,14 @@ message is the user tapping **SEND**. The app never guesses.
 ## One "Call for me" call, step by step
 
 ```
-user signs TOMORROW · MORNING ─▶ brief: "…book a doctor's appointment. Preferred: tomorrow in the morning…"
-user approves (stays)         ─▶ Bolna dials; the agent says it calls for a Deaf caller, then states the request
+user signs TOMORROW            ─▶ brief: "…book a doctor's appointment. Preferred: tomorrow…"
+user approves (stays)          ─▶ Bolna dials; the agent says it calls for a Deaf caller, then
+                                  "I'd like to book a doctor's appointment for Riya, tomorrow."
+receptionist: "What time would you like?" ─▶ agent: "One moment, please." ─▶ app: TOMORROW / MORNING / NOW / WAIT
+user signs TOMORROW            ─▶ agent: "Tomorrow, please. What times are available?"
 receptionist: "4 pm tomorrow?" ─▶ agent: "One moment, please." ─▶ app: YES / NO / WAIT
-user signs YES                ─▶ agent: "Yes, 4 pm tomorrow works. Thank you." ─▶ hangs up shortly after
-notes                         ─▶ outcome booked, the offer quoted, the transcript
+user signs YES                 ─▶ agent: "Yes, 4 pm tomorrow works. Thank you." ─▶ hangs up shortly after
+notes                          ─▶ outcome booked, the offer quoted, the transcript
 ```
 
 ## Edge cases
@@ -88,6 +95,7 @@ notes                         ─▶ outcome booked, the offer quoted, the trans
 | Agent's question unanswered for 10 s | The agent says "I'll need to check that and call back" instead of deciding |
 | User signs WAIT to the agent's question | The agent holds the line and the question stays open |
 | Receptionist offers something outside the brief | The agent never agrees to it: it asks the user (attended) or promises a callback (unattended) |
+| Receptionist refuses one time and offers another ("we can't do 4 pm but 5 pm works") | The question names the time on offer (5 pm); with several times it says "that"; only a refused time counts as a decline |
 | Network drops or the call ends | "Nothing will be sent"; pending drafts are wiped; the next call starts clean |
 | Receptionist says "booked" | Shown as their words. Neither the draft nor the agent claims a booking that wasn't said on the call |
 
@@ -101,11 +109,15 @@ notes                         ─▶ outcome booked, the offer quoted, the trans
 
 ## Honest limits
 
-ASL only, from a published model used as is; 8 rehearsed signs, one at a time with the hands
-at rest between signs; thresholds provisional until measured on the phone camera. Calls come
-from a Bolna number (Path A, the bonus mode, keeps the user's number but has no captions). The
+ASL only, from a published model used as is; 8 chip words (MORNING pending the iPhone test),
+one at a time with the hands at rest between signs; thresholds provisional until measured on the
+phone camera. Calls come from Ishara's calling number, which is a Bolna number, not the user's
+own (Path A, the bonus mode, keeps the user's number but has no captions). The
 draft and the agent can reword but never add facts. ISL is the goal and is blocked by data. See
 [PLAN.md §9](../PLAN.md#9-honest-limits-say-these-in-the-pitch).
+
+With no backend, the app plays a scripted fake call that still signs `doctor`, `afternoon` and
+`morning`: demo-only playback, not recognition.
 
 History: [23 October workflow (personalised ISL)](archive/2026-10-23-workflow.md),
 [20 October](archive/2026-10-20-workflow.md), [18 October](archive/2026-10-18-workflow.md).
