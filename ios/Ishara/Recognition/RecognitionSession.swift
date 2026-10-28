@@ -11,6 +11,14 @@ import SignPipeline
 /// 3. Detecting: feeds `SignDetector`, maps its status to the camera pill and hands back
 ///    the landmark frames of every **accepted** segment. Rejected segments give nothing.
 struct RecognitionSession {
+    /// One accepted sign, ready for `SegmentClassifier`.
+    struct SignClip: Equatable {
+        /// From the detector's start to its end: the frames the model reads.
+        var frames: [LandmarkFrame]
+        /// The calibrated rest line, so the framing guard can tell a resting hand from one that left.
+        var restY: Double
+    }
+
     enum Output: Equatable {
         case passed(GetReadyModel.Check)
         /// Seconds of calibration recording collected so far.
@@ -19,8 +27,8 @@ struct RecognitionSession {
         case calibrationRestarted(CalibrationError)
         case calibrated(restY: Double)
         case camera(CameraState)
-        /// The frames of one accepted sign, from the detector's start to its end.
-        case segment([LandmarkFrame])
+        /// One accepted sign.
+        case segment(SignClip)
     }
 
     private enum Phase {
@@ -75,7 +83,7 @@ struct RecognitionSession {
             remember(frame)
             let events = detector.update(detectorFrame)
             phase = .detecting(detector)
-            return events.compactMap(output(for:))
+            return events.compactMap { output(for: $0, restY: detector.restY) }
         }
     }
 
@@ -85,13 +93,14 @@ struct RecognitionSession {
         recent.removeAll { $0.timestamp < frame.timestamp - horizon }
     }
 
-    private func output(for event: DetectorEvent) -> Output? {
+    private func output(for event: DetectorEvent, restY: Double) -> Output? {
         switch event {
         case .status(let status):
             return .camera(CameraState(status))
         case .segment(let segment):
             guard segment.accepted else { return nil }
-            return .segment(recent.filter { segment.start <= $0.timestamp && $0.timestamp <= segment.end })
+            let frames = recent.filter { segment.start <= $0.timestamp && $0.timestamp <= segment.end }
+            return .segment(SignClip(frames: frames, restY: restY))
         }
     }
 

@@ -10,6 +10,8 @@ enum Landmarks {
     static let size = ImageSize(width: 720, height: 1280)
     static let restY: Float = 0.9
     static let signingY: Float = 0.5
+    /// The rest line calibration gives at `restY`: 0.9 minus the 0.08 margin.
+    static let calibratedRestY = 0.82
 
     static func frame(
         t: Double, wristY: Float = restY, body: Bool = true, hands: Bool = true, rightHand: Bool = true

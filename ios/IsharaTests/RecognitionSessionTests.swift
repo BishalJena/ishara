@@ -10,8 +10,12 @@ final class RecognitionSessionTests: XCTestCase {
         return (session, outputs)
     }
 
+    private func clips(_ outputs: [RecognitionSession.Output]) -> [RecognitionSession.SignClip] {
+        outputs.compactMap { if case .segment(let clip) = $0 { clip } else { nil } }
+    }
+
     private func segments(_ outputs: [RecognitionSession.Output]) -> [[LandmarkFrame]] {
-        outputs.compactMap { if case .segment(let frames) = $0 { frames } else { nil } }
+        clips(outputs).map(\.frames)
     }
 
     private func cameraStates(_ outputs: [RecognitionSession.Output]) -> [CameraState] {
@@ -62,6 +66,14 @@ final class RecognitionSessionTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(clip.first).timestamp, 2.4, accuracy: 0.02, "0.2 s pre-roll")
         XCTAssertEqual(try XCTUnwrap(clip.last).timestamp, 3.4, accuracy: 0.02, "ends when the hands rest")
         XCTAssertEqual(cameraStates(outputs), [.watching, .signing, .watching])
+    }
+
+    func testAcceptedSignCarriesTheCalibratedRestLine() throws {
+        let (session, outputs) = run(Landmarks.calibratedStream { Landmarks.sign(from: $0) })
+
+        let clip = try XCTUnwrap(clips(outputs).first)
+        XCTAssertEqual(clip.restY, try XCTUnwrap(session.restY))
+        XCTAssertEqual(clip.restY, Landmarks.calibratedRestY, accuracy: 1e-6)
     }
 
     func testRejectedAttemptGivesNothingToMatch() {

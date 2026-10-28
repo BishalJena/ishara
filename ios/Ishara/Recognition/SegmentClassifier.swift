@@ -26,7 +26,8 @@ struct SegmentClassifier {
         engine = .asl(model: logitsModel, matcher: matcher)
     }
 
-    func classify(_ frames: [LandmarkFrame]) -> RecognitionResult {
+    func classify(_ clip: RecognitionSession.SignClip) -> RecognitionResult {
+        let frames = clip.frames
         let result: RecognitionResult
         switch engine {
         case let .signCLIP(encoder, matcher):
@@ -34,7 +35,9 @@ struct SegmentClassifier {
         case let .asl(model, matcher):
             result = Self.classify(frames, model: model, matcher: matcher)
         }
-        guard result == .unsure, FramingGuard.handLeftFrame(Self.framing(of: frames)) else { return result }
+        guard result == .unsure, FramingGuard.handLeftFrame(Self.framing(of: frames), restY: clip.restY) else {
+            return result
+        }
         return .handLeftFrame
     }
 

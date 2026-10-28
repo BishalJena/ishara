@@ -169,3 +169,10 @@ final class FixedLogitsModel: LogitsModel {
         return values
     }
 }
+
+private extension SegmentClassifier {
+    /// A cut sign at the rest line calibration gives for the scripted landmarks.
+    func classify(_ frames: [LandmarkFrame]) -> RecognitionResult {
+        classify(RecognitionSession.SignClip(frames: frames, restY: Landmarks.calibratedRestY))
+    }
+}
