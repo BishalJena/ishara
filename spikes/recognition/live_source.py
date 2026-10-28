@@ -2,6 +2,10 @@
 
     artifacts/signclip/.venv/bin/python live_source.py --camera 0
     artifacts/signclip/.venv/bin/python live_source.py --replay-videos artifacts/rehearsal
+    .venv/bin/python live_source.py --model asl --video rest.mp4 hello.mp4 rest.mp4 yes.mp4
+
+--video plays saved clips back to back as if they were the webcam (one stream, one rest
+calibration), so the Mac fallback can be rehearsed and tested without a camera.
 
 Each frame goes through the legacy Holistic once. Its wrists drive the start/stop
 detector (2 s rest calibration first); for every accepted segment, the same frames'
@@ -469,15 +473,39 @@ def camera_images(index: int) -> Iterator[Image]:
         cap.release()
 
 
-def video_images(path: Path, realtime: bool) -> Iterator[Image]:
-    """A saved clip, paced like a camera unless realtime is off, so latency stays comparable."""
+FALLBACK_FRAME_S = 1 / 30  # gap after a one-frame clip, whose frame rate can't be read off its times
+
+
+def read_video(path: Path) -> Iterable[tuple[float, Any]]:
     from detect_clips import video_frames
 
-    start = time.monotonic()
-    for t, bgr in video_frames(path):
-        if realtime and (delay := start + t - time.monotonic()) > 0:
-            time.sleep(delay)
-        yield t, time.monotonic(), bgr
+    return video_frames(path)
+
+
+def playlist_images(paths: Sequence[Path], realtime: bool,
+                    read: Callable[[Path], Iterable[tuple[float, Any]]] | None = None,
+                    clock: Callable[[], float] = time.monotonic,
+                    sleep: Callable[[float], None] = time.sleep) -> Iterator[Image]:
+    """Saved clips back to back as one camera stream: the clock never restarts (each clip
+    begins one frame after the last one ended) and frames come at their own pace unless
+    realtime is off, so calibration, the detector and latency see what a webcam would."""
+    start, offset = clock(), 0.0
+    for path in paths:
+        t = step = None
+        for t_clip, bgr in (read or read_video)(path):
+            if t is not None:
+                step = t_clip - t
+            t = t_clip
+            if realtime and (delay := start + offset + t - clock()) > 0:
+                sleep(delay)
+            yield offset + t, clock(), bgr
+        if t is not None:
+            offset += t + (step or FALLBACK_FRAME_S)
+
+
+def video_images(path: Path, realtime: bool) -> Iterator[Image]:
+    """A saved clip, paced like a camera unless realtime is off, so latency stays comparable."""
+    return playlist_images([path], realtime)
 
 
 def videos_in(directory: Path) -> list[Path]:
@@ -556,7 +584,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--camera", type=int, help="live camera index")
     source.add_argument("--replay-videos", type=Path, metavar="DIR",
-                        help="feed every .mp4/.mov/.m4v in DIR (sorted) through the same path")
+                        help="feed every .mp4/.mov/.m4v in DIR (sorted) through the same path, each clip "
+                             "calibrated on its own first 2 s")
+    source.add_argument("--video", type=Path, nargs="+", metavar="CLIP",
+                        help="play these clips in order as one live camera: one 2 s rest calibration at "
+                             "the start, then the same detector; start with a hands-down rest clip")
     parser.add_argument("--model", choices=("signclip", "asl"), default="signclip",
                         help="signclip: personalised reference matching (default); asl: the public ASL Signs "
                              "model with the open-set rule (asl_matcher.py), no references needed")
@@ -576,6 +608,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.replay_videos is not None:
         if not args.replay_videos.is_dir() or not (paths := videos_in(args.replay_videos)):
             parser.error(f"no .mp4/.mov/.m4v clips in {args.replay_videos}")
+    for clip in args.video or ():
+        if not clip.is_file() or clip.suffix.lower() not in VIDEO_SUFFIXES:
+            parser.error(f"--video: {clip} is not an .mp4/.mov/.m4v file")
 
     results = result_stream()
     if args.model == "asl":
@@ -591,10 +626,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.camera is not None:
         clips: Iterable[Clip] = [tracker(camera_images(args.camera), keep_image=show is not None)]
         log(f"{REST_PROMPT}, then sign one at a time. q in the window (or Ctrl-C) stops.")
+    elif args.video:
+        clips = [tracker(playlist_images(args.video, realtime=not args.fast), keep_image=show is not None)]
+        log(f"playing {len(args.video)} clips as one camera: {' '.join(p.name for p in args.video)}")
     else:
         clips = replay_clips(paths, realtime=not args.fast, keep_image=show is not None, tracker=tracker)
-    live = LiveSource(clips, matcher, rest_y=args.rest_y, retry_calibration=args.camera is not None,
-                      show=show)
+    # A camera, real or played from clips, asks for a new rest until calibration works.
+    live = LiveSource(clips, matcher, rest_y=args.rest_y, show=show,
+                      retry_calibration=args.camera is not None or bool(args.video))
     try:
         for recognition in live:
             results.write(result_json(recognition) + "\n")

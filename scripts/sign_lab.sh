@@ -21,7 +21,9 @@
 #                                            only the backend, in this terminal; manual = you
 #                                            type the receptionist's lines
 #   scripts/sign_lab.sh --bridge-only        only the webcam bridge, against a running backend
-#   scripts/sign_lab.sh ... -- ARGS          extra mac_bridge.py args, e.g. -- --replay-videos DIR
+#   scripts/sign_lab.sh ... -- ARGS          extra mac_bridge.py args, e.g. -- --replay-videos DIR,
+#                                            or -- --video rest.mp4 hello.mp4 rest.mp4 (clips played
+#                                            as if they were the webcam; no camera needed)
 #
 # Ctrl-C stops both processes.
 set -euo pipefail
@@ -33,7 +35,7 @@ CONTACT=clinic
 HEALTH_WAIT_S=90
 
 usage() {
-  sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 die() {
@@ -215,7 +217,7 @@ run_bridge() {
   # --live sits in the array so it is never empty (bash 3.2 + set -u).
   local source_args=(--live --camera "$camera") arg
   for arg in ${bridge_extra[@]+"${bridge_extra[@]}"}; do
-    [[ $arg == --replay-videos ]] && source_args=(--live)
+    [[ $arg == --replay-videos || $arg == --video ]] && source_args=(--live)
   done
   echo
   echo "sign_lab: starting the webcam bridge with --contact $CONTACT --confirm-cost."

@@ -1,14 +1,26 @@
-"""Mac bridge turn rules, sources and client; fake transport only, no network."""
+"""Mac bridge turn rules, sources and client; fake transport only, no network.
+
+Except ClipDrivenFallback at the end: the whole Mac fallback on saved clips against the
+local backend, skipped (with what is missing) unless its venvs, model and clips exist.
+"""
 import asyncio
 import io
 import itertools
 import json
 import os
+import shutil
+import signal
+import socket
+import subprocess
 import sys
+import threading
+import time
 import unittest
 import urllib.error
-from contextlib import redirect_stderr, redirect_stdout
+import urllib.request
+from contextlib import contextmanager, redirect_stderr, redirect_stdout, suppress
 from datetime import datetime
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
@@ -714,10 +726,14 @@ class CommandLine(unittest.TestCase):
                          [*head, "--camera", "2", "--bundle", "b.json", "--rest-y", "0.8"])
         self.assertEqual(command("--replay-videos", "clips", "--recognizer-python", "/v/python"),
                          ["/v/python", head[1], "--replay-videos", "clips"])
+        self.assertEqual(command("--video", "rest.mp4", "hello.mp4", "--model", "asl"),
+                         [*head, "--model", "asl", "--video", "rest.mp4", "hello.mp4"])
 
     def test_live_options_need_live_and_one_input(self):
         for argv in (["--camera", "1"], ["--replay-videos", "clips"], ["--bundle", "b.json"],
-                     ["--rest-y", "0.8"], ["--live", "--camera", "1", "--replay-videos", "clips"]):
+                     ["--rest-y", "0.8"], ["--live", "--camera", "1", "--replay-videos", "clips"],
+                     ["--video", "rest.mp4"], ["--live", "--camera", "1", "--video", "rest.mp4"],
+                     ["--live", "--video"]):
             with self.subTest(argv=argv), self.assertRaises(SystemExit):
                 self.main("--base-url", "https://b", "--call-id", "c7", *argv)
         self.assertEqual((self.posts, self.connects), ([], []))
@@ -897,3 +913,293 @@ class DelegatedStart(unittest.TestCase):
         args = mb.parse_args(["--base-url", "https://b", "--contact", "clinic", "--delegated", "--attended"])
         self.assertTrue(args.delegated and args.attended)
         self.assertEqual(args.brief_chips, ["tomorrow", "morning"])
+
+
+# ---- the Mac fallback end to end, driven by saved clips instead of a webcam (PLAN A4) ----
+
+HERE = Path(__file__).resolve().parent
+REPO = HERE.parents[1]
+SIGN_LAB = REPO / "scripts" / "sign_lab.sh"
+LOCAL_TOKEN = "ishara-local-demo"  # sign_lab.sh's token, the local backend's default
+FALLBACK_CLIPS = Path(os.environ.get("ISHARA_FALLBACK_CLIPS") or HERE / "artifacts" / "fallback_clips")
+SCRIPT_CLIPS = ("rest", "hello", "no", "tomorrow", "please", "yes", "thankyou")
+
+
+def free_port():
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
+@contextmanager
+def health_server():
+    """A stand-in backend that only answers /health, for sign_lab.sh --bridge-only."""
+    class Health(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200 if self.path == "/health" else 404)
+            self.end_headers()
+            self.wfile.write(b'{"status":"ok"}')
+
+        def log_message(self, *args):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Health)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        yield server.server_address[1]
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def executable(path, body):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("#!/bin/sh\n" + body)
+    path.chmod(0o755)
+
+
+@unittest.skipIf(shutil.which("bash") is None or shutil.which("curl") is None, "needs bash and curl")
+class SignLabVideo(unittest.TestCase):
+    def test_video_clips_replace_the_camera(self):
+        with TemporaryDirectory() as folder, health_server() as port:
+            recognition, out = Path(folder, "recognition"), Path(folder, "bridge.out")
+            executable(recognition / "artifacts/signclip/.venv/bin/python", "exit 0\n")
+            executable(recognition / "artifacts/bridge/.venv/bin/python", 'echo "$*" > "$FAKE_BRIDGE_OUT"\n')
+            (recognition / "mac_bridge.py").write_text("")
+            bundle = recognition / "artifacts/evidence/recognition-bundle-signclip.json"
+            bundle.parent.mkdir(parents=True)
+            bundle.write_text("{}")
+            done = subprocess.run(
+                ["bash", str(SIGN_LAB), "--bridge-only", "--port", str(port), "--recognition-dir",
+                 str(recognition), "--", "--video", "rest.mp4", "hello.mp4"],
+                capture_output=True, text=True, timeout=60, check=False,
+                env={**os.environ, "FAKE_BRIDGE_OUT": str(out)})
+            self.assertEqual(done.returncode, 0, done.stderr)
+            bridge_args = out.read_text().split()
+        self.assertNotIn("--camera", bridge_args)
+        self.assertIn("--live", bridge_args)
+        self.assertEqual(bridge_args[-3:], ["--video", "rest.mp4", "hello.mp4"])
+
+
+def fallback_missing():
+    """What the clip-driven runs need and this machine lacks (empty when they can run)."""
+    parts = {"the bridge venv": HERE / "artifacts/bridge/.venv/bin/python",
+             "the recognition venv": HERE / ".venv/bin/python",
+             "the ASL model": HERE / "artifacts/asl_signs/model.tflite",
+             "the ASL model venv": HERE / "artifacts/asl_signs/.venv/bin/python",
+             **{f"{name}.mp4": FALLBACK_CLIPS / f"{name}.mp4" for name in SCRIPT_CLIPS}}
+    missing = [f"{what} at {path}" for what, path in parts.items() if not path.exists()]
+    return missing + [tool for tool in ("bash", "curl", "uv") if shutil.which(tool) is None]
+
+
+def kill_group(process):
+    if process.poll() is None:
+        with suppress(ProcessLookupError):
+            os.killpg(process.pid, signal.SIGTERM)
+        try:
+            process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            os.killpg(process.pid, signal.SIGKILL)
+            process.wait()
+
+
+class LocalCall:
+    """A local backend (fake Bolna, nothing dialled, templates, no key read) plus
+    `sign_lab.sh --bridge-only --model asl -- --video ...`, read through the bridge's
+    session log: every message the backend sent and every message the bridge sent."""
+
+    def __init__(self, test, name, backend, clips, *bridge_args):
+        self.test, self.name, self.backend_args = test, name, backend
+        self.clips = [str(FALLBACK_CLIPS / f"{clip}.mp4") for clip in clips]
+        self.bridge_args = bridge_args
+        self.log = mb.ARTIFACTS / "lab" / f"fallback-{name}-{datetime.now():%Y%m%d-%H%M%S}.jsonl"
+
+    def __enter__(self):
+        self._folder = TemporaryDirectory()
+        folder = Path(self._folder.name)
+        self.port = free_port()
+        self.backend_out, self.bridge_out = folder / "backend.out", folder / "bridge.out"
+        self.backend = self._spawn(["uv", "run", "--locked", "--quiet", "python", "-m", *self.backend_args,
+                                    "--port", str(self.port)],
+                                   self.backend_out, cwd=REPO / "backend", stdin=subprocess.PIPE)
+        self._wait_for_health()
+        self.bridge = self._spawn(["bash", str(SIGN_LAB), "--bridge-only", "--model", "asl",
+                                   "--port", str(self.port), "--", "--video", *self.clips,
+                                   "--log", str(self.log), *self.bridge_args],
+                                  self.bridge_out, stdin=subprocess.PIPE)
+        return self
+
+    def __exit__(self, *exc):
+        for process in (self.bridge, self.backend):
+            kill_group(process)
+            process.stdin.close()
+        self._folder.cleanup()
+
+    def _spawn(self, argv, out, **options):
+        with out.open("w") as stream:
+            return subprocess.Popen(argv, stdout=stream, stderr=subprocess.STDOUT, text=True,
+                                    start_new_session=True, **options)
+
+    def _wait_for_health(self):
+        deadline = time.monotonic() + 120
+        while time.monotonic() < deadline:
+            if self.backend.poll() is not None:
+                self.test.fail(f"the local backend stopped:\n{self.backend_out.read_text()[-2000:]}")
+            try:
+                with urllib.request.urlopen(f"http://127.0.0.1:{self.port}/health", timeout=1):
+                    return
+            except OSError:
+                time.sleep(0.2)
+        self.test.fail("the local backend did not answer /health in 120 s")
+
+    def entries(self):
+        if not self.log.is_file():
+            return []
+        text = self.log.read_text()
+        return [json.loads(line) for line in text[:text.rfind("\n") + 1].splitlines()]
+
+    def wait_for(self, find, timeout, what):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if (found := find(self.entries())) is not None:
+                return found
+            if self.bridge.poll() is not None:
+                break
+            time.sleep(0.1)
+        self.test.fail(f"{self.name}: no {what} within {timeout} s.\n"
+                       f"bridge output:\n{self.bridge_out.read_text()[-3000:]}")
+
+    def type(self, line):
+        self.bridge.stdin.write(line + "\n")
+        self.bridge.stdin.flush()
+
+    def receptionist_says(self, line):
+        """Only for `scripts.sign_lab --receptionist manual`: her next words on the call."""
+        self.backend.stdin.write(line + "\n")
+        self.backend.stdin.flush()
+
+    def recognizer_calibrated(self, entries):
+        """True once live_source has its rest line, i.e. the played clips reached the first sign."""
+        return True if "rest line y=" in self.bridge_out.read_text() else None
+
+    def finish(self):
+        """Close the terminal and wait for the bridge (and its recognizer) to exit."""
+        self.bridge.stdin.close()
+        self.test.assertEqual(self.bridge.wait(timeout=30), 0, self.bridge_out.read_text()[-3000:])
+
+    def notes(self, call_id):
+        request = urllib.request.Request(f"http://127.0.0.1:{self.port}/calls/{call_id}/notes",
+                                         headers=mb.auth_headers(LOCAL_TOKEN))
+        with urllib.request.urlopen(request, timeout=10) as response:
+            return json.loads(response.read())
+
+
+def messages(entries, source, kind=None):
+    """Messages the backend sent ("backend"), the bridge sent ("bridge") or the recognizer gave."""
+    return [e["message"] for e in entries
+            if e["from"] == source and (kind is None or e["message"].get("type") == kind)]
+
+
+def first(items):
+    return items[0] if items else None
+
+
+def call_id_of(entries):
+    return first([m["call_id"] for m in messages(entries, "bridge", "connected")])
+
+
+def draft_after_chips(entries, signs):
+    """The backend's draft for the turn whose latest chips are `signs`, sent after them."""
+    turn_id = None
+    for entry in entries:
+        message = entry["message"]
+        if entry["from"] == "bridge" and message.get("type") == "chips":
+            turn_id = message["turn_id"] if message["chips"] == list(signs) else None
+        elif entry["from"] == "backend" and message.get("type") == "draft" and message["turn_id"] == turn_id:
+            return message
+    return None
+
+
+class ClipDrivenFallback(unittest.TestCase):
+    """Public ASL clips played as the webcam -> the ASL model -> the real bridge -> the local
+    backend with the scripted receptionist. The test plays the user: it only types SEND (s)
+    and End (e); recognition supplies every chip and the answer to the agent's question."""
+
+    @classmethod
+    def setUpClass(cls):
+        if missing := fallback_missing():
+            reason = f"clip-driven fallback runs need {'; '.join(missing)} (README: Demo fallback)"
+            print(f"\nSKIPPED {reason}", file=sys.stderr)  # unittest alone only prints "s"
+            raise unittest.SkipTest(reason)
+        print(f"\nclip-driven fallback runs on {FALLBACK_CLIPS} (about 1.5 min)", file=sys.stderr)
+
+    def test_live_mode_script_from_clips(self):
+        turns = (("hello",), ("no", "tomorrow", "please"), ("yes", "thankyou"))
+        playlist = ("rest", "hello", "rest", "rest", "no", "tomorrow", "please", "rest", "rest",
+                    "yes", "thankyou", "rest")
+        with LocalCall(self, "live", ("scripts.local_demo", "--delay", "0.3"), playlist) as call:
+            call_id = call.wait_for(call_id_of, 120, "connection to the call")
+            drafts, approvals = [], []
+            for signs in turns:
+                draft = call.wait_for(lambda e, s=signs: draft_after_chips(e, s), 90, f"draft for {signs}")
+                call.type("s")
+                turn = {"turn_id": draft["turn_id"]}
+                approvals.append(call.wait_for(
+                    lambda e, t=turn: first([m for m in messages(e, "bridge", "approve") if m.items() >= t.items()]),
+                    10, "SEND"))
+                call.wait_for(lambda e, t=turn: first([m for m in messages(e, "backend", "spoken")
+                                                       if m["turn_id"] == t["turn_id"]]), 30, "spoken")
+                drafts.append(draft)
+            call.type("e")
+            call.finish()
+            entries, notes = call.entries(), call.notes(call_id)
+
+        script = [sign for signs in turns for sign in signs]
+        self.assertEqual([m["sign"] for m in messages(entries, "recognizer")], script)
+        self.assertEqual([m["text"] for m in approvals], [d["text"] for d in drafts])
+        sent = messages(entries, "bridge", "chips")
+        self.assertEqual({sign for m in sent for sign in m["chips"]}, set(script), "no other chip was sent")
+        agent = [e["text"] for e in notes["transcript"] if e["speaker"] == "agent"]
+        approved = [m["text"] for m in approvals]
+        self.assertEqual([line for line in agent if line in approved], approved)
+        own_lines = {m["text"] for m in messages(entries, "backend", "caption") if m.get("speaker") == "agent"}
+        self.assertLessEqual(set(agent) - set(approved), own_lines, "the voice said nothing else unasked")
+        heard = [m["text"] for m in messages(entries, "backend", "caption") if m.get("speaker") != "agent"]
+        self.assertEqual([e["text"] for e in notes["transcript"] if e["speaker"] == "receptionist"], heard)
+        self.assertEqual(len(heard), 2)
+        self.assertTrue(notes["ready"])
+        self.assertEqual(notes["mode"], "live")
+
+    def test_attended_call_for_me_is_answered_by_the_yes_clip(self):
+        # Clips can't wait for the question the way a signer does, and the recognizer's
+        # start-up took 2-15 s here, so the test plays the receptionist (sign_lab's manual
+        # mode) and offers the slot once the recognizer is calibrated. The yes sign is then
+        # about 50 frames away: 1.7 s at real time, 5.5 s when a busy Mac tracks 3x slower
+        # (seen), both inside the agent's 10 s wait. The answer comes only from recognition.
+        backend = ("scripts.sign_lab", "--receptionist", "manual", "--delay", "0.3")
+        with LocalCall(self, "attended", backend, ("rest", "yes", "rest"),
+                       "--delegated", "--attended", "--name", "Asha") as call:
+            call_id = call.wait_for(call_id_of, 120, "connection to the call")
+            call.wait_for(lambda e: first([m for m in messages(e, "backend", "spoken")
+                                           if m["turn_id"] == "delegate-open"]), 30, "opening line")
+            call.wait_for(call.recognizer_calibrated, 120, "recognizer calibration")
+            call.receptionist_says("We have 4 pm tomorrow. Does that work?")
+            ask = call.wait_for(lambda e: first(messages(e, "backend", "ask")), 30, "question from the agent")
+            resolved = call.wait_for(lambda e: first(messages(e, "backend", "ask_resolved")), 30, "answer")
+            call.receptionist_says("Yes, 10:30 tomorrow morning.")
+            call.wait_for(lambda e: first([m for m in messages(e, "backend", "status") if m["state"] == "ended"]),
+                          60, "end of the call")
+            call.finish()
+            entries, notes = call.entries(), call.notes(call_id)
+
+        yes = next(o["spoken"] for o in ask["options"] if o["choice"] == "yes")
+        self.assertEqual([m["sign"] for m in messages(entries, "recognizer")], ["yes"])
+        order = [e["from"] for e in entries if e["from"] == "recognizer" or e["message"].get("type") == "ask"]
+        self.assertEqual(order, ["backend", "recognizer"], "the yes clip is recognised after the agent asked")
+        self.assertEqual(messages(entries, "bridge", "answer"),
+                         [{"type": "answer", "ask_id": ask["ask_id"], "choice": "yes"}])
+        self.assertEqual(messages(entries, "bridge", "chips"), [], "the signed yes answered; it was not a chip")
+        self.assertEqual((resolved["ask_id"], resolved["source"], resolved["spoken"]),
+                         (ask["ask_id"], "user", yes))
+        self.assertEqual((notes["mode"], notes["ready"], notes["outcome"]), ("delegated", True, "booked"))
+        self.assertIn(f'You answered: "{yes}"', notes["summary"])
