@@ -18,6 +18,7 @@ from app.composer import (
 )
 from app.groq_client import GroqClient
 from app.protocol import ComposeRequest, DraftSource, Sign
+from app.templates import compose_template
 from tests.conftest import make_settings
 
 T3_CAPTION = "We have 4 pm tomorrow. Does that work?"
@@ -112,6 +113,30 @@ async def test_rejected_llm_draft_falls_back_to_template(bad_llm: str) -> None:
     )
     assert draft.source == DraftSource.TEMPLATE
     assert draft.text == "No, sorry, that doesn't work. Is there anything in the morning?"
+
+
+# Issue #62: the 25-word limit applies to LLM drafts only. With many plain-phrase signs the
+# template itself runs longer (40 words here) and is still the fallback.
+LONG_CHIPS: list[Sign] = ["no", "doctor", "time", "callonphone", "can", "see", "who", "drink"]
+LLM_25_WORDS = (
+    "No, sorry, that slot is hard. Can I see a doctor? "
+    "What time is free, who should I call, and can I bring a drink?"
+)
+LLM_26_WORDS = LLM_25_WORDS.replace("is hard", "is really hard")
+
+
+async def test_llm_draft_of_25_words_is_used() -> None:
+    assert len(LLM_25_WORDS.split()) == 25
+    draft = await composer_with(lambda _: reply(LLM_25_WORDS)).compose(request_for(LONG_CHIPS))
+    assert (draft.text, draft.source) == (LLM_25_WORDS, DraftSource.LLM)
+
+
+async def test_llm_draft_over_25_words_falls_back_to_the_longer_template() -> None:
+    assert len(LLM_26_WORDS.split()) == 26
+    draft = await composer_with(lambda _: reply(LLM_26_WORDS)).compose(request_for(LONG_CHIPS))
+    assert draft.source == DraftSource.TEMPLATE
+    assert draft.text == compose_template(LONG_CHIPS, "doctor_appointment")
+    assert len(draft.text.split()) == 40
 
 
 async def test_prompt_carries_chips_purpose_and_caption() -> None:
