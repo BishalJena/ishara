@@ -8,11 +8,12 @@ Written 28 October 2026 for the 31 October submission. Two parts:
 
 > **Status, 28 Oct.** Every line below was checked against the code and run through the
 > real backend code with its scripted receptionist (`backend/scripts/local_demo.py`; no
-> Bolna, no Groq, nothing dialled). **Pending:** no real Bolna call has been placed yet
-> ([voice record](../experiments/voice.md) says "Not yet run"), nothing has run on an
-> iPhone, the D9 endpoints are not on Heroku yet, and the recognition thresholds are still
-> provisional (the phone-clip gate is not done). Until those land, part (a) and (b) can only
-> be shown in the simulator or with the local backend, not as a live call.
+> Bolna, no Groq, nothing dialled). **Passed on 28 Oct:** real Bolna calls for live mode and
+> for Call for me, attended and unattended (the unattended call's notes said "unclear"
+> instead of "callback"; a fix is in progress). **Still pending:** the iPhone (install, live
+> camera, speed) and the phone-clip recognition check, so the thresholds stay provisional.
+> **MORNING is not signed** in this script: the model learned a one-handed form of it, so it
+> is pending the iPhone test (see "Signs in this demo").
 
 ## Cast and set-up
 
@@ -24,6 +25,25 @@ Written 28 October 2026 for the 31 October submission. Two parts:
 
 App settings for both parts: contact **City Clinic**, purpose **Doctor's appointment**, name
 **Riya** (the app's built-in synthetic profile; no callback number, no reason).
+
+## Signs in this demo
+
+Recognition still scores all 250 signs, but only these eight can become a chip or a
+*"Did you mean …?"* tile; any other sign, however confident, shows as `?` and is never spoken.
+Cut-offs are provisional (public-clip candidate); the iPhone clips decide the final values.
+
+| Word | Signed in | Chip at p ≥ | Tile from p ≥ |
+|---|---|---:|---:|
+| TOMORROW | (a) and (b) | 0.45 | 0.35 |
+| HELLO, YES | (b) (YES also in (a)) | 0.5 | 0.35 |
+| NO | (b) | 0.45 | 0.35 |
+| THANKYOU | (b) | 0.6 | 0.35 |
+| PLEASE | (b) | 0.65 | 0.35 |
+| NOW, WAIT | not in the script (WAIT is still a candidate) | 0.45 | 0.35 |
+| MORNING | **not signed: pending the iPhone test (one-handed form)** | never chips | never |
+
+A chip also needs a margin of 0.3 over the runner-up. MORNING can still be **tapped** on the
+Call-for-me screen; it is just not recognised from a sign.
 
 ## How a line was checked
 
@@ -52,7 +72,7 @@ exact turns is unmeasured**; the lines below are the template / rule-brain floor
 ## Part (a): Call for me, attended (about 2:00)
 
 ```
-sign TOMORROW · MORNING ─▶ brief ─▶ Approve and call ─▶ disclosure + opening ─▶ receptionist offers 4 pm
+sign TOMORROW ─▶ brief ─▶ Approve and call ─▶ disclosure + opening ─▶ receptionist offers 4 pm
       ─▶ "One moment, please." ─▶ AskCard ─▶ sign or tap YES ─▶ agent says it ─▶ hang-up ─▶ notes
 ```
 
@@ -60,17 +80,17 @@ sign TOMORROW · MORNING ─▶ brief ─▶ Approve and call ─▶ disclosure 
 |---|---|---|---|
 | 0:00 | **Home** ([01](img/01-home.png)). Narrator: *"Riya is Deaf. She needs a doctor's appointment, and the clinic only takes phone calls."* The note under the buttons reads: *"Calls are placed from Ishara's calling number, not your own number. The receptionist hears an automated voice reading what you approve."* Narrator adds: *"That number is Bolna's, not Riya's."* | — | UI (`HomeView`); Bolna number: PLAN §9 |
 | 0:10 | Tap **CALL FOR ME** → **Get ready** ([02](img/02-get-ready.png)): face, hands and light checks → **I'm ready, sign my request** | — | UI (`GetReadyView`, `AppRootView`) |
-| 0:20 | **Call for me** screen ([03](img/03-request-chips.png)): *"Sign what you need"*. Sign **TOMORROW**, rest, sign **MORNING**. MORNING is only a candidate word: if a *"Did you mean MORNING?"* tile shows, tap **Use it**; if a red `?` shows, tap **morning** under *"Or tap:"* | — | UI (`BriefView`, `CandidateTile`); word status: handoff "Vocabulary and script" |
-| 0:40 | Tap **Prepare the request**. The brief appears ([04](img/04-brief.png)) under *"The agent follows only this brief with City Clinic"*: *"Call on behalf of Riya, who is Deaf and uses the Ishara app, to book a doctor's appointment. Preferred: tomorrow in the morning. May share: name (Riya). Will not agree to anything outside this brief; anything else comes back to you as a question."* Leave **I'll stay and answer questions** on. Narrator: *"She approves this once. The agent can't agree to anything outside it."* | — | Ran (`build_brief`); UI |
+| 0:20 | **Call for me** screen ([03](img/03-request-chips.png)): *"Sign what you need"*. Sign **TOMORROW**, then rest. If a *"Did you mean TOMORROW?"* tile shows, tap **Use it**; if a red `?` shows, sign it again or tap **tomorrow** under *"Or tap:"*. Don't sign MORNING (pending the iPhone test) | — | UI (`BriefView`, `CandidateTile`); word status: "Signs in this demo" above |
+| 0:40 | Tap **Prepare the request**. The brief appears ([04](img/04-brief.png)) under *"The agent follows only this brief with City Clinic"*: *"Call on behalf of Riya, who is Deaf and uses the Ishara app, to book a doctor's appointment. Preferred: tomorrow. May share: name (Riya). Will not agree to anything outside this brief; anything else comes back to you as a question."* Leave **I'll stay and answer questions** on. Narrator: *"She approves this once. The agent can't agree to anything outside it."* | — | Ran (`build_brief`); UI |
 | 0:55 | Tap **Approve and call**. Call screen: *"The agent is making the call for you. When a decision is yours it will ask here: sign or tap yes, no or wait."* | (ringing) | UI (`SigningPanel`) |
 | 1:00 | Captions show the voice's lines as *Ishara (voice)* | **Voice:** "Hello, I'm calling for a Deaf caller who is using Ishara, a sign-language app. Their replies may take a few seconds." | Ran; `markers.DISCLOSURE` |
-| 1:08 | | **Voice:** "I'd like to book a doctor's appointment for Riya, tomorrow in the morning." | Ran; `RuleBrain.opening` |
+| 1:08 | | **Voice:** "I'd like to book a doctor's appointment for Riya, tomorrow." | Ran; `RuleBrain.opening` |
 | 1:14 | Caption *Receptionist* | **Receptionist:** "We have 4 pm tomorrow. Does that work?" | PLAN §1 turn 2 |
 | 1:18 | **AskCard** ([05](img/05-ask-card.png)): *"The agent is asking you"*, the question, and three options with the exact sentence each one says: **YES** "Yes, 4 pm tomorrow works. Thank you." · **NO** "No, 4 pm tomorrow doesn't work, sorry. Is there another time?" · **WAIT** "One moment, please, I'm checking." Footer: *"No answer in 10 s: the agent says “I'll need to check that and call back. Thank you.”"* | **Voice:** "One moment, please." | Ran (`PAUSE_LINE`, `_options_for`, `ASK_TIMEOUT_S`, `CALLBACK_LINE`); UI (`AskCard`) |
 | 1:22 | Sign **YES** (or tap **YES**). Narrator: *"Riya decides, not the agent."* | **Voice:** "Yes, 4 pm tomorrow works. Thank you." | Ran |
 | 1:30 | The brief is settled, so the agent hangs up by itself about 6 s later (`END_AFTER_DONE_S`). The receptionist says nothing more | **Voice:** "Thank you for your time. Goodbye." | Ran; `markers.GOODBYE` |
 | 1:40 | *"The call ended"* → **See the call notes** → **Call notes** ([07](img/07-notes.png)): outcome **Booked**; *"What happened"*: "Goal: book a doctor's appointment for Riya." · "They offered: "We have 4 pm tomorrow. Does that work?"" · "You answered: "Yes, 4 pm tomorrow works. Thank you.""; then *"The brief you approved"* and the *"Transcript"* | — | Ran (`build_notes`, outcome `booked`); UI (`NotesView`) |
-| 1:55 | Narrator: *"If Riya puts the phone down instead, the agent never decides for her: it says it will call back."* | (unattended only) "I'll need to check that and call back. Thank you." | Ran (unattended run, outcome `callback`) |
+| 1:55 | Narrator: *"If Riya puts the phone down instead, the agent never decides for her: it says it will call back."* | (unattended only) "I'll need to check that and call back. Thank you." | Ran (unattended run, outcome `callback`); on the real 28 Oct call the notes said "unclear" instead (fix in progress) |
 
 Notes for the presenter:
 
@@ -78,6 +98,8 @@ Notes for the presenter:
   the YES the call is settled and the agent says nothing new, but a second offer would show up
   in the notes as a second "They offered" line. In the local run the scripted receptionist
   says it anyway, and the notes list it.
+- Screens [03](img/03-request-chips.png) and [04](img/04-brief.png) were taken before MORNING
+  was dropped: they still show a `morning` chip and "Preferred: tomorrow in the morning.".
 - The simulator's built-in **fake call** (demo mode, the screenshots here) plays a different,
   self-contained script: the receptionist offers *"We have 10:30 tomorrow morning. Does that
   work?"*, confirms *"Great, you're booked for 10:30 tomorrow morning."* and the voice closes
@@ -89,7 +111,8 @@ Notes for the presenter:
 
 ### Variant (verified, not the default): NO first, then YES
 
-Uses both PLAN §1 receptionist lines and fits the brief's "morning". Adds about 20 s.
+Uses both PLAN §1 receptionist lines (the brief says only "tomorrow"; 10:30 tomorrow still
+fits it). Adds about 20 s.
 
 | Said on the call | Source |
 |---|---|
@@ -101,8 +124,9 @@ Uses both PLAN §1 receptionist lines and fits the brief's "morning". Adds about
 ## Part (b): live mode, the user signs every reply (about 1:00)
 
 The handoff's live-mode script: **hello** → receptionist offers a slot → **no · tomorrow ·
-please** → "10:30 tomorrow morning" → **yes · thankyou**. Nothing is spoken until the
-presenter taps **SEND**.
+please** → "10:30 tomorrow morning" → **yes · thankyou**. Every signed word is one of the
+eight chip words; "morning" is only in the receptionist's line. Nothing is spoken until the
+presenter taps **SEND**. Live mode passed on a real Bolna call on 28 Oct.
 
 | Time | Screen / action | Said on the call | Source |
 |---|---|---|---|
@@ -125,9 +149,10 @@ Notes for the presenter:
   ([record](../experiments/video-pipeline-eval.md)); the template above is the fallback.
 - If no one speaks for about 15 s while the presenter signs, the voice fills the gap with
   "One moment please, I'm signing my reply." (`markers.HOLDING_LINE`). Not a problem; keep going.
-- The simulator's fake live call (demo mode) plays the older PLAN §1 script with `doctor`
-  and a planned wrong chip ([13](img/13-live-wrong-chip.png)); it is good for showing the
-  safety screens, not for part (b)'s exact words.
+- The simulator's fake live call (demo mode) plays the older PLAN §1 script with `doctor`,
+  `afternoon` and `morning` (none of them can chip from a real sign now) and a planned wrong
+  chip ([13](img/13-live-wrong-chip.png)); it is good for showing the safety screens, not for
+  part (b)'s exact words.
 
 ## Screens used above
 
@@ -150,7 +175,7 @@ cd backend
 uv run python -m scripts.local_demo --port 8799 --delay 0.3     # free; prints what the voice says
 ```
 
-Then drive it like the app: `POST /briefs` with chips `tomorrow, morning` and profile name
+Then drive it like the app: `POST /briefs` with chips `tomorrow` and profile name
 `Riya`, `POST /calls` with `mode=delegated, attended=true`, answer the `ask` with `yes`, and
 read `GET /calls/{id}/notes`; for part (b), `POST /calls` (live) and send `chips` /
 `approve` on the call WebSocket. The app does the same with `-IsharaDriver live` against this
