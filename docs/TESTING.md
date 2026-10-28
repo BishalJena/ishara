@@ -32,7 +32,7 @@ runs with written, dated results.
 | L3 | Local demo server | the real backend on this Mac with a scripted Bolna and receptionist, for the app or the Mac bridge | server tests in CI; running it is by hand | free | [Build] | 24 Oct: `test_local_demo.py` **10 / 10** in CI |
 | L4 | iOS packages | detector, matcher, call session (`TurnStore`), sign pipeline, without the app | `verify.sh`; CI when `ios/**` changes | free | [Build] | 24 Oct: CallSession **164 / 164**, RecognitionCore **92 / 92**, SignPipeline **66 / 66**; SignPipelineMediaPipe 1 skipped on macOS (**8 / 8** on the simulator, PR #27) |
 | L5 | iOS app unit + UI tests (fake driver) | view model, live driver against an in-memory backend, the whole §1 call clicked through on the fake driver | `verify.sh` only (**not in CI**: CI has no simulator job) | free | [Build] | 24 Oct, iPhone 17 / iOS 27.0: `IsharaTests` **139 / 139**; `IsharaUITests` **4 passed, 1 skipped** of 5 (the skip is L6) |
-| L6 | App ↔ local backend E2E | the iOS app's live driver against the real backend code (L3), nothing dialled | by hand, opt-in UI test | free | [Build] | 24 Oct (PR #27): **passed**, [evidence](experiments/evidence/app-backend-e2e-24oct/README.md). Re-run 24 Oct with `--delay 0.3`: **passed 1 / 1** after the holding-line fix ([issue #41](https://github.com/BishalJena/ishara/issues/41), [§2 L6](#app--local-backend-end-to-end)) |
+| L6 | App ↔ local backend E2E | the iOS app's live driver against the real backend code (L3), nothing dialled | by hand, opt-in UI test | free | [Build] | 24 Oct (PR #27): **passed**, [evidence](experiments/evidence/app-backend-e2e-24oct/README.md). Re-run 24 Oct with `--delay 0.3`: **passed 1 / 1** after the holding-line fix ([issue #41](https://github.com/BishalJena/ishara/issues/41), [§2 L6](#app--local-backend-end-to-end)). 28 Oct, sign videos as the camera through every call flow: **4 / 4** ([§2](#sign-video-to-spoken-text-every-call-flow)) |
 | L7 | iOS visual review | every screen and state in light, dark, large text and on the small phone | by hand (fixtures + screenshots) | free | [Build] | 24 Oct: 19 findings + 6 polish; **F1–F9 fixed** in #37–#40, [review](experiments/evidence/ios-visual-review-24oct/README.md), [fixes](experiments/evidence/ios-fixes-verified-24oct/README.md) |
 | L8 | Sign Lab | Mac webcam signs → real recognizer → real Groq drafts → real Sarvam voice on the Mac speakers; no call | by hand; its code is CI-tested with fakes | small (Groq per chip change, Sarvam ₹0.1–0.5 per line) | [You] | 24 Oct smoke (PR #30): 1 Groq draft in 0.23 s, passed the validator; Sarvam 1.82 s, `afplay` exit 0. **Webcam run with the founder's takes: not yet** |
 | L9 | Public-video pipeline eval | saved clips through the live recognizer, composer and voice, scored against hidden labels | by hand | small (17 Groq + 8 Sarvam requests last time) | [Build] | 24 Oct: cross-signer set A **0 / 24** chips (0 wrong), set B **4 / 18** correct, **1** wrong; 5 / 5 turns stayed silent; [report](experiments/video-pipeline-eval.md). 25 Oct, same clips to Gemini 4 Argon and SignCLIP (284 clips, 93 words, $3.81): top-1 **105 / 284** vs **35 / 284**, Gemini never unsure; [report](experiments/gemini-video-probe.md) |
@@ -85,6 +85,8 @@ which follows Bolna's docs (request shape, `{{var}}` filling, node moves, end of
 cd backend
 uv run python -m scripts.local_demo            # http://127.0.0.1:8000, token ishara-local-demo
 uv run python -m scripts.local_demo --b24      # receptionist talks over the first SEND
+uv run python -m scripts.local_demo --receptionist offer           # Call for me: "we have four pm tomorrow does that work"
+uv run python -m scripts.local_demo --receptionist open-question   # Call for me: "what time would you like to come in" first
 APP_TOKEN=ishara-local-demo uv run python -m scripts.fake_app \
   --base-url http://127.0.0.1:8000 script --contact clinic --confirm-cost   # scripted app, still free here
 ```
@@ -158,6 +160,45 @@ TEST_RUNNER_ISHARA_LOCAL_BACKEND=1 TEST_RUNNER_ISHARA_LOCAL_BACKEND_LOG=/tmp/loc
   before SEND ([issue #41](https://github.com/BishalJena/ishara/issues/41)). The test now
   ignores that fixed line (it never carries the user's words); **re-run with `--delay 0.3`:
   passed 1 / 1**, with the holding line said 9 times during the call.
+
+### Sign video to spoken text, every call flow
+
+L6 with real recognition: saved sign clips are the simulator's camera, the app runs its
+whole on-device chain (Holistic → detector → ASL model → chip or ask answer), and the real
+backend (L3) drafts, checks and "speaks" through the stand-in Bolna. Nothing is dialled,
+no paid service is reached.
+
+```
+clip ─▶ ClipFeed ─▶ Holistic ─▶ detector ─▶ ASL model ─▶ chip ─▶ backend draft ─▶ SEND
+                                                       └▶ ask answer ─▶ agent line
+   ─▶ custom-LLM speak response ─▶ "agent says: <text>" in the server log (what Bolna would voice)
+```
+
+```sh
+IOS_DESTINATION="platform=iOS Simulator,id=<your udid>" scripts/e2e_video_to_speech.sh   # all four flows
+IOS_DESTINATION=... scripts/e2e_video_to_speech.sh open-question                        # one flow
+```
+
+- Needs `backend/.venv` (`cd backend && uv sync`), the models in `ios/Ishara/LocalAssets` and
+  the T04 replay set in `LocalAssets/SampleSigns` (or `E2E_SOURCE_CLIPS`). The script copies
+  one clip per sign into a folder the app replays with `-IsharaSampleSigns` (no rebuild),
+  points `Secrets.xcconfig` at the local server for the build and puts the original back,
+  then runs each flow against its own `local_demo --receptionist <script>`.
+- Flows (`IsharaUITests/VideoToSpeechUITests`): **live** (HELLO; NO · rest · unknown sign ·
+  TOMORROW · PLEASE; YES · THANK-YOU, SEND each, End), **attended** Call for me (TOMORROW
+  into the brief, "we have four pm tomorrow does that work", signed YES), **open-question**
+  ("what time would you like to come in", signed TOMORROW, then the offer and a signed YES),
+  **unattended** (callback).
+- **Pass:** every flow prints `PASS`: each SEND speaks exactly the draft on screen and
+  nothing is spoken before it; the rest clip adds nothing and the unknown sign shows `[?]`
+  but never reaches the draft; each signed answer is said for the user within the
+  agent's 10 s question window; the notes say Booked (attended) or call back (unattended).
+  A skipped test (wrong server script, missing environment) is reported as `SKIPPED`, not a pass.
+- Latest: 28 Oct, iPhone 17 / iOS 27.0 simulator: **4 / 4 passed**. SEND → spoken 0.7–0.8 s
+  (local server, no TTS); question shown → answer said 5.9–6.6 s, most of it XCUITest
+  opening the replay menu; picking the clip → answer said 0.5–1.0 s.
+- What it can't prove: the iPhone camera and its framing, real Bolna/Sarvam audio and
+  timing, Deepgram transcripts, the telephone line. Those stay with L12/L13.
 
 ### iOS visual review
 
