@@ -384,6 +384,10 @@ def test_banner_prints_what_the_app_and_bridge_need() -> None:
     assert "--base-url http://127.0.0.1:8123 --contact clinic --confirm-cost" in text
     assert "--contact clinic" in text
     assert "B24" not in text
+    assert "  receptionist script: clinic" in text
+    assert "  receptionist script: offer" in local_demo.banner(
+        "http://h:1", "tok", ["clinic"], talk_over=False, receptionist="offer"
+    )
     assert "B24" in local_demo.banner("http://h:1", "tok", ["clinic"], talk_over=True)
 
 

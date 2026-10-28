@@ -155,13 +155,20 @@ async def running(
             await task
 
 
-def banner(base_url: str, app_token: str, contacts: Sequence[str], talk_over: bool) -> str:
+def banner(
+    base_url: str,
+    app_token: str,
+    contacts: Sequence[str],
+    talk_over: bool,
+    receptionist: str = "clinic",
+) -> str:
     contact = contacts[0]
     lines = [
         "Ishara local demo backend: no Bolna, no Groq, nothing is dialled; template drafts.",
         f"  base URL   {base_url}",
         f"  app token  {app_token}",
         f"  contacts   {', '.join(contacts)}",
+        f"  receptionist script: {receptionist}",
         "",
         "iOS simulator (ios/Ishara/Config/Secrets.xcconfig), run with -IsharaDriver live:",
         f"  ISHARA_BACKEND_URL = {base_url.replace('://', ':/$()/', 1)}",
@@ -257,7 +264,7 @@ def main(argv: list[str] | None = None) -> int:
     configure_logging()
     # One line per fake-Bolna request (and the webhook secret in each URL) is noise here.
     logging.getLogger("httpx").setLevel(logging.WARNING)
-    _out(banner(base_url_for(sock), args.app_token, contacts, args.b24))
+    _out(banner(base_url_for(sock), args.app_token, contacts, args.b24, args.receptionist))
     # uvicorn shuts down cleanly on Ctrl-C, then re-raises the signal.
     with suppress(KeyboardInterrupt):
         asyncio.run(_serve(demo, sock))
