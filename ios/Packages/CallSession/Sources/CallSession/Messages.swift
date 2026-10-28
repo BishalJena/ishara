@@ -36,7 +36,7 @@ public enum CallMode: String, Codable, CaseIterable, Sendable {
 }
 
 /// Body of `POST /calls` (`StartCallRequest`). A delegated call needs `briefID`; `attended`
-/// lets the agent ask the user yes/no/wait questions during the call.
+/// lets the agent ask the user yes/no/wait or "when?" (time word) questions during the call.
 public struct StartCallRequest: Codable, Equatable, Sendable {
     public var contactID: String
     public var purpose: CallPurpose
@@ -135,9 +135,12 @@ public struct Brief: Codable, Equatable, Sendable {
     }
 }
 
-/// An answer to the agent's question on an attended delegated call.
+/// An answer to the agent's question on an attended delegated call: yes / no / wait for an
+/// offered time, or a time word for an open "when?" question. Each is also a `Sign`, so a
+/// recognised chip equal to an option's choice answers it. Mirrors the backend's `AskChoice`
+/// (backend/app/protocol.py); change both together.
 public enum AskChoice: String, Codable, CaseIterable, Sendable {
-    case yes, no, wait
+    case yes, no, wait, tomorrow, morning, now
 }
 
 public struct AskOption: Codable, Equatable, Sendable {
