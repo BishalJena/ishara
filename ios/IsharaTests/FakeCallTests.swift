@@ -198,6 +198,83 @@ final class FakeCallTests: XCTestCase {
         XCTAssertTrue(model.captions.contains { $0.text == DelegatedDemo.callbackLine })
     }
 
+    // MARK: Open "when?" question (version B)
+
+    private let tomorrowLine = "Tomorrow, please. What times are available?"
+
+    func testOpenTimeQuestionIsAnsweredBySigningATimeWordThenTheOfferByYes() async throws {
+        let options = FakeCallDriver.Options(timeScale: fast, openTimeQuestion: .init(signedAnswer: nil))
+        let driver = FakeCallDriver(options: options)
+        let model = ActiveCallViewModel(setup: delegatedSetup(attended: true), driver: driver, recognition: StubRecognition())
+        let run = Task { await model.run() }
+        defer { run.cancel() }
+
+        let asked = await eventually(timeout: .seconds(5)) { model.openQuestion != nil }
+        XCTAssertTrue(asked)
+        XCTAssertEqual(model.openQuestion?.question, DelegatedDemo.openQuestion)
+        XCTAssertEqual(model.openQuestion?.options.map(\.choice), [.tomorrow, .morning, .now, .wait])
+        XCTAssertEqual(model.openQuestion?.spoken(for: .tomorrow), tomorrowLine)
+        XCTAssertEqual(model.openQuestion?.spoken(for: .now), "Today, as soon as possible, please. What times are available?")
+
+        model.handle(.result(.sign(.yes)))  // no option here: answers nothing
+        XCTAssertEqual(model.openQuestion?.question, DelegatedDemo.openQuestion)
+        model.handle(.result(.sign(.tomorrow)))
+
+        let offered = await eventually(timeout: .seconds(5)) { model.openQuestion?.question == DelegatedDemo.offer }
+        XCTAssertTrue(offered)
+        XCTAssertTrue(model.captions.contains { $0.text == tomorrowLine && $0.speaker == .user })
+        model.handle(.result(.sign(.yes)))
+
+        let ended = await eventually(timeout: .seconds(5)) { model.isEnded }
+        XCTAssertTrue(ended)
+        let notes = try await driver.notes()
+        XCTAssertEqual(notes.outcome, "booked")
+        XCTAssertTrue(notes.summary.contains("You answered: \"\(tomorrowLine)\""))
+        XCTAssertTrue(notes.summary.contains("You answered: \"Yes, 10:30 tomorrow works. Thank you.\""))
+    }
+
+    /// `-IsharaFakeOpenQuestion tomorrow`: the scripted recognizer signs the answer.
+    func testTheFakeCallCanSignTheTimeWordItself() async throws {
+        let recognition = ScriptedRecognitionController(timeScale: fast)
+        let options = FakeCallDriver.Options(timeScale: fast, openTimeQuestion: .init(signedAnswer: .morning))
+        let driver = FakeCallDriver(options: options, recognition: recognition)
+        let model = ActiveCallViewModel(setup: delegatedSetup(attended: true), driver: driver, recognition: recognition)
+        let run = Task { await model.run() }
+        defer { run.cancel() }
+
+        let offered = await eventually(timeout: .seconds(5)) { model.openQuestion?.question == DelegatedDemo.offer }
+        XCTAssertTrue(offered)
+        XCTAssertTrue(model.captions.contains { $0.text == "In the morning, please. What times are available?" })
+        driver.close()
+    }
+
+    func testUnattendedOpenTimeQuestionIsAnsweredFromTheBriefThenACallback() async throws {
+        let options = FakeCallDriver.Options(timeScale: fast, openTimeQuestion: .init(signedAnswer: nil))
+        let driver = FakeCallDriver(options: options)
+        let model = ActiveCallViewModel(setup: delegatedSetup(attended: false), driver: driver, recognition: StubRecognition())
+        let run = Task { await model.run() }
+        defer { run.cancel() }
+
+        let ended = await eventually(timeout: .seconds(5)) { model.isEnded }
+        XCTAssertTrue(ended)
+        XCTAssertNil(model.openQuestion)
+        let agent = model.captions.filter { $0.speaker == .agent }.map(\.text)
+        XCTAssertTrue(agent.contains("Tomorrow in the morning, please. What times are available?"), "\(agent)")
+        let notes = try await driver.notes()
+        XCTAssertEqual(notes.outcome, "callback")
+    }
+
+    func testOpenTimeQuestionLaunchArgument() {
+        let defaults = UserDefaults(suiteName: "open-question-\(UUID().uuidString)")!
+        XCTAssertNil(DemoLaunchOptions.from(defaults).fakeDriverOptions.openTimeQuestion)
+        defaults.set("tomorrow", forKey: "IsharaFakeOpenQuestion")
+        XCTAssertEqual(DemoLaunchOptions.from(defaults).fakeDriverOptions.openTimeQuestion?.signedAnswer, .tomorrow)
+        defaults.set("tap", forKey: "IsharaFakeOpenQuestion")
+        let tap = DemoLaunchOptions.from(defaults).fakeDriverOptions.openTimeQuestion
+        XCTAssertNotNil(tap)
+        XCTAssertNil(tap?.signedAnswer)
+    }
+
     func testWaitKeepsTheQuestionOpen() async {
         let driver = FakeCallDriver(options: .init(timeScale: fast))
         let model = ActiveCallViewModel(setup: delegatedSetup(attended: true), driver: driver, recognition: StubRecognition())

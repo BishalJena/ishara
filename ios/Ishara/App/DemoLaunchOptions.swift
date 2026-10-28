@@ -32,6 +32,10 @@ struct DemoLaunchOptions {
     /// Make the fake call lose its backend connection mid-call, e.g.
     /// `-IsharaFakeConnectionDrop staysDown`.
     var fakeConnectionDrop: FakeCallDriver.ConnectionDrop?
+    /// Make the fake Call for me receptionist ask "when?" before offering a time:
+    /// `-IsharaFakeOpenQuestion tomorrow` signs that time word in answer (any `AskChoice`
+    /// time word), `-IsharaFakeOpenQuestion tap` leaves the answer to a tap.
+    var fakeOpenQuestion: FakeCallDriver.OpenTimeQuestion?
     /// Speed up (below 1) or slow down the simulated timers: the Get ready
     /// checklist and the fake call.
     var fakeTimeScale = 1.0
@@ -51,6 +55,9 @@ struct DemoLaunchOptions {
         options.fakeInterrupt = defaults.bool(forKey: "IsharaFakeInterrupt")
         options.fakeConnectionDrop = defaults.string(forKey: "IsharaFakeConnectionDrop")
             .flatMap(FakeCallDriver.ConnectionDrop.init(rawValue:))
+        options.fakeOpenQuestion = defaults.string(forKey: "IsharaFakeOpenQuestion").map {
+            FakeCallDriver.OpenTimeQuestion(signedAnswer: Sign(rawValue: $0))
+        }
         let scale = defaults.double(forKey: "IsharaFakeTimeScale")
         if scale > 0 {
             options.fakeTimeScale = scale
@@ -72,7 +79,8 @@ struct DemoLaunchOptions {
             timeScale: fakeTimeScale,
             undeliveredStages: fakeNotDelivered ? [1] : [],
             interruptedStages: fakeInterrupt ? [0] : [],
-            connectionDrop: fakeConnectionDrop
+            connectionDrop: fakeConnectionDrop,
+            openTimeQuestion: fakeOpenQuestion
         )
     }
 }
