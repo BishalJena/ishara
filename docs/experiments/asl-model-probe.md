@@ -36,7 +36,8 @@ clip / webcam ─▶ legacy MediaPipe Holistic ─▶ [T, 543, 3] Kaggle layout 
   the 32 negatives. The two paths make the same decision on 89–91 % of clips and never chip
   different words. A candidate (global 0.65 plus per-word cut-offs) has 0 wrong chips on all four
   runs; it stays provisional until the phone clips. A Mac-path bug (tracking state leaking
-  between clips) was found and fixed on the way.
+  between clips) was found and fixed on the way. **Shipped later on 28 Oct:** chips only for
+  the rehearsed words minus `morning`, with the candidate cut-offs (see "Shipped on 28 Oct").
 - **Model cost: 4 ms per sign** on the Mac CPU; 11.2 MB file. Frame rate 15–60 fps changes
   little. Test-time augmentation does not help. **Narrow portrait framing does hurt** when
   hands leave the frame (simulated: `no` 0.64 → 0.42, `tomorrow` median 0.36 → 0.17).
@@ -287,6 +288,22 @@ the same clips, and 0.65 clears the worst wrong chip (HUNGRY 0.640) by 0.01. Tak
 unrehearsed glosses out of the vocabulary instead (`--vocabulary` with the 9 rehearsed words)
 also gives 0 wrong chips on all four runs at the shipped 0.6; that is a product decision, not
 made here.
+
+### Shipped on 28 Oct (still provisional)
+
+The founder took both options together. The bundle (`ios/Ishara/Resources/asl-bundle.json`,
+the same file as `spikes/recognition/fixtures/asl/asl-bundle-provisional.json`) now has:
+
+- **vocabulary** (the words that may chip or show a tile): hello, thankyou, yes, no, now,
+  please, tomorrow, wait. That is the rehearsed list minus `morning`: the model learned a
+  one-handed MORNING, so it stays out until the iPhone test. The model still scores all 250
+  signs; `can`, `hungry`, `time` and the other backend words now show `?` at any confidence.
+- **thresholds**: the candidate above (global 0.65, the same per-word values, margin 0.3,
+  pick-one 0.35), `provisional: true`. The iPhone clips decide the final values.
+
+Re-judged on the same four runs (`asl_summary.py --combine` with the shipped bundle): **0 wrong
+chips** on every run, correct chips 66 / 55 / 63 / 57, 0 auto-accepts on the negatives (GOOD
+still shows a "thankyou?" tile), and the same per-word passes and fails as the table above.
 
 **Recommendations:** drop `morning` (0 of 10 on every run). Keep `wait` as a candidate but don't
 promise it: it passes three runs and fails the phone-shaped one (app, portrait: 8 of 15, and the
