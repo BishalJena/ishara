@@ -1,12 +1,15 @@
 /// Explains a `?` when a hand left the picture during the sign. A portrait phone frame is
 /// narrow: in the 25 Oct probe, cropping the same takes to 9:16 dropped `no` from 0.64 to 0.42
 /// and lost `morning`, because hands that drift sideways become missing landmarks
-/// (docs/experiments/asl-model-probe.md). The guard never makes or blocks a chip; it only tells
-/// the user why a sign could not be read, so they keep their hands inside the frame next time.
+/// (docs/experiments/asl-model-probe.md). The guard never makes a chip; when it fires the sign
+/// was read from a partial view, so the result is a `?` that tells the user why, and they keep
+/// their hands inside the frame next time.
 ///
 /// A hand counts as out of frame in a frame when its hand landmarks are missing and the pose's
 /// estimate of that wrist (MediaPipe keeps estimating joints outside the image) lies beyond
-/// the left, right or top edge. The bottom edge is ignored: resting hands sit below it.
+/// the left, right or top edge while still above the rest line. A wrist at or below the rest
+/// line is resting: in a narrow portrait frame the resting arms hang past the side edges
+/// (pose wrists at x ≈ -0.1 / 1.17, y ≈ 0.95 in the 9:16 Lifeprint crops, issue #58).
 public enum FramingGuard {
     /// Longer than this out of frame, inside one sign, explains the `?`.
     public static let maxOutOfFrameSeconds = 0.3
@@ -25,8 +28,8 @@ public enum FramingGuard {
             self.wristY = wristY
         }
 
-        var isOutOfFrame: Bool {
-            guard !tracked, let wristX, let wristY else { return false }
+        func isOutOfFrame(restY: Double) -> Bool {
+            guard !tracked, let wristX, let wristY, Double(wristY) < restY else { return false }
             return wristX < edgeMargin || wristX > 1 - edgeMargin || wristY < edgeMargin
         }
     }
@@ -44,15 +47,15 @@ public enum FramingGuard {
     }
 
     /// True when a hand that took part in the sign was out of frame for longer than
-    /// `maxOutOfFrameSeconds` in one stretch.
-    public static func handLeftFrame(_ frames: [Frame]) -> Bool {
+    /// `maxOutOfFrameSeconds` in one stretch. `restY` is the detector's calibrated rest line.
+    public static func handLeftFrame(_ frames: [Frame], restY: Double) -> Bool {
         guard frames.count >= 2 else { return false }
         let step = (frames[frames.count - 1].timestamp - frames[0].timestamp) / Double(frames.count - 1)
         return [\Frame.left, \Frame.right].contains { side in
             let hands = frames.map { $0[keyPath: side] }
             guard hands.contains(where: \.tracked) else { return false }
-            return longestOutOfFrameRun(hands.indices.map { (frames[$0].timestamp, hands[$0].isOutOfFrame) }, step: step)
-                > maxOutOfFrameSeconds
+            let samples = hands.indices.map { (frames[$0].timestamp, hands[$0].isOutOfFrame(restY: restY)) }
+            return longestOutOfFrameRun(samples, step: step) > maxOutOfFrameSeconds
         }
     }
 

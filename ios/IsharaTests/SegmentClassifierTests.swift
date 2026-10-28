@@ -129,16 +129,68 @@ final class SegmentClassifierTests: XCTestCase {
 
     func testUnsureSignWithAHandOffTheSideSaysSo() {
         let (classifier, _) = asl(logits("mitten", p: 0.98))
-        // The right hand (pose wrist 16) leaves past the right edge for the second half.
-        let frames = (0..<30).map { index -> LandmarkFrame in
-            let t = Double(index) / 30
+
+        XCTAssertEqual(classifier.classify(rightHandLeavesMidSign), .handLeftFrame)
+    }
+
+    func testAConfidentSignFromAPartialViewIsNotAChip() {
+        let (classifier, _) = asl(logits("tomorrow", p: 0.9))
+
+        XCTAssertEqual(classifier.classify(rightHandLeavesMidSign), .handLeftFrame)
+    }
+
+    func testAPartialViewIsNotADidYouMeanTileEither() {
+        let (classifier, _) = asl(logits("tomorrow", p: 0.4))
+
+        XCTAssertEqual(classifier.classify(rightHandLeavesMidSign), .handLeftFrame)
+    }
+
+    // MARK: Issue #58: a one-handed sign whose hand leaves the picture
+
+    func testAOneHandedSignWhoseHandLeavesTheSideShowsTheFramingHint() {
+        // The detector counts the vanished hand as rest and ends the sign at once, so the cut
+        // itself has the hand in view; only the rest frames after it show where it went.
+        let (classifier, _) = asl(logits("tomorrow", p: 0.9))
+
+        let clips = cutBySession(Landmarks.oneHandedSign(wristAfter: (x: -0.4, y: 0.6)))
+
+        XCTAssertEqual(clips.map(classifier.classify), [.handLeftFrame])
+    }
+
+    func testAOneHandedSignThatEndsAtRestKeepsItsChip() {
+        let (classifier, model) = asl(logits("tomorrow", p: 0.9))
+
+        let clips = cutBySession(Landmarks.oneHandedSign(wristAfter: (x: 0.4, y: 1.2)))
+
+        XCTAssertEqual(clips.map(classifier.classify), [.sign(.tomorrow)])
+        XCTAssertEqual(model.frameCounts, clips.map(\.frames.count), "the model never reads the rest after the cut")
+    }
+
+    func testAnArmRestingPastTheSideEdgeInPortraitIsNoFramingHint() {
+        // 9:16 crops (issue #58): the dropped hand's pose wrist sits past the edge, below the rest line.
+        let (classifier, _) = asl(logits("tomorrow", p: 0.9))
+
+        let clips = cutBySession(Landmarks.oneHandedSign(wristAfter: (x: -0.1, y: 0.95)))
+
+        XCTAssertEqual(clips.map(classifier.classify), [.sign(.tomorrow)])
+    }
+
+    /// Right hand (pose wrist 16) leaves past the right edge for the second half of the clip.
+    private var rightHandLeavesMidSign: [LandmarkFrame] {
+        (0..<30).map { index -> LandmarkFrame in
             let inside = index < 12
-            var frame = Landmarks.frame(t: t, wristY: Landmarks.signingY, rightHand: inside)
+            var frame = Landmarks.frame(t: Double(index) / 30, wristY: Landmarks.signingY, rightHand: inside)
             if !inside { frame.pose?[16] = Landmark(x: 1.1, y: 0.45, z: 0, visibility: 0.2) }
             return frame
         }
+    }
 
-        XCTAssertEqual(classifier.classify(frames), .handLeftFrame)
+    /// The accepted signs `RecognitionSession` cuts from a calibrated stream.
+    private func cutBySession(_ sign: (Double) -> [LandmarkFrame]) -> [RecognitionSession.SignClip] {
+        var session = RecognitionSession()
+        return Landmarks.calibratedStream(then: sign).flatMap { session.process($0) }.compactMap { output in
+            if case .segment(let clip) = output { clip } else { nil }
+        }
     }
 
     func testTheShippedBundleMatchesTheMacOne() throws {
@@ -167,5 +219,12 @@ final class FixedLogitsModel: LogitsModel {
         lastValueCount = landmarks.count
         if shouldFail { throw SignEncoderError.zeroEmbedding }
         return values
+    }
+}
+
+private extension SegmentClassifier {
+    /// A cut sign at the rest line calibration gives for the scripted landmarks.
+    func classify(_ frames: [LandmarkFrame]) -> RecognitionResult {
+        classify(RecognitionSession.SignClip(frames: frames, restAfter: [], restY: Landmarks.calibratedRestY))
     }
 }

@@ -56,6 +56,7 @@ Two kinds of "end":
 | Sign not recognised | [?] chip with "try again". Nothing spoken |
 | Wrong word recognised | User taps ✕ on the chip before SEND |
 | Out of frame | Red pill: "move back / hands not visible" |
+| A hand leaves the picture during a sign or as it ends | [?] with "A hand left the picture", never a chip, even for a one-handed sign whose hand left the side (that ends the sign, so the check also reads the rest frames right after it). A hand dropped below the rest line counts as resting |
 | Receptionist asks something with no sign | Quick replies or saved profile phrases |
 | Receptionist talks while the user signs | New caption appears; the draft is kept and the user decides |
 | SEND tapped twice | The approval is single use, so nothing is spoken twice |
