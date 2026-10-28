@@ -399,9 +399,10 @@ async def test_delegated_attended_call_runs_through_the_lab_end_to_end() -> None
     agent_lines = [m["text"] for m in seen if m["type"] == "caption" and m["speaker"] == "agent"]
     assert agent_lines[0] == DISCLOSURE
     assert "One moment, please." in agent_lines
-    # The opening goes through the verbatim speak node (a `spoken`, not an agent caption),
-    # and is voiced before the receptionist's first line.
+    # The opening goes through the verbatim speak node, is voiced before the receptionist's
+    # first line, and shows as the agent's caption once it has been said (#59).
     opening = "I'd like to book a doctor's appointment for Asha Rao, tomorrow in the morning."
+    assert agent_lines[1] == opening
     assert player.played.index(opening) < player.played.index(
         "Yes, 4 pm tomorrow works. Thank you."
     )
