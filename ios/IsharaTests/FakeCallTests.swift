@@ -273,6 +273,27 @@ final class FakeCallTests: XCTestCase {
         let tap = DemoLaunchOptions.from(defaults).fakeDriverOptions.openTimeQuestion
         XCTAssertNotNil(tap)
         XCTAssertNil(tap?.signedAnswer)
+        XCTAssertEqual(tap?.question, DelegatedDemo.openQuestion)
+        defaults.set(longQuestion, forKey: "IsharaFakeOpenQuestionText")
+        XCTAssertEqual(DemoLaunchOptions.from(defaults).fakeDriverOptions.openTimeQuestion?.question, longQuestion)
+    }
+
+    private let longQuestion = "what time would will would you like to come in"
+
+    /// `-IsharaFakeOpenQuestionText`: the receptionist says, and the user is asked, those words.
+    func testTheOpenTimeQuestionCanBeWordedLikeTheLiveTranscript() async {
+        let options = FakeCallDriver.Options(timeScale: fast, openTimeQuestion: .init(question: longQuestion))
+        let driver = FakeCallDriver(options: options)
+        let model = ActiveCallViewModel(setup: delegatedSetup(attended: true), driver: driver, recognition: StubRecognition())
+        let run = Task { await model.run() }
+        defer { run.cancel() }
+
+        let asked = await eventually(timeout: .seconds(5)) { model.openQuestion != nil }
+        XCTAssertTrue(asked)
+        XCTAssertEqual(model.openQuestion?.question, longQuestion)
+        XCTAssertEqual(model.openQuestion?.options.map(\.choice), [.tomorrow, .morning, .now, .wait])
+        XCTAssertTrue(model.captions.contains { $0.text == longQuestion && $0.speaker == .receptionist })
+        driver.close()
     }
 
     func testWaitKeepsTheQuestionOpen() async {

@@ -30,6 +30,8 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         /// Signed through the scripted recognizer a moment after the question, as the live
         /// script plays the user's signs; nil leaves the answer to a tap.
         var signedAnswer: Sign?
+        /// The receptionist's words, as the live transcriber would hand them over.
+        var question = DelegatedDemo.openQuestion
     }
 
     /// How a simulated lost connection plays out, like `LiveCallDriver`'s reconnects.
@@ -246,7 +248,7 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         schedule(after: 4.5) { $0.say(.agent, opening) }
         schedule(after: 7) { driver in
             if let question = driver.options.openTimeQuestion {
-                driver.askWhen(delegation, when: when, signedAnswer: question.signedAnswer)
+                driver.askWhen(delegation, when: when, question: question)
             } else {
                 driver.offerSlot(delegation)
             }
@@ -267,8 +269,8 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
 
     /// The receptionist asks "when?" with no time on offer. Attended: the user picks a time
     /// word. Unattended: the agent says the brief's time, or promises a callback without one.
-    private func askWhen(_ delegation: Delegation, when: String?, signedAnswer: Sign?) {
-        say(.receptionist, DelegatedDemo.openQuestion)
+    private func askWhen(_ delegation: Delegation, when: String?, question: OpenTimeQuestion) {
+        say(.receptionist, question.question)
         guard delegation.attended else {
             guard let when else {
                 say(.agent, DelegatedDemo.callbackLine)
@@ -279,8 +281,8 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
             schedule(after: 2.5) { $0.offerSlot(delegation) }
             return
         }
-        ask("demo-ask-when", question: DelegatedDemo.openQuestion, options: DelegatedDemo.timeOptions)
-        if let signedAnswer, let recognition {
+        ask("demo-ask-when", question: question.question, options: DelegatedDemo.timeOptions)
+        if let signedAnswer = question.signedAnswer, let recognition {
             schedule(after: 2.5) { _ in recognition.sign(.sign(signedAnswer)) }
         }
     }
