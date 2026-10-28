@@ -304,6 +304,23 @@ def parse_result_line(line: str) -> Result:
     return sign
 
 
+# The start-up handshake (live_source.py --handshake): the recognizer's first stdout line
+# says it is calibrated, then it holds until the bridge writes GO on its stdin (the call is
+# connected). EOF on its stdin instead means there is no call: it stops.
+GO = "go"
+
+
+def ready_line(rest_y: float) -> str:
+    return json.dumps({"event": "ready", "rest_y": round(rest_y, 4)})
+
+
+def parse_ready_line(line: str) -> dict[str, Any]:
+    details: dict[str, Any] = json.loads(line)
+    if details.get("event") != "ready":
+        raise ValueError(f"expected the recognizer's ready line first, got {line.strip()!r}")
+    return details
+
+
 CHECK_WORDS = {"similarity": "low similarity", "margin": "low margin",
                "pose": "body seen in too few frames", "hands": "hands seen in too few frames"}
 

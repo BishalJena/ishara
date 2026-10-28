@@ -19,7 +19,9 @@ the latest sign a big green label or a red "?", its top-3 matches as bars agains
 similarity cut-off, the margin, tracking quality and latency. q in the window stops.
 
 mac_bridge.py --live runs this file in the SignCLIP venv as a child process: stdout
-carries one JSON line per accepted segment, and all logs go to stderr.
+carries one JSON line per accepted segment, and all logs go to stderr. With --handshake
+(which the bridge passes) the first stdout line says the recognizer is calibrated, and it
+holds until the bridge writes "go" on stdin, so the call is only placed once the Mac can see.
 """
 from __future__ import annotations
 
@@ -29,12 +31,14 @@ import json
 import os
 import statistics
 import sys
+import threading
 import time
 from collections import deque
 from collections.abc import Callable, Iterable, Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any
+from typing import Any, TextIO
 
 import numpy as np
 
@@ -42,7 +46,7 @@ import recognition_data as data
 from detect_clips import CALIBRATION_HELP, within
 from detector import CalibrationError, Params, Segment, SignDetector, State, calibrate
 from detector import Frame as DetectorFrame
-from mac_bridge import PROVISIONAL_BANNER, describe_result, result_line, unsure_why
+from mac_bridge import GO, PROVISIONAL_BANNER, describe_result, ready_line, result_line, unsure_why
 
 DEFAULT_BUNDLE = data.ARTIFACTS / "evidence" / "recognition-bundle-signclip.json"
 LATENCY_BUDGET_S = 2.0  # G2: sign end to chip
@@ -125,6 +129,56 @@ class Overlay:
     message: str
     last: Recognition | None = None  # the latest result stays up until the next one
     provisional: bool = False
+
+
+class PlaybackClock:
+    """Monotonic time that stands still while playback is held, so saved clips resume at
+    their own pace after a hold instead of rushing through the frames they missed."""
+
+    def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
+        self._clock, self._held_s = clock, 0.0
+
+    def __call__(self) -> float:
+        return self._clock() - self._held_s
+
+    @contextmanager
+    def held(self) -> Iterator[None]:
+        start = self._clock()
+        try:
+            yield
+        finally:
+            self._held_s += self._clock() - start
+
+
+class StartSignal:
+    """mac_bridge writes GO on stdin once the call is connected; EOF means no call."""
+
+    def __init__(self, lines: TextIO) -> None:
+        self._done, self._go = threading.Event(), False
+        threading.Thread(target=self._read, args=(lines,), daemon=True).start()
+
+    def _read(self, lines: TextIO) -> None:
+        self._go = lines.readline().strip() == GO
+        self._done.set()
+
+    def wait(self, timeout: float) -> bool | None:
+        """True: go; False: stop; None: still waiting after `timeout` seconds."""
+        return self._go if self._done.wait(timeout) else None
+
+
+@dataclass(frozen=True)
+class Handshake:
+    """--handshake: tell mac_bridge once calibrated, then hold until the call is connected,
+    so the call is only placed when the Mac can already see signs."""
+    ready: Callable[[float], None]  # rest_y -> the ready line on stdout
+    wait: Callable[[float], bool | None]  # StartSignal.wait
+    # Saved clips pause while holding (and their clock with them); None means a live
+    # camera, which keeps being read and shown so its first frames after the hold are fresh.
+    playback: PlaybackClock | None = None
+
+
+HOLD_POLL_S = 0.05  # how often a paused clip's window is redrawn while holding
+HOLD_MESSAGE = "Ready: waiting for the call to connect"
 
 
 @dataclass(frozen=True)
@@ -226,17 +280,21 @@ class LiveSource:
 
     retry_calibration: the camera asks for a new 2 s rest when calibration fails; a saved
     clip is skipped instead. rest_y skips calibration (for clips that start mid-sign).
+    handshake: after the first calibration, announce readiness and hold until the go.
     """
 
     def __init__(self, clips: Iterable[Clip], matcher: Matcher | None, *,
                  params: Params = DEFAULT_PARAMS, rest_y: float | None = None,
                  retry_calibration: bool = False, clock: Callable[[], float] = time.monotonic,
-                 out: Callable[[str], None] = log, show: Show | None = None) -> None:
+                 out: Callable[[str], None] = log, show: Show | None = None,
+                 handshake: Handshake | None = None) -> None:
         self.clips, self.matcher, self.params, self.rest_y = clips, matcher, params, rest_y
         self.retry_calibration, self.clock, self.out, self.show = retry_calibration, clock, out, show
+        self.handshake, self._held = handshake, False
         self.latencies: list[float] = []
         self.count = 0
         self._last: Recognition | None = None
+        self._shown: Observation | None = None  # the latest frame on screen, redrawn while holding
         self._provisional = matcher is not None and matcher.bundle.provisional
         self._stopped = False
         self._message = REST_PROMPT
@@ -259,8 +317,35 @@ class LiveSource:
         if self.show is None or observation.image is None:
             return
         overlay = Overlay(status, rest_y, self._message, self._last, self._provisional)
+        self._shown = observation
         if not self.show(observation.image, overlay):
             self._stopped = True
+
+    def _hold(self, frames: Iterator[Observation], rest_y: float) -> bool:
+        """Says the recognizer is ready, then waits for the go. False: stop (no call)."""
+        assert self.handshake is not None  # only called with a handshake
+        ready, wait, playback = self.handshake.ready, self.handshake.wait, self.handshake.playback
+        self._message = HOLD_MESSAGE
+        self.out(self._message)
+        go = None
+        if playback is None:  # a camera: frames are fresh after the hold, and none is a sign
+            for index, observation in enumerate(frames):
+                if index == 0:  # a frame came, so the camera works (unproven yet with --rest-y)
+                    ready(rest_y)
+                self._display(observation, "watching", rest_y)
+                if self._stopped or (go := wait(0)) is not None:
+                    break
+        else:
+            ready(rest_y)
+            with playback.held():
+                while not self._stopped and (go := wait(HOLD_POLL_S)) is None:
+                    if self._shown is not None:
+                        self._display(self._shown, "watching", rest_y)
+        if go:
+            return not self._stopped
+        if go is False:
+            self.out("no call: the bridge closed the start-up handshake")
+        return False
 
     def _calibrate(self, frames: Iterator[Observation]) -> tuple[float, list[Observation]] | None:
         pending: list[Observation] = []
@@ -293,6 +378,11 @@ class LiveSource:
             rest_y, replayed = calibrated
         else:
             self.out(f"rest line y={rest_y:.3f} (given)")
+        if self.handshake is not None and not self._held:
+            self._held = True  # once: later clips (--replay-videos) start right away
+            if not self._hold(frames, rest_y):
+                self._stopped = True
+                return
         self._message = "Ready: sign, then rest your hands"
         detector = SignDetector(rest_y, self.params)
         keep_s = self.params.pre_roll_s + self.params.max_sign_s + self.params.end_rest_s + 0.5
@@ -503,9 +593,9 @@ def playlist_images(paths: Sequence[Path], realtime: bool,
             offset += t + (step or FALLBACK_FRAME_S)
 
 
-def video_images(path: Path, realtime: bool) -> Iterator[Image]:
+def video_images(path: Path, realtime: bool, clock: Callable[[], float] = time.monotonic) -> Iterator[Image]:
     """A saved clip, paced like a camera unless realtime is off, so latency stays comparable."""
-    return playlist_images([path], realtime)
+    return playlist_images([path], realtime, clock=clock)
 
 
 def videos_in(directory: Path) -> list[Path]:
@@ -513,11 +603,12 @@ def videos_in(directory: Path) -> list[Path]:
 
 
 def replay_clips(paths: Sequence[Path], realtime: bool, keep_image: bool,
-                 tracker: Callable[..., Iterator[Observation]] | None = None) -> Iterator[Clip]:
+                 tracker: Callable[..., Iterator[Observation]] | None = None,
+                 clock: Callable[[], float] = time.monotonic) -> Iterator[Clip]:
     """Each clip gets a fresh tracker, as signclip.extract gives each enrollment clip."""
     for path in paths:
         log(f"replaying {path.name}")
-        yield (tracker or track)(video_images(path, realtime), keep_image)
+        yield (tracker or track)(video_images(path, realtime, clock), keep_image)
 
 
 def signclip_features(observations: Sequence[Observation]) -> tuple[np.ndarray, dict[str, float]]:
@@ -601,6 +692,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--no-mirror", action="store_true", help="the window is mirrored by default")
     parser.add_argument("--fast", action="store_true",
                         help="replay as fast as possible; latency then no longer means live latency")
+    parser.add_argument("--handshake", action="store_true",
+                        help="for mac_bridge --live: once calibrated, print a ready line and wait for "
+                             f"{GO!r} on stdin (the call is connected) before recognising; clips pause "
+                             "meanwhile, a camera keeps running; EOF on stdin stops")
     args = parser.parse_args(argv)
     if args.rest_y is not None and not 0 < args.rest_y < 1:
         parser.error("--rest-y must be between 0 and 1")
@@ -623,16 +718,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         matcher = signclip_matcher(bundle) if bundle is not None else None
         tracker = track
     show = None if args.no_preview else preview(not args.no_mirror)
+    clock: Callable[[], float] = time.monotonic
+    handshake = None
+    if args.handshake:
+        playback = None if args.camera is not None else PlaybackClock()
+        clock = playback or clock
+        handshake = Handshake(lambda rest_y: results.write(ready_line(rest_y) + "\n"),
+                              StartSignal(sys.stdin).wait, playback)
     if args.camera is not None:
         clips: Iterable[Clip] = [tracker(camera_images(args.camera), keep_image=show is not None)]
         log(f"{REST_PROMPT}, then sign one at a time. q in the window (or Ctrl-C) stops.")
     elif args.video:
-        clips = [tracker(playlist_images(args.video, realtime=not args.fast), keep_image=show is not None)]
+        clips = [tracker(playlist_images(args.video, realtime=not args.fast, clock=clock),
+                         keep_image=show is not None)]
         log(f"playing {len(args.video)} clips as one camera: {' '.join(p.name for p in args.video)}")
     else:
-        clips = replay_clips(paths, realtime=not args.fast, keep_image=show is not None, tracker=tracker)
+        clips = replay_clips(paths, realtime=not args.fast, keep_image=show is not None, tracker=tracker,
+                             clock=clock)
     # A camera, real or played from clips, asks for a new rest until calibration works.
-    live = LiveSource(clips, matcher, rest_y=args.rest_y, show=show,
+    live = LiveSource(clips, matcher, rest_y=args.rest_y, show=show, clock=clock, handshake=handshake,
                       retry_calibration=args.camera is not None or bool(args.video))
     try:
         for recognition in live:
