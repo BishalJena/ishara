@@ -29,18 +29,15 @@ final class LocalBackendCallUITests: XCTestCase {
     private let intro = "Hello, I'm calling for a Deaf caller who is using Ishara, a sign-language app. "
         + "Their replies may take a few seconds."
     private let goodbye = "Thank you for your time. Goodbye."
-    // backend/app/markers.py HOLDING_LINE: Bolna's silence repeat. It can fire during any
-    // pause (PLAN §3), never carries the user's words, and so isn't a reply spoken before SEND.
-    private let holdingLine = "One moment please, I'm signing my reply."
 
     private var app: XCUIApplication!
-    private var serverLog: URL?
+    private var serverLog: LocalBackendLog?
 
     override func setUp() async throws {
         let environment = ProcessInfo.processInfo.environment
         try XCTSkipUnless(environment["ISHARA_LOCAL_BACKEND"] == "1",
                           "set TEST_RUNNER_ISHARA_LOCAL_BACKEND=1 once the local demo backend is up")
-        serverLog = environment["ISHARA_LOCAL_BACKEND_LOG"].map { URL(fileURLWithPath: $0) }
+        serverLog = environment["ISHARA_LOCAL_BACKEND_LOG"].map { LocalBackendLog(url: URL(fileURLWithPath: $0)) }
         continueAfterFailure = false
     }
 
@@ -138,15 +135,9 @@ final class LocalBackendCallUITests: XCTestCase {
 
     // MARK: Server log
 
-    private static let spokenPrefix = "agent says: "
-
-    /// What the stand-in Bolna has spoken so far, minus the silence-repeat holding line;
-    /// empty without the server log.
+    /// What the stand-in Bolna has spoken so far, minus the holding line; empty without the log.
     private func spokenLines() -> [String] {
-        guard let serverLog, let text = try? String(contentsOf: serverLog, encoding: .utf8) else { return [] }
-        return text.split(separator: "\n").compactMap { line in
-            line.range(of: Self.spokenPrefix).map { String(line[$0.upperBound...]) }
-        }.filter { $0 != holdingLine }
+        serverLog?.spokenLines() ?? []
     }
 
     private func expectNothingSpoken(since before: [String], file: StaticString = #filePath, line: UInt = #line) {

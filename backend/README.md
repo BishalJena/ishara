@@ -96,7 +96,11 @@ app / bridge ──POST /calls, WS──▶ real app (CallManager, template draf
 - Options: `--port`, `--app-token`, `--contact` (repeatable, default `clinic`;
   add `--contact clinic --contact mehta-office` to allow the app's second contact),
   `--b24` (first SEND of each call ends `not delivered` after 10 s, then SEND
-  again), `--delay` (scales the pauses; `0.5` is twice as fast).
+  again), `--delay` (scales the pauses; `0.5` is twice as fast), `--receptionist`
+  (`clinic`, the §1 lines above, by default; for Call for me, `offer`: "we have four
+  pm tomorrow does that work", then "okay thank you bye"; `open-question`: "what time
+  would you like to come in" first). She waits, saying nothing, while the agent asks
+  her to hold on ("One moment, please.").
 - One call at a time. Tests: `tests/test_local_demo.py`.
 
 ## Sign Lab (webcam tests with the real composer and voice)

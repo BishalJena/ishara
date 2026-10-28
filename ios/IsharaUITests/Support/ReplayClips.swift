@@ -126,11 +126,14 @@ extension Optional where Wrapped == ReplayOutcome {
 extension XCUIApplication {
     /// Plays a saved clip from the simulator's "Replay a sign" menu.
     func replay(_ clip: String, file: StaticString = #filePath, line: UInt = #line) {
+        // Polled every 0.1 s: waitForExistence first looks after a whole second, and an
+        // answer to the agent's question has only 10 s.
         let menu = buttons["replayMenu"]
-        XCTAssertTrue(menu.waitForExistence(timeout: 10), "no replay menu: are the clips in LocalAssets/SampleSigns?",
-                      file: file, line: line)
+        waitUntil("the replay menu: are the clips in LocalAssets/SampleSigns?", timeout: 10, file: file, line: line) {
+            menu.exists
+        }
         menu.tap()
-        XCTAssertTrue(collectionViews.firstMatch.waitForExistence(timeout: 5), "the replay menu did not open", file: file, line: line)
+        waitUntil("the replay menu to open", timeout: 5, file: file, line: line) { self.collectionViews.firstMatch.exists }
         // A long menu scrolls and only lists the entries in view; scroll until the clip shows.
         let item = buttons[clip]
         let list = collectionViews.firstMatch

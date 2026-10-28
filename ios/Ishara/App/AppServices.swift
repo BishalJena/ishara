@@ -42,7 +42,8 @@ struct AppServices {
                 timeScale: options.fakeTimeScale)
         case .pipeline:
             let assets = RecognitionAssets.inMainBundle()
-            let feed: any FrameFeed = runsInSimulator ? ClipFeed(clips: assets.sampleClips) : CameraFeed()
+            let clips = options.sampleSigns.map(RecognitionAssets.clips(in:)) ?? assets.sampleClips
+            let feed: any FrameFeed = runsInSimulator ? ClipFeed(clips: clips) : CameraFeed()
             return PipelineRecognitionController(feed: feed, notice: assets.notice) {
                 try assets.makeComponents()
             }
