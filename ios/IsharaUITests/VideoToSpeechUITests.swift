@@ -297,7 +297,7 @@ final class VideoToSpeechUITests: XCTestCase {
             }
         }
         timings.append(("\(label): last chip → draft", Date().timeIntervalSince(chipsShown)))
-        XCTAssertFalse(app.element("caption.you").exists && app.element("caption.you").label.contains(shown),
+        XCTAssertEqual(captions("caption.you", containing: shown), 0,
                        "the draft was spoken before SEND", file: file, line: line)
         app.keepScreenshot("e2e-\(label)-draft", in: self)
 
@@ -339,8 +339,7 @@ final class VideoToSpeechUITests: XCTestCase {
 
     /// The newest row's label for `identifier`, or "" when there is none.
     private func newest(_ identifier: String) -> String {
-        let element = app.element(identifier)
-        return element.exists ? element.label : ""
+        (try? app.element(identifier).snapshot())?.label ?? ""
     }
 
     /// "Draft from Template: Hello." → "Hello."
