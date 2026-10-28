@@ -1,24 +1,59 @@
 # Teammate handoff
 
-> **25 Oct, recognition track:** the demo is **pure ASL** with a published, signer-independent
-> model used as is (no recording, no training); measured the same day in
-> [experiments/asl-model-probe.md](experiments/asl-model-probe.md). Integration plan and the
-> proposed delegated-call mode:
-> [handoffs/2026-10-26-ready-made-asl-recognizer.md](handoffs/2026-10-26-ready-made-asl-recognizer.md)
-> (PLAN D8, D9). The sections below describe the state before that change.
->
-> **27 Oct:** the ASL model runs inside the app (LiteRT, `ios/Packages/SignPipelineLiteRT`) and
-> matches the Mac on the simulator parity clips; the pick-one tile, framing hint and the "Call for
-> me" Brief and Notes screens are built and pass end to end against the local demo backend. See
-> [Built on 27 Oct](handoffs/2026-10-26-ready-made-asl-recognizer.md#built-on-27-oct-the-mac-only-list)
-> for what landed and what is left (phone clips, device speed, the first real call).
+## Current state: 28 October 2026
 
-Current state: **24 October 2026**, branch `main` (PRs #5–#33 are merged).
+**What works, on `main`:** the demo is pure ASL (D8): the public Kaggle ASL Signs model runs
+inside the app and on the Mac, and only **hello, thankyou, yes, no, now, please, tomorrow,
+wait** can become a chip (provisional cut-offs). Both call modes are built: **Live** (sign, check
+the draft, tap SEND) and **Call for me** (D9: approve a brief once; the agent calls, asks you
+YES / NO / WAIT or a time word when a decision is yours, or promises a callback). The backend is
+on Heroku with one worker, and the Bolna agent matches `backend/bolna/agent.json`.
+
+**What ran for real on 28 Oct:** real Bolna calls to the founder's verified phone. The first
+ones failed five ways (trial account, Bolna not filling event properties, two web workers,
+times in words, "unclear" notes), each fixed at its root; then Live mode and all three
+Call-for-me flows passed, end to end from the simulator app with sign videos as the camera.
+Details: [status, 28 Oct](status/2026-10-28.md) and the [voice record](experiments/voice.md#runs).
+
+**What is left, in order** (the PLAN's [task list](../PLAN.md#6-schedule-and-todos) has the ticks):
+
+1. **The iPhone test: [issue #72](https://github.com/BishalJena/ishara/issues/72).** Written
+   for whoever holds the phone: install (about 45 min once), the signs on the live camera
+   (including the one-handed MORNING, 10 tries), two real calls with the founder after a go,
+   and a results comment. Gate 4 depends on it. Note: morning is not in the shipped chip
+   vocabulary, so a MORNING attempt always shows `?` on screen; the model's top-3 for each sign
+   is in the app's log (subsystem `ai.ishara.demo`, `asl chip|pick one|unsure … p= [top3]`), so
+   read that, or film the attempts and score them on the Mac.
+2. **Phone clips → final thresholds:** the 8 chip words × 5 plus negatives, through both paths,
+   then freeze the bundle ([how](handoffs/2026-10-26-ready-made-asl-recognizer.md#the-phone-clips-the-one-measurement-still-missing)).
+3. **Rehearse** the [demo script](demo/SCRIPT.md) three times, record a backup video, finalise
+   the [submission text](demo/SUBMISSION.md).
+4. Open issues worth a look before the demo: #91 (the WAIT line in notes), #96 (notes miss
+   Bolna's summary), #86; the rest are listed in the [status](status/2026-10-28.md#6-known-issues-open).
+
+**Calling number:** the app says calls come from "Ishara's calling number". That number is
+provided by Bolna, not the user's own; the founder kept this wording (issue #51), and the
+presenter, slides and submission say it is a Bolna number.
+
+**Demo-only:** with no backend, the app plays a scripted fake call (`DemoScript.swift`,
+`DelegatedDemo.swift`, `DemoFixtures.swift`) that still signs `doctor`, `afternoon` and
+`morning`. That is scripted playback, not recognition; none of those words can chip from a real
+sign now.
+
+Start with the [handoff for D8/D9](handoffs/2026-10-26-ready-made-asl-recognizer.md) for how
+recognition and Call for me work, and [docs/TESTING.md](TESTING.md) for every test command.
+
+## History: the state on 24 October
+
+The sections below are kept as they were on 24 October (SignCLIP, 12 ISL signs, no real
+call yet). The current direction is above and in [PLAN.md](../PLAN.md).
+
+Current state then: **24 October 2026**, branch `main` (PRs #5–#33 are merged).
 This file owns the current capability and direction. Detailed measurements belong
 in the [experiment record](experiments/recognition.md), active tasks in
 [PLAN.md](../PLAN.md), and commands in the spike runbooks.
 
-## What works
+### What worked
 
 - The Mac browser diagnostic runs real OpenHands SL-GCN predictions on saved clips,
   fixed sentence templates, exact editing and single-use approval.
@@ -29,7 +64,7 @@ in the [experiment record](experiments/recognition.md), active tasks in
 - The speech track has an offline lifecycle mock, a non-telephony Bolna probe and
   an Apple audio/camera diagnostic harness. These are separate tools.
 
-## Demo build progress (24 Oct, merged)
+### Demo build progress (24 Oct, merged)
 
 Everything below is on `main` with offline tests (`scripts/verify.sh`: backend 782
 tests, recognition, call_flow, three Swift packages, iOS app under `xcodebuild test`).
@@ -52,7 +87,7 @@ Bolna call has been placed (V4), no sign of the presenting signer has been recor
 | Mac recognition | 12-sign vocabulary, calibration report and bundle export, start/stop detector, live webcam recognizer with top-3 display, Mac bridge into the backend call, guided 12-sign recording session and provisional try bundle | #9, #11, #12, #25, #29, #32 |
 | Evaluation | Cross-signer run on 42 public clips through recognizer, composer and voice: right sign ranked first for 27/39, but 4 correct chips, 1 wrong, the rest `?` at the zero-wrong-accept cut-off; composer on true chips 9/12 fit, one validator gap (see plan task V5b) | #33 |
 
-## Current direction and blockers
+### Direction and blockers then
 
 **SignCLIP is the leading representation for fresh-data evaluation.** Reference
 matching improved the ranking of the saved intended-hello attempts, but those
@@ -100,8 +135,12 @@ cd ishara
 
 Then follow the runbook for the relevant track:
 
+- [iOS app](../ios/README.md): three download scripts, then Xcode; the iPhone steps are
+  [issue #72](https://github.com/BishalJena/ishara/issues/72).
+- [Backend](../backend/README.md) and [Heroku](../backend/HEROKU.md): `scripts.local_demo`
+  serves a whole call locally for free.
 - [Recognition](../spikes/recognition/README.md): environment setup, public clips,
-  browser miniature, SignCLIP comparison, capture and evaluation.
+  the ASL model on the Mac, the probe and summary tools.
 - [Speech/device](../spikes/call_flow/README.md): offline tests, provider probe
   boundaries and the iPhone diagnostic.
 
@@ -110,11 +149,9 @@ and signing identities are excluded. Setup fetches public assets; a fresh clone
 does not contain the private footage behind the recorded webcam results.
 Mac/Python 3.11 is the tested ML setup; other platforms are unverified.
 
-The immediate human input is fresh, correctly labeled signing of the 12 demo
-signs. Begin with three to five takes per sign, review tracking and sign forms,
-then follow the separate-session calibration and final-test gates in the
-[plan](../PLAN.md#6-schedule-and-todos). The voice track can independently work
-with fixed, approved synthetic text.
+The immediate human input is the iPhone test in
+[issue #72](https://github.com/BishalJena/ishara/issues/72) and the phone clips that freeze
+the thresholds. No own recordings or training are needed (D8).
 
 ## Reading map
 
@@ -127,7 +164,7 @@ with fixed, approved synthetic text.
 
 The product remains one seated administrative appointment conversation. On
 23 October the team chose Option C: Bolna places the call first (Path B, disclosed
-as coming from a Bolna number, with real in-app captions from Bolna's transcriber),
+as coming from Ishara's calling number, a Bolna number, with real in-app captions from Bolna's transcriber),
 and the user's own-number call with Apple call-audio injection (Path A) is a bonus.
 In Path A, system captions are visible to the user but are not readable by Ishara.
 See [PLAN.md](../PLAN.md#2-decisions).
