@@ -99,9 +99,18 @@ final class SegmentClassifierTests: XCTestCase {
     }
 
     func testGreyZoneVocabularySignIsACandidate() {
-        let (classifier, _) = asl(logits("tomorrow", p: 0.45))
+        let (classifier, _) = asl(logits("tomorrow", p: 0.4))
 
         XCTAssertEqual(classifier.classify(clip), .candidate(.tomorrow))
+    }
+
+    func testConfidentUnrehearsedSignIsUnsure() {
+        // In the backend's vocabulary but not rehearsed: public YES clips read as can (Gate 2).
+        for gloss in ["can", "morning"] {
+            let (classifier, _) = asl(logits(gloss, p: 0.9))
+
+            XCTAssertEqual(classifier.classify(clip), .unsure, gloss)
+        }
     }
 
     func testConfidentWordOutsideTheVocabularyIsUnsure() {
@@ -138,8 +147,7 @@ final class SegmentClassifierTests: XCTestCase {
             .deletingLastPathComponent().appendingPathComponent("spikes/recognition/fixtures/asl/asl-bundle-provisional.json")
         let macBundle = try LogitsBundle.load(from: Data(contentsOf: mac))
 
-        XCTAssertEqual(aslBundle.glosses, macBundle.glosses)
-        XCTAssertEqual(aslBundle.vocabulary, macBundle.vocabulary)
+        XCTAssertEqual(aslBundle, macBundle, "vocabulary and thresholds must match the Mac bridge")
         XCTAssertEqual(aslBundle.model.sha256, "f55a2bb1ebe6d1e912a98e31c6ef3f995c9ae261f408fe115f2008099d3f0bb7")
         XCTAssertTrue(Set(aslBundle.vocabulary).isSubset(of: Set(Sign.allCases.map(\.rawValue))))
     }

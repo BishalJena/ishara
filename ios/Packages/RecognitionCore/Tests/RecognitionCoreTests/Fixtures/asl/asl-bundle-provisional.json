@@ -264,35 +264,14 @@
   "zipper"
  ],
  "vocabulary": [
-  "callonphone",
-  "can",
-  "drink",
-  "finish",
-  "go",
-  "have",
-  "hear",
   "hello",
-  "home",
-  "hungry",
-  "later",
-  "morning",
-  "night",
   "no",
   "now",
   "please",
-  "read",
-  "see",
-  "sick",
   "thankyou",
-  "time",
   "tomorrow",
   "wait",
-  "water",
-  "where",
-  "who",
-  "why",
-  "yes",
-  "yesterday"
+  "yes"
  ],
  "rehearsed": [
   "hello",
@@ -306,15 +285,23 @@
   "morning"
  ],
  "thresholds": {
-  "p": 0.6,
+  "p": 0.65,
   "margin": 0.3,
   "pick_one_p": 0.35
  },
- "per_word": {},
+ "per_word": {
+  "hello": 0.5,
+  "no": 0.45,
+  "now": 0.45,
+  "thankyou": 0.6,
+  "tomorrow": 0.45,
+  "wait": 0.45,
+  "yes": 0.5
+ },
  "quality": {
   "min_pose_fraction": 0.6,
   "min_hand_fraction": 0.2
  },
  "provisional": true,
- "calibration": "probe defaults from docs/experiments/asl-model-probe.md (25 Oct 2026); not frozen on a labelled session. Rule: full 250-way softmax, never restricted to the vocabulary first; chip when top-1 is in the vocabulary, p >= thresholds.p (or per_word[gloss]) and margin >= thresholds.margin; pick-one when top-1 is in the vocabulary and pick_one_p <= p < the chip cut-off; otherwise unsure."
+ "calibration": "PROVISIONAL: the iPhone clips decide the final values. Thresholds: the public-clip Gate 2 candidate (docs/experiments/asl-model-probe.md Run 5, 28 Oct 2026), global p 0.65 plus per-word cut-offs, fitted and scored on the same public clips. Vocabulary: only the rehearsed words, minus morning (the model learned a one-handed MORNING; it stays out until the iPhone test), because every confident wrong chip on the public clips was an unrehearsed vocabulary gloss (can, hungry, time). Rule: full 250-way softmax, never restricted to the vocabulary first; chip when top-1 is in the vocabulary, p >= thresholds.p (or per_word[gloss]) and margin >= thresholds.margin; pick-one when top-1 is in the vocabulary and pick_one_p <= p < the chip cut-off; otherwise unsure."
 }

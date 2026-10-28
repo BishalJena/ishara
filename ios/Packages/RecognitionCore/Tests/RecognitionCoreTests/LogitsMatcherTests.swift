@@ -23,9 +23,28 @@ final class LogitsMatcherTests: XCTestCase {
         XCTAssertEqual(Self.bundle.glosses.count, 250)
         XCTAssertTrue(Self.bundle.provisional)
         XCTAssertTrue(Self.bundle.vocabulary.allSatisfy { SignLabel(rawValue: $0) != nil })
-        for word in ["hello", "thankyou", "yes", "no", "now", "please", "tomorrow", "wait", "morning"] {
-            XCTAssertTrue(Self.bundle.vocabulary.contains(word), word)
-        }
+    }
+
+    func testOnlyTheRehearsedWordsMinusMorningMayChip() {
+        // MORNING is held back: the model learned its one-handed form (iPhone test pending).
+        XCTAssertEqual(Set(Self.bundle.vocabulary),
+                       ["hello", "thankyou", "yes", "no", "now", "please", "tomorrow", "wait"])
+    }
+
+    func testThresholdsAreTheProvisionalPublicClipCandidate() {
+        XCTAssertTrue(Self.bundle.provisional, "the iPhone clips decide the final values")
+        XCTAssertEqual(Self.bundle.thresholds, .init(p: 0.65, margin: 0.3, pickOneP: 0.35))
+        XCTAssertEqual(Self.bundle.perWord, ["hello": 0.5, "no": 0.45, "now": 0.45, "thankyou": 0.6,
+                                             "tomorrow": 0.45, "wait": 0.45, "yes": 0.5])
+    }
+
+    func testFixtureIsTheMacBundle() throws {
+        // spikes/recognition/fixtures/asl is what the Mac bridge loads; this copy must match it.
+        let mac = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("spikes/recognition/fixtures/asl/asl-bundle-provisional.json")
+        XCTAssertEqual(try LogitsBundle.load(from: Data(contentsOf: mac)), Self.bundle)
     }
 
     func testConfidentVocabularyWordIsAChip() {
@@ -54,6 +73,36 @@ final class LogitsMatcherTests: XCTestCase {
         XCTAssertTrue(reason.hasPrefix("not in vocabulary: bye"))
     }
 
+    func testConfidentUnrehearsedWordIsNeverAChipOrATile() {
+        // Public-clip Gate 2: YES read as can, WAIT as hungry, a portrait YES as time.
+        for gloss in ["can", "hungry", "time"] {
+            for p in [0.9, 0.5] {
+                guard case let .unsure(reason, _) = matcher.match(logits: [gloss: p], quality: good)
+                else { return XCTFail("\(gloss) at \(p) must be unsure") }
+                XCTAssertTrue(reason.hasPrefix("not in vocabulary: \(gloss)"), reason)
+            }
+        }
+    }
+
+    func testYesReadAsCanIsUnsureNotTheRunnerUpYes() {
+        guard case .unsure = matcher.match(logits: ["can": 0.62, "yes": 0.3], quality: good)
+        else { return XCTFail("expected unsure") }
+    }
+
+    func testMorningIsNeverAChipOrATile() {
+        for p in [0.95, 0.5] {
+            guard case .unsure = matcher.match(logits: ["morning": p], quality: good)
+            else { return XCTFail("morning at \(p) must be unsure") }
+        }
+    }
+
+    func testShippedCutoffsPerWordAndGlobal() {
+        guard case .chip = matcher.match(logits: ["tomorrow": 0.46], quality: good) else { return XCTFail("tomorrow 0.46") }
+        guard case .pickOne = matcher.match(logits: ["tomorrow": 0.44], quality: good) else { return XCTFail("tomorrow 0.44") }
+        guard case .chip = matcher.match(logits: ["please": 0.66], quality: good) else { return XCTFail("please 0.66") }
+        guard case .pickOne = matcher.match(logits: ["please": 0.64], quality: good) else { return XCTFail("please 0.64") }
+    }
+
     func testRestrictingToTheVocabularyFirstWouldHaveBeenWrong() {
         // ISL "evening" clips: flat output with the best vocabulary word at p 0.01.
         guard case .unsure = matcher.match(logits: ["vacuum": 0.12, "pool": 0.1, "no": 0.01], quality: good)
@@ -79,8 +128,8 @@ final class LogitsMatcherTests: XCTestCase {
         let tunedMatcher = LogitsMatcher(tuned)
         guard case .chip = tunedMatcher.match(logits: logits(["tomorrow": 0.5, "another": 0.1]), quality: good)
         else { return XCTFail("tomorrow at 0.5 should be a chip with the per-word cut-off") }
-        guard case .pickOne = tunedMatcher.match(logits: logits(["morning": 0.5, "another": 0.1]), quality: good)
-        else { return XCTFail("morning at 0.5 stays pick-one") }
+        guard case .pickOne = tunedMatcher.match(logits: logits(["please": 0.5, "another": 0.1]), quality: good)
+        else { return XCTFail("please at 0.5 stays pick-one") }
     }
 
     func testInvalidVectorsAreUnsure() {

@@ -56,8 +56,9 @@ final class RecognitionReplayUITests: XCTestCase {
     }
 
     /// Call for me (D9): replayed signs become the brief's chips. TOMORROW must chip; MORNING
-    /// (a candidate word, weak on Lifeprint clips) is used if it comes back as a chip or a tapped
-    /// "Did you mean …?", and otherwise must stay silent so the user taps it instead.
+    /// is not in the bundle's vocabulary (held back until the iPhone test), so it must stay
+    /// silent and the user taps it instead. The chip and "Did you mean …?" branches stay for
+    /// when it comes back.
     func testReplayedTomorrowAndMorningFeedTheBrief() throws {
         let clips = try clips()
         let tomorrow = try XCTUnwrap(clips.first { $0.expected == .chip("tomorrow") },
