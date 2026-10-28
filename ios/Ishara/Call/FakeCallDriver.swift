@@ -20,6 +20,16 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         /// Lose the backend connection mid-call: on a live call once the first draft is on
         /// screen, on a delegated call once the agent has asked its question.
         var connectionDrop: ConnectionDrop?
+        /// Delegated call (version B): the receptionist first asks "when?" with no time on
+        /// offer, and offers a time once that is answered.
+        var openTimeQuestion: OpenTimeQuestion?
+    }
+
+    /// How the delegated call's open "when?" question is answered.
+    struct OpenTimeQuestion: Sendable {
+        /// Signed through the scripted recognizer a moment after the question, as the live
+        /// script plays the user's signs; nil leaves the answer to a tap.
+        var signedAnswer: Sign?
     }
 
     /// How a simulated lost connection plays out, like `LiveCallDriver`'s reconnects.
@@ -57,6 +67,8 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     private var transcript: [TranscriptEntry] = []
     private var answers: [String] = []
     private var openAskID: String?
+    private var openOptions: [AskOption] = []
+    private var hasAsked = false
     private var askTimer: Task<Void, Never>?
 
     /// Runs only when `Options.connectionDrop` is `.staysDown`.
@@ -220,13 +232,12 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
 
     // MARK: Delegated script (D9)
 
-    /// Disclosure, the agent's opening from the brief, then the receptionist offers a slot.
-    /// Attended: the agent pauses and asks the user; unattended: it promises a callback.
+    /// Disclosure, the agent's opening from the brief, then the receptionist offers a slot
+    /// (or first asks "when?", with `Options.openTimeQuestion`).
     private func playDelegated(_ setup: CallSetup, _ delegation: Delegation) {
-        let opening = DelegatedDemo.opening(
-            name: setup.details.name, goal: delegation.brief.goal,
-            when: delegation.brief.constraints.first { $0.hasPrefix("preferred time: ") }
-                .map { String($0.dropFirst("preferred time: ".count)) })
+        let when = delegation.brief.constraints.first { $0.hasPrefix("preferred time: ") }
+            .map { String($0.dropFirst("preferred time: ".count)) }
+        let opening = DelegatedDemo.opening(name: setup.details.name, goal: delegation.brief.goal, when: when)
         schedule(after: 1) { $0.deliver(.status(.ringing)) }
         schedule(after: 2.5) { driver in
             driver.deliver(.status(.inCall))
@@ -234,43 +245,94 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         }
         schedule(after: 4.5) { $0.say(.agent, opening) }
         schedule(after: 7) { driver in
-            driver.say(.receptionist, DelegatedDemo.offer)
-            guard delegation.attended else {
-                driver.say(.agent, DelegatedDemo.callbackLine)
-                driver.schedule(after: 2) { $0.hangUp() }
-                return
-            }
-            driver.say(.agent, DelegatedDemo.pauseLine)
-            driver.openAskID = "demo-ask"
-            driver.deliver(.ask(
-                askID: "demo-ask", question: DelegatedDemo.offer, options: DelegatedDemo.options,
-                fallback: DelegatedDemo.callbackLine, timeoutS: DelegatedDemo.askTimeout))
-            driver.startAskTimer()
-            if let drop = driver.options.connectionDrop {
-                driver.schedule(after: Self.dropDelay) { $0.loseConnection(drop) }
+            if let question = driver.options.openTimeQuestion {
+                driver.askWhen(delegation, when: when, signedAnswer: question.signedAnswer)
+            } else {
+                driver.offerSlot(delegation)
             }
         }
     }
 
+    /// The receptionist offers a time. Attended: the agent pauses and asks the user yes /
+    /// no / wait; unattended: it promises a callback.
+    private func offerSlot(_ delegation: Delegation) {
+        say(.receptionist, DelegatedDemo.offer)
+        guard delegation.attended else {
+            say(.agent, DelegatedDemo.callbackLine)
+            schedule(after: 2) { $0.hangUp() }
+            return
+        }
+        ask("demo-ask", question: DelegatedDemo.offer, options: DelegatedDemo.options)
+    }
+
+    /// The receptionist asks "when?" with no time on offer. Attended: the user picks a time
+    /// word. Unattended: the agent says the brief's time, or promises a callback without one.
+    private func askWhen(_ delegation: Delegation, when: String?, signedAnswer: Sign?) {
+        say(.receptionist, DelegatedDemo.openQuestion)
+        guard delegation.attended else {
+            guard let when else {
+                say(.agent, DelegatedDemo.callbackLine)
+                schedule(after: 2) { $0.hangUp() }
+                return
+            }
+            say(.agent, DelegatedDemo.timeLine(when))
+            schedule(after: 2.5) { $0.offerSlot(delegation) }
+            return
+        }
+        ask("demo-ask-when", question: DelegatedDemo.openQuestion, options: DelegatedDemo.timeOptions)
+        if let signedAnswer, let recognition {
+            schedule(after: 2.5) { _ in recognition.sign(.sign(signedAnswer)) }
+        }
+    }
+
+    private func ask(_ askID: String, question: String, options askOptions: [AskOption]) {
+        say(.agent, DelegatedDemo.pauseLine)
+        openAskID = askID
+        openOptions = askOptions
+        deliver(.ask(
+            askID: askID, question: question, options: askOptions,
+            fallback: DelegatedDemo.callbackLine, timeoutS: DelegatedDemo.askTimeout))
+        startAskTimer()
+        // The connection drops once, after the call's first question.
+        if !hasAsked, let drop = options.connectionDrop {
+            schedule(after: Self.dropDelay) { $0.loseConnection(drop) }
+        }
+        hasAsked = true
+    }
+
     private func answer(askID: String, choice: AskChoice) {
-        guard askID == openAskID, let spoken = DelegatedDemo.options.first(where: { $0.choice == choice })?.spoken else {
+        guard askID == openAskID else {
             deliver(.error(code: "unknown_ask", message: "That question is no longer open."))
             return
         }
+        guard let spoken = openOptions.first(where: { $0.choice == choice })?.spoken else {
+            deliver(.error(code: "bad_choice", message: "Not one of the options."))
+            return
+        }
         askTimer?.cancel()
-        guard choice != .wait else {
+        resolveOrHold(choice: choice, spoken: spoken)
+    }
+
+    private func resolveOrHold(choice: AskChoice, spoken: String) {
+        switch choice {
+        case .wait:
             // Like the backend: the agent holds the line and the question stays open.
             say(.agent, spoken)
             startAskTimer()
-            return
-        }
-        resolveAsk(spoken: spoken, source: "user")
-        let reply = choice == .yes ? DelegatedDemo.confirmation : DelegatedDemo.declined
-        schedule(after: 2) { driver in
-            driver.say(.receptionist, reply)
-            driver.schedule(after: 1.5) { driver in
-                driver.say(.agent, DelegatedDemo.closeLine)
-                driver.hangUp()
+        case .tomorrow, .morning, .now:
+            // A time word settles nothing: the receptionist then offers a time.
+            resolveAsk(spoken: spoken, source: "user")
+            guard let delegation = setup?.delegation else { return }
+            schedule(after: 2) { $0.offerSlot(delegation) }
+        case .yes, .no:
+            resolveAsk(spoken: spoken, source: "user")
+            let reply = choice == .yes ? DelegatedDemo.confirmation : DelegatedDemo.declined
+            schedule(after: 2) { driver in
+                driver.say(.receptionist, reply)
+                driver.schedule(after: 1.5) { driver in
+                    driver.say(.agent, DelegatedDemo.closeLine)
+                    driver.hangUp()
+                }
             }
         }
     }

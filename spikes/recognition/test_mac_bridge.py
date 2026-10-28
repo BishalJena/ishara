@@ -989,6 +989,25 @@ class DelegatedCall(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(await self.bridge.handle_line("a no"))
         self.assertEqual(self.transport.sent, [{"type": "answer", "ask_id": "a1", "choice": "no"}])
 
+    async def test_a_signed_time_word_answers_an_open_time_question(self):
+        open_time = {**self.ask, "ask_id": "a2", "question": "what time would you like to come in",
+                     "options": [{"choice": "tomorrow", "spoken": "Tomorrow, please. What times are available?"},
+                                 {"choice": "now", "spoken": "Today, as soon as possible, please. What times are available?"},
+                                 {"choice": "wait", "spoken": "One moment, please, I'm checking."}]}
+        await self.server(open_time)
+        self.assertTrue(any("a tomorrow | a now | a wait" in line for line in self.lines))
+        # yes is no option here: it answers nothing.
+        await self.bridge.on_result("yes")
+        self.assertNotIn("answer", [m["type"] for m in self.transport.sent])
+        await self.bridge.on_result("tomorrow")
+        self.assertEqual(self.transport.sent[-1], {"type": "answer", "ask_id": "a2", "choice": "tomorrow"})
+
+    async def test_a_time_word_answers_no_yes_no_question(self):
+        await self.server(self.ask)
+        self.assertTrue(await self.bridge.handle_line("a tomorrow"))
+        self.assertEqual(self.transport.sent, [])
+        self.assertIn("! answer is one of: a yes | a no | a wait", self.lines)
+
     async def test_answer_without_a_question_sends_nothing(self):
         self.assertTrue(await self.bridge.handle_line("a yes"))
         self.assertEqual(self.transport.sent, [])

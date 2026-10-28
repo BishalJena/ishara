@@ -20,7 +20,8 @@ and must be said as written.
   you tap SEND**. You read the receptionist's words as captions.
 - **Call for me:** you sign what you need (e.g. TOMORROW), approve a short brief
   **once**, and the call agent makes the call. When a decision is yours (a time is offered),
-  it says "One moment, please." and asks you: sign or tap **yes / no / wait**. No answer in
+  it says "One moment, please." and asks you: sign or tap **yes / no / wait** (or a time
+  word such as **tomorrow** when they ask "what time?"). No answer in
   10 s, or you're not watching: it says it will call back, never decides for you.
 - Afterwards: call notes with the outcome, what was offered, what you answered, and the
   transcript.

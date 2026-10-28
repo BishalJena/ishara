@@ -436,7 +436,8 @@ class Transport(Protocol):
 
 
 HELP = (f"signs: {' '.join(SIGNS)}  (? = unsure, never sent)\n"
-        "a yes|no|wait: answer the agent's question on a delegated call (or sign it)\n"
+        "a <choice>: answer the agent's question on a delegated call with one of its options,\n"
+        "  e.g. a yes | a wait | a tomorrow (or sign the option's word)\n"
         "x remove last chip | c clear turn | s SEND draft | q yes|no|wait|repeat quick reply\n"
         "stop cancel unspoken output | e end call | h help")
 
@@ -458,8 +459,9 @@ class Bridge:
             self.log.record("bridge", message)
 
     async def on_result(self, result: Result) -> None:
-        if self.pending_ask is not None and result in ("yes", "no", "wait"):
-            # Signing yes/no/wait while the agent waits answers the question (D9).
+        if result in self._choices():
+            # Signing one of the options while the agent waits answers the question (D9):
+            # yes/no/wait for an offered time, a time word for an open "when?".
             await self.answer(result)
             return
         try:
@@ -493,8 +495,8 @@ class Bridge:
             await self._send_approval(self.state.quick_reply(name))
         elif command == "a":
             choice = args[0].lower() if len(args) == 1 else ""
-            if choice not in ("yes", "no", "wait"):
-                self.out("! answer is one of: a yes | a no | a wait")
+            if self.pending_ask is not None and choice not in self._choices():
+                self.out("! answer is one of: " + " | ".join(f"a {c}" for c in self._choices()))
                 return True
             await self.answer(choice)
         elif command == "stop":
@@ -546,7 +548,8 @@ class Bridge:
             options = "  ".join(f"{o['choice']}: \"{o['spoken']}\"" for o in message["options"])
             self.log.show(f"AGENT ASKS YOU ({message['timeout_s']:.0f} s, else \"{message['fallback']}\"):\n"
                           f"  receptionist said: {message['question']}\n  {options}\n"
-                          f"  answer: sign yes/no/wait, or type: a yes | a no | a wait")
+                          f"  answer: sign one, or type: "
+                          + " | ".join(f"a {c}" for c in self._choices()))
         elif kind == "ask_resolved":
             if self.pending_ask is not None and self.pending_ask["ask_id"] == message["ask_id"]:
                 self.pending_ask = None
@@ -569,6 +572,10 @@ class Bridge:
                                  for source in (self.manual, *sources))]
         finally:
             await self.transport.close()
+
+    def _choices(self) -> list[str]:
+        """The open question's option words; empty when nothing is asked."""
+        return [o["choice"] for o in self.pending_ask["options"]] if self.pending_ask else []
 
     async def answer(self, choice: str) -> None:
         if self.pending_ask is None:
@@ -760,7 +767,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         "delegated call (D9)", "the agent pursues an approved brief; you only answer its questions")
     delegated.add_argument("--delegated", action="store_true", help="start a delegated call (needs --contact)")
     delegated.add_argument("--attended", action="store_true",
-                           help="the agent may ask you yes/no/wait questions; without it, it promises a callback")
+                           help="the agent may ask you yes/no/wait or when (time word) questions; without it, it promises a callback")
     delegated.add_argument("--name", default="the caller", help="caller's name the agent may share")
     delegated.add_argument("--brief-chips", nargs="*", default=["tomorrow", "morning"], metavar="SIGN",
                            help="signs that set the brief's preferred time (default: tomorrow morning)")

@@ -88,6 +88,15 @@ final class MessagesTests: XCTestCase {
         XCTAssertEqual(text, #"{"ask_id":"a1","choice":"no","type":"answer"}"#)
     }
 
+    func testAnOpenTimeQuestionDecodesItsTimeWordsAndAnAnswerEncodesOne() throws {
+        let ask = try WireCoding.decodeServerMessage(
+            #"{"type":"ask","ask_id":"t1","question":"what time would you like","options":[{"choice":"tomorrow","spoken":"Tomorrow, please."},{"choice":"morning","spoken":"In the morning, please."},{"choice":"now","spoken":"Today, please."},{"choice":"wait","spoken":"One moment."}],"fallback":"I'll call back.","timeout_s":10.0}"#)
+        guard case let .ask(_, _, options, _, _) = ask else { return XCTFail("\(ask)") }
+        XCTAssertEqual(options.map(\.choice), [.tomorrow, .morning, .now, .wait])
+        let text = try WireCoding.encodeText(.answer(askID: "t1", choice: .tomorrow))
+        XCTAssertEqual(text, #"{"ask_id":"t1","choice":"tomorrow","type":"answer"}"#)
+    }
+
     func testAskAndAskResolvedDecode() throws {
         let ask = try WireCoding.decodeServerMessage(
             #"{"type":"ask","ask_id":"a1","question":"We have 4 pm tomorrow. Does that work?","options":[{"choice":"yes","spoken":"Yes, 4 pm tomorrow works. Thank you."},{"choice":"no","spoken":"No, sorry."},{"choice":"wait","spoken":"One moment."}],"fallback":"I'll call back.","timeout_s":10.0}"#)

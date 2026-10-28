@@ -82,7 +82,7 @@ sign TOMORROW ─▶ brief ─▶ Approve and call ─▶ disclosure + opening �
 | 0:10 | Tap **CALL FOR ME** → **Get ready** ([02](img/02-get-ready.png)): face, hands and light checks → **I'm ready, sign my request** | — | UI (`GetReadyView`, `AppRootView`) |
 | 0:20 | **Call for me** screen ([03](img/03-request-chips.png)): *"Sign what you need"*. Sign **TOMORROW**, then rest. If a *"Did you mean TOMORROW?"* tile shows, tap **Use it**; if a red `?` shows, sign it again or tap **tomorrow** under *"Or tap:"*. Don't sign MORNING (pending the iPhone test) | — | UI (`BriefView`, `CandidateTile`); word status: "Signs in this demo" above |
 | 0:40 | Tap **Prepare the request**. The brief appears ([04](img/04-brief.png)) under *"The agent follows only this brief with City Clinic"*: *"Call on behalf of Riya, who is Deaf and uses the Ishara app, to book a doctor's appointment. Preferred: tomorrow. May share: name (Riya). Will not agree to anything outside this brief; anything else comes back to you as a question."* Leave **I'll stay and answer questions** on. Narrator: *"She approves this once. The agent can't agree to anything outside it."* | — | Ran (`build_brief`); UI |
-| 0:55 | Tap **Approve and call**. Call screen: *"The agent is making the call for you. When a decision is yours it will ask here: sign or tap yes, no or wait."* | (ringing) | UI (`SigningPanel`) |
+| 0:55 | Tap **Approve and call**. Call screen: *"The agent is making the call for you. When a decision is yours it will ask here: sign or tap one of the answers shown."* | (ringing) | UI (`SigningPanel`) |
 | 1:00 | Captions show the voice's lines as *Ishara (voice)* | **Voice:** "Hello, I'm calling for a Deaf caller who is using Ishara, a sign-language app. Their replies may take a few seconds." | Ran; `markers.DISCLOSURE` |
 | 1:08 | | **Voice:** "I'd like to book a doctor's appointment for Riya, tomorrow." | Ran; `RuleBrain.opening` |
 | 1:14 | Caption *Receptionist* | **Receptionist:** "We have 4 pm tomorrow. Does that work?" | PLAN §1 turn 2 |
@@ -94,6 +94,13 @@ sign TOMORROW ─▶ brief ─▶ Approve and call ─▶ disclosure + opening �
 
 Notes for the presenter:
 
+- **If the receptionist asks "What time would you like?" instead of offering a time** (version B,
+  not yet retested on a real call): the agent says "One moment, please." and the AskCard offers
+  **TOMORROW** "Tomorrow, please. What times are available?" · **MORNING** "In the morning,
+  please. What times are available?" · **NOW** "Today, as soon as possible, please. What times
+  are available?" · **WAIT**. Sign or tap **TOMORROW**; the receptionist then offers a time and the
+  usual YES / NO / WAIT card follows. In the simulator: `-IsharaFakeOpenQuestion tomorrow` (signed)
+  or `tap`.
 - **Don't let the receptionist say line 2** ("Yes, 10:30 tomorrow morning.") in part (a). After
   the YES the call is settled and the agent says nothing new, but a second offer would show up
   in the notes as a second "They offered" line. In the local run the scripted receptionist

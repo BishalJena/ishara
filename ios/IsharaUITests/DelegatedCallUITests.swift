@@ -32,6 +32,47 @@ final class DelegatedCallUITests: XCTestCase {
         XCTAssertTrue(app.buttons["home.callForMe"].waitForExistence(timeout: 10))
     }
 
+    /// Version B: the receptionist asks "when?" with no time on offer. The fake call signs
+    /// TOMORROW through the scripted recognizer: the agent says its sentence for the user,
+    /// the receptionist then offers a time, and YES books it.
+    func testOpenTimeQuestionAnsweredBySigningTomorrowThenYesBooks() {
+        launch(["-IsharaFakeTimeScale", "0.5", "-IsharaFakeOpenQuestion", "tomorrow"])
+        prepareBrief(expecting: "Preferred: tomorrow in the morning.")
+        approve()
+
+        app.waitFor(app.element("ask.question"), labelContains: "What time would you like")
+        app.waitFor(app.element("caption.you"), labelContains: "Tomorrow, please. What times are available?")
+        app.waitFor(app.element("ask.question"), labelContains: "10:30 tomorrow morning")
+        app.buttons["ask.yes"].tap()
+
+        openNotes()
+        app.waitFor(app.element("notes.outcome"), labelContains: "Booked")
+    }
+
+    /// Version B by tap: the card offers the time words and WAIT, each with the exact
+    /// sentence the agent will say; MORNING speaks exactly its own.
+    func testOpenTimeQuestionTappedMorningSpeaksExactlyItsSentence() {
+        launch(["-IsharaFakeOpenQuestion", "tap"])
+        prepareBrief(expecting: "Preferred: tomorrow in the morning.")
+        approve()
+
+        app.waitFor(app.element("ask.question"), labelContains: "What time would you like")
+        for choice in ["tomorrow", "morning", "now", "wait"] {
+            XCTAssertTrue(app.buttons["ask.\(choice)"].exists, "no \(choice) answer")
+        }
+        XCTAssertFalse(app.buttons["ask.yes"].exists, "yes is no answer to \"what time?\"")
+        let morning = app.buttons["ask.morning"]
+        XCTAssertTrue(morning.label.contains("In the morning, please. What times are available?"), morning.label)
+        app.keepScreenshot("delegated-time-ask", in: self)
+        morning.tap()
+
+        app.waitFor(app.element("caption.you"), labelContains: "In the morning, please. What times are available?")
+        app.waitFor(app.element("ask.question"), labelContains: "10:30 tomorrow morning")
+        app.buttons["ask.yes"].tap()
+        openNotes()
+        app.waitFor(app.element("notes.outcome"), labelContains: "Booked")
+    }
+
     func testUnattendedCallForMeComesBackAsAQuestion() {
         launch(["-IsharaFakeTimeScale", "0.5"])
         prepareBrief(expecting: "Preferred: tomorrow in the morning.")

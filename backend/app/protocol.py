@@ -167,14 +167,22 @@ class BriefResponse(_Message):
     constraints: list[str]  # when/what the caller signed, as plain facts
 
 
+# An answer is a sign the user can make (or tap): yes / no / wait for an offered time, or
+# a time word for an open "when?" question. Each is also a `Sign`, so a recognised chip
+# equal to an option's choice answers the question. Change AskChoice in
+# ios/Packages/CallSession/.../Messages.swift together with this.
+AskChoice = Literal["yes", "no", "wait", "tomorrow", "morning", "now"]
+
+
 class AskOption(_Message):
-    choice: Literal["yes", "no", "wait"]
+    choice: AskChoice
     spoken: str  # exactly what the agent will say if this is chosen
 
 
 class AskMessage(_Message):
     """Attended delegated call: the agent paused ("one moment, please") and needs the
-    user's answer. Sign or tap one of the options; after `timeout_s` with no answer
+    user's answer: yes / no / wait for an offered time, or a time word (+ wait) for an
+    open "when?" question. Sign or tap one of the options; after `timeout_s` with no answer
     the agent says the `fallback` line instead."""
 
     type: Literal["ask"] = "ask"
@@ -188,7 +196,7 @@ class AskMessage(_Message):
 class AnswerMessage(_Message):
     type: Literal["answer"] = "answer"
     ask_id: str
-    choice: Literal["yes", "no", "wait"]
+    choice: AskChoice
 
 
 class AskResolvedMessage(_Message):

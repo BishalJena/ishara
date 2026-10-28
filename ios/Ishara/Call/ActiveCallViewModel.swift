@@ -97,7 +97,8 @@ final class ActiveCallViewModel {
 
     /// D9: the agent pursues an approved brief; the user only answers its questions.
     var isDelegated: Bool { setup.delegation != nil }
-    /// D9 attended: the user watches and answers yes / no / wait by sign or tap.
+    /// D9 attended: the user watches and answers the agent's questions by sign or tap
+    /// (yes / no / wait, or a time word for an open "when?").
     var isAttended: Bool { setup.delegation?.attended ?? false }
     /// Signs matter on a live call, and on an attended delegated call (to answer questions).
     var watchesSigns: Bool { !isDelegated || isAttended }
@@ -227,7 +228,7 @@ final class ActiveCallViewModel {
     }
 
     private func accept(_ sign: Sign) {
-        // D9: while the agent waits for an answer, a signed yes/no/wait answers it.
+        // D9: while the agent waits for an answer, a signed option word answers it.
         if store?.answerIfAsked(sign) == true { return }
         // On a delegated call nothing is composed; only answers reach the call.
         guard !isDelegated else { return }

@@ -114,7 +114,8 @@ public struct ServerError: Equatable, Sendable {
 /// Safety rules (PLAN.md §4, docs/WORKFLOW.md): nothing is spoken unless the user taps SEND,
 /// an approval is used once and tied to its turn, unsure chips and stale drafts never reach
 /// the call, and after End or a disconnect nothing is sent on the user's behalf.
-/// The agent paused the receptionist and needs the user's yes / no / wait (D9).
+/// The agent paused the receptionist and needs the user's answer (D9): yes / no / wait for
+/// an offered time, or a time word (+ wait) for an open "when?" question.
 public struct OpenQuestion: Equatable, Sendable {
     public let askID: String
     public let question: String
@@ -336,19 +337,22 @@ public final class TurnStore {
 
     // MARK: Delegated call (D9)
 
-    /// Answer the agent's open question. Returns false when there is none (nothing is sent).
+    /// Answer the agent's open question with one of its options. Returns false when there is
+    /// no question or the choice isn't one of its options (nothing is sent).
     /// A `wait` keeps the question open; the backend restarts its timer.
     @discardableResult
     public func answer(_ choice: AskChoice) -> Bool {
-        guard state != .ended, let question = openQuestion else { return false }
+        guard state != .ended, let question = openQuestion, question.spoken(for: choice) != nil else {
+            return false
+        }
         sink.send(.answer(askID: question.askID, choice: choice))
         return true
     }
 
-    /// A recognised yes / no / wait while a question is open answers it instead of becoming
-    /// a chip. Returns true when it was consumed that way.
+    /// A recognised sign equal to one of the open question's options (yes, a time word, …)
+    /// answers it instead of becoming a chip. Returns true when it was consumed that way.
     public func answerIfAsked(_ sign: Sign) -> Bool {
-        guard openQuestion != nil, let choice = AskChoice(rawValue: sign.rawValue) else { return false }
+        guard let choice = AskChoice(rawValue: sign.rawValue) else { return false }
         return answer(choice)
     }
 

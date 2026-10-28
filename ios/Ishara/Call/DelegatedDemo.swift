@@ -14,6 +14,9 @@ enum DelegatedDemo {
     static let confirmation = "Great, you're booked for 10:30 tomorrow morning."
     static let declined = "Then please call back when you know a better time."
     static let askTimeout = 10.0
+    /// Version B: the receptionist asks "when?" without offering a time.
+    static let openQuestion = "What time would you like to come in?"
+    static let waitLine = "One moment, please, I'm checking."
 
     private static let days: [Sign: String] = [.today: "today", .now: "today", .tomorrow: "tomorrow", .yesterday: "yesterday"]
     private static let parts: [Sign: String] = [
@@ -55,7 +58,20 @@ enum DelegatedDemo {
     static let options: [AskOption] = [
         AskOption(choice: .yes, spoken: "Yes, \(proposal) works. Thank you."),
         AskOption(choice: .no, spoken: "No, \(proposal) doesn't work, sorry. Is there another time?"),
-        AskOption(choice: .wait, spoken: "One moment, please, I'm checking."),
+        AskOption(choice: .wait, spoken: waitLine),
+    ]
+
+    /// The answer to an open "when?", like the backend's `_time_line`.
+    static func timeLine(_ when: String) -> String {
+        when.prefix(1).uppercased() + when.dropFirst() + ", please. What times are available?"
+    }
+
+    /// The time words the user can sign or tap for an open "when?" (backend `TIME_OPTIONS`).
+    static let timeOptions: [AskOption] = [
+        AskOption(choice: .tomorrow, spoken: timeLine("tomorrow")),
+        AskOption(choice: .morning, spoken: timeLine("in the morning")),
+        AskOption(choice: .now, spoken: timeLine("today, as soon as possible")),
+        AskOption(choice: .wait, spoken: waitLine),
     ]
 
     /// Notes from the transcript, quoting it, like the backend's deterministic notes.
