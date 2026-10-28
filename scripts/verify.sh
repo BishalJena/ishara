@@ -125,11 +125,26 @@ enter_recognition() {
 }
 
 # light_tests.py is the one list (CI runs it too): every test_*.py in spikes/recognition and
-# spikes/asl_probe except the exclusions it names (test_mini needs torch).
+# spikes/asl_probe except test_mini (torch) and the clip-driven fallback (next category).
 check_recognition_light() {
   local python
   enter_recognition
   step "$python" -m unittest light_tests
+}
+
+# test_mac_bridge.ClipDrivenFallback (about 1.5 min) plays public ASL clips through the ASL
+# model, the real bridge and a local backend (fake Bolna, nothing dialled). It needs local
+# venvs, the model and the clips; fallback_missing() names what this machine lacks.
+check_clip_fallback() {
+  local python missing
+  enter_recognition
+  missing=$("$python" -c 'import sys, test_mac_bridge as t
+missing = t.fallback_missing()
+for what, where in missing.items():
+    print(f"  missing: {what} ({where})", file=sys.stderr)
+print(", ".join(missing))')
+  [[ -z $missing ]] || skip "needs $missing (recognition README: Demo fallback)"
+  step "$python" -m unittest test_mac_bridge.ClipDrivenFallback
 }
 
 # SignPipelineLiteRT can't load until its LiteRT binary is downloaded (checksum-verified, once).
@@ -202,6 +217,7 @@ echo "Xcode: ${XCODE_DIR:-not found}"
 run_category "backend (format, lint, tests)" check_backend
 run_category "call_flow tests" check_call_flow
 run_category "recognition light tests" check_recognition_light
+run_category "clip-driven fallback" check_clip_fallback
 run_category "shellcheck" check_shellcheck
 run_category "heroku script tests" check_script_tests
 run_category "swift packages" check_swift_packages
