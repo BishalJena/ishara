@@ -7,9 +7,10 @@ derived from state diffs, so every path that changes the state reports it.
 
 Lines the voice says without a SEND reach the app as `caption {speaker: "agent"}`: the
 disclosure once when the call goes live, the holding line whenever the custom LLM
-returns it, and the goodbye after a successful `end_call`. Approved replies are not
-echoed (the app shows them on `spoken`), and agent lines never touch turns, approvals
-or the receptionist caption the composer reads.
+returns it, the goodbye after a successful `end_call`, and a delegated agent's own lines
+(its replies from the listen node, and its opening once Bolna has said it). Approved
+replies are not echoed (the app shows them on `spoken`), and agent lines never touch
+turns, approvals or the receptionist caption the composer reads.
 
 Recipient numbers never leave this module: not in responses, messages or logs.
 """
@@ -96,6 +97,7 @@ class UnknownBrief(Exception):
 
 
 END_AFTER_DONE_S = 6.0  # a delegated agent that promised a callback hangs up after this
+OPENING_TURN_ID = "delegate-open"  # the turn that speaks a delegated call's opening
 
 
 class _AppLink:
@@ -564,6 +566,10 @@ class CallManager(CallLedger):
                     # Only an answer the receptionist heard counts in the notes; one that
                     # was never delivered must not turn into "booked".
                     delegate.answers.append(spoken_text)
+                if turn_id == OPENING_TURN_ID:
+                    # The app never approved the opening, so `spoken` alone can't tell it
+                    # the words: caption them now that Bolna has said them (#59).
+                    await self._send_agent_line(session, spoken_text)
             await self._send(session, SpokenMessage(turn_id=turn_id))
         await self._publish(session, before)
 
@@ -600,7 +606,7 @@ class CallManager(CallLedger):
                 opening = self._brain.rules.opening(delegate)
                 delegate.opened = True
                 delegate.exchanges.append(Exchange("", opening))
-                await self._speak_line(session, opening, "delegate-open")
+                await self._speak_line(session, opening, OPENING_TURN_ID)
         return True
 
     async def _send_agent_line(self, session: CallSession, text: str) -> None:

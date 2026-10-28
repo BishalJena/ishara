@@ -32,6 +32,7 @@ from app.delegate import (
 )
 from app.main import create_app
 from app.markers import (
+    DISCLOSURE,
     EVENT_END_CALL,
     EVENT_USER_REPLY,
     USER_DATA_CALL_ID,
@@ -395,6 +396,8 @@ def test_attended_call_speaks_the_brief_then_asks_the_user_and_speaks_the_answer
         opening = "I'd like to book a doctor's appointment for Asha Rao, tomorrow in the morning."
         assert f.speak_last(call_id) == opening
         assert f.bolna.replies()[0]["turn_id"] == "delegate-open"
+        said_first = f.drain_until(ws, "caption")
+        assert said_first["speaker"] == "agent" and said_first["text"] == opening
 
         said = f.listen_turn(call_id, "Sorry, what was that?")
         assert said == opening
@@ -426,6 +429,59 @@ def test_attended_call_speaks_the_brief_then_asks_the_user_and_speaks_the_answer
     speakers = [(e["speaker"], e["text"]) for e in notes["transcript"]]
     assert ("receptionist", "We have 4 pm tomorrow. Does that work?") in speakers
     assert ("agent", PAUSE_LINE) in speakers
+
+
+OPENING = "I'd like to book a doctor's appointment for Asha Rao, tomorrow in the morning."
+
+
+def agent_captions(messages: list[dict]) -> list[str]:
+    return [m["text"] for m in messages if m["type"] == "caption" and m["speaker"] == "agent"]
+
+
+def every_message(f: Flow, ws, timeout: float = 0.3) -> list[dict]:
+    """Every message the app gets until it has been quiet for `timeout` seconds."""
+    seen: list[dict] = []
+    with contextlib.suppress(TimeoutError):
+        while True:
+            seen.append(f.receive(ws, timeout=timeout))
+    return seen
+
+
+# Issue #59: the app got only `spoken {turn_id: "delegate-open"}` for the opening, never
+# its words, so the user saw the disclosure and then the receptionist's reply.
+def test_the_opening_shows_as_an_agent_caption_once_bolna_has_said_it(flow) -> None:
+    f = flow()
+    call_id = f.start(f.brief(), attended=True)
+    with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
+        assert f.receive(ws)["type"] == "status"
+        f.live(call_id)
+        before = every_message(f, ws)
+        # Injected into the speak node but not said yet: nothing about it on screen.
+        assert agent_captions(before) == [DISCLOSURE]
+        assert f.speak_last(call_id) == OPENING
+        after = every_message(f, ws)
+        assert agent_captions(after) == [OPENING]
+        caption = next(m for m in after if m["type"] == "caption")
+        spoken = next(m for m in after if m["type"] == "spoken")
+        assert spoken["turn_id"] == "delegate-open"
+        assert after.index(caption) < after.index(spoken)
+        assert caption["at"] > 0
+
+
+def test_an_opening_bolna_never_says_never_shows_as_said(flow) -> None:
+    f = flow(delivery_timeout_s=0.1)
+    call_id = f.start(f.brief(), attended=True)
+    with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
+        assert f.receive(ws)["type"] == "status"
+        f.live(call_id)
+        seen = every_message(f, ws)
+        assert {"type": "not_delivered", "turn_id": "delegate-open"}.items() <= next(
+            m for m in seen if m["type"] == "not_delivered"
+        ).items()
+        # The speak node asks too late: the turn has expired, nothing is said or shown.
+        assert f.speak_last(call_id) == ""
+        seen += every_message(f, ws)
+    assert agent_captions(seen) == [DISCLOSURE]
 
 
 def test_settled_call_says_and_asks_nothing_new_before_hanging_up(flow) -> None:
