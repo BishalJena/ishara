@@ -4,6 +4,7 @@
     "agent_type": "other",
     "agent_welcome_message": "Hello, I'm calling for a Deaf caller who is using Ishara, a sign-language app. Their replies may take a few seconds.",
     "webhook_url": null,
+    "call_summary_enabled": true,
     "tasks": [
       {
         "task_type": "conversation",
@@ -115,7 +116,8 @@
           "check_if_user_online": false,
           "hangup_after_LLMCall": false,
           "voicemail": false,
-          "backchanneling": false
+          "backchanneling": false,
+          "discard_pre_welcome_utterance": true
         }
       }
     ]

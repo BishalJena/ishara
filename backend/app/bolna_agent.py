@@ -163,6 +163,11 @@ def build_agent_payload(custom_llm_base_url: str, webhook_url: str | None) -> di
             "hangup_after_LLMCall": False,
             "voicemail": False,
             "backchanneling": False,
+            # The receptionist's "Hello?" must not cut the disclosure or reach `listen`
+            # while the Call-for-me opening is queued. Name taken from the live GET; the
+            # create schema doesn't list it (dashboard: "Ignore user speech before
+            # welcome message").
+            "discard_pre_welcome_utterance": True,
         },
     }
     return {
@@ -171,6 +176,8 @@ def build_agent_payload(custom_llm_base_url: str, webhook_url: str | None) -> di
             "agent_type": "other",
             "agent_welcome_message": DISCLOSURE,
             "webhook_url": webhook_url,
+            # Off by default; Call-for-me notes read `summary` from the final webhook.
+            "call_summary_enabled": True,
             "tasks": [task],
         },
         "agent_prompts": {"task_1": {"system_prompt": AGENT_INFORMATION}},
