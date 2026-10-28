@@ -1,0 +1,1394 @@
+[
+ {
+  "id": "thankyou_lifeprint-yt-2W0BDFUjsG0",
+  "label": "thankyou",
+  "kind": "sign",
+  "gloss": "thankyou",
+  "source": "lifeprint-yt",
+  "key": "2W0BDFUjsG0",
+  "licence": "Lifeprint / ASL University (Bill Vicars), standard YouTube licence; local evaluation only"
+ },
+ {
+  "id": "yes_lifeprint-yt-0usayvOXzHo",
+  "label": "yes",
+  "kind": "sign",
+  "gloss": "yes",
+  "source": "lifeprint-yt",
+  "key": "0usayvOXzHo",
+  "licence": "Lifeprint / ASL University (Bill Vicars), standard YouTube licence; local evaluation only"
+ },
+ {
+  "id": "no_lifeprint-yt-QJXKaOSyl4o",
+  "label": "no",
+  "kind": "sign",
+  "gloss": "no",
+  "source": "lifeprint-yt",
+  "key": "QJXKaOSyl4o",
+  "licence": "Lifeprint / ASL University (Bill Vicars), standard YouTube licence; local evaluation only"
+ },
+ {
+  "id": "now_lifeprint-yt-g2j70neQ-lI",
+  "label": "now",
+  "kind": "sign",
+  "gloss": "now",
+  "source": "lifeprint-yt",
+  "key": "g2j70neQ_lI",
+  "licence": "Lifeprint / ASL University (Bill Vicars), standard YouTube licence; local evaluation only"
+ },
+ {
+  "id": "please_lifeprint-yt-rnb9FxPO7is",
+  "label": "please",
+  "kind": "sign",
+  "gloss": "please",
+  "source": "lifeprint-yt",
+  "key": "rnb9FxPO7is",
+  "licence": "Lifeprint / ASL University (Bill Vicars), standard YouTube licence; local evaluation only"
+ },
+ {
+  "id": "tomorrow_lifeprint-yt-6gFOZMDptIk",
+  "label": "tomorrow",
+  "kind": "sign",
+  "gloss": "tomorrow",
+  "source": "lifeprint-yt",
+  "key": "6gFOZMDptIk",
+  "licence": "Lifeprint / ASL University (Bill Vicars), standard YouTube licence; local evaluation only"
+ },
+ {
+  "id": "tomorrow_lifeprint-yt-E17VasimjWo",
+  "label": "tomorrow",
+  "kind": "sign",
+  "gloss": "tomorrow",
+  "source": "lifeprint-yt",
+  "key": "E17VasimjWo",
+  "licence": "Lifeprint / ASL University (Bill Vicars), standard YouTube licence; local evaluation only"
+ },
+ {
+  "id": "morning_lifeprint-yt-PKrGMspKng4",
+  "label": "morning",
+  "kind": "sign",
+  "gloss": "morning",
+  "source": "lifeprint-yt",
+  "key": "PKrGMspKng4",
+  "licence": "Lifeprint / ASL University (Bill Vicars), standard YouTube licence; local evaluation only",
+  "excluded": "ALL-MORNING (modified form), per the Lifeprint page caption"
+ },
+ {
+  "id": "morning_lifeprint-yt-iH8N44QMh7c",
+  "label": "morning",
+  "kind": "sign",
+  "gloss": "morning",
+  "source": "lifeprint-yt",
+  "key": "iH8N44QMh7c",
+  "licence": "Lifeprint / ASL University (Bill Vicars), standard YouTube licence; local evaluation only"
+ },
+ {
+  "id": "morning_lifeprint-yt-jMJYpa-xIjI",
+  "label": "morning",
+  "kind": "sign",
+  "gloss": "morning",
+  "source": "lifeprint-yt",
+  "key": "jMJYpa-xIjI",
+  "licence": "Lifeprint / ASL University (Bill Vicars), standard YouTube licence; local evaluation only",
+  "excluded": "EVERY-MORNING (modified form), per the Lifeprint page caption"
+ },
+ {
+  "id": "morning_lifeprint-yt-pzDK3fj-Jsg",
+  "label": "morning",
+  "kind": "sign",
+  "gloss": "morning",
+  "source": "lifeprint-yt",
+  "key": "pzDK3fj_Jsg",
+  "licence": "Lifeprint / ASL University (Bill Vicars), standard YouTube licence; local evaluation only",
+  "excluded": "sample sentence NOW MORNING EAT WHAT, not an isolated sign"
+ },
+ {
+  "id": "wait_lifeprint-yt-4gAd3p-Jgq8",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "lifeprint-yt",
+  "key": "4gAd3p_Jgq8",
+  "licence": "Lifeprint / ASL University (Bill Vicars), standard YouTube licence; local evaluation only",
+  "excluded": "WAIT-[long] inside a sample sentence (3.0-6.5 s window), modified form",
+  "trim_s": [
+   3.0,
+   6.5
+  ]
+ },
+ {
+  "id": "wait_lifeprint-yt-6GXWaW1omCI",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "lifeprint-yt",
+  "key": "6GXWaW1omCI",
+  "licence": "Lifeprint / ASL University (Bill Vicars), standard YouTube licence; local evaluation only",
+  "excluded": "sample sentence SUPPOSE TEACHER NOT COME, WAIT HALF-HOUR YOU, not an isolated sign"
+ },
+ {
+  "id": "wait_lifeprint-yt-El-hYok08Qk",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "lifeprint-yt",
+  "key": "El-hYok08Qk",
+  "licence": "Lifeprint / ASL University (Bill Vicars), standard YouTube licence; local evaluation only",
+  "excluded": "WAIT-a-long-time (modified form), per the Lifeprint page caption"
+ },
+ {
+  "id": "wait_lifeprint-yt-YfwgS9ZsBVw",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "lifeprint-yt",
+  "key": "YfwgS9ZsBVw",
+  "licence": "Lifeprint / ASL University (Bill Vicars), standard YouTube licence; local evaluation only"
+ },
+ {
+  "id": "hello_lifeprint-site-hi-mp4",
+  "label": "hello",
+  "kind": "sign",
+  "gloss": "hello",
+  "source": "lifeprint-site",
+  "key": "hi.mp4",
+  "licence": "Lifeprint / ASL University (Bill Vicars), all rights reserved; local evaluation only"
+ },
+ {
+  "id": "hello_asl-signbank-HELLO-482",
+  "label": "hello",
+  "kind": "sign",
+  "gloss": "hello",
+  "source": "asl-signbank",
+  "key": "HELLO-482",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "thankyou_asl-signbank-THANK-YOU-1198",
+  "label": "thankyou",
+  "kind": "sign",
+  "gloss": "thank-you",
+  "source": "asl-signbank",
+  "key": "THANK-YOU-1198",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "yes_asl-signbank-YES-1472",
+  "label": "yes",
+  "kind": "sign",
+  "gloss": "yes",
+  "source": "asl-signbank",
+  "key": "YES-1472",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "no_asl-signbank-NO-512",
+  "label": "no",
+  "kind": "sign",
+  "gloss": "no",
+  "source": "asl-signbank",
+  "key": "NO-512",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "now_asl-signbank-NOW-517",
+  "label": "now",
+  "kind": "sign",
+  "gloss": "now",
+  "source": "asl-signbank",
+  "key": "NOW-517",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "please_asl-signbank-PLEASE-527",
+  "label": "please",
+  "kind": "sign",
+  "gloss": "please",
+  "source": "asl-signbank",
+  "key": "PLEASE-527",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "tomorrow_asl-signbank-TOMORROW-301",
+  "label": "tomorrow",
+  "kind": "sign",
+  "gloss": "tomorrow",
+  "source": "asl-signbank",
+  "key": "TOMORROW-301",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "morning_asl-signbank-MORNING-190",
+  "label": "morning",
+  "kind": "sign",
+  "gloss": "morning",
+  "source": "asl-signbank",
+  "key": "MORNING-190",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "morning_asl-signbank-MORNING-2537",
+  "label": "morning",
+  "kind": "sign",
+  "gloss": "morning",
+  "source": "asl-signbank",
+  "key": "MORNING-2537",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "wait_asl-signbank-WAIT-1405",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "asl-signbank",
+  "key": "WAIT-1405",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-SORRY-566",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "sorry",
+  "source": "asl-signbank",
+  "key": "SORRY-566",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-HAPPY-476",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "happy",
+  "source": "asl-signbank",
+  "key": "HAPPY-476",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-GOOD-472",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "good",
+  "source": "asl-signbank",
+  "key": "GOOD-472",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-NAME-511",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "name",
+  "source": "asl-signbank",
+  "key": "NAME-511",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-AFTERNOON-6",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "afternoon",
+  "source": "asl-signbank",
+  "key": "AFTERNOON-6",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-WEEK-1418",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "week",
+  "source": "asl-signbank",
+  "key": "WEEK-1418",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-HOSPITAL-1759",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "hospital",
+  "source": "asl-signbank",
+  "key": "HOSPITAL-1759",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-MEDICINE-1621",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "medicine",
+  "source": "asl-signbank",
+  "key": "MEDICINE-1621",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-DOCTOR-344",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "doctor",
+  "source": "asl-signbank",
+  "key": "DOCTOR-344",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-BYE-BYE-425",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "bye-bye",
+  "source": "asl-signbank",
+  "key": "BYE-BYE-425",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-MOTHER-509",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "mother",
+  "source": "asl-signbank",
+  "key": "MOTHER-509",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-FATHER-452",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "father",
+  "source": "asl-signbank",
+  "key": "FATHER-452",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-DEAF-103",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "deaf",
+  "source": "asl-signbank",
+  "key": "DEAF-103",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-FINE-455",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "fine",
+  "source": "asl-signbank",
+  "key": "FINE-455",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-NOSE-514",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "nose",
+  "source": "asl-signbank",
+  "key": "NOSE-514",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-NOT-515",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "not",
+  "source": "asl-signbank",
+  "key": "NOT-515",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-NORTH-645",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "north",
+  "source": "asl-signbank",
+  "key": "NORTH-645",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-THANKSGIVING-3142",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "thanksgiving",
+  "source": "asl-signbank",
+  "key": "THANKSGIVING-3142",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-WAITER-3116",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "waiter",
+  "source": "asl-signbank",
+  "key": "WAITER-3116",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-HOPE-1760",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "hope",
+  "source": "asl-signbank",
+  "key": "HOPE-1760",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-NOT-YET-200",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "not-yet",
+  "source": "asl-signbank",
+  "key": "NOT-YET-200",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "none_asl-signbank-NONE-513",
+  "label": "none",
+  "kind": "negative-sign",
+  "gloss": "none",
+  "source": "asl-signbank",
+  "key": "NONE-513",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0"
+ },
+ {
+  "id": "hello_startasl-hello",
+  "label": "hello",
+  "kind": "sign",
+  "gloss": "hello",
+  "source": "signasl/startasl",
+  "key": "hello",
+  "licence": "startasl via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "hello_elementalaslconcepts-hello",
+  "label": "hello",
+  "kind": "sign",
+  "gloss": "hello",
+  "source": "signasl/elementalaslconcepts",
+  "key": "hello",
+  "licence": "elementalaslconcepts via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "hello_youtube-6kvCOzxP9-A",
+  "label": "hello",
+  "kind": "sign",
+  "gloss": "hello",
+  "source": "signasl/youtube",
+  "key": "6kvCOzxP9-A",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "hello_mariekatzenbachschool-hello",
+  "label": "hello",
+  "kind": "sign",
+  "gloss": "hello",
+  "source": "signasl/mariekatzenbachschool",
+  "key": "hello",
+  "licence": "mariekatzenbachschool via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "hello_youtube-WbkSmhKTltU",
+  "label": "hello",
+  "kind": "sign",
+  "gloss": "hello",
+  "source": "signasl/youtube",
+  "key": "WbkSmhKTltU",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "hello_youtube-Tb0j34drNwc",
+  "label": "hello",
+  "kind": "sign",
+  "gloss": "hello",
+  "source": "signasl/youtube",
+  "key": "Tb0j34drNwc",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "hello_youtube-RRzbB2rg4VM",
+  "label": "hello",
+  "kind": "sign",
+  "gloss": "hello",
+  "source": "signasl/youtube",
+  "key": "RRzbB2rg4VM",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "thankyou_startasl-thankyou",
+  "label": "thankyou",
+  "kind": "sign",
+  "gloss": "thankyou",
+  "source": "signasl/startasl",
+  "key": "thankyou",
+  "licence": "startasl via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "thankyou_startasl-thank-you-2",
+  "label": "thankyou",
+  "kind": "sign",
+  "gloss": "thankyou",
+  "source": "signasl/startasl",
+  "key": "thank-you-2",
+  "licence": "startasl via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "thankyou_elementalaslconcepts-thank-you",
+  "label": "thankyou",
+  "kind": "sign",
+  "gloss": "thankyou",
+  "source": "signasl/elementalaslconcepts",
+  "key": "thank-you",
+  "licence": "elementalaslconcepts via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "thankyou_youtube-OGQTouYS3zM",
+  "label": "thankyou",
+  "kind": "sign",
+  "gloss": "thankyou",
+  "source": "signasl/youtube",
+  "key": "OGQTouYS3zM",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "thankyou_aslbricks-thank-you",
+  "label": "thankyou",
+  "kind": "sign",
+  "gloss": "thankyou",
+  "source": "signasl/aslbricks",
+  "key": "thank-you",
+  "licence": "aslbricks via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "thankyou_mariekatzenbachschool-thank-you",
+  "label": "thankyou",
+  "kind": "sign",
+  "gloss": "thankyou",
+  "source": "signasl/mariekatzenbachschool",
+  "key": "thank-you",
+  "licence": "mariekatzenbachschool via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "thankyou_youtube-7XHOmZYiBew",
+  "label": "thankyou",
+  "kind": "sign",
+  "gloss": "thankyou",
+  "source": "signasl/youtube",
+  "key": "7XHOmZYiBew",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "thankyou_youtube-8jnbPaVPadc",
+  "label": "thankyou",
+  "kind": "sign",
+  "gloss": "thankyou",
+  "source": "signasl/youtube",
+  "key": "8jnbPaVPadc",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "thankyou_youtube-lJXvGI7r-Fc",
+  "label": "thankyou",
+  "kind": "sign",
+  "gloss": "thankyou",
+  "source": "signasl/youtube",
+  "key": "lJXvGI7r-Fc",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "thankyou_youtube-t8Hr0IHghrQ",
+  "label": "thankyou",
+  "kind": "sign",
+  "gloss": "thankyou",
+  "source": "signasl/youtube",
+  "key": "t8Hr0IHghrQ",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "yes_startasl-yes",
+  "label": "yes",
+  "kind": "sign",
+  "gloss": "yes",
+  "source": "signasl/startasl",
+  "key": "yes",
+  "licence": "startasl via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "yes_signlanguagestudent-yes-alternate",
+  "label": "yes",
+  "kind": "sign",
+  "gloss": "yes",
+  "source": "signasl/signlanguagestudent",
+  "key": "yes-alternate",
+  "licence": "signlanguagestudent via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "yes_signlanguagestudent-yes",
+  "label": "yes",
+  "kind": "sign",
+  "gloss": "yes",
+  "source": "signasl/signlanguagestudent",
+  "key": "yes",
+  "licence": "signlanguagestudent via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "yes_aslsearch-yes",
+  "label": "yes",
+  "kind": "sign",
+  "gloss": "yes",
+  "source": "signasl/aslsearch",
+  "key": "yes",
+  "licence": "aslsearch via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "yes_elementalaslconcepts-yes",
+  "label": "yes",
+  "kind": "sign",
+  "gloss": "yes",
+  "source": "signasl/elementalaslconcepts",
+  "key": "yes",
+  "licence": "elementalaslconcepts via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "yes_youtube-Kg0VRsnehgQ",
+  "label": "yes",
+  "kind": "sign",
+  "gloss": "yes",
+  "source": "signasl/youtube",
+  "key": "Kg0VRsnehgQ",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "yes_aslbricks-yes",
+  "label": "yes",
+  "kind": "sign",
+  "gloss": "yes",
+  "source": "signasl/aslbricks",
+  "key": "yes",
+  "licence": "aslbricks via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "yes_mariekatzenbachschool-yes",
+  "label": "yes",
+  "kind": "sign",
+  "gloss": "yes",
+  "source": "signasl/mariekatzenbachschool",
+  "key": "yes",
+  "licence": "mariekatzenbachschool via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "yes_youtube-gpNDuOwyW7Q",
+  "label": "yes",
+  "kind": "sign",
+  "gloss": "yes",
+  "source": "signasl/youtube",
+  "key": "gpNDuOwyW7Q",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "yes_youtube-h8dstbX5kN0",
+  "label": "yes",
+  "kind": "sign",
+  "gloss": "yes",
+  "source": "signasl/youtube",
+  "key": "h8dstbX5kN0",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "yes_youtube-WHGzWZa-gk",
+  "label": "yes",
+  "kind": "sign",
+  "gloss": "yes",
+  "source": "signasl/youtube",
+  "key": "WHGzWZa-gk",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "yes_youtube-wc2A8AZepy4",
+  "label": "yes",
+  "kind": "sign",
+  "gloss": "yes",
+  "source": "signasl/youtube",
+  "key": "wc2A8AZepy4",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "yes_youtube-gPlAfYvevxc",
+  "label": "yes",
+  "kind": "sign",
+  "gloss": "yes",
+  "source": "signasl/youtube",
+  "key": "gPlAfYvevxc",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "yes_youtube-on-5PoBEak",
+  "label": "yes",
+  "kind": "sign",
+  "gloss": "yes",
+  "source": "signasl/youtube",
+  "key": "on-5PoBEak",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "no_startasl-no",
+  "label": "no",
+  "kind": "sign",
+  "gloss": "no",
+  "source": "signasl/startasl",
+  "key": "no",
+  "licence": "startasl via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "no_aslsearch-no",
+  "label": "no",
+  "kind": "sign",
+  "gloss": "no",
+  "source": "signasl/aslsearch",
+  "key": "no",
+  "licence": "aslsearch via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "no_aslsearch-no2",
+  "label": "no",
+  "kind": "sign",
+  "gloss": "no",
+  "source": "signasl/aslsearch",
+  "key": "no2",
+  "licence": "aslsearch via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "no_elementalaslconcepts-no",
+  "label": "no",
+  "kind": "sign",
+  "gloss": "no",
+  "source": "signasl/elementalaslconcepts",
+  "key": "no",
+  "licence": "elementalaslconcepts via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "no_youtube-hwa-U71nr74",
+  "label": "no",
+  "kind": "sign",
+  "gloss": "no",
+  "source": "signasl/youtube",
+  "key": "hwa-U71nr74",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "no_aslbricks-no",
+  "label": "no",
+  "kind": "sign",
+  "gloss": "no",
+  "source": "signasl/aslbricks",
+  "key": "no",
+  "licence": "aslbricks via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "no_mariekatzenbachschool-no",
+  "label": "no",
+  "kind": "sign",
+  "gloss": "no",
+  "source": "signasl/mariekatzenbachschool",
+  "key": "no",
+  "licence": "mariekatzenbachschool via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "no_youtube-nyUDOPmQlZQ",
+  "label": "no",
+  "kind": "sign",
+  "gloss": "no",
+  "source": "signasl/youtube",
+  "key": "nyUDOPmQlZQ",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "no_youtube-d3hz26r-ulw",
+  "label": "no",
+  "kind": "sign",
+  "gloss": "no",
+  "source": "signasl/youtube",
+  "key": "d3hz26r-ulw",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "no_youtube-lgNwgl10VSg",
+  "label": "no",
+  "kind": "sign",
+  "gloss": "no",
+  "source": "signasl/youtube",
+  "key": "lgNwgl10VSg",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "no_youtube-URb48i4X52U",
+  "label": "no",
+  "kind": "sign",
+  "gloss": "no",
+  "source": "signasl/youtube",
+  "key": "URb48i4X52U",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "no_youtube-OtmWOH-VJ-g",
+  "label": "no",
+  "kind": "sign",
+  "gloss": "no",
+  "source": "signasl/youtube",
+  "key": "OtmWOH-VJ-g",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "no_youtube-M33kulg9n9g",
+  "label": "no",
+  "kind": "sign",
+  "gloss": "no",
+  "source": "signasl/youtube",
+  "key": "M33kulg9n9g",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "no_startasl-no-2",
+  "label": "no",
+  "kind": "sign",
+  "gloss": "no",
+  "source": "signasl/startasl",
+  "key": "no-2",
+  "licence": "startasl via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "now_startasl-now",
+  "label": "now",
+  "kind": "sign",
+  "gloss": "now",
+  "source": "signasl/startasl",
+  "key": "now",
+  "licence": "startasl via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "now_aslsearch-now",
+  "label": "now",
+  "kind": "sign",
+  "gloss": "now",
+  "source": "signasl/aslsearch",
+  "key": "now",
+  "licence": "aslsearch via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "now_aslsearch-now2",
+  "label": "now",
+  "kind": "sign",
+  "gloss": "now",
+  "source": "signasl/aslsearch",
+  "key": "now2",
+  "licence": "aslsearch via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "now_elementalaslconcepts-now",
+  "label": "now",
+  "kind": "sign",
+  "gloss": "now",
+  "source": "signasl/elementalaslconcepts",
+  "key": "now",
+  "licence": "elementalaslconcepts via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "now_aslbricks-now",
+  "label": "now",
+  "kind": "sign",
+  "gloss": "now",
+  "source": "signasl/aslbricks",
+  "key": "now",
+  "licence": "aslbricks via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "now_youtube-vmGh2IPdSRU",
+  "label": "now",
+  "kind": "sign",
+  "gloss": "now",
+  "source": "signasl/youtube",
+  "key": "vmGh2IPdSRU",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "now_mariekatzenbachschool-now",
+  "label": "now",
+  "kind": "sign",
+  "gloss": "now",
+  "source": "signasl/mariekatzenbachschool",
+  "key": "now",
+  "licence": "mariekatzenbachschool via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "now_youtube-oYYxJ3Ax8K4",
+  "label": "now",
+  "kind": "sign",
+  "gloss": "now",
+  "source": "signasl/youtube",
+  "key": "oYYxJ3Ax8K4",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "please_startasl-please",
+  "label": "please",
+  "kind": "sign",
+  "gloss": "please",
+  "source": "signasl/startasl",
+  "key": "please",
+  "licence": "startasl via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "please_aslsearch-please",
+  "label": "please",
+  "kind": "sign",
+  "gloss": "please",
+  "source": "signasl/aslsearch",
+  "key": "please",
+  "licence": "aslsearch via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "please_elementalaslconcepts-please",
+  "label": "please",
+  "kind": "sign",
+  "gloss": "please",
+  "source": "signasl/elementalaslconcepts",
+  "key": "please",
+  "licence": "elementalaslconcepts via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "please_youtube-eyu0V3s1-XA",
+  "label": "please",
+  "kind": "sign",
+  "gloss": "please",
+  "source": "signasl/youtube",
+  "key": "eyu0V3s1-XA",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "please_aslbricks-please",
+  "label": "please",
+  "kind": "sign",
+  "gloss": "please",
+  "source": "signasl/aslbricks",
+  "key": "please",
+  "licence": "aslbricks via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "please_mariekatzenbachschool-please",
+  "label": "please",
+  "kind": "sign",
+  "gloss": "please",
+  "source": "signasl/mariekatzenbachschool",
+  "key": "please",
+  "licence": "mariekatzenbachschool via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "please_youtube-wNS3kifA8-Y",
+  "label": "please",
+  "kind": "sign",
+  "gloss": "please",
+  "source": "signasl/youtube",
+  "key": "wNS3kifA8-Y",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "please_youtube-U-kY0ZvVmUs",
+  "label": "please",
+  "kind": "sign",
+  "gloss": "please",
+  "source": "signasl/youtube",
+  "key": "U-kY0ZvVmUs",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "tomorrow_startasl-tomorrow",
+  "label": "tomorrow",
+  "kind": "sign",
+  "gloss": "tomorrow",
+  "source": "signasl/startasl",
+  "key": "tomorrow",
+  "licence": "startasl via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "tomorrow_tsdvideo-1203",
+  "label": "tomorrow",
+  "kind": "sign",
+  "gloss": "tomorrow",
+  "source": "signasl/tsdvideo",
+  "key": "1203",
+  "licence": "tsdvideo via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "tomorrow_tsdvideo-684",
+  "label": "tomorrow",
+  "kind": "sign",
+  "gloss": "tomorrow",
+  "source": "signasl/tsdvideo",
+  "key": "684",
+  "licence": "tsdvideo via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "tomorrow_aslsearch-tomorrow",
+  "label": "tomorrow",
+  "kind": "sign",
+  "gloss": "tomorrow",
+  "source": "signasl/aslsearch",
+  "key": "tomorrow",
+  "licence": "aslsearch via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "tomorrow_elementalaslconcepts-tomorrow",
+  "label": "tomorrow",
+  "kind": "sign",
+  "gloss": "tomorrow",
+  "source": "signasl/elementalaslconcepts",
+  "key": "tomorrow",
+  "licence": "elementalaslconcepts via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "tomorrow_youtube-RHKBEZHE1yY",
+  "label": "tomorrow",
+  "kind": "sign",
+  "gloss": "tomorrow",
+  "source": "signasl/youtube",
+  "key": "RHKBEZHE1yY",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "tomorrow_aslbricks-tomorrow",
+  "label": "tomorrow",
+  "kind": "sign",
+  "gloss": "tomorrow",
+  "source": "signasl/aslbricks",
+  "key": "tomorrow",
+  "licence": "aslbricks via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "tomorrow_dictio-A-tomorrow",
+  "label": "tomorrow",
+  "kind": "sign",
+  "gloss": "tomorrow",
+  "source": "signasl/dictio",
+  "key": "A-tomorrow",
+  "licence": "dictio via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "tomorrow_mariekatzenbachschool-tomorrow",
+  "label": "tomorrow",
+  "kind": "sign",
+  "gloss": "tomorrow",
+  "source": "signasl/mariekatzenbachschool",
+  "key": "tomorrow",
+  "licence": "mariekatzenbachschool via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "morning_youtube-YfZNZlekeo4",
+  "label": "morning",
+  "kind": "sign",
+  "gloss": "morning",
+  "source": "signasl/youtube",
+  "key": "YfZNZlekeo4",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "morning_youtube-LsXpXHgZBc",
+  "label": "morning",
+  "kind": "sign",
+  "gloss": "morning",
+  "source": "signasl/youtube",
+  "key": "LsXpXHgZBc",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "morning_startasl-morning",
+  "label": "morning",
+  "kind": "sign",
+  "gloss": "morning",
+  "source": "signasl/startasl",
+  "key": "morning",
+  "licence": "startasl via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "morning_aslsearch-morning",
+  "label": "morning",
+  "kind": "sign",
+  "gloss": "morning",
+  "source": "signasl/aslsearch",
+  "key": "morning",
+  "licence": "aslsearch via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "morning_youtube-Oem8EmGkQ0M",
+  "label": "morning",
+  "kind": "sign",
+  "gloss": "morning",
+  "source": "signasl/youtube",
+  "key": "Oem8EmGkQ0M",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "morning_aslbricks-morning",
+  "label": "morning",
+  "kind": "sign",
+  "gloss": "morning",
+  "source": "signasl/aslbricks",
+  "key": "morning",
+  "licence": "aslbricks via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "morning_mariekatzenbachschool-morning",
+  "label": "morning",
+  "kind": "sign",
+  "gloss": "morning",
+  "source": "signasl/mariekatzenbachschool",
+  "key": "morning",
+  "licence": "mariekatzenbachschool via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "wait_startasl-wait",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "signasl/startasl",
+  "key": "wait",
+  "licence": "startasl via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "wait_aslsearch-wait",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "signasl/aslsearch",
+  "key": "wait",
+  "licence": "aslsearch via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "wait_elementalaslconcepts-wait",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "signasl/elementalaslconcepts",
+  "key": "wait",
+  "licence": "elementalaslconcepts via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "wait_youtube-g4zPWVKTVc4",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "signasl/youtube",
+  "key": "g4zPWVKTVc4",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "wait_youtube-hooZv2wCujw",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "signasl/youtube",
+  "key": "hooZv2wCujw",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "wait_youtube-mo6REHINcoE",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "signasl/youtube",
+  "key": "mo6REHINcoE",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "wait_mariekatzenbachschool-wait",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "signasl/mariekatzenbachschool",
+  "key": "wait",
+  "licence": "mariekatzenbachschool via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "wait_youtube-a-gp8-kUe-Q",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "signasl/youtube",
+  "key": "a-gp8-kUe-Q",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "wait_youtube-mhJvv6lTQ90",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "signasl/youtube",
+  "key": "mhJvv6lTQ90",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "wait_youtube-oMpdybUn-9Y",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "signasl/youtube",
+  "key": "oMpdybUn-9Y",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "wait_mariekatzenbachschool-wait-2",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "signasl/mariekatzenbachschool",
+  "key": "wait-2",
+  "licence": "mariekatzenbachschool via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "wait_youtube-bdBswxWmiBc",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "signasl/youtube",
+  "key": "bdBswxWmiBc",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "wait_youtube-lbN-NElNaMI",
+  "label": "wait",
+  "kind": "sign",
+  "gloss": "wait",
+  "source": "signasl/youtube",
+  "key": "lbN-NElNaMI",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only"
+ },
+ {
+  "id": "none_rest-elementalaslconcepts-hello",
+  "label": "none",
+  "kind": "negative-rest",
+  "gloss": "rest",
+  "source": "signasl/elementalaslconcepts",
+  "key": "hello",
+  "licence": "elementalaslconcepts via SignASL.org, copyright of the original publisher; local evaluation only",
+  "trim_s": [
+   0.0,
+   1.75
+  ],
+  "cut_from": "hello_elementalaslconcepts-hello"
+ },
+ {
+  "id": "none_rest-asl-signbank-MORNING-190",
+  "label": "none",
+  "kind": "negative-rest",
+  "gloss": "rest",
+  "source": "asl-signbank",
+  "key": "MORNING-190",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0",
+  "trim_s": [
+   1.543,
+   2.586
+  ],
+  "cut_from": "morning_asl-signbank-MORNING-190"
+ },
+ {
+  "id": "none_rest-aslsearch-no",
+  "label": "none",
+  "kind": "negative-rest",
+  "gloss": "rest",
+  "source": "signasl/aslsearch",
+  "key": "no",
+  "licence": "aslsearch via SignASL.org, copyright of the original publisher; local evaluation only",
+  "trim_s": [
+   1.301,
+   2.769
+  ],
+  "cut_from": "no_aslsearch-no"
+ },
+ {
+  "id": "none_rest-aslsearch-no2",
+  "label": "none",
+  "kind": "negative-rest",
+  "gloss": "rest",
+  "source": "signasl/aslsearch",
+  "key": "no2",
+  "licence": "aslsearch via SignASL.org, copyright of the original publisher; local evaluation only",
+  "trim_s": [
+   1.602,
+   3.203
+  ],
+  "cut_from": "no_aslsearch-no2"
+ },
+ {
+  "id": "none_rest-elementalaslconcepts-no",
+  "label": "none",
+  "kind": "negative-rest",
+  "gloss": "rest",
+  "source": "signasl/elementalaslconcepts",
+  "key": "no",
+  "licence": "elementalaslconcepts via SignASL.org, copyright of the original publisher; local evaluation only",
+  "trim_s": [
+   0.0,
+   1.208
+  ],
+  "cut_from": "no_elementalaslconcepts-no"
+ },
+ {
+  "id": "none_rest-youtube-M33kulg9n9g",
+  "label": "none",
+  "kind": "negative-rest",
+  "gloss": "rest",
+  "source": "signasl/youtube",
+  "key": "M33kulg9n9g",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only",
+  "trim_s": [
+   0.0,
+   1.034
+  ],
+  "cut_from": "no_youtube-M33kulg9n9g"
+ },
+ {
+  "id": "none_rest-youtube-d3hz26r-ulw",
+  "label": "none",
+  "kind": "negative-rest",
+  "gloss": "rest",
+  "source": "signasl/youtube",
+  "key": "d3hz26r-ulw",
+  "licence": "youtube via SignASL.org, copyright of the original publisher; local evaluation only",
+  "trim_s": [
+   2.035,
+   3.403
+  ],
+  "cut_from": "no_youtube-d3hz26r-ulw"
+ },
+ {
+  "id": "none_rest-asl-signbank-BYE-BYE-425",
+  "label": "none",
+  "kind": "negative-rest",
+  "gloss": "rest",
+  "source": "asl-signbank",
+  "key": "BYE-BYE-425",
+  "licence": "ASL Signbank (Hochgesang, Crasborn, Lillo-Martin), CC BY-NC-SA 4.0",
+  "trim_s": [
+   1.71,
+   2.711
+  ],
+  "cut_from": "none_asl-signbank-BYE-BYE-425"
+ },
+ {
+  "id": "none_rest-mariekatzenbachschool-please",
+  "label": "none",
+  "kind": "negative-rest",
+  "gloss": "rest",
+  "source": "signasl/mariekatzenbachschool",
+  "key": "please",
+  "licence": "mariekatzenbachschool via SignASL.org, copyright of the original publisher; local evaluation only",
+  "trim_s": [
+   0.0,
+   1.167
+  ],
+  "cut_from": "please_mariekatzenbachschool-please"
+ },
+ {
+  "id": "none_rest-startasl-thank-you-2",
+  "label": "none",
+  "kind": "negative-rest",
+  "gloss": "rest",
+  "source": "signasl/startasl",
+  "key": "thank-you-2",
+  "licence": "startasl via SignASL.org, copyright of the original publisher; local evaluation only",
+  "trim_s": [
+   0.0,
+   1.101
+  ],
+  "cut_from": "thankyou_startasl-thank-you-2"
+ }
+]

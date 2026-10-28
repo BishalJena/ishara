@@ -53,19 +53,20 @@ def main(argv=None) -> int:
     rows = json.loads(args.manifest.read_text())
     out_dir = args.manifest.parent / "landmarks"
     out_dir.mkdir(parents=True, exist_ok=True)
-    with mp.solutions.holistic.Holistic(static_image_mode=False, model_complexity=args.complexity,
-                                        refine_face_landmarks=False) as holistic:
-        for i, row in enumerate(rows, 1):
-            dest = out_dir / f"{row['id']}.npz"
-            if dest.exists():
-                continue
+    for i, row in enumerate(rows, 1):
+        dest = out_dir / f"{row['id']}.npz"
+        if dest.exists():
+            continue
+        # A tracker per clip: in video mode it carries its regions from one clip into the next.
+        with mp.solutions.holistic.Holistic(static_image_mode=False, model_complexity=args.complexity,
+                                            refine_face_landmarks=False) as holistic:
             data = extract(Path(row["path"]), holistic)
-            lm = data["landmarks"]
-            hands = float(np.mean(~np.isnan(lm[:, FACE:FACE + HAND, 0]).any(axis=1)
-                                  | ~np.isnan(lm[:, FACE + HAND + POSE:, 0]).any(axis=1))) if len(lm) else 0.0
-            np.savez_compressed(dest, **data)
-            print(f"[{i}/{len(rows)}] {row['id']} {row['label']:<10} T={len(lm):>4} fps={data['fps']:.1f} "
-                  f"{data['width']}x{data['height']} hands_seen={hands:.2f}", flush=True)
+        lm = data["landmarks"]
+        hands = float(np.mean(~np.isnan(lm[:, FACE:FACE + HAND, 0]).any(axis=1)
+                              | ~np.isnan(lm[:, FACE + HAND + POSE:, 0]).any(axis=1))) if len(lm) else 0.0
+        np.savez_compressed(dest, **data)
+        print(f"[{i}/{len(rows)}] {row['id']} {row['label']:<10} T={len(lm):>4} fps={data['fps']:.1f} "
+              f"{data['width']}x{data['height']} hands_seen={hands:.2f}", flush=True)
     return 0
 
 

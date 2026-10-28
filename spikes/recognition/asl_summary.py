@@ -8,12 +8,17 @@ Three sources, each a list of labelled attempts:
                      are negatives: anything accepted on them is a false accept.
     --app DIR        the same clips as scored by the app path (ios/IsharaTests/ASLParityHarness:
                      simulator.json), so the numbers come from the landmarker the phone runs.
+    --combine JSON.. runs saved with --json (each named with --name, e.g. "Mac, portrait"):
+                     one column per run, every run's gate, and one suggestion fitted on all of
+                     them at once, so no run gets a wrong accept from it.
 
 The decision is the bundle's open-set rule (asl_matcher.asl_decision), re-applied here so the
-thresholds can be swept. Outputs a markdown table (stdout or --markdown), --json and --csv.
---write-bundle PATH writes a frozen copy of the bundle (provisional false) with the suggested
-global cut-off, plus per-word cut-offs with --per-word; review it before shipping it in
-ios/Ishara/Resources/asl-bundle.json and fixtures/asl/.
+thresholds can be swept. Outputs a markdown table (stdout or --markdown), --json (with every
+attempt, for --combine) and --csv. --write-bundle PATH writes a frozen copy of the bundle
+(provisional false) with the suggested global cut-off, plus per-word cut-offs with --per-word;
+review it before shipping it in ios/Ishara/Resources/asl-bundle.json and fixtures/asl/. Add
+--provisional for a candidate that keeps the app's provisional banner (e.g. from public clips).
+--vocabulary a,b,c judges any source as if the bundle chipped only those glosses (a what-if).
 
 Run with spikes/recognition/.venv (MediaPipe) for --clips; --records and --app need numpy only.
 """
@@ -26,7 +31,7 @@ import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any, Iterable, Iterator, Sequence
 
 import numpy as np
 
@@ -172,7 +177,73 @@ def markdown(rows: dict[str, dict[str, Any]], verdict: dict[str, Any], rule: Rul
     return "\n".join(out)
 
 
+def combine(runs: dict[str, Sequence[Attempt]], rule: Rule) -> dict[str, Any]:
+    """Several runs over the same clips (Mac / app path, landscape / portrait): each run's own
+    table and gate, a combined gate that every run must pass, and one suggestion fitted on all
+    attempts at once, so a cut-off that is safe on one run but wrong on another is never offered."""
+    out: dict[str, Any] = {"runs": {}}
+    for name, attempts in runs.items():
+        rows = tally(attempts, rule)
+        signs = [r for w, r in rows.items() if w != NEGATIVE]
+        negative = rows.get(NEGATIVE, {})
+        totals = {"signs": sum(r["n"] for r in signs), **{k: sum(r[k] for r in signs) for k in
+                                                           ("chip", "pick_one", "wrong_chip", "wrong_pick")},
+                  "negatives": negative.get("n", 0), "negative_chip": negative.get("wrong_chip", 0),
+                  "negative_pick": negative.get("wrong_pick", 0)}
+        out["runs"][name] = {"rows": rows, "gate": gate(rows), "totals": totals}
+    out["passes"] = all(r["gate"]["passes"] for r in out["runs"].values())
+    out["suggestion"] = suggest([a for attempts in runs.values() for a in attempts], rule)
+    return out
+
+
+def combined_markdown(report: dict[str, Any]) -> str:
+    """One row per sign, one column per run: `chip+one-tap/attempts pass|fail`; negatives show
+    their auto-accepts (any is a failure)."""
+    runs = report["runs"]
+    words = sorted({w for r in runs.values() for w in r["rows"]}, key=lambda w: (w == NEGATIVE, w))
+    out = ["| sign | clips | " + " | ".join(runs) + " |", "|---|---|" + "---|" * len(runs)]
+    for word in words:
+        cells = []
+        for run in runs.values():
+            r = run["rows"].get(word)
+            if r is None:
+                cells.append("-")
+            elif word == NEGATIVE:
+                cells.append(f"{r['wrong_chip']} auto-accepts, {r['wrong_pick']} one-tap tiles")
+            else:
+                verdict = "pass" if run["gate"]["words"][word] else "fail"
+                wrong = f", {r['wrong_chip']} wrong chips" if r["wrong_chip"] else ""
+                cells.append(f"{r['chip']}+{r['pick_one']}/{r['n']} {verdict}{wrong}")
+        n = max(run["rows"][word]["n"] for run in runs.values() if word in run["rows"])
+        out.append(f"| {word} | {n} | " + " | ".join(cells) + " |")
+    def share(k: int, n: int, what: str) -> str:
+        return f"{k} {what} ({k / n:.0%})" if n else f"{k} {what}"
+    totals = [run["totals"] for run in runs.values()]
+    out.append(f"| all signs | {max(t['signs'] for t in totals)} | " + " | ".join(
+        f"{share(t['chip'], t['signs'], 'chips')} + {t['pick_one']} one-tap, {share(t['wrong_chip'], t['signs'], 'wrong chips')}"
+        for t in totals) + " |")
+    gates = "; ".join(f"{name}: {'PASS' if r['gate']['passes'] else 'FAIL'} ({r['gate']['wrong_auto_accepts']} wrong, "
+                      f"{r['gate']['negative_auto_accepts']} on negatives)" for name, r in runs.items())
+    s = report["suggestion"]
+    out += ["", f"Gate per run: {gates}. All runs: {'PASS' if report['passes'] else 'FAIL'}.", "",
+            f"Suggested on all runs together: global p = {s['p']}, per word = {s['per_word'] or 'none'} "
+            f"({s['chips_right_with_suggestion']} correct chips over every run)."]
+    return "\n".join(out)
+
+
 # ---- sources ----
+
+def attempts_json(attempts: Sequence[Attempt]) -> list[dict[str, Any]]:
+    return [{"word": a.word, "source": a.source, "top": [list(t) for t in a.top], "quality": a.quality,
+             "latency_s": a.latency_s} for a in attempts]
+
+
+def from_json(path: Path) -> tuple[str, list[Attempt]]:
+    """A run saved by --json: its source name and attempts."""
+    data = json.loads(path.read_text())
+    return data["source"], [Attempt(r["word"], tuple((g, float(p)) for g, p in r["top"]), dict(r["quality"]),
+                                    r["source"], r["latency_s"]) for r in data["attempts"]]
+
 
 def label_of(path: Path) -> str:
     return re.split(r"[_\-\s]", path.stem.lower(), maxsplit=1)[0]
@@ -207,36 +278,46 @@ def from_app(directory: Path, glosses: Sequence[str]) -> list[Attempt]:
     return out
 
 
-def from_clips(directory: Path) -> list[Attempt]:
+def mac_landmarks(clips: Iterable[Path]) -> Iterator[tuple[Path, np.ndarray]]:
+    """Legacy Holistic landmarks in the Kaggle layout, each clip with a tracker of its own. In video
+    mode the tracker carries its hand and face regions from frame to frame, so one tracker shared
+    over a folder made a clip's landmarks, and its score, depend on the clip sorted before it."""
     sys.path.insert(0, str(HERE.parent / "asl_probe"))
     import extract as ex
-    from asl_model import AslModel, quality
     from detect_clips import holistic
+
+    for clip in clips:
+        with holistic() as tracker:
+            yield clip, ex.extract(clip, tracker)["landmarks"].astype(np.float32)
+
+
+def from_clips(directory: Path) -> list[Attempt]:
+    from asl_model import AslModel, quality
 
     model = AslModel()
     out = []
     try:
-        with holistic() as tracker:
-            for clip in sorted(p for p in directory.iterdir() if p.suffix.lower() in VIDEO):
-                lm = ex.extract(clip, tracker)["landmarks"].astype(np.float32)
-                if not len(lm):
-                    continue
+        for clip, lm in mac_landmarks(sorted(p for p in directory.iterdir() if p.suffix.lower() in VIDEO)):
+            if len(lm):
                 out.append(Attempt(label_of(clip), _top(model.predict(lm), model.glosses), quality(lm), clip.name))
     finally:
         model.close()
     return out
 
 
-def write_bundle(document: dict[str, Any], suggestion: dict[str, Any], per_word: bool, source: str, path: Path) -> None:
+def write_bundle(document: dict[str, Any], suggestion: dict[str, Any], per_word: bool, source: str, path: Path,
+                 provisional: bool = False) -> None:
+    """A frozen bundle, or with `provisional` a candidate that keeps the app's provisional banner."""
     frozen = json.loads(json.dumps(document))
     if suggestion["p"] is None:
         raise SystemExit("no cut-off on the grid gives zero wrong accepts; not writing a bundle")
     frozen["thresholds"]["p"] = suggestion["p"]
     frozen["thresholds"]["pick_one_p"] = min(frozen["thresholds"]["pick_one_p"], suggestion["p"])
     frozen["per_word"] = suggestion["per_word"] if per_word else {}
-    frozen["provisional"] = False
-    frozen["calibration"] = (f"frozen from {source} by asl_summary.py: lowest global cut-off with zero wrong "
-                             f"accepts{', plus per-word cut-offs' if per_word else ''}. " + document.get("calibration", ""))
+    frozen["provisional"] = provisional
+    frozen["calibration"] = (f"{'candidate' if provisional else 'frozen'} from {source} by asl_summary.py: lowest "
+                             f"global cut-off with zero wrong accepts{', plus per-word cut-offs' if per_word else ''}. "
+                             + document.get("calibration", ""))
     path.write_text(json.dumps(frozen, indent=1) + "\n")
 
 
@@ -246,22 +327,52 @@ def main(argv: Iterable[str] | None = None) -> int:
     source.add_argument("--records", type=Path)
     source.add_argument("--clips", type=Path)
     source.add_argument("--app", type=Path)
+    source.add_argument("--combine", type=Path, nargs="+", metavar="JSON",
+                        help="runs saved with --json (e.g. Mac and app path, landscape and portrait), judged together")
+    parser.add_argument("--name", help="the run's name in --json (default: the source)")
+    parser.add_argument("--vocabulary", help="comma-separated glosses: judge as if the bundle chipped only these "
+                                             "(a what-if; --write-bundle then carries this vocabulary)")
     parser.add_argument("--bundle", type=Path, default=DEFAULT_BUNDLE)
     parser.add_argument("--markdown", type=Path)
     parser.add_argument("--json", type=Path)
     parser.add_argument("--csv", type=Path)
     parser.add_argument("--write-bundle", type=Path)
     parser.add_argument("--per-word", action="store_true", help="include per-word cut-offs in --write-bundle")
+    parser.add_argument("--provisional", action="store_true",
+                        help="--write-bundle writes a candidate that stays provisional instead of a frozen bundle")
     args = parser.parse_args(list(argv) if argv is not None else None)
 
     document = json.loads(args.bundle.read_text())
+    if args.vocabulary:
+        words = sorted({w.strip() for w in args.vocabulary.split(",") if w.strip()})
+        unknown = [w for w in words if w not in document["glosses"]]
+        if unknown:
+            raise SystemExit(f"not among the model's glosses: {', '.join(unknown)}")
+        document = {**document, "vocabulary": words}
     rule = Rule.from_bundle(document)
+    if args.combine:
+        runs = dict(from_json(path) for path in args.combine)
+        if len(runs) != len(args.combine):
+            raise SystemExit("two runs share a name; give each --json run its own --name")
+        report = combine(runs, rule)
+        text = combined_markdown(report)
+        print(text)
+        if args.markdown:
+            args.markdown.write_text(text + "\n")
+        if args.json:
+            args.json.write_text(json.dumps(report, indent=1, default=float))
+        if args.write_bundle:
+            write_bundle(document, report["suggestion"], args.per_word, "combined runs: " + ", ".join(runs),
+                         args.write_bundle, args.provisional)
+            print(f"wrote {args.write_bundle} (provisional {str(args.provisional).lower()}): review before shipping")
+        return 0
     if args.records:
         attempts, name = from_records(args.records), str(args.records)
     elif args.app:
         attempts, name = from_app(args.app, document["glosses"]), f"app path, {args.app}"
     else:
         attempts, name = from_clips(args.clips), f"Mac path, {args.clips}"
+    name = args.name or name
     if not attempts:
         raise SystemExit("no labelled attempts found")
     rows = tally(attempts, rule)
@@ -274,8 +385,8 @@ def main(argv: Iterable[str] | None = None) -> int:
     if args.markdown:
         args.markdown.write_text(text + "\n")
     if args.json:
-        args.json.write_text(json.dumps({"source": name, "rows": rows, "gate": verdict, "suggestion": suggestion},
-                                        indent=1, default=float))
+        args.json.write_text(json.dumps({"source": name, "rows": rows, "gate": verdict, "suggestion": suggestion,
+                                         "attempts": attempts_json(attempts)}, indent=1, default=float))
     if args.csv:
         with args.csv.open("w", newline="") as f:
             writer = csv.writer(f)
@@ -283,8 +394,8 @@ def main(argv: Iterable[str] | None = None) -> int:
             for a in attempts:
                 writer.writerow([a.word, a.source, a.top[0][0], f"{a.p1:.4f}", f"{a.margin:.4f}", *rule.decide(a)])
     if args.write_bundle:
-        write_bundle(document, suggestion, args.per_word, name, args.write_bundle)
-        print(f"wrote {args.write_bundle} (provisional false): review before shipping")
+        write_bundle(document, suggestion, args.per_word, name, args.write_bundle, args.provisional)
+        print(f"wrote {args.write_bundle} (provisional {str(args.provisional).lower()}): review before shipping")
     return 0
 
 

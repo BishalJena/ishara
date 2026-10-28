@@ -1,0 +1,4624 @@
+{
+ "source": "App, portrait",
+ "rows": {
+  "hello": {
+   "n": 9,
+   "chip": 2,
+   "pick_one": 2,
+   "unsure": 5,
+   "wrong_chip": 0,
+   "wrong_pick": 0,
+   "top1": 4,
+   "p_right": [
+    0.9229242904734588,
+    0.5453019579495096,
+    0.7118840717561143,
+    0.5825577281307838
+   ],
+   "latency": []
+  },
+  "morning": {
+   "n": 10,
+   "chip": 0,
+   "pick_one": 0,
+   "unsure": 9,
+   "wrong_chip": 0,
+   "wrong_pick": 1,
+   "top1": 0,
+   "p_right": [],
+   "latency": []
+  },
+  "no": {
+   "n": 16,
+   "chip": 11,
+   "pick_one": 0,
+   "unsure": 5,
+   "wrong_chip": 0,
+   "wrong_pick": 0,
+   "top1": 11,
+   "p_right": [
+    0.9341057396043994,
+    0.7398267409162833,
+    0.9118198195056808,
+    0.9365371292319702,
+    0.9642131607171484,
+    0.7598678830802119,
+    0.8196699443625344,
+    0.9033443367607644,
+    0.9124120631589334,
+    0.8584499333145473,
+    0.9500396762068621
+   ],
+   "latency": []
+  },
+  "none": {
+   "n": 32,
+   "chip": 0,
+   "pick_one": 0,
+   "unsure": 31,
+   "wrong_chip": 0,
+   "wrong_pick": 1,
+   "top1": 0,
+   "p_right": [],
+   "latency": []
+  },
+  "now": {
+   "n": 10,
+   "chip": 5,
+   "pick_one": 1,
+   "unsure": 4,
+   "wrong_chip": 0,
+   "wrong_pick": 0,
+   "top1": 9,
+   "p_right": [
+    0.7179758062218882,
+    0.6577595283574968,
+    0.34741527671647804,
+    0.7635594556531332,
+    0.42997472860233965,
+    0.8945329191938258,
+    0.34798192400587624,
+    0.8553565345547833,
+    0.22087552027159688
+   ],
+   "latency": []
+  },
+  "please": {
+   "n": 10,
+   "chip": 10,
+   "pick_one": 0,
+   "unsure": 0,
+   "wrong_chip": 0,
+   "wrong_pick": 0,
+   "top1": 10,
+   "p_right": [
+    0.9489976496454164,
+    0.9689561274884761,
+    0.8947842983102835,
+    0.9204408893889102,
+    0.9371610891951531,
+    0.9769123106637503,
+    0.8673517508441212,
+    0.971964626001344,
+    0.9362144148546205,
+    0.8925025168122938
+   ],
+   "latency": []
+  },
+  "thankyou": {
+   "n": 12,
+   "chip": 8,
+   "pick_one": 1,
+   "unsure": 3,
+   "wrong_chip": 0,
+   "wrong_pick": 0,
+   "top1": 10,
+   "p_right": [
+    0.4032973660000876,
+    0.9650590608597813,
+    0.8676435199962989,
+    0.655395558217626,
+    0.7289668980612347,
+    0.8443015392419551,
+    0.9333198960184246,
+    0.2904432715081216,
+    0.8501717393275598,
+    0.8282385342459865
+   ],
+   "latency": []
+  },
+  "tomorrow": {
+   "n": 12,
+   "chip": 6,
+   "pick_one": 2,
+   "unsure": 4,
+   "wrong_chip": 0,
+   "wrong_pick": 0,
+   "top1": 9,
+   "p_right": [
+    0.8325313047962771,
+    0.3159869065173574,
+    0.9208834523018755,
+    0.9296117990791863,
+    0.695661022650819,
+    0.9018895298842866,
+    0.4368402819669433,
+    0.6288476113631939,
+    0.5185444188447925
+   ],
+   "latency": []
+  },
+  "wait": {
+   "n": 15,
+   "chip": 3,
+   "pick_one": 5,
+   "unsure": 6,
+   "wrong_chip": 1,
+   "wrong_pick": 0,
+   "top1": 9,
+   "p_right": [
+    0.5080252934333873,
+    0.451267574573757,
+    0.13402604912265814,
+    0.4582932264906496,
+    0.4559513447529933,
+    0.852009658859042,
+    0.4613141089703883,
+    0.8447552463208851,
+    0.6789665860745667
+   ],
+   "latency": []
+  },
+  "yes": {
+   "n": 16,
+   "chip": 7,
+   "pick_one": 0,
+   "unsure": 7,
+   "wrong_chip": 0,
+   "wrong_pick": 2,
+   "top1": 8,
+   "p_right": [
+    0.7957301187348989,
+    0.7008067478150999,
+    0.8801675674101253,
+    0.8830382988931971,
+    0.885435213980136,
+    0.19567035462813345,
+    0.8902681350638992,
+    0.9710494157358921
+   ],
+   "latency": []
+  }
+ },
+ "gate": {
+  "words": {
+   "hello": false,
+   "morning": false,
+   "no": true,
+   "now": true,
+   "please": true,
+   "thankyou": true,
+   "tomorrow": true,
+   "wait": false,
+   "yes": false
+  },
+  "wrong_auto_accepts": 1,
+  "negative_auto_accepts": 0,
+  "slow_cuts": null,
+  "passes": false
+ },
+ "suggestion": {
+  "p": 0.65,
+  "per_word": {
+   "hello": 0.5,
+   "tomorrow": 0.5,
+   "wait": 0.45
+  },
+  "chips_right_with_suggestion": 57,
+  "note": "fit on one session; check it does not undo zero wrong accepts on any other recording"
+ },
+ "attempts": [
+  {
+   "word": "hello",
+   "source": "hello_asl-signbank-HELLO-482.mp4",
+   "top": [
+    [
+     "hello",
+     0.9229242904734588
+    ],
+    [
+     "sun",
+     0.007846606188601418
+    ],
+    [
+     "pretend",
+     0.006893201290573166
+    ],
+    [
+     "hat",
+     0.003752066315330266
+    ],
+    [
+     "will",
+     0.0035851840285012525
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.2459016393442623
+   },
+   "latency_s": null
+  },
+  {
+   "word": "hello",
+   "source": "hello_elementalaslconcepts-hello.mp4",
+   "top": [
+    [
+     "sun",
+     0.5805383007582856
+    ],
+    [
+     "hello",
+     0.1595354696692
+    ],
+    [
+     "shower",
+     0.02933094722423847
+    ],
+    [
+     "hat",
+     0.02900319736496345
+    ],
+    [
+     "pretend",
+     0.013678063947498223
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.47115384615384615
+   },
+   "latency_s": null
+  },
+  {
+   "word": "hello",
+   "source": "hello_lifeprint-site-hi-mp4.mp4",
+   "top": [
+    [
+     "scissors",
+     0.33339560095880616
+    ],
+    [
+     "dance",
+     0.08249960254931424
+    ],
+    [
+     "jeans",
+     0.0412831768069512
+    ],
+    [
+     "pajamas",
+     0.029721588751675052
+    ],
+    [
+     "high",
+     0.0202739492904255
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6333333333333333
+   },
+   "latency_s": null
+  },
+  {
+   "word": "hello",
+   "source": "hello_mariekatzenbachschool-hello.mp4",
+   "top": [
+    [
+     "hello",
+     0.5453019579495096
+    ],
+    [
+     "sun",
+     0.17717647903130324
+    ],
+    [
+     "hat",
+     0.03340802339418841
+    ],
+    [
+     "pretend",
+     0.013057212884252975
+    ],
+    [
+     "shower",
+     0.00957479277482903
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.42424242424242425
+   },
+   "latency_s": null
+  },
+  {
+   "word": "hello",
+   "source": "hello_startasl-hello.mp4",
+   "top": [
+    [
+     "hello",
+     0.7118840717561143
+    ],
+    [
+     "sun",
+     0.055041991601351176
+    ],
+    [
+     "hat",
+     0.03456746001605089
+    ],
+    [
+     "dog",
+     0.015239076900459355
+    ],
+    [
+     "will",
+     0.008150692374640535
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.23076923076923078
+   },
+   "latency_s": null
+  },
+  {
+   "word": "hello",
+   "source": "hello_youtube-6kvCOzxP9-A.mp4",
+   "top": [
+    [
+     "sun",
+     0.2580427197395922
+    ],
+    [
+     "hello",
+     0.18611443967812732
+    ],
+    [
+     "cloud",
+     0.17971059503099968
+    ],
+    [
+     "shower",
+     0.0626751759638417
+    ],
+    [
+     "lamp",
+     0.024997023345536346
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6231884057971014
+   },
+   "latency_s": null
+  },
+  {
+   "word": "hello",
+   "source": "hello_youtube-RRzbB2rg4VM.mp4",
+   "top": [
+    [
+     "sun",
+     0.36225149138962437
+    ],
+    [
+     "hello",
+     0.21482557036341507
+    ],
+    [
+     "boy",
+     0.026994010234043426
+    ],
+    [
+     "pretend",
+     0.026206715591527117
+    ],
+    [
+     "moon",
+     0.023089055057472725
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.42028985507246375
+   },
+   "latency_s": null
+  },
+  {
+   "word": "hello",
+   "source": "hello_youtube-Tb0j34drNwc.mp4",
+   "top": [
+    [
+     "hello",
+     0.5825577281307838
+    ],
+    [
+     "sun",
+     0.1065075936639522
+    ],
+    [
+     "pretend",
+     0.023176510437309845
+    ],
+    [
+     "uncle",
+     0.01652758469358854
+    ],
+    [
+     "fireman",
+     0.014311376560104961
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.4528301886792453
+   },
+   "latency_s": null
+  },
+  {
+   "word": "hello",
+   "source": "hello_youtube-WbkSmhKTltU.mp4",
+   "top": [
+    [
+     "clean",
+     0.05458176926658404
+    ],
+    [
+     "jacket",
+     0.05272404064644872
+    ],
+    [
+     "zipper",
+     0.026161284597141808
+    ],
+    [
+     "vacuum",
+     0.02586408510189633
+    ],
+    [
+     "jeans",
+     0.025046473289638476
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 1.0
+   },
+   "latency_s": null
+  },
+  {
+   "word": "morning",
+   "source": "morning_asl-signbank-MORNING-190.mp4",
+   "top": [
+    [
+     "please",
+     0.07084993283592689
+    ],
+    [
+     "happy",
+     0.07082443145063073
+    ],
+    [
+     "hungry",
+     0.04757966281533324
+    ],
+    [
+     "thankyou",
+     0.03920511873164914
+    ],
+    [
+     "minemy",
+     0.027765141142821213
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.3709677419354839
+   },
+   "latency_s": null
+  },
+  {
+   "word": "morning",
+   "source": "morning_asl-signbank-MORNING-2537.mp4",
+   "top": [
+    [
+     "zebra",
+     0.06362221409252841
+    ],
+    [
+     "bedroom",
+     0.05936454054216367
+    ],
+    [
+     "table",
+     0.03916888523254456
+    ],
+    [
+     "room",
+     0.03688073719647548
+    ],
+    [
+     "please",
+     0.027027741123194345
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6529411764705882
+   },
+   "latency_s": null
+  },
+  {
+   "word": "morning",
+   "source": "morning_aslbricks-morning.mp4",
+   "top": [
+    [
+     "weus",
+     0.1264161103867969
+    ],
+    [
+     "vacuum",
+     0.0934348992592327
+    ],
+    [
+     "arm",
+     0.077882207826394
+    ],
+    [
+     "table",
+     0.048992558987576706
+    ],
+    [
+     "police",
+     0.038534395388773374
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6329113924050633
+   },
+   "latency_s": null
+  },
+  {
+   "word": "morning",
+   "source": "morning_aslsearch-morning.mp4",
+   "top": [
+    [
+     "animal",
+     0.0795805854591673
+    ],
+    [
+     "zebra",
+     0.07215359147215455
+    ],
+    [
+     "bath",
+     0.06235053557064375
+    ],
+    [
+     "arm",
+     0.05429361659003649
+    ],
+    [
+     "have",
+     0.04328753688556732
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 0.9871794871794872,
+    "hand_fraction": 0.47435897435897434
+   },
+   "latency_s": null
+  },
+  {
+   "word": "morning",
+   "source": "morning_lifeprint-yt-iH8N44QMh7c.mp4",
+   "top": [
+    [
+     "happy",
+     0.05731308574031202
+    ],
+    [
+     "book",
+     0.04590507007326895
+    ],
+    [
+     "morning",
+     0.04206063089650472
+    ],
+    [
+     "before",
+     0.041298524381986224
+    ],
+    [
+     "open",
+     0.038912415727726885
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6296296296296297
+   },
+   "latency_s": null
+  },
+  {
+   "word": "morning",
+   "source": "morning_mariekatzenbachschool-morning.mp4",
+   "top": [
+    [
+     "please",
+     0.1998598071641633
+    ],
+    [
+     "happy",
+     0.18203517844867886
+    ],
+    [
+     "zebra",
+     0.04514742547211414
+    ],
+    [
+     "minemy",
+     0.035223101381182814
+    ],
+    [
+     "hungry",
+     0.028790499567104604
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.7068965517241379
+   },
+   "latency_s": null
+  },
+  {
+   "word": "morning",
+   "source": "morning_startasl-morning.mp4",
+   "top": [
+    [
+     "happy",
+     0.15851811170926697
+    ],
+    [
+     "please",
+     0.08562339537391861
+    ],
+    [
+     "minemy",
+     0.038909991021585204
+    ],
+    [
+     "have",
+     0.03884970005718893
+    ],
+    [
+     "arm",
+     0.030064219876184954
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5125
+   },
+   "latency_s": null
+  },
+  {
+   "word": "morning",
+   "source": "morning_youtube-LsXpXHgZBc.mp4",
+   "top": [
+    [
+     "pretty",
+     0.1874950594291255
+    ],
+    [
+     "sleep",
+     0.10904982581504703
+    ],
+    [
+     "sleepy",
+     0.05665171130213368
+    ],
+    [
+     "nap",
+     0.04426467236447345
+    ],
+    [
+     "white",
+     0.041317841131873936
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.9741379310344828
+   },
+   "latency_s": null
+  },
+  {
+   "word": "morning",
+   "source": "morning_youtube-Oem8EmGkQ0M.mp4",
+   "top": [
+    [
+     "hungry",
+     0.4246980144512842
+    ],
+    [
+     "arm",
+     0.16405444626175214
+    ],
+    [
+     "fish",
+     0.0398026169296006
+    ],
+    [
+     "table",
+     0.029313602637461855
+    ],
+    [
+     "minemy",
+     0.02644229633823691
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.875
+   },
+   "latency_s": null
+  },
+  {
+   "word": "morning",
+   "source": "morning_youtube-YfZNZlekeo4.mp4",
+   "top": [
+    [
+     "arm",
+     0.35167924788074634
+    ],
+    [
+     "weus",
+     0.03389794972830184
+    ],
+    [
+     "zebra",
+     0.022515276459167143
+    ],
+    [
+     "giraffe",
+     0.02158089715829856
+    ],
+    [
+     "police",
+     0.021018536367769212
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.7572815533980582
+   },
+   "latency_s": null
+  },
+  {
+   "word": "no",
+   "source": "no_asl-signbank-NO-512.mp4",
+   "top": [
+    [
+     "no",
+     0.9341057396043994
+    ],
+    [
+     "horse",
+     0.007443806492822867
+    ],
+    [
+     "duck",
+     0.004481074419205318
+    ],
+    [
+     "nap",
+     0.0036312975761164912
+    ],
+    [
+     "goose",
+     0.0027335363668239358
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.39705882352941174
+   },
+   "latency_s": null
+  },
+  {
+   "word": "no",
+   "source": "no_aslbricks-no.mp4",
+   "top": [
+    [
+     "no",
+     0.7398267409162833
+    ],
+    [
+     "dog",
+     0.014467148016109582
+    ],
+    [
+     "story",
+     0.013448223625711124
+    ],
+    [
+     "shoe",
+     0.012412745714279213
+    ],
+    [
+     "go",
+     0.00813923931081382
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.9866666666666667
+   },
+   "latency_s": null
+  },
+  {
+   "word": "no",
+   "source": "no_aslsearch-no.mp4",
+   "top": [
+    [
+     "no",
+     0.9118198195056808
+    ],
+    [
+     "nap",
+     0.006667103476564003
+    ],
+    [
+     "duck",
+     0.003873780502431321
+    ],
+    [
+     "into",
+     0.0034268388022745877
+    ],
+    [
+     "chair",
+     0.0031138285192710002
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 0.9879518072289156,
+    "hand_fraction": 0.2891566265060241
+   },
+   "latency_s": null
+  },
+  {
+   "word": "no",
+   "source": "no_aslsearch-no2.mp4",
+   "top": [
+    [
+     "pool",
+     0.08122063253078816
+    ],
+    [
+     "shoe",
+     0.043730347421923124
+    ],
+    [
+     "can",
+     0.029879457677933072
+    ],
+    [
+     "puzzle",
+     0.021587123660294753
+    ],
+    [
+     "drop",
+     0.019248199234487198
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 0.9895833333333334,
+    "hand_fraction": 0.2916666666666667
+   },
+   "latency_s": null
+  },
+  {
+   "word": "no",
+   "source": "no_elementalaslconcepts-no.mp4",
+   "top": [
+    [
+     "no",
+     0.9365371292319702
+    ],
+    [
+     "on",
+     0.004830555000032661
+    ],
+    [
+     "chair",
+     0.0031647025429277294
+    ],
+    [
+     "dog",
+     0.0026900295209980715
+    ],
+    [
+     "nap",
+     0.0021558523510844057
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5370370370370371
+   },
+   "latency_s": null
+  },
+  {
+   "word": "no",
+   "source": "no_lifeprint-yt-QJXKaOSyl4o.mp4",
+   "top": [
+    [
+     "no",
+     0.9642131607171484
+    ],
+    [
+     "duck",
+     0.0030841953329962405
+    ],
+    [
+     "goose",
+     0.002667799275740306
+    ],
+    [
+     "nap",
+     0.0020689850876935345
+    ],
+    [
+     "horse",
+     0.0013971810782568224
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6162790697674418
+   },
+   "latency_s": null
+  },
+  {
+   "word": "no",
+   "source": "no_mariekatzenbachschool-no.mp4",
+   "top": [
+    [
+     "no",
+     0.7598678830802119
+    ],
+    [
+     "horse",
+     0.03376330561654636
+    ],
+    [
+     "nap",
+     0.015057157809864165
+    ],
+    [
+     "duck",
+     0.01178541299757497
+    ],
+    [
+     "uncle",
+     0.008646096782750334
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5913978494623656
+   },
+   "latency_s": null
+  },
+  {
+   "word": "no",
+   "source": "no_startasl-no-2.mp4",
+   "top": [
+    [
+     "clean",
+     0.5362482379677137
+    ],
+    [
+     "pool",
+     0.08273344918434992
+    ],
+    [
+     "close",
+     0.015847276951486508
+    ],
+    [
+     "bee",
+     0.015436696807886596
+    ],
+    [
+     "all",
+     0.012621586778055818
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6376811594202898
+   },
+   "latency_s": null
+  },
+  {
+   "word": "no",
+   "source": "no_startasl-no.mp4",
+   "top": [
+    [
+     "no",
+     0.8196699443625344
+    ],
+    [
+     "horse",
+     0.08042891512241396
+    ],
+    [
+     "uncle",
+     0.014486543040813427
+    ],
+    [
+     "nap",
+     0.0071159479292313725
+    ],
+    [
+     "duck",
+     0.004569468756724421
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5538461538461539
+   },
+   "latency_s": null
+  },
+  {
+   "word": "no",
+   "source": "no_youtube-M33kulg9n9g.mp4",
+   "top": [
+    [
+     "pool",
+     0.051189545289117025
+    ],
+    [
+     "child",
+     0.05091981892544008
+    ],
+    [
+     "kiss",
+     0.021905120398038
+    ],
+    [
+     "can",
+     0.02181949023005724
+    ],
+    [
+     "store",
+     0.018593748417249492
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.22784810126582278
+   },
+   "latency_s": null
+  },
+  {
+   "word": "no",
+   "source": "no_youtube-OtmWOH-VJ-g.mp4",
+   "top": [
+    [
+     "no",
+     0.9033443367607644
+    ],
+    [
+     "nap",
+     0.0311788133871668
+    ],
+    [
+     "duck",
+     0.0038294791663509025
+    ],
+    [
+     "goose",
+     0.0028279373831542774
+    ],
+    [
+     "TV",
+     0.0026605455773976374
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.3670886075949367
+   },
+   "latency_s": null
+  },
+  {
+   "word": "no",
+   "source": "no_youtube-URb48i4X52U.mp4",
+   "top": [
+    [
+     "horse",
+     0.439518211526425
+    ],
+    [
+     "stairs",
+     0.07635801881429415
+    ],
+    [
+     "uncle",
+     0.06194475585164981
+    ],
+    [
+     "hen",
+     0.03670725990921398
+    ],
+    [
+     "zebra",
+     0.0285781218037011
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.7560975609756098
+   },
+   "latency_s": null
+  },
+  {
+   "word": "no",
+   "source": "no_youtube-d3hz26r-ulw.mp4",
+   "top": [
+    [
+     "no",
+     0.9124120631589334
+    ],
+    [
+     "horse",
+     0.012930226521208373
+    ],
+    [
+     "nap",
+     0.004691572957727129
+    ],
+    [
+     "on",
+     0.0032775798900893487
+    ],
+    [
+     "duck",
+     0.00280374973313815
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.30392156862745096
+   },
+   "latency_s": null
+  },
+  {
+   "word": "no",
+   "source": "no_youtube-hwa-U71nr74.mp4",
+   "top": [
+    [
+     "no",
+     0.8584499333145473
+    ],
+    [
+     "horse",
+     0.00878441527407313
+    ],
+    [
+     "goose",
+     0.006840978382905995
+    ],
+    [
+     "pizza",
+     0.00638888243212069
+    ],
+    [
+     "loud",
+     0.004984699694840322
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6739130434782609
+   },
+   "latency_s": null
+  },
+  {
+   "word": "no",
+   "source": "no_youtube-lgNwgl10VSg.mp4",
+   "top": [
+    [
+     "vacuum",
+     0.026875375345077213
+    ],
+    [
+     "jacket",
+     0.01973492389338116
+    ],
+    [
+     "puzzle",
+     0.018871009445537858
+    ],
+    [
+     "old",
+     0.015223899867284294
+    ],
+    [
+     "not",
+     0.015144389792975476
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 1.0
+   },
+   "latency_s": null
+  },
+  {
+   "word": "no",
+   "source": "no_youtube-nyUDOPmQlZQ.mp4",
+   "top": [
+    [
+     "no",
+     0.9500396762068621
+    ],
+    [
+     "chair",
+     0.002431176382295997
+    ],
+    [
+     "duck",
+     0.00205461020388954
+    ],
+    [
+     "dog",
+     0.001813592070848538
+    ],
+    [
+     "horse",
+     0.0016850929881894537
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.3142857142857143
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-AFTERNOON-6.mp4",
+   "top": [
+    [
+     "open",
+     0.1393117069173956
+    ],
+    [
+     "pool",
+     0.10869802430535402
+    ],
+    [
+     "into",
+     0.0692578584670887
+    ],
+    [
+     "close",
+     0.0669312195550709
+    ],
+    [
+     "clean",
+     0.05398118275299738
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.4406779661016949
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-BYE-BYE-425.mp4",
+   "top": [
+    [
+     "bye",
+     0.8458695246095568
+    ],
+    [
+     "child",
+     0.012163020249538723
+    ],
+    [
+     "mitten",
+     0.00701128168841079
+    ],
+    [
+     "donkey",
+     0.006959946040275511
+    ],
+    [
+     "on",
+     0.00605420832706863
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.3076923076923077
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-DEAF-103.mp4",
+   "top": [
+    [
+     "cheek",
+     0.14337477287389921
+    ],
+    [
+     "brown",
+     0.07256465019297055
+    ],
+    [
+     "cry",
+     0.046181047715173354
+    ],
+    [
+     "aunt",
+     0.03922155983159165
+    ],
+    [
+     "penny",
+     0.032874529917494726
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5192307692307693
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-DOCTOR-344.mp4",
+   "top": [
+    [
+     "into",
+     0.09473998349386913
+    ],
+    [
+     "stay",
+     0.07526661098610561
+    ],
+    [
+     "night",
+     0.05752838184163123
+    ],
+    [
+     "pool",
+     0.034604946119232996
+    ],
+    [
+     "backyard",
+     0.03416243071906104
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6458333333333334
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-FATHER-452.mp4",
+   "top": [
+    [
+     "dad",
+     0.7736269580515713
+    ],
+    [
+     "man",
+     0.07688286970741573
+    ],
+    [
+     "fireman",
+     0.021820395178180824
+    ],
+    [
+     "grandpa",
+     0.0130925202134409
+    ],
+    [
+     "donkey",
+     0.009539156754739254
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5833333333333334
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-FINE-455.mp4",
+   "top": [
+    [
+     "fine",
+     0.8131059367999947
+    ],
+    [
+     "chocolate",
+     0.02645683149727707
+    ],
+    [
+     "police",
+     0.020097640188712802
+    ],
+    [
+     "clean",
+     0.015024983836185758
+    ],
+    [
+     "man",
+     0.010686914024321143
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5777777777777777
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-GOOD-472.mp4",
+   "top": [
+    [
+     "thankyou",
+     0.5792746506258948
+    ],
+    [
+     "napkin",
+     0.06563252089867906
+    ],
+    [
+     "happy",
+     0.043706071068969135
+    ],
+    [
+     "bad",
+     0.03872855249287129
+    ],
+    [
+     "night",
+     0.02049978336475461
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.7073170731707317
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-HAPPY-476.mp4",
+   "top": [
+    [
+     "happy",
+     0.5762482804906217
+    ],
+    [
+     "puppy",
+     0.021784360636467614
+    ],
+    [
+     "kitty",
+     0.015457331327004782
+    ],
+    [
+     "before",
+     0.01543516596400211
+    ],
+    [
+     "have",
+     0.0145887751889249
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.2923076923076923
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-HOPE-1760.mp4",
+   "top": [
+    [
+     "child",
+     0.39711554957371836
+    ],
+    [
+     "tree",
+     0.03346084319059291
+    ],
+    [
+     "on",
+     0.031528499890063386
+    ],
+    [
+     "bye",
+     0.02835300710294008
+    ],
+    [
+     "goose",
+     0.02023806617617324
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5625
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-HOSPITAL-1759.mp4",
+   "top": [
+    [
+     "arm",
+     0.5879321176532931
+    ],
+    [
+     "police",
+     0.046476917665861636
+    ],
+    [
+     "weus",
+     0.026874086497148147
+    ],
+    [
+     "table",
+     0.01781408960565468
+    ],
+    [
+     "vacuum",
+     0.01657543524854692
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.4117647058823529
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-MEDICINE-1621.mp4",
+   "top": [
+    [
+     "yucky",
+     0.15206985996015177
+    ],
+    [
+     "clean",
+     0.07753636253027282
+    ],
+    [
+     "empty",
+     0.0750034655844363
+    ],
+    [
+     "like",
+     0.044525008508083656
+    ],
+    [
+     "story",
+     0.043502352637864776
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6111111111111112
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-MOTHER-509.mp4",
+   "top": [
+    [
+     "grandma",
+     0.22074315745926476
+    ],
+    [
+     "mom",
+     0.19431593050042764
+    ],
+    [
+     "drink",
+     0.07003063871497388
+    ],
+    [
+     "elephant",
+     0.06489545835999505
+    ],
+    [
+     "grandpa",
+     0.0238651525398107
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.3442622950819672
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-NAME-511.mp4",
+   "top": [
+    [
+     "scissors",
+     0.21646133105689125
+    ],
+    [
+     "cut",
+     0.2156529542007722
+    ],
+    [
+     "fall",
+     0.08210569839706514
+    ],
+    [
+     "dance",
+     0.03263583513921966
+    ],
+    [
+     "see",
+     0.031049249023643886
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.43023255813953487
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-NONE-513.mp4",
+   "top": [
+    [
+     "kiss",
+     0.34599558445382
+    ],
+    [
+     "child",
+     0.08858911666095107
+    ],
+    [
+     "goose",
+     0.027078298488104193
+    ],
+    [
+     "home",
+     0.02663397917760495
+    ],
+    [
+     "sun",
+     0.021783092887613258
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.3466666666666667
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-NORTH-645.mp4",
+   "top": [
+    [
+     "stairs",
+     0.23788296521365335
+    ],
+    [
+     "high",
+     0.09956110835061799
+    ],
+    [
+     "helicopter",
+     0.09467493714895221
+    ],
+    [
+     "jump",
+     0.026028729530655256
+    ],
+    [
+     "ride",
+     0.02267059272412789
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.30337078651685395
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-NOSE-514.mp4",
+   "top": [
+    [
+     "nose",
+     0.9214113583766548
+    ],
+    [
+     "tooth",
+     0.006087649092734836
+    ],
+    [
+     "eye",
+     0.004208329517366379
+    ],
+    [
+     "noisy",
+     0.0029883445734906534
+    ],
+    [
+     "wolf",
+     0.0019262042946292036
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.41414141414141414
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-NOT-515.mp4",
+   "top": [
+    [
+     "not",
+     0.8671697568340424
+    ],
+    [
+     "nuts",
+     0.033073248578823926
+    ],
+    [
+     "hide",
+     0.011933200287423002
+    ],
+    [
+     "pig",
+     0.004230875542056874
+    ],
+    [
+     "tomorrow",
+     0.0034457609161028125
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.37777777777777777
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-NOT-YET-200.mp4",
+   "top": [
+    [
+     "vacuum",
+     0.0339013108891028
+    ],
+    [
+     "beside",
+     0.01720921649318136
+    ],
+    [
+     "jeans",
+     0.015341268470941378
+    ],
+    [
+     "puzzle",
+     0.015333585953811327
+    ],
+    [
+     "zipper",
+     0.012316271606161226
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.044444444444444446
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-SORRY-566.mp4",
+   "top": [
+    [
+     "jacket",
+     0.15337078788943176
+    ],
+    [
+     "bath",
+     0.1421008532743139
+    ],
+    [
+     "weus",
+     0.13268427578160685
+    ],
+    [
+     "zipper",
+     0.11969994341380712
+    ],
+    [
+     "vacuum",
+     0.0215317252347361
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5254237288135594
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-THANKSGIVING-3142.mp4",
+   "top": [
+    [
+     "frog",
+     0.2407505119049099
+    ],
+    [
+     "duck",
+     0.08696329881672911
+    ],
+    [
+     "goose",
+     0.054132382647153435
+    ],
+    [
+     "water",
+     0.05091498479397307
+    ],
+    [
+     "read",
+     0.03275357698288126
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.7155172413793104
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-WAITER-3116.mp4",
+   "top": [
+    [
+     "beside",
+     0.4696683096024335
+    ],
+    [
+     "person",
+     0.145774910232535
+    ],
+    [
+     "open",
+     0.07657508182767074
+    ],
+    [
+     "book",
+     0.026809725710049522
+    ],
+    [
+     "boat",
+     0.026802480020489156
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6535433070866141
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_asl-signbank-WEEK-1418.mp4",
+   "top": [
+    [
+     "zebra",
+     0.23172902880137355
+    ],
+    [
+     "like",
+     0.054627909204313596
+    ],
+    [
+     "animal",
+     0.04097922003228485
+    ],
+    [
+     "shirt",
+     0.03848902400015292
+    ],
+    [
+     "jeans",
+     0.024508167019625455
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5957446808510638
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_rest-asl-signbank-BYE-BYE-425.mp4",
+   "top": [
+    [
+     "vacuum",
+     0.015462483210346658
+    ],
+    [
+     "zipper",
+     0.01425061198185466
+    ],
+    [
+     "beside",
+     0.01023375992857462
+    ],
+    [
+     "jeans",
+     0.01005858211492246
+    ],
+    [
+     "dance",
+     0.009797650302600873
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.041666666666666664
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_rest-asl-signbank-MORNING-190.mp4",
+   "top": [
+    [
+     "zipper",
+     0.016337070185774814
+    ],
+    [
+     "vacuum",
+     0.01411603196354344
+    ],
+    [
+     "beside",
+     0.011213376210088296
+    ],
+    [
+     "bath",
+     0.01080668074257034
+    ],
+    [
+     "table",
+     0.009397631318789238
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.04
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_rest-aslsearch-no.mp4",
+   "top": [
+    [
+     "zipper",
+     0.017968135407026267
+    ],
+    [
+     "vacuum",
+     0.017098711913535965
+    ],
+    [
+     "bath",
+     0.011036436235464337
+    ],
+    [
+     "beside",
+     0.010285233583978079
+    ],
+    [
+     "puzzle",
+     0.010116615123799815
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 0.9772727272727273,
+    "hand_fraction": 0.022727272727272728
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_rest-aslsearch-no2.mp4",
+   "top": [
+    [
+     "vacuum",
+     0.010537165280972382
+    ],
+    [
+     "zipper",
+     0.009954887715694803
+    ],
+    [
+     "beside",
+     0.009321382534108328
+    ],
+    [
+     "table",
+     0.00915965448746607
+    ],
+    [
+     "puzzle",
+     0.009110685525905273
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 0.9583333333333334,
+    "hand_fraction": 0.0
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_rest-elementalaslconcepts-hello.mp4",
+   "top": [
+    [
+     "give",
+     0.016242880069707623
+    ],
+    [
+     "vacuum",
+     0.011053233539921591
+    ],
+    [
+     "beside",
+     0.010958497724622138
+    ],
+    [
+     "dance",
+     0.009881829169170242
+    ],
+    [
+     "gift",
+     0.009683708749634569
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.0
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_rest-elementalaslconcepts-no.mp4",
+   "top": [
+    [
+     "fast",
+     0.018381613867740888
+    ],
+    [
+     "vacuum",
+     0.014466005067295869
+    ],
+    [
+     "fine",
+     0.013933855395219253
+    ],
+    [
+     "dance",
+     0.013542374463870629
+    ],
+    [
+     "fish",
+     0.012814790590527866
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.0
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_rest-mariekatzenbachschool-please.mp4",
+   "top": [
+    [
+     "please",
+     0.03979746236414906
+    ],
+    [
+     "clean",
+     0.0384298249896465
+    ],
+    [
+     "sticky",
+     0.03704419467617354
+    ],
+    [
+     "kitty",
+     0.02862529737775315
+    ],
+    [
+     "beside",
+     0.016077403077662637
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.027777777777777776
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_rest-startasl-thank-you-2.mp4",
+   "top": [
+    [
+     "vacuum",
+     0.01214081247131164
+    ],
+    [
+     "beside",
+     0.011050475608615778
+    ],
+    [
+     "give",
+     0.010699711821565424
+    ],
+    [
+     "dance",
+     0.010638728857975269
+    ],
+    [
+     "zipper",
+     0.009915286513625547
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.0
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_rest-youtube-M33kulg9n9g.mp4",
+   "top": [
+    [
+     "vacuum",
+     0.011689570452358643
+    ],
+    [
+     "give",
+     0.01142955597738659
+    ],
+    [
+     "time",
+     0.01025978444158042
+    ],
+    [
+     "have",
+     0.009510785590514135
+    ],
+    [
+     "beside",
+     0.008782394828185623
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.0
+   },
+   "latency_s": null
+  },
+  {
+   "word": "none",
+   "source": "none_rest-youtube-d3hz26r-ulw.mp4",
+   "top": [
+    [
+     "jeans",
+     0.011788741421995132
+    ],
+    [
+     "vacuum",
+     0.011440187311865208
+    ],
+    [
+     "dance",
+     0.011025120591001384
+    ],
+    [
+     "beside",
+     0.010402563427954148
+    ],
+    [
+     "give",
+     0.010203711220201132
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.0
+   },
+   "latency_s": null
+  },
+  {
+   "word": "now",
+   "source": "now_asl-signbank-NOW-517.mp4",
+   "top": [
+    [
+     "now",
+     0.7179758062218882
+    ],
+    [
+     "callonphone",
+     0.03814167713804727
+    ],
+    [
+     "pajamas",
+     0.031037944509111164
+    ],
+    [
+     "yellow",
+     0.030672444321104903
+    ],
+    [
+     "if",
+     0.018640931336442828
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.4264705882352941
+   },
+   "latency_s": null
+  },
+  {
+   "word": "now",
+   "source": "now_aslbricks-now.mp4",
+   "top": [
+    [
+     "now",
+     0.6577595283574968
+    ],
+    [
+     "pajamas",
+     0.06843557598167503
+    ],
+    [
+     "drawer",
+     0.020484477538930023
+    ],
+    [
+     "yellow",
+     0.019103791173324135
+    ],
+    [
+     "jeans",
+     0.016978042747093795
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.65
+   },
+   "latency_s": null
+  },
+  {
+   "word": "now",
+   "source": "now_aslsearch-now.mp4",
+   "top": [
+    [
+     "now",
+     0.34741527671647804
+    ],
+    [
+     "jacket",
+     0.19450929036075665
+    ],
+    [
+     "callonphone",
+     0.042430745419099074
+    ],
+    [
+     "yellow",
+     0.03825976903489467
+    ],
+    [
+     "bath",
+     0.02727606907956604
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 0.9876543209876543,
+    "hand_fraction": 0.18518518518518517
+   },
+   "latency_s": null
+  },
+  {
+   "word": "now",
+   "source": "now_aslsearch-now2.mp4",
+   "top": [
+    [
+     "down",
+     0.37363260476025256
+    ],
+    [
+     "can",
+     0.35787521865119193
+    ],
+    [
+     "haveto",
+     0.055769792758366646
+    ],
+    [
+     "drop",
+     0.038024168639750604
+    ],
+    [
+     "yes",
+     0.016937877299701323
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 0.9873417721518988,
+    "hand_fraction": 0.4050632911392405
+   },
+   "latency_s": null
+  },
+  {
+   "word": "now",
+   "source": "now_elementalaslconcepts-now.mp4",
+   "top": [
+    [
+     "now",
+     0.7635594556531332
+    ],
+    [
+     "wait",
+     0.06317404864547048
+    ],
+    [
+     "yellow",
+     0.02824107826617109
+    ],
+    [
+     "thankyou",
+     0.01729233594049081
+    ],
+    [
+     "callonphone",
+     0.011015211642829644
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.47540983606557374
+   },
+   "latency_s": null
+  },
+  {
+   "word": "now",
+   "source": "now_lifeprint-yt-g2j70neQ-lI.mp4",
+   "top": [
+    [
+     "now",
+     0.42997472860233965
+    ],
+    [
+     "pajamas",
+     0.10573980813082089
+    ],
+    [
+     "jeans",
+     0.033317674977191535
+    ],
+    [
+     "if",
+     0.030515676533345
+    ],
+    [
+     "callonphone",
+     0.025942696794610948
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.7105263157894737
+   },
+   "latency_s": null
+  },
+  {
+   "word": "now",
+   "source": "now_mariekatzenbachschool-now.mp4",
+   "top": [
+    [
+     "now",
+     0.8945329191938258
+    ],
+    [
+     "yellow",
+     0.0111576337405337
+    ],
+    [
+     "callonphone",
+     0.005044360588023858
+    ],
+    [
+     "every",
+     0.004635800556968091
+    ],
+    [
+     "better",
+     0.003983334187137027
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5211267605633803
+   },
+   "latency_s": null
+  },
+  {
+   "word": "now",
+   "source": "now_startasl-now.mp4",
+   "top": [
+    [
+     "now",
+     0.34798192400587624
+    ],
+    [
+     "there",
+     0.08635108208633775
+    ],
+    [
+     "morning",
+     0.08174699379190985
+    ],
+    [
+     "before",
+     0.06813102816630792
+    ],
+    [
+     "thankyou",
+     0.02892876231213157
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.4305555555555556
+   },
+   "latency_s": null
+  },
+  {
+   "word": "now",
+   "source": "now_youtube-oYYxJ3Ax8K4.mp4",
+   "top": [
+    [
+     "now",
+     0.8553565345547833
+    ],
+    [
+     "callonphone",
+     0.03477785666402184
+    ],
+    [
+     "pajamas",
+     0.010972421425283487
+    ],
+    [
+     "drawer",
+     0.007639614024095783
+    ],
+    [
+     "yellow",
+     0.00586514193114248
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.328125
+   },
+   "latency_s": null
+  },
+  {
+   "word": "now",
+   "source": "now_youtube-vmGh2IPdSRU.mp4",
+   "top": [
+    [
+     "now",
+     0.22087552027159688
+    ],
+    [
+     "yellow",
+     0.06172799070476307
+    ],
+    [
+     "callonphone",
+     0.05926486212654097
+    ],
+    [
+     "every",
+     0.0192526841261733
+    ],
+    [
+     "pajamas",
+     0.019028886869499138
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5595238095238095
+   },
+   "latency_s": null
+  },
+  {
+   "word": "please",
+   "source": "please_asl-signbank-PLEASE-527.mp4",
+   "top": [
+    [
+     "please",
+     0.9489976496454164
+    ],
+    [
+     "minemy",
+     0.004359971505668217
+    ],
+    [
+     "zebra",
+     0.002259802956157903
+    ],
+    [
+     "arm",
+     0.0020868789446703783
+    ],
+    [
+     "hungry",
+     0.0019595185825847555
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 0.9882352941176471,
+    "hand_fraction": 0.5294117647058824
+   },
+   "latency_s": null
+  },
+  {
+   "word": "please",
+   "source": "please_aslbricks-please.mp4",
+   "top": [
+    [
+     "please",
+     0.9689561274884761
+    ],
+    [
+     "minemy",
+     0.00864537965922437
+    ],
+    [
+     "kitty",
+     0.0012028627428884876
+    ],
+    [
+     "happy",
+     0.0011967258085483483
+    ],
+    [
+     "clean",
+     0.000581923859620214
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8488372093023255
+   },
+   "latency_s": null
+  },
+  {
+   "word": "please",
+   "source": "please_aslsearch-please.mp4",
+   "top": [
+    [
+     "please",
+     0.8947842983102835
+    ],
+    [
+     "zebra",
+     0.010275233464739806
+    ],
+    [
+     "minemy",
+     0.006560354766503175
+    ],
+    [
+     "table",
+     0.004506605826205916
+    ],
+    [
+     "arm",
+     0.0041810168468671876
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 0.9888888888888889,
+    "hand_fraction": 0.5666666666666667
+   },
+   "latency_s": null
+  },
+  {
+   "word": "please",
+   "source": "please_elementalaslconcepts-please.mp4",
+   "top": [
+    [
+     "please",
+     0.9204408893889102
+    ],
+    [
+     "minemy",
+     0.010019590062031089
+    ],
+    [
+     "table",
+     0.004951063900333302
+    ],
+    [
+     "clean",
+     0.0024909532856359604
+    ],
+    [
+     "kitty",
+     0.0023595402313812738
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.525
+   },
+   "latency_s": null
+  },
+  {
+   "word": "please",
+   "source": "please_lifeprint-yt-rnb9FxPO7is.mp4",
+   "top": [
+    [
+     "please",
+     0.9371610891951531
+    ],
+    [
+     "arm",
+     0.007420317066699351
+    ],
+    [
+     "minemy",
+     0.0028441589148919164
+    ],
+    [
+     "table",
+     0.002511428683000574
+    ],
+    [
+     "zebra",
+     0.0024457697208270686
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5972222222222222
+   },
+   "latency_s": null
+  },
+  {
+   "word": "please",
+   "source": "please_mariekatzenbachschool-please.mp4",
+   "top": [
+    [
+     "please",
+     0.9769123106637503
+    ],
+    [
+     "minemy",
+     0.002159704041197224
+    ],
+    [
+     "kitty",
+     0.0017613558721189275
+    ],
+    [
+     "happy",
+     0.0013826448105363376
+    ],
+    [
+     "clean",
+     0.0007209882737810592
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.4909090909090909
+   },
+   "latency_s": null
+  },
+  {
+   "word": "please",
+   "source": "please_startasl-please.mp4",
+   "top": [
+    [
+     "please",
+     0.8673517508441212
+    ],
+    [
+     "zebra",
+     0.009760327008358986
+    ],
+    [
+     "arm",
+     0.006945064093007679
+    ],
+    [
+     "minemy",
+     0.005890016534166398
+    ],
+    [
+     "bath",
+     0.003969025524790962
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5512820512820513
+   },
+   "latency_s": null
+  },
+  {
+   "word": "please",
+   "source": "please_youtube-U-kY0ZvVmUs.mp4",
+   "top": [
+    [
+     "please",
+     0.971964626001344
+    ],
+    [
+     "minemy",
+     0.002377276752195946
+    ],
+    [
+     "kitty",
+     0.0019264748125476464
+    ],
+    [
+     "happy",
+     0.0014182569403239462
+    ],
+    [
+     "zebra",
+     0.0007323686370896674
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6
+   },
+   "latency_s": null
+  },
+  {
+   "word": "please",
+   "source": "please_youtube-eyu0V3s1-XA.mp4",
+   "top": [
+    [
+     "please",
+     0.9362144148546205
+    ],
+    [
+     "zebra",
+     0.006552048349957226
+    ],
+    [
+     "minemy",
+     0.004469663052110137
+    ],
+    [
+     "hungry",
+     0.0033025471221525375
+    ],
+    [
+     "kitty",
+     0.002343003201518349
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6153846153846154
+   },
+   "latency_s": null
+  },
+  {
+   "word": "please",
+   "source": "please_youtube-wNS3kifA8-Y.mp4",
+   "top": [
+    [
+     "please",
+     0.8925025168122938
+    ],
+    [
+     "minemy",
+     0.008566129813697301
+    ],
+    [
+     "zebra",
+     0.008530841714573169
+    ],
+    [
+     "hungry",
+     0.005164722290766917
+    ],
+    [
+     "kitty",
+     0.0034040283312573912
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.83
+   },
+   "latency_s": null
+  },
+  {
+   "word": "thankyou",
+   "source": "thankyou_asl-signbank-THANK-YOU-1198.mp4",
+   "top": [
+    [
+     "thankyou",
+     0.4032973660000876
+    ],
+    [
+     "napkin",
+     0.15330830676441903
+    ],
+    [
+     "bad",
+     0.03584653360503746
+    ],
+    [
+     "cute",
+     0.03470444826250469
+    ],
+    [
+     "happy",
+     0.014173485072921072
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.2835820895522388
+   },
+   "latency_s": null
+  },
+  {
+   "word": "thankyou",
+   "source": "thankyou_aslbricks-thank-you.mp4",
+   "top": [
+    [
+     "thankyou",
+     0.9650590608597813
+    ],
+    [
+     "taste",
+     0.003422141423778256
+    ],
+    [
+     "now",
+     0.002259718622986372
+    ],
+    [
+     "cute",
+     0.0021855351149475764
+    ],
+    [
+     "happy",
+     0.0021116267086619886
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.7682926829268293
+   },
+   "latency_s": null
+  },
+  {
+   "word": "thankyou",
+   "source": "thankyou_elementalaslconcepts-thank-you.mp4",
+   "top": [
+    [
+     "thankyou",
+     0.8676435199962989
+    ],
+    [
+     "bad",
+     0.016836647998909163
+    ],
+    [
+     "there",
+     0.014290732340014378
+    ],
+    [
+     "napkin",
+     0.005309242337243728
+    ],
+    [
+     "taste",
+     0.004678464412288905
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.30097087378640774
+   },
+   "latency_s": null
+  },
+  {
+   "word": "thankyou",
+   "source": "thankyou_lifeprint-yt-2W0BDFUjsG0.mp4",
+   "top": [
+    [
+     "thankyou",
+     0.655395558217626
+    ],
+    [
+     "napkin",
+     0.09123131086372763
+    ],
+    [
+     "bad",
+     0.042170328559342385
+    ],
+    [
+     "cute",
+     0.013428565060995153
+    ],
+    [
+     "taste",
+     0.00855526650685223
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5217391304347826
+   },
+   "latency_s": null
+  },
+  {
+   "word": "thankyou",
+   "source": "thankyou_mariekatzenbachschool-thank-you.mp4",
+   "top": [
+    [
+     "thankyou",
+     0.7289668980612347
+    ],
+    [
+     "taste",
+     0.035788722279593475
+    ],
+    [
+     "napkin",
+     0.02048737460836825
+    ],
+    [
+     "happy",
+     0.019847737556886975
+    ],
+    [
+     "bad",
+     0.014546757603365329
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.532258064516129
+   },
+   "latency_s": null
+  },
+  {
+   "word": "thankyou",
+   "source": "thankyou_startasl-thank-you-2.mp4",
+   "top": [
+    [
+     "thankyou",
+     0.8443015392419551
+    ],
+    [
+     "happy",
+     0.01911282173330128
+    ],
+    [
+     "bad",
+     0.011334193212625205
+    ],
+    [
+     "hungry",
+     0.01043562887632489
+    ],
+    [
+     "napkin",
+     0.008732138543748628
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.42168674698795183
+   },
+   "latency_s": null
+  },
+  {
+   "word": "thankyou",
+   "source": "thankyou_startasl-thankyou.mp4",
+   "top": [
+    [
+     "thankyou",
+     0.9333198960184246
+    ],
+    [
+     "bad",
+     0.008438621874541025
+    ],
+    [
+     "taste",
+     0.005016465039555923
+    ],
+    [
+     "happy",
+     0.00440296426317269
+    ],
+    [
+     "napkin",
+     0.0029345464513081594
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.38235294117647056
+   },
+   "latency_s": null
+  },
+  {
+   "word": "thankyou",
+   "source": "thankyou_youtube-7XHOmZYiBew.mp4",
+   "top": [
+    [
+     "thankyou",
+     0.2904432715081216
+    ],
+    [
+     "giraffe",
+     0.05637376430726013
+    ],
+    [
+     "grass",
+     0.046566852972175894
+    ],
+    [
+     "napkin",
+     0.04563770680402395
+    ],
+    [
+     "food",
+     0.03116193376915858
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.2
+   },
+   "latency_s": null
+  },
+  {
+   "word": "thankyou",
+   "source": "thankyou_youtube-8jnbPaVPadc.mp4",
+   "top": [
+    [
+     "thankyou",
+     0.8501717393275598
+    ],
+    [
+     "napkin",
+     0.014881144999616376
+    ],
+    [
+     "cute",
+     0.013127276950095537
+    ],
+    [
+     "taste",
+     0.008508705155291243
+    ],
+    [
+     "bad",
+     0.008234476367112423
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.4017857142857143
+   },
+   "latency_s": null
+  },
+  {
+   "word": "thankyou",
+   "source": "thankyou_youtube-OGQTouYS3zM.mp4",
+   "top": [
+    [
+     "thankyou",
+     0.8282385342459865
+    ],
+    [
+     "bad",
+     0.024020321415766526
+    ],
+    [
+     "napkin",
+     0.01562932875751721
+    ],
+    [
+     "happy",
+     0.01359868229174459
+    ],
+    [
+     "hungry",
+     0.013359081259400657
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.4266666666666667
+   },
+   "latency_s": null
+  },
+  {
+   "word": "thankyou",
+   "source": "thankyou_youtube-lJXvGI7r-Fc.mp4",
+   "top": [
+    [
+     "hungry",
+     0.09091770958921641
+    ],
+    [
+     "arm",
+     0.055512821226962265
+    ],
+    [
+     "police",
+     0.047649865487631594
+    ],
+    [
+     "please",
+     0.04630530841775592
+    ],
+    [
+     "table",
+     0.03295159963687158
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 1.0
+   },
+   "latency_s": null
+  },
+  {
+   "word": "thankyou",
+   "source": "thankyou_youtube-t8Hr0IHghrQ.mp4",
+   "top": [
+    [
+     "hungry",
+     0.13265167906539005
+    ],
+    [
+     "jacket",
+     0.08938128662187406
+    ],
+    [
+     "please",
+     0.08218271814108284
+    ],
+    [
+     "bath",
+     0.06146289370714415
+    ],
+    [
+     "minemy",
+     0.03239359889678124
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 1.0
+   },
+   "latency_s": null
+  },
+  {
+   "word": "tomorrow",
+   "source": "tomorrow_asl-signbank-TOMORROW-301.mp4",
+   "top": [
+    [
+     "tomorrow",
+     0.8325313047962771
+    ],
+    [
+     "apple",
+     0.043271880999453755
+    ],
+    [
+     "girl",
+     0.006088711143961452
+    ],
+    [
+     "every",
+     0.005265972424307136
+    ],
+    [
+     "yourself",
+     0.004331415632550951
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.35
+   },
+   "latency_s": null
+  },
+  {
+   "word": "tomorrow",
+   "source": "tomorrow_aslbricks-tomorrow.mp4",
+   "top": [
+    [
+     "tomorrow",
+     0.3159869065173574
+    ],
+    [
+     "can",
+     0.08537474044040384
+    ],
+    [
+     "apple",
+     0.0463592517178672
+    ],
+    [
+     "every",
+     0.025959820508531416
+    ],
+    [
+     "girl",
+     0.025284859494802366
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.9864864864864865
+   },
+   "latency_s": null
+  },
+  {
+   "word": "tomorrow",
+   "source": "tomorrow_aslsearch-tomorrow.mp4",
+   "top": [
+    [
+     "tomorrow",
+     0.9208834523018755
+    ],
+    [
+     "not",
+     0.00822486171312272
+    ],
+    [
+     "yourself",
+     0.004327857792789929
+    ],
+    [
+     "every",
+     0.0035397725848556254
+    ],
+    [
+     "brother",
+     0.003034544963193652
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 0.9876543209876543,
+    "hand_fraction": 0.38271604938271603
+   },
+   "latency_s": null
+  },
+  {
+   "word": "tomorrow",
+   "source": "tomorrow_dictio-A-tomorrow.mp4",
+   "top": [
+    [
+     "table",
+     0.023818816123643435
+    ],
+    [
+     "vacuum",
+     0.01708856047808783
+    ],
+    [
+     "book",
+     0.015773024357444432
+    ],
+    [
+     "fine",
+     0.01502203708169712
+    ],
+    [
+     "give",
+     0.013472378625823461
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 1.0
+   },
+   "latency_s": null
+  },
+  {
+   "word": "tomorrow",
+   "source": "tomorrow_elementalaslconcepts-tomorrow.mp4",
+   "top": [
+    [
+     "tomorrow",
+     0.9296117990791863
+    ],
+    [
+     "not",
+     0.00971108560328901
+    ],
+    [
+     "yourself",
+     0.00908409133476416
+    ],
+    [
+     "every",
+     0.006933560616017328
+    ],
+    [
+     "nuts",
+     0.0051418949490593694
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5428571428571428
+   },
+   "latency_s": null
+  },
+  {
+   "word": "tomorrow",
+   "source": "tomorrow_lifeprint-yt-6gFOZMDptIk.mp4",
+   "top": [
+    [
+     "tomorrow",
+     0.695661022650819
+    ],
+    [
+     "yourself",
+     0.040237866510872786
+    ],
+    [
+     "every",
+     0.03659909470525904
+    ],
+    [
+     "brother",
+     0.033705566618406076
+    ],
+    [
+     "backyard",
+     0.013992949635069583
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5189873417721519
+   },
+   "latency_s": null
+  },
+  {
+   "word": "tomorrow",
+   "source": "tomorrow_lifeprint-yt-E17VasimjWo.mp4",
+   "top": [
+    [
+     "every",
+     0.5740454095655866
+    ],
+    [
+     "backyard",
+     0.09005881923634824
+    ],
+    [
+     "girl",
+     0.056585015363622475
+    ],
+    [
+     "tomorrow",
+     0.054835346981609995
+    ],
+    [
+     "brother",
+     0.025120993825436706
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6233766233766234
+   },
+   "latency_s": null
+  },
+  {
+   "word": "tomorrow",
+   "source": "tomorrow_mariekatzenbachschool-tomorrow.mp4",
+   "top": [
+    [
+     "tomorrow",
+     0.9018895298842866
+    ],
+    [
+     "nuts",
+     0.004682145008848862
+    ],
+    [
+     "brother",
+     0.0042313040861791315
+    ],
+    [
+     "flower",
+     0.0037866152271384137
+    ],
+    [
+     "every",
+     0.0036150830900649553
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5081967213114754
+   },
+   "latency_s": null
+  },
+  {
+   "word": "tomorrow",
+   "source": "tomorrow_startasl-tomorrow.mp4",
+   "top": [
+    [
+     "tomorrow",
+     0.4368402819669433
+    ],
+    [
+     "every",
+     0.03962266649704601
+    ],
+    [
+     "girl",
+     0.029066640464592914
+    ],
+    [
+     "owie",
+     0.027545661359925675
+    ],
+    [
+     "apple",
+     0.018022647127321274
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5
+   },
+   "latency_s": null
+  },
+  {
+   "word": "tomorrow",
+   "source": "tomorrow_tsdvideo-1203.mp4",
+   "top": [
+    [
+     "owie",
+     0.2591690879926655
+    ],
+    [
+     "not",
+     0.21560203937948139
+    ],
+    [
+     "tomorrow",
+     0.090904144852267
+    ],
+    [
+     "apple",
+     0.05680512202049424
+    ],
+    [
+     "nuts",
+     0.05587728785680796
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6444444444444445
+   },
+   "latency_s": null
+  },
+  {
+   "word": "tomorrow",
+   "source": "tomorrow_tsdvideo-684.mp4",
+   "top": [
+    [
+     "tomorrow",
+     0.6288476113631939
+    ],
+    [
+     "jacket",
+     0.035273862693300115
+    ],
+    [
+     "every",
+     0.020115334930886325
+    ],
+    [
+     "girl",
+     0.019149770975770187
+    ],
+    [
+     "yesterday",
+     0.01672001418540076
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.4954128440366973
+   },
+   "latency_s": null
+  },
+  {
+   "word": "tomorrow",
+   "source": "tomorrow_youtube-RHKBEZHE1yY.mp4",
+   "top": [
+    [
+     "tomorrow",
+     0.5185444188447925
+    ],
+    [
+     "not",
+     0.058806017727643004
+    ],
+    [
+     "hide",
+     0.05599512828134125
+    ],
+    [
+     "girl",
+     0.0536622133584509
+    ],
+    [
+     "nuts",
+     0.0334693800326174
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.7068965517241379
+   },
+   "latency_s": null
+  },
+  {
+   "word": "wait",
+   "source": "wait_asl-signbank-WAIT-1405.mp4",
+   "top": [
+    [
+     "wait",
+     0.5080252934333873
+    ],
+    [
+     "finger",
+     0.09491314749745151
+    ],
+    [
+     "taste",
+     0.0328298097522998
+    ],
+    [
+     "happy",
+     0.024470385628401863
+    ],
+    [
+     "sticky",
+     0.020850669052151754
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.390625
+   },
+   "latency_s": null
+  },
+  {
+   "word": "wait",
+   "source": "wait_aslsearch-wait.mp4",
+   "top": [
+    [
+     "wait",
+     0.451267574573757
+    ],
+    [
+     "now",
+     0.05130533563832395
+    ],
+    [
+     "finger",
+     0.03901502995353633
+    ],
+    [
+     "sad",
+     0.03423775749173363
+    ],
+    [
+     "wet",
+     0.029241076649222465
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 0.9897959183673469,
+    "hand_fraction": 0.42857142857142855
+   },
+   "latency_s": null
+  },
+  {
+   "word": "wait",
+   "source": "wait_elementalaslconcepts-wait.mp4",
+   "top": [
+    [
+     "please",
+     0.15135604504776456
+    ],
+    [
+     "zebra",
+     0.12640730534844755
+    ],
+    [
+     "wait",
+     0.055192632519236964
+    ],
+    [
+     "hungry",
+     0.0534848039651472
+    ],
+    [
+     "happy",
+     0.049845238511199444
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5923076923076923
+   },
+   "latency_s": null
+  },
+  {
+   "word": "wait",
+   "source": "wait_lifeprint-yt-YfwgS9ZsBVw.mp4",
+   "top": [
+    [
+     "wait",
+     0.13402604912265814
+    ],
+    [
+     "thankyou",
+     0.09637310582703129
+    ],
+    [
+     "happy",
+     0.06702342448691638
+    ],
+    [
+     "now",
+     0.04825457671560841
+    ],
+    [
+     "boat",
+     0.025700498214619175
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.4117647058823529
+   },
+   "latency_s": null
+  },
+  {
+   "word": "wait",
+   "source": "wait_mariekatzenbachschool-wait-2.mp4",
+   "top": [
+    [
+     "wait",
+     0.4582932264906496
+    ],
+    [
+     "mitten",
+     0.16921342902202255
+    ],
+    [
+     "many",
+     0.041181281136542416
+    ],
+    [
+     "finger",
+     0.04053975152061242
+    ],
+    [
+     "thankyou",
+     0.030597399196419683
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6538461538461539
+   },
+   "latency_s": null
+  },
+  {
+   "word": "wait",
+   "source": "wait_mariekatzenbachschool-wait.mp4",
+   "top": [
+    [
+     "wait",
+     0.4559513447529933
+    ],
+    [
+     "taste",
+     0.15626398736070723
+    ],
+    [
+     "finger",
+     0.06131986814465494
+    ],
+    [
+     "thankyou",
+     0.04498050185308308
+    ],
+    [
+     "sticky",
+     0.03263628491848067
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.9
+   },
+   "latency_s": null
+  },
+  {
+   "word": "wait",
+   "source": "wait_startasl-wait.mp4",
+   "top": [
+    [
+     "wait",
+     0.852009658859042
+    ],
+    [
+     "mitten",
+     0.03189916594276224
+    ],
+    [
+     "finger",
+     0.02861271683136486
+    ],
+    [
+     "now",
+     0.01410164085705448
+    ],
+    [
+     "sad",
+     0.008183114823915535
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.7857142857142857
+   },
+   "latency_s": null
+  },
+  {
+   "word": "wait",
+   "source": "wait_youtube-a-gp8-kUe-Q.mp4",
+   "top": [
+    [
+     "closet",
+     0.06551704954050128
+    ],
+    [
+     "where",
+     0.052135234548394624
+    ],
+    [
+     "haveto",
+     0.030200766567779546
+    ],
+    [
+     "first",
+     0.027733165490007424
+    ],
+    [
+     "can",
+     0.019572718964611113
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5510204081632653
+   },
+   "latency_s": null
+  },
+  {
+   "word": "wait",
+   "source": "wait_youtube-bdBswxWmiBc.mp4",
+   "top": [
+    [
+     "wait",
+     0.4613141089703883
+    ],
+    [
+     "now",
+     0.2077246854595587
+    ],
+    [
+     "finger",
+     0.03424369209488413
+    ],
+    [
+     "thankyou",
+     0.02467431626558653
+    ],
+    [
+     "wet",
+     0.024271479437398644
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 0.9901960784313726,
+    "hand_fraction": 0.6470588235294118
+   },
+   "latency_s": null
+  },
+  {
+   "word": "wait",
+   "source": "wait_youtube-g4zPWVKTVc4.mp4",
+   "top": [
+    [
+     "sad",
+     0.21709857628202314
+    ],
+    [
+     "wait",
+     0.20871079108937504
+    ],
+    [
+     "finger",
+     0.05955711803021934
+    ],
+    [
+     "morning",
+     0.034357698708055655
+    ],
+    [
+     "before",
+     0.024763530313479037
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5
+   },
+   "latency_s": null
+  },
+  {
+   "word": "wait",
+   "source": "wait_youtube-hooZv2wCujw.mp4",
+   "top": [
+    [
+     "wait",
+     0.8447552463208851
+    ],
+    [
+     "finger",
+     0.06291744285016616
+    ],
+    [
+     "morning",
+     0.014568945401382753
+    ],
+    [
+     "tree",
+     0.012911150735303726
+    ],
+    [
+     "mitten",
+     0.008324832670928248
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.6774193548387096
+   },
+   "latency_s": null
+  },
+  {
+   "word": "wait",
+   "source": "wait_youtube-lbN-NElNaMI.mp4",
+   "top": [
+    [
+     "boat",
+     0.18389831218960964
+    ],
+    [
+     "drawer",
+     0.15966014361103759
+    ],
+    [
+     "garbage",
+     0.06892947315624214
+    ],
+    [
+     "car",
+     0.04326241541048111
+    ],
+    [
+     "open",
+     0.03765503788638321
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.4050632911392405
+   },
+   "latency_s": null
+  },
+  {
+   "word": "wait",
+   "source": "wait_youtube-mhJvv6lTQ90.mp4",
+   "top": [
+    [
+     "hungry",
+     0.6401886716791289
+    ],
+    [
+     "giraffe",
+     0.07004873628309567
+    ],
+    [
+     "please",
+     0.04129967094110499
+    ],
+    [
+     "white",
+     0.026481689513345202
+    ],
+    [
+     "thirsty",
+     0.010770018753162785
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5916666666666667
+   },
+   "latency_s": null
+  },
+  {
+   "word": "wait",
+   "source": "wait_youtube-mo6REHINcoE.mp4",
+   "top": [
+    [
+     "wait",
+     0.6789665860745667
+    ],
+    [
+     "finger",
+     0.12487253735005893
+    ],
+    [
+     "morning",
+     0.01648194461254002
+    ],
+    [
+     "book",
+     0.016101652651016395
+    ],
+    [
+     "mitten",
+     0.009918217482174588
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.8372093023255814
+   },
+   "latency_s": null
+  },
+  {
+   "word": "wait",
+   "source": "wait_youtube-oMpdybUn-9Y.mp4",
+   "top": [
+    [
+     "child",
+     0.923030292711339
+    ],
+    [
+     "on",
+     0.011402805867037234
+    ],
+    [
+     "head",
+     0.003063889703883082
+    ],
+    [
+     "shirt",
+     0.0025453624434789435
+    ],
+    [
+     "have",
+     0.002295838310687733
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.7631578947368421
+   },
+   "latency_s": null
+  },
+  {
+   "word": "yes",
+   "source": "yes_asl-signbank-YES-1472.mp4",
+   "top": [
+    [
+     "can",
+     0.6021998432357821
+    ],
+    [
+     "yes",
+     0.30541425119555826
+    ],
+    [
+     "shoe",
+     0.007219008060533316
+    ],
+    [
+     "haveto",
+     0.004069229443987064
+    ],
+    [
+     "drop",
+     0.0035182241368548143
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.574468085106383
+   },
+   "latency_s": null
+  },
+  {
+   "word": "yes",
+   "source": "yes_aslbricks-yes.mp4",
+   "top": [
+    [
+     "clean",
+     0.07975631413762833
+    ],
+    [
+     "night",
+     0.07246020485945202
+    ],
+    [
+     "into",
+     0.03545814591685613
+    ],
+    [
+     "child",
+     0.029978297783804522
+    ],
+    [
+     "vacuum",
+     0.023503332336969426
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 1.0
+   },
+   "latency_s": null
+  },
+  {
+   "word": "yes",
+   "source": "yes_aslsearch-yes.mp4",
+   "top": [
+    [
+     "can",
+     0.43981869763274306
+    ],
+    [
+     "yes",
+     0.4216133202130795
+    ],
+    [
+     "drop",
+     0.010655760001486313
+    ],
+    [
+     "haveto",
+     0.006618435357357823
+    ],
+    [
+     "down",
+     0.005354432331876679
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 0.9888888888888889,
+    "hand_fraction": 0.4444444444444444
+   },
+   "latency_s": null
+  },
+  {
+   "word": "yes",
+   "source": "yes_elementalaslconcepts-yes.mp4",
+   "top": [
+    [
+     "yes",
+     0.7957301187348989
+    ],
+    [
+     "can",
+     0.07412437173559402
+    ],
+    [
+     "carrot",
+     0.011169643330375456
+    ],
+    [
+     "shoe",
+     0.008567634568833948
+    ],
+    [
+     "refrigerator",
+     0.006623167180119172
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.45098039215686275
+   },
+   "latency_s": null
+  },
+  {
+   "word": "yes",
+   "source": "yes_lifeprint-yt-0usayvOXzHo.mp4",
+   "top": [
+    [
+     "yes",
+     0.7008067478150999
+    ],
+    [
+     "can",
+     0.20950396565155754
+    ],
+    [
+     "drop",
+     0.011927243679578007
+    ],
+    [
+     "shoe",
+     0.009142496318005322
+    ],
+    [
+     "mitten",
+     0.0024667639952747874
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5833333333333334
+   },
+   "latency_s": null
+  },
+  {
+   "word": "yes",
+   "source": "yes_mariekatzenbachschool-yes.mp4",
+   "top": [
+    [
+     "yes",
+     0.8801675674101253
+    ],
+    [
+     "jeans",
+     0.028846048221763662
+    ],
+    [
+     "can",
+     0.021309922447640895
+    ],
+    [
+     "carrot",
+     0.003237790999030101
+    ],
+    [
+     "that",
+     0.002706455937460811
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.42424242424242425
+   },
+   "latency_s": null
+  },
+  {
+   "word": "yes",
+   "source": "yes_signlanguagestudent-yes-alternate.mp4",
+   "top": [
+    [
+     "into",
+     0.15291226236348432
+    ],
+    [
+     "stay",
+     0.13041959522105165
+    ],
+    [
+     "same",
+     0.05106531544342816
+    ],
+    [
+     "that",
+     0.04435180062648958
+    ],
+    [
+     "elephant",
+     0.02613622565931453
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 1.0
+   },
+   "latency_s": null
+  },
+  {
+   "word": "yes",
+   "source": "yes_signlanguagestudent-yes.mp4",
+   "top": [
+    [
+     "into",
+     0.05609257114907376
+    ],
+    [
+     "on",
+     0.040255912286177406
+    ],
+    [
+     "open",
+     0.02657974294313659
+    ],
+    [
+     "clean",
+     0.023910164996420277
+    ],
+    [
+     "child",
+     0.021904372669697813
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.9850746268656716
+   },
+   "latency_s": null
+  },
+  {
+   "word": "yes",
+   "source": "yes_startasl-yes.mp4",
+   "top": [
+    [
+     "yes",
+     0.8830382988931971
+    ],
+    [
+     "can",
+     0.05061315755731905
+    ],
+    [
+     "drop",
+     0.004463968967225007
+    ],
+    [
+     "jeans",
+     0.00436661003891862
+    ],
+    [
+     "shoe",
+     0.003908369867056772
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.323943661971831
+   },
+   "latency_s": null
+  },
+  {
+   "word": "yes",
+   "source": "yes_youtube-Kg0VRsnehgQ.mp4",
+   "top": [
+    [
+     "yes",
+     0.885435213980136
+    ],
+    [
+     "can",
+     0.058722754445578486
+    ],
+    [
+     "shoe",
+     0.008000302002975582
+    ],
+    [
+     "drop",
+     0.004299920315889213
+    ],
+    [
+     "time",
+     0.002016476923322117
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5892857142857143
+   },
+   "latency_s": null
+  },
+  {
+   "word": "yes",
+   "source": "yes_youtube-WHGzWZa-gk.mp4",
+   "top": [
+    [
+     "jacket",
+     0.26128559015630226
+    ],
+    [
+     "can",
+     0.1107518401640411
+    ],
+    [
+     "bath",
+     0.10905136658131376
+    ],
+    [
+     "puzzle",
+     0.05272956079897382
+    ],
+    [
+     "zipper",
+     0.04001714647996999
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 1.0
+   },
+   "latency_s": null
+  },
+  {
+   "word": "yes",
+   "source": "yes_youtube-gPlAfYvevxc.mp4",
+   "top": [
+    [
+     "yes",
+     0.19567035462813345
+    ],
+    [
+     "donkey",
+     0.11328235049621053
+    ],
+    [
+     "can",
+     0.05676591622574518
+    ],
+    [
+     "aunt",
+     0.0467053107687347
+    ],
+    [
+     "yesterday",
+     0.03327386916454272
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.759493670886076
+   },
+   "latency_s": null
+  },
+  {
+   "word": "yes",
+   "source": "yes_youtube-gpNDuOwyW7Q.mp4",
+   "top": [
+    [
+     "yes",
+     0.8902681350638992
+    ],
+    [
+     "can",
+     0.04276401990892686
+    ],
+    [
+     "shoe",
+     0.011283626500871016
+    ],
+    [
+     "jeans",
+     0.005760449401191887
+    ],
+    [
+     "carrot",
+     0.0028918981698689127
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.21666666666666667
+   },
+   "latency_s": null
+  },
+  {
+   "word": "yes",
+   "source": "yes_youtube-h8dstbX5kN0.mp4",
+   "top": [
+    [
+     "time",
+     0.7202388432481643
+    ],
+    [
+     "weus",
+     0.030498420144613538
+    ],
+    [
+     "yes",
+     0.024363299563591918
+    ],
+    [
+     "dance",
+     0.023544773970003104
+    ],
+    [
+     "feet",
+     0.017445502581915254
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.17592592592592593
+   },
+   "latency_s": null
+  },
+  {
+   "word": "yes",
+   "source": "yes_youtube-on-5PoBEak.mp4",
+   "top": [
+    [
+     "yes",
+     0.9710494157358921
+    ],
+    [
+     "can",
+     0.012175731613102017
+    ],
+    [
+     "shoe",
+     0.0020279178126245204
+    ],
+    [
+     "jeans",
+     0.0008424624045662297
+    ],
+    [
+     "time",
+     0.0007348642862238989
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 0.5402298850574713
+   },
+   "latency_s": null
+  },
+  {
+   "word": "yes",
+   "source": "yes_youtube-wc2A8AZepy4.mp4",
+   "top": [
+    [
+     "jacket",
+     0.2753204181814539
+    ],
+    [
+     "bath",
+     0.1101482930377379
+    ],
+    [
+     "can",
+     0.05246777525215086
+    ],
+    [
+     "hide",
+     0.03916361693603141
+    ],
+    [
+     "zipper",
+     0.035236655014218
+    ]
+   ],
+   "quality": {
+    "pose_fraction": 1.0,
+    "hand_fraction": 1.0
+   },
+   "latency_s": null
+  }
+ ]
+}
