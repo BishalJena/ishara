@@ -9,9 +9,18 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Protocol
 
 from app.protocol import ComposeRequest, Draft
+
+
+@dataclass(frozen=True)
+class ClaimedReply:
+    """An approved turn the custom LLM may now speak, word for word."""
+
+    turn_id: str
+    text: str
 
 
 class Composer(Protocol):
@@ -59,9 +68,9 @@ class CallLedger(Protocol):
         last caption."""
         ...
 
-    async def claim_reply(self, call_id: str, turn_id: str, text: str) -> bool:
-        """True exactly once for an approved, unspoken turn whose text matches the
-        approval. False for unknown, stale, ended or already-claimed turns."""
+    async def claim_in_flight(self, call_id: str) -> ClaimedReply | None:
+        """The call's approved, not yet spoken turn, claimed exactly once. None for
+        unknown or ended calls, with nothing in flight, or once it is claimed."""
         ...
 
     async def mark_spoken(self, call_id: str, turn_id: str) -> None:

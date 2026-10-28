@@ -4,6 +4,7 @@ import asyncio
 import contextlib
 import json
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 import anyio
@@ -13,13 +14,22 @@ from fastapi.testclient import TestClient
 from pydantic import SecretStr
 from starlette.websockets import WebSocketDisconnect
 
+from app.bolna_agent import SPEAK_PROMPT
 from app.bolna_client import HttpBolnaClient
 from app.calls import CallManager
 from app.contacts import InvalidContacts, parse_contacts
 from app.main import create_app
-from app.markers import DISCLOSURE, EVENT_END_CALL, EVENT_USER_REPLY, GOODBYE, HOLDING_LINE
-from app.ports import BolnaClient, BolnaError
+from app.markers import (
+    DISCLOSURE,
+    EVENT_END_CALL,
+    EVENT_USER_REPLY,
+    GOODBYE,
+    HOLDING_LINE,
+    USER_DATA_CALL_ID,
+)
+from app.ports import BolnaClient, BolnaError, ClaimedReply
 from app.protocol import ComposeRequest, Draft
+from fakes.fake_bolna import EVENT_NOTICE, bolna_render
 from tests.conftest import APP_TOKEN, CUSTOM_LLM_TOKEN, WEBHOOK_SECRET, make_settings
 
 CLINIC = "+910000000001"
@@ -85,6 +95,10 @@ class FakeBolna:
         self.events: list[tuple[str, str, dict[str, str]]] = []
         self.fail_start = False
         self.fail_events = False
+        # Bolna never sees a reply's text. Tests that check which line would be spoken
+        # set this to read the backend's in-flight text when a user_reply is published.
+        self.in_flight_text: Callable[[str], str | None] | None = None
+        self.injected: list[str | None] = []
 
     async def start_call(self, recipient: str, user_data: dict[str, str]) -> str:
         self.started.append((recipient, user_data))
@@ -94,6 +108,8 @@ class FakeBolna:
 
     async def send_event(self, run_id: str, event: str, properties: dict[str, str]) -> None:
         self.events.append((run_id, event, properties))
+        if event == EVENT_USER_REPLY and self.in_flight_text is not None:
+            self.injected.append(self.in_flight_text(run_id))
         if self.fail_events:
             raise BolnaError(503, "send_event")
 
@@ -483,9 +499,130 @@ def test_send_publishes_one_user_reply_event(harness: Harness) -> None:
         harness.receive(ws)
         approve(ws, "t1")
         assert harness.receive(ws) == status("speaking")
-    assert harness.bolna.events == [
-        ("run-1", EVENT_USER_REPLY, {"reply_text": TEXT, "turn_id": "t1"})
+    # Bolna never puts event properties in a prompt; the turn id is only for its logs.
+    assert harness.bolna.events == [("run-1", EVENT_USER_REPLY, {"turn_id": "t1"})]
+
+
+# ---- Bolna's speak-node request ----
+
+# What Bolna's execution log showed our custom LLM receive for the speak node on the
+# first real call (28 Oct): `user_data` filled, the user_reply properties not, each
+# `{{var}}` left as `{var}`, and an event notice without the properties.
+LIVE_SPEAK_PROMPT = (
+    "ISHARA_CALL_ID: {call_id}\nISHARA_NODE: speak\nISHARA_TURN_ID: {{turn_id}}\n"
+    "ISHARA_REPLY_START\n{{reply_text}}\nISHARA_REPLY_END\n\n"
+    "Say exactly the text between ISHARA_REPLY_START and ISHARA_REPLY_END, word for "
+    "word, and nothing else."
+)
+SPEAK_PROMPTS = {
+    "live log": lambda call_id: LIVE_SPEAK_PROMPT.format(call_id=call_id),
+    "agent.json": lambda call_id: bolna_render(SPEAK_PROMPT, {USER_DATA_CALL_ID: call_id}),
+}
+
+
+def speak_request(harness: Harness, call_id: str, prompt: str | None = None) -> str:
+    """Bolna's speak-node request after a user_reply event; returns the streamed text."""
+    messages = [
+        {"role": "system", "content": prompt or SPEAK_PROMPTS["live log"](call_id)},
+        {"role": "assistant", "content": DISCLOSURE},
+        {"role": "system", "content": EVENT_NOTICE.format(event=EVENT_USER_REPLY)},
     ]
+    response = harness.client.post(
+        "/v1/chat/completions",
+        json={"model": "ishara-relay", "stream": True, "messages": messages},
+        headers={"Authorization": f"Bearer {CUSTOM_LLM_TOKEN}"},
+    )
+    assert response.status_code == 200, response.text
+    chunks = [
+        json.loads(line.removeprefix("data: "))
+        for line in response.text.splitlines()
+        if line.startswith("data: {")
+    ]
+    return "".join(chunk["choices"][0]["delta"].get("content", "") for chunk in chunks)
+
+
+@pytest.mark.parametrize("prompt", SPEAK_PROMPTS.values(), ids=SPEAK_PROMPTS.keys())
+def test_bolna_speak_request_speaks_the_approved_turn(harness: Harness, prompt) -> None:
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        approve(ws, "t1")
+        assert harness.receive(ws) == status("speaking")
+        assert speak_request(harness, call_id, prompt(call_id)) == TEXT
+        assert harness.receive(ws) == {"type": "spoken", "turn_id": "t1"}
+        assert harness.receive(ws) == status("in_call")
+
+
+def test_second_speak_request_for_the_same_turn_says_nothing(harness: Harness) -> None:
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        approve(ws, "t1")
+        harness.receive(ws)
+        assert speak_request(harness, call_id) == TEXT
+        assert speak_request(harness, call_id) == ""
+        assert harness.receive(ws) == {"type": "spoken", "turn_id": "t1"}
+        assert harness.receive(ws) == status("in_call")
+        assert harness.probe(ws) == status("in_call")
+
+
+def test_speak_request_without_an_approved_turn_says_nothing(harness: Harness) -> None:
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        ws.send_json({"type": "chips", "turn_id": "t1", "chips": ["yes"]})
+        assert harness.receive(ws)["type"] == "draft"
+        assert speak_request(harness, call_id) == ""
+        assert harness.probe(ws) == status("in_call")
+
+
+def test_speak_request_claims_only_its_own_calls_turn(harness: Harness) -> None:
+    quiet, busy = harness.live_call(), harness.live_call()
+    with harness.socket(busy) as ws:
+        harness.receive(ws)
+        approve(ws, "t1")
+        harness.receive(ws)
+        assert speak_request(harness, quiet) == ""
+        assert speak_request(harness, busy) == TEXT
+        assert harness.receive(ws) == {"type": "spoken", "turn_id": "t1"}
+
+
+def test_speak_request_after_stop_says_nothing(harness: Harness) -> None:
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        approve(ws, "t1")
+        harness.receive(ws)
+        ws.send_json({"type": "stop"})
+        assert harness.receive(ws) == status("in_call")
+        assert speak_request(harness, call_id) == ""
+        assert harness.probe(ws) == status("in_call")
+
+
+def test_speak_request_after_not_delivered_says_nothing(make_harness) -> None:
+    harness = make_harness(delivery_timeout_s=0.05)
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        approve(ws, "t1")
+        harness.receive(ws)
+        assert harness.receive(ws)["type"] == "not_delivered"
+        assert harness.receive(ws) == status("in_call")
+        assert speak_request(harness, call_id) == ""
+        assert harness.probe(ws) == status("in_call")
+
+
+def test_speak_request_after_the_end_says_nothing(harness: Harness) -> None:
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        approve(ws, "t1")
+        harness.receive(ws)
+        ws.send_json({"type": "end"})
+        assert harness.receive(ws) == status("ended")
+        assert speak_request(harness, call_id) == ""
+        assert without_at(harness.receive(ws)) == caption(GOODBYE, "agent")
+        assert harness.probe(ws) == status("ended")
 
 
 def test_double_send_speaks_once(harness: Harness) -> None:
@@ -497,8 +634,8 @@ def test_double_send_speaks_once(harness: Harness) -> None:
         approve(ws, "t1")
         assert without_message(harness.receive(ws)) == error("already_approved")
         assert len(harness.bolna.replies()) == 1
-        assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT) is True
-        assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT) is False
+        assert harness.run(harness.manager.claim_in_flight, call_id) == ClaimedReply("t1", TEXT)
+        assert harness.run(harness.manager.claim_in_flight, call_id) is None
 
 
 def test_stale_approval_rejected(harness: Harness) -> None:
@@ -510,7 +647,7 @@ def test_stale_approval_rejected(harness: Harness) -> None:
         approve(ws, "t1")
         assert without_message(harness.receive(ws)) == error("stale_turn")
         assert harness.bolna.events == []
-        assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT) is False
+        assert harness.run(harness.manager.claim_in_flight, call_id) is None
 
 
 @pytest.mark.parametrize("bolna_status", [None, "ringing"])
@@ -543,26 +680,15 @@ def test_quick_reply_approval_needs_no_chips(harness: Harness) -> None:
         harness.receive(ws)
         approve(ws, "quick-1", "Sorry, could you please repeat that?")
         assert harness.receive(ws) == status("speaking")
-    assert harness.bolna.replies() == [
-        {"reply_text": "Sorry, could you please repeat that?", "turn_id": "quick-1"}
-    ]
-
-
-def test_claim_with_mismatched_text_is_false(harness: Harness) -> None:
-    call_id = harness.live_call()
-    with harness.socket(call_id) as ws:
-        harness.receive(ws)
-        approve(ws, "t1")
-        harness.receive(ws)
-        claim = harness.manager.claim_reply
-        assert harness.run(claim, call_id, "t1", "Hello, I'd like a doctor tomorrow.") is False
-        assert harness.run(claim, call_id, "other", TEXT) is False
-        assert harness.run(claim, call_id, "t1", TEXT) is True
+        assert harness.run(harness.manager.claim_in_flight, call_id) == ClaimedReply(
+            "quick-1", "Sorry, could you please repeat that?"
+        )
+    assert harness.bolna.replies() == [{"turn_id": "quick-1"}]
 
 
 def test_unknown_call_ids_are_ignored_by_the_ledger(harness: Harness) -> None:
     manager = harness.manager
-    assert harness.run(manager.claim_reply, "nope", "t1", TEXT) is False
+    assert harness.run(manager.claim_in_flight, "nope") is None
     assert harness.run(manager.record_caption, "nope", "Hi") is None
     assert harness.run(manager.record_agent_line, "nope", HOLDING_LINE) is None
     assert harness.run(manager.mark_spoken, "nope", "t1") is None
@@ -574,7 +700,7 @@ def test_mark_spoken_confirms_delivery(harness: Harness) -> None:
         harness.receive(ws)
         approve(ws, "t1")
         harness.receive(ws)
-        assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT)
+        assert harness.run(harness.manager.claim_in_flight, call_id) == ClaimedReply("t1", TEXT)
         harness.run(harness.manager.mark_spoken, call_id, "t1")
         assert harness.receive(ws) == {"type": "spoken", "turn_id": "t1"}
         assert harness.receive(ws) == status("in_call")
@@ -587,7 +713,7 @@ def test_mark_spoken_without_claim_is_ignored(harness: Harness) -> None:
         approve(ws, "t1")
         harness.receive(ws)
         harness.run(harness.manager.mark_spoken, call_id, "t1")
-        assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT) is True
+        assert harness.run(harness.manager.claim_in_flight, call_id) == ClaimedReply("t1", TEXT)
         harness.run(harness.manager.mark_spoken, call_id, "t1")
         assert harness.receive(ws) == {"type": "spoken", "turn_id": "t1"}
         assert harness.receive(ws) == status("in_call")
@@ -606,7 +732,7 @@ def test_not_delivered_after_timeout_and_late_claim_false(make_harness) -> None:
             "reason": "no_confirmation",
         }
         assert harness.receive(ws) == status("in_call")
-        assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT) is False
+        assert harness.run(harness.manager.claim_in_flight, call_id) is None
         approve(ws, "t1")
         assert without_message(harness.receive(ws)) == error("already_approved")
     assert len(harness.bolna.replies()) == 1
@@ -623,7 +749,9 @@ def test_resend_with_new_turn_after_not_delivered(make_harness) -> None:
         harness.receive(ws)
         approve(ws, "t1-retry")
         assert harness.receive(ws) == status("speaking")
-        assert harness.run(harness.manager.claim_reply, call_id, "t1-retry", TEXT) is True
+        assert harness.run(harness.manager.claim_in_flight, call_id) == ClaimedReply(
+            "t1-retry", TEXT
+        )
         harness.run(harness.manager.mark_spoken, call_id, "t1-retry")
         assert harness.receive(ws) == {"type": "spoken", "turn_id": "t1-retry"}
     assert [reply["turn_id"] for reply in harness.bolna.replies()] == ["t1", "t1-retry"]
@@ -636,7 +764,7 @@ def test_confirmed_delivery_never_reports_not_delivered(make_harness) -> None:
         harness.receive(ws)
         approve(ws, "t1")
         harness.receive(ws)
-        harness.run(harness.manager.claim_reply, call_id, "t1", TEXT)
+        assert harness.run(harness.manager.claim_in_flight, call_id) == ClaimedReply("t1", TEXT)
         harness.run(harness.manager.mark_spoken, call_id, "t1")
         harness.receive(ws)
         harness.receive(ws)
@@ -658,7 +786,7 @@ def test_superseding_approval_keeps_its_own_delivery_timer(make_harness) -> None
             "reason": "no_confirmation",
         }
         assert harness.receive(ws) == status("in_call")
-        assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT) is False
+        assert harness.run(harness.manager.claim_in_flight, call_id) is None
     assert [reply["turn_id"] for reply in harness.bolna.replies()] == ["t1", "t2"]
 
 
@@ -675,7 +803,7 @@ def test_send_event_failure_reports_not_delivered(harness: Harness) -> None:
             "reason": "bolna_unreachable",
         }
         assert harness.receive(ws) == status("in_call")
-        assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT) is False
+        assert harness.run(harness.manager.claim_in_flight, call_id) is None
 
 
 def test_busy_while_a_reply_is_being_spoken(harness: Harness) -> None:
@@ -684,7 +812,7 @@ def test_busy_while_a_reply_is_being_spoken(harness: Harness) -> None:
         harness.receive(ws)
         approve(ws, "t1")
         harness.receive(ws)
-        harness.run(harness.manager.claim_reply, call_id, "t1", TEXT)
+        assert harness.run(harness.manager.claim_in_flight, call_id) == ClaimedReply("t1", TEXT)
         approve(ws, "t2", "No.")
         assert without_message(harness.receive(ws)) == error("busy_speaking")
     assert len(harness.bolna.replies()) == 1
@@ -701,7 +829,7 @@ def test_stop_before_claim_cancels(harness: Harness) -> None:
         harness.receive(ws)
         ws.send_json({"type": "stop"})
         assert harness.receive(ws) == status("in_call")
-        assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT) is False
+        assert harness.run(harness.manager.claim_in_flight, call_id) is None
 
 
 def test_stop_reports_the_new_status_exactly_once(harness: Harness) -> None:
@@ -722,7 +850,7 @@ def test_stop_after_claim_cannot_interrupt(harness: Harness) -> None:
         harness.receive(ws)
         approve(ws, "t1")
         harness.receive(ws)
-        assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT)
+        assert harness.run(harness.manager.claim_in_flight, call_id) == ClaimedReply("t1", TEXT)
         ws.send_json({"type": "stop"})
         assert without_message(harness.receive(ws)) == error("cannot_interrupt")
         harness.run(harness.manager.mark_spoken, call_id, "t1")
@@ -737,7 +865,7 @@ def test_new_turn_revokes_unclaimed_approval(harness: Harness) -> None:
         harness.receive(ws)
         ws.send_json({"type": "chips", "turn_id": "t2", "chips": []})
         assert harness.receive(ws) == status("in_call")
-        assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT) is False
+        assert harness.run(harness.manager.claim_in_flight, call_id) is None
 
 
 def test_app_disconnect_revokes_unclaimed_approval(harness: Harness) -> None:
@@ -746,7 +874,7 @@ def test_app_disconnect_revokes_unclaimed_approval(harness: Harness) -> None:
         harness.receive(ws)
         approve(ws, "t1")
         harness.receive(ws)
-    assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT) is False
+    assert harness.run(harness.manager.claim_in_flight, call_id) is None
     with harness.socket(call_id) as ws:
         assert harness.receive(ws) == status("in_call")
 
@@ -759,7 +887,7 @@ def test_replaced_socket_does_not_revoke_approval(harness: Harness) -> None:
         harness.receive(old)
         with harness.socket(call_id) as new:
             assert harness.receive(new) == status("speaking")
-            assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT) is True
+            assert harness.run(harness.manager.claim_in_flight, call_id) == ClaimedReply("t1", TEXT)
 
 
 def test_end_sends_end_call_and_wipes_state(harness: Harness) -> None:
@@ -776,7 +904,7 @@ def test_end_sends_end_call_and_wipes_state(harness: Harness) -> None:
         harness.run(harness.manager.record_caption, call_id, "Hello?")
         assert harness.probe(ws) == status("ended")
         assert harness.bolna.events[-1] == ("run-1", EVENT_END_CALL, {})
-        assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT) is False
+        assert harness.run(harness.manager.claim_in_flight, call_id) is None
     assert harness.composer.requests == []
 
 
@@ -821,7 +949,7 @@ def test_disclosure_is_shown_once_when_the_call_goes_live(harness: Harness) -> N
         assert without_at(harness.receive(ws)) == caption("Hello?")
         approve(ws, "t1")
         assert harness.receive(ws) == status("speaking")
-        assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT)
+        assert harness.run(harness.manager.claim_in_flight, call_id) == ClaimedReply("t1", TEXT)
         harness.run(harness.manager.mark_spoken, call_id, "t1")
         assert harness.receive(ws) == {"type": "spoken", "turn_id": "t1"}
         assert harness.receive(ws) == status("in_call"), "speaking → in_call is not going live"
@@ -863,7 +991,7 @@ def test_agent_line_leaves_approvals_alone(harness: Harness) -> None:
         assert harness.receive(ws) == status("speaking")
         harness.run(harness.manager.record_agent_line, call_id, HOLDING_LINE)
         assert without_at(harness.receive(ws)) == caption(HOLDING_LINE, "agent")
-        assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT) is True
+        assert harness.run(harness.manager.claim_in_flight, call_id) == ClaimedReply("t1", TEXT)
         harness.run(harness.manager.mark_spoken, call_id, "t1")
         assert harness.receive(ws) == {"type": "spoken", "turn_id": "t1"}
 
@@ -981,7 +1109,7 @@ def test_webhook_end_revokes_pending_approval(harness: Harness) -> None:
         harness.receive(ws)
         harness.webhook("run-1", "call-disconnected")
         assert harness.receive(ws) == status("ended")
-        assert harness.run(harness.manager.claim_reply, call_id, "t1", TEXT) is False
+        assert harness.run(harness.manager.claim_in_flight, call_id) is None
         assert harness.bolna.events[-1][1] == EVENT_USER_REPLY
 
 

@@ -51,7 +51,7 @@
                 },
                 {
                   "id": "speak",
-                  "prompt": "ISHARA_CALL_ID: {{ishara_call_id}}\nISHARA_NODE: speak\nISHARA_TURN_ID: {{turn_id}}\nISHARA_REPLY_START\n{{reply_text}}\nISHARA_REPLY_END\n\nSay exactly the text between ISHARA_REPLY_START and ISHARA_REPLY_END, word for word, and nothing else.",
+                  "prompt": "ISHARA_CALL_ID: {{ishara_call_id}}\nISHARA_NODE: speak\n\nSay the Deaf caller's approved reply, word for word, and nothing else.",
                   "number_of_words_for_interruption": 0,
                   "edges": [
                     {

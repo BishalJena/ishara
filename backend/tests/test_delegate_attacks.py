@@ -118,8 +118,9 @@ def notes(f: Flow, call_id: str) -> dict:
     return response.json()
 
 
-def spoken_texts(f: Flow) -> list[str]:
-    return [r["reply_text"] for r in f.bolna.replies()]
+def spoken_texts(f: Flow) -> list[str | None]:
+    """The lines sent to Bolna's speak node: the backend's in-flight text per event."""
+    return list(f.bolna.injected)
 
 
 # ---- while an ask is open ----
@@ -414,10 +415,8 @@ def test_two_calls_at_once_share_no_state(flow) -> None:
             OPENING,
             "I'd like to book a doctor's appointment for Ravi Kumar, today.",
         ]
-        f.speak_turn(a, "delegate-open", OPENING)
-        f.speak_turn(
-            b, "delegate-open", "I'd like to book a doctor's appointment for Ravi Kumar, today."
-        )
+        assert f.speak_last(a) == OPENING
+        assert f.speak_last(b) == "I'd like to book a doctor's appointment for Ravi Kumar, today."
         assert f.listen_turn(a, OFFER) == PAUSE_LINE
         ask_a = f.drain_until(ws_a, "ask")
         # B's socket can't answer A's question, and B says nothing about A's offer.

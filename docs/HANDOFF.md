@@ -76,8 +76,10 @@ incorrectly recognized concept; the user still edits and approves.
 
 **Bolna speech is unproven.** The old hosted sample-speech route returned 403
 and should not be retried. The chosen route (Path B) is a Bolna graph agent that
-places the call, with our backend as its custom LLM and graph events carrying the
-approved text; day-1 task V4 in the plan tests it. The endpoint is deployed, the custom
+places the call, with our backend as its custom LLM; a graph event moves it to the
+speak node and the backend streams the call's approved turn (events can't carry the
+text: Bolna never puts their properties in a prompt, seen live 28 Oct); day-1 task V4
+in the plan tests it. The endpoint is deployed, the custom
 model and the graph agent are registered with Bolna, and the spike runner exists, but
 no call has been placed. The iPhone harness has been
 built, but physical call/camera/caption coexistence (Path A) has not been

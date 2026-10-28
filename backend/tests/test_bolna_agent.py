@@ -95,10 +95,12 @@ def test_listen_node_repeats_after_15s_silence_and_carries_listen_marker(payload
     assert HOLDING_LINE in listen["prompt"]
 
 
-def test_speak_prompt_substitutes_reply_and_turn(payload) -> None:
+def test_speak_prompt_needs_only_the_call_id(payload) -> None:
+    # Bolna fills only user_data variables, so the speak prompt has no other slot.
     speak = _nodes(payload)["speak"]
-    filled = _fill(speak["prompt"], ishara_call_id="c1", turn_id="t7", reply_text="Yes, 10:30.")
-    assert parse_marker_block(filled) == MarkerBlock("c1", "speak", "t7", "Yes, 10:30.")
+    filled = _fill(speak["prompt"], ishara_call_id="c1")
+    assert parse_marker_block(filled) == MarkerBlock("c1", "speak")
+    assert "{" not in filled
 
 
 def test_speak_node_cannot_be_interrupted(payload) -> None:

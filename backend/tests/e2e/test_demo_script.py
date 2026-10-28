@@ -234,10 +234,7 @@ def test_plan_demo_script_end_to_end(harness: Harness) -> None:
         app.expect("spoken", turn_id="t1")
         harness.idle()
         assert run.spoken == [DISCLOSURE, t1]
-        assert harness.fake.events_for("user_reply")[-1].properties == {
-            "reply_text": t1,
-            "turn_id": "t1",
-        }
+        assert harness.fake.events_for("user_reply")[-1].properties == {"turn_id": "t1"}
 
         harness.says(run, T2_CAPTION)
         app.expect("caption", text=T2_CAPTION, speaker="receptionist")

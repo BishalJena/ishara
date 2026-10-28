@@ -20,13 +20,14 @@ from app.markers import (
     parse_marker_block,
 )
 from fakes.fake_bolna import (
+    EVENT_NOTICE,
     LLM_PATH,
     WEBHOOK_PATH,
     FakeBolna,
     RunEnded,
     SentEvent,
     asgi_client,
-    substitute,
+    bolna_render,
 )
 from fakes.sse import collect_stream_text
 
@@ -47,10 +48,12 @@ def _sse(text: str) -> Iterator[str]:
 
 
 class StubLLM:
-    """Minimal custom LLM: quiet on listen, holding line on silence, echo on speak."""
+    """Minimal custom LLM: quiet on listen, holding line on silence, and on speak the
+    oldest approved text it was given (each one once), like the backend's ledger."""
 
     def __init__(self) -> None:
         self.received: list[dict] = []
+        self.approved: list[str] = []
         self.media_type = "text/event-stream"
         self.fail_status: int | None = None
         self.webhooks: list[dict] = []
@@ -73,7 +76,7 @@ class StubLLM:
         block = parse_marker_block(body["messages"][0]["content"])
         assert block is not None
         if block.node == "speak":
-            reply = block.reply_text or ""
+            reply = self.approved.pop(0) if self.approved else ""
         elif body["messages"][-1] == {"role": "user", "content": SILENCE_MARKER}:
             reply = HOLDING_LINE
         else:
@@ -98,8 +101,10 @@ async def _start(fake: FakeBolna) -> str:
     return await fake.start_call(RECIPIENT, {"ishara_call_id": CALL_ID})
 
 
-def _reply_props(turn_id: str = "t1", text: str = REPLY) -> dict[str, str]:
-    return {"reply_text": text, "turn_id": turn_id}
+def _approve(stub: StubLLM, turn_id: str = "t1", text: str = REPLY) -> dict[str, str]:
+    """Approve `text` in the stub and return the user_reply properties for it."""
+    stub.approved.append(text)
+    return {"turn_id": turn_id}
 
 
 # ---- calls and the listen node ----
@@ -204,19 +209,42 @@ async def test_user_reply_is_published_first_then_spoken_verbatim(
 ) -> None:
     run_id = await _start(fake)
 
-    await fake.send_event(run_id, "user_reply", _reply_props())
+    await fake.send_event(run_id, "user_reply", _approve(stub))
     assert fake.spoken == [DISCLOSURE], "send_event must return before anything is spoken"
     await fake.wait_idle()
 
     assert fake.spoken == [DISCLOSURE, REPLY]
-    assert stub.blocks() == [MarkerBlock(CALL_ID, "speak", "t1", REPLY)]
-    assert fake.events == [SentEvent(run_id, "user_reply", _reply_props())]
+    assert stub.blocks() == [MarkerBlock(CALL_ID, "speak")]
+    assert fake.events == [SentEvent(run_id, "user_reply", {"turn_id": "t1"})]
     assert fake.run(run_id).node == "listen"
+
+
+async def test_speak_request_is_shaped_like_live_bolna(stub: StubLLM) -> None:
+    # Live Bolna (28 Oct): user_data fills the prompt, event properties never do, and an
+    # unfilled `{{var}}` arrives as `{var}`; an event notice without them is appended.
+    speak = "ISHARA_CALL_ID: {{ishara_call_id}}\nISHARA_NODE: speak\nTURN {{turn_id}}"
+    fake = FakeBolna(TOKEN, asgi_client(stub.app), speak_prompt=speak)
+    run_id = await _start(fake)
+
+    await fake.send_event(run_id, "user_reply", _approve(stub, "t9", "Secret reply."))
+    await fake.wait_idle()
+
+    (body,) = stub.received
+    assert body["messages"] == [
+        {
+            "role": "system",
+            "content": f"ISHARA_CALL_ID: {CALL_ID}\nISHARA_NODE: speak\nTURN {{turn_id}}",
+        },
+        {"role": "assistant", "content": DISCLOSURE},
+        {"role": "system", "content": EVENT_NOTICE.format(event="user_reply")},
+    ]
+    assert "t9" not in json.dumps(body) and "Secret" not in json.dumps(body)
+    assert fake.spoken == [DISCLOSURE, "Secret reply."]
 
 
 async def test_spoken_reply_is_in_the_next_listen_history(fake: FakeBolna, stub: StubLLM) -> None:
     run_id = await _start(fake)
-    await fake.send_event(run_id, "user_reply", _reply_props())
+    await fake.send_event(run_id, "user_reply", _approve(stub))
     await fake.wait_idle()
 
     await fake.receptionist_says(run_id, "Yes, 10:30 tomorrow morning.")
@@ -234,7 +262,7 @@ async def test_mid_speech_event_moves_to_speak_without_speaking(
     run_id = await _start(fake)
     fake.receptionist_mid_speech = True
 
-    await fake.send_event(run_id, "user_reply", _reply_props())
+    await fake.send_event(run_id, "user_reply", _approve(stub))
     await fake.wait_idle()
 
     assert stub.received == []
@@ -248,13 +276,13 @@ async def test_after_mid_speech_skip_next_utterance_uses_stale_speak_prompt(
 ) -> None:
     run_id = await _start(fake)
     fake.receptionist_mid_speech = True
-    await fake.send_event(run_id, "user_reply", _reply_props())
+    await fake.send_event(run_id, "user_reply", _approve(stub))
     await fake.wait_idle()
     fake.receptionist_mid_speech = False
 
     await fake.receptionist_says(run_id, "Sorry, go ahead.")
 
-    assert stub.blocks() == [MarkerBlock(CALL_ID, "speak", "t1", REPLY)]
+    assert stub.blocks() == [MarkerBlock(CALL_ID, "speak")]
     assert fake.run(run_id).node == "listen"
 
 
@@ -264,20 +292,20 @@ async def test_duplicate_delivery_posts_the_speak_request_twice(
     run_id = await _start(fake)
     fake.duplicate_events = True
 
-    await fake.send_event(run_id, "user_reply", _reply_props())
+    await fake.send_event(run_id, "user_reply", _approve(stub))
     await fake.wait_idle()
 
-    assert stub.blocks() == [MarkerBlock(CALL_ID, "speak", "t1", REPLY)] * 2
+    assert stub.blocks() == [MarkerBlock(CALL_ID, "speak")] * 2
     assert len(fake.events) == 1
 
 
-async def test_new_reply_replaces_previous_reply_text(fake: FakeBolna, stub: StubLLM) -> None:
+async def test_each_reply_gets_its_own_speak_request(fake: FakeBolna, stub: StubLLM) -> None:
     run_id = await _start(fake)
-    await fake.send_event(run_id, "user_reply", _reply_props("t1", "First."))
-    await fake.send_event(run_id, "user_reply", _reply_props("t2", "Second."))
+    await fake.send_event(run_id, "user_reply", _approve(stub, "t1", "First."))
+    await fake.send_event(run_id, "user_reply", _approve(stub, "t2", "Second."))
     await fake.wait_idle()
 
-    assert [block.turn_id for block in stub.blocks() if block] == ["t1", "t2"]
+    assert stub.blocks() == [MarkerBlock(CALL_ID, "speak")] * 2
     assert fake.spoken == [DISCLOSURE, "First.", "Second."]
 
 
@@ -285,8 +313,8 @@ async def test_new_reply_replaces_previous_reply_text(fake: FakeBolna, stub: Stu
     ("event", "properties"),
     [
         ("speak_now", {}),
+        ("user_reply", {}),
         ("user_reply", {"reply_text": "Hi"}),
-        ("user_reply", {"turn_id": "t1"}),
     ],
 )
 async def test_events_outside_the_agent_graph_are_rejected(
@@ -319,7 +347,7 @@ async def test_end_call_says_goodbye_and_ends_the_run(fake: FakeBolna, stub: Stu
 async def test_nothing_is_spoken_or_requested_after_the_end(fake: FakeBolna, stub: StubLLM) -> None:
     run_id = await _start(fake)
     await fake.send_event(run_id, "end_call", {})
-    await fake.send_event(run_id, "user_reply", _reply_props())
+    await fake.send_event(run_id, "user_reply", _approve(stub))
     await fake.wait_idle()
 
     assert fake.spoken == [DISCLOSURE, GOODBYE]
@@ -352,7 +380,7 @@ async def test_wait_idle_reraises_a_failed_delivery(fake: FakeBolna, stub: StubL
     run_id = await _start(fake)
     stub.fail_status = 500
 
-    await fake.send_event(run_id, "user_reply", _reply_props())
+    await fake.send_event(run_id, "user_reply", _approve(stub))
 
     with pytest.raises(httpx.HTTPStatusError):
         await fake.wait_idle()
@@ -392,12 +420,10 @@ async def test_run_for_call_finds_the_run_by_ishara_call_id(fake: FakeBolna) -> 
 # ---- helpers ----
 
 
-def test_substitute_fills_known_variables_and_keeps_unknown() -> None:
-    template = "{{ishara_call_id}} / {{turn_id}} / {{missing}}"
+def test_bolna_render_fills_only_user_data_and_leaves_single_braces() -> None:
+    template = "{{ishara_call_id}} / {{turn_id}} / {{reply_text}}"
 
-    assert (
-        substitute(template, {"ishara_call_id": "c1", "turn_id": "t1"}) == "c1 / t1 / {{missing}}"
-    )
+    assert bolna_render(template, {"ishara_call_id": "c1"}) == "c1 / {turn_id} / {reply_text}"
 
 
 async def _lines(*lines: str) -> AsyncIterator[str]:

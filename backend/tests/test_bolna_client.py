@@ -87,13 +87,13 @@ async def test_start_call_without_agent_id_fails_before_any_request() -> None:
 
 async def test_send_event_posts_event_and_properties_to_run() -> None:
     client, rec = _client(_reply(202, {"status": "accepted"}))
-    await client.send_event(RUN_ID, "user_reply", {"reply_text": "Yes.", "turn_id": "t1"})
+    await client.send_event(RUN_ID, "user_reply", {"turn_id": "t1"})
     assert rec.only.method == "POST"
     assert str(rec.only.url) == f"https://api.bolna.ai/v1/call/{RUN_ID}/events"
     assert rec.only.headers["authorization"] == f"Bearer {API_KEY}"
     assert _body(rec.only) == {
         "event": "user_reply",
-        "properties": {"reply_text": "Yes.", "turn_id": "t1"},
+        "properties": {"turn_id": "t1"},
     }
 
 

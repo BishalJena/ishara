@@ -56,7 +56,8 @@ showed. Keep them separate.
 ### 2. A `user_reply` event speaks the exact text
 
 - **Documented:** event properties are substituted into the node prompt
-  ([B18](../CLAIM-LEDGER.md)); echoing them verbatim through a custom LLM is untested.
+  ([B18](../CLAIM-LEDGER.md)). **Contradicted live (28 Oct):** they are not, so the
+  custom LLM now speaks the call's approved in-flight turn, not text from the prompt.
 - **Measured by the runner:** outcome and SEND → spoken for a fixed test sentence.
 - **Executed:** not yet run.
 

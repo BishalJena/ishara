@@ -210,13 +210,17 @@ async def test_everything_the_agent_says_is_voiced_in_order_and_every_event_is_l
     assert player.played == [DISCLOSURE, T1_TEMPLATE, GOODBYE]
     order = [
         "chips: hello · doctor · tomorrow (receptionist last said: nothing yet)",
-        f"approved (SEND): {T1_TEMPLATE}",
+        "approved (SEND)",
         f"agent says: {T1_TEMPLATE}",
         f"receptionist says: {T2}",
         "end requested",
         f"agent says: {GOODBYE}",
     ]
-    assert [line for line in logs if line in order] == order
+    # The turn id is random; Bolna never gets the text, so the log names only the turn.
+    seen = [
+        "approved (SEND)" if line.startswith("approved (SEND): turn ") else line for line in logs
+    ]
+    assert [line for line in seen if line in order] == order
     assert any(line.startswith("draft (template, ") for line in logs)
     assert [line for line in logs if line.startswith("voice: playing")] == [
         f"voice: playing (Sarvam TTS 0.00 s): {text}" for text in player.played

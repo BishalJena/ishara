@@ -50,7 +50,7 @@ from app import composer as production_composer
 from app.calls import CallManager
 from app.config import REPO_ROOT, Settings
 from app.main import configure_logging, create_app
-from app.markers import EVENT_END_CALL, EVENT_USER_REPLY, PROP_REPLY_TEXT
+from app.markers import EVENT_END_CALL, EVENT_USER_REPLY, PROP_TURN_ID
 from app.ports import Composer
 from app.sarvam import SarvamTTS
 from fakes.fake_bolna import FakeRun, RunEnded
@@ -166,7 +166,8 @@ class LabBolna(ScriptedBolna):
 
     async def send_event(self, run_id: str, event: str, properties: dict[str, str]) -> None:
         if event == EVENT_USER_REPLY:
-            self._out(f"approved (SEND): {properties.get(PROP_REPLY_TEXT, '')}")
+            # Bolna never gets the text; it is in "agent says" once spoken.
+            self._out(f"approved (SEND): turn {properties.get(PROP_TURN_ID, '')}")
         elif event == EVENT_END_CALL:
             self._out("end requested")
         await super().send_event(run_id, event, properties)

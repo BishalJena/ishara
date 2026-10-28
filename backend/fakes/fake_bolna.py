@@ -9,9 +9,12 @@ It follows what Bolna documents and what PLAN.md §3 expects (ledger B24, B25):
   socket before the call goes live, as the iPhone does.
 - listen node: each receptionist utterance, or the `[silence]` repeat, becomes a user
   message and Bolna asks our custom LLM for a reply using the listen prompt.
-- `user_reply` event: its properties merge into the call context, the node moves to
-  speak and Bolna asks the custom LLM again with the speak prompt, whose `{{var}}`
-  slots are now filled. Afterwards the node goes back to listen.
+- prompts: like live Bolna (execution log of the first real call, 28 Oct), only
+  `user_data` fills `{{var}}`; any other `{{var}}` reaches the custom LLM as a literal
+  `{var}`. Event properties never reach a prompt, although Bolna's docs say they do.
+- `user_reply` event: the node moves to speak and Bolna asks the custom LLM again
+  with the speak prompt plus its `[Event: user_reply. ...]` system message (no
+  properties). Afterwards the node goes back to listen.
 - B24: if the receptionist is mid-utterance when the event lands, the node moves to
   speak but nothing is requested or spoken. The node stays on speak, so the next
   receptionist utterance is answered with the (stale) speak prompt.
@@ -40,7 +43,6 @@ from app.markers import (
     EVENT_END_CALL,
     EVENT_USER_REPLY,
     GOODBYE,
-    PROP_REPLY_TEXT,
     PROP_TURN_ID,
     SILENCE_MARKER,
     USER_DATA_CALL_ID,
@@ -65,6 +67,8 @@ SPEAK_PROMPT = (
 NodeName = Literal["listen", "speak", "goodbye"]
 Message = dict[str, str]
 _VARIABLE = re.compile(r"\{\{(\w+)\}\}")
+# The system message Bolna appended to the speak request after a user_reply (live log).
+EVENT_NOTICE = "[Event: {event}. Respond proactively — speak first, do not wait for the user.]"
 
 
 class RunEnded(RuntimeError):
@@ -83,7 +87,6 @@ class FakeRun:
     run_id: str
     recipient: str
     user_data: dict[str, str]
-    context: dict[str, str]
     node: NodeName = "listen"
     ended: bool = False
     history: list[Message] = field(default_factory=list)
@@ -93,9 +96,10 @@ class FakeRun:
     answered: asyncio.Task[None] | None = None
 
 
-def substitute(template: str, context: Mapping[str, str]) -> str:
-    """Fill `{{name}}` like Bolna; unknown names stay as written."""
-    return _VARIABLE.sub(lambda match: context.get(match[1], match[0]), template)
+def bolna_render(template: str, user_data: Mapping[str, str]) -> str:
+    """Fill `{{name}}` like live Bolna: from `user_data` only; any other name is left
+    as a literal `{name}`."""
+    return _VARIABLE.sub(lambda match: user_data.get(match[1], "{" + match[1] + "}"), template)
 
 
 def asgi_client(app: FastAPI, base_url: str = "http://ishara.test") -> httpx.AsyncClient:
@@ -142,7 +146,7 @@ class FakeBolna:
 
     async def start_call(self, recipient: str, user_data: dict[str, str]) -> str:
         run_id = f"fake-run-{next(self._run_ids)}"
-        run = FakeRun(run_id, recipient, dict(user_data), context=dict(user_data))
+        run = FakeRun(run_id, recipient, dict(user_data))
         self.runs[run_id] = run
         self.recipients.append(recipient)
         self._say(run, DISCLOSURE)
@@ -212,11 +216,10 @@ class FakeBolna:
                 if self.report_status:
                     await self._report(run, END_STATUS)
                 return
-            run.context.update(properties)
             run.node = "speak"
             if self.receptionist_mid_speech:
                 return
-            await self._respond(run)
+            await self._respond(run, event_notice=EVENT_NOTICE.format(event=event))
 
     async def _user_turn(self, run: FakeRun, text: str) -> str:
         async with run.lock:
@@ -225,11 +228,11 @@ class FakeBolna:
             run.history.append({"role": "user", "content": text})
             return await self._respond(run)
 
-    async def _respond(self, run: FakeRun) -> str:
+    async def _respond(self, run: FakeRun, event_notice: str | None = None) -> str:
         """One custom-LLM request with the current node's prompt, then back to listen."""
         assert run.node in ("listen", "speak"), run.node
-        prompt = substitute(self._prompts[run.node], run.context)
-        reply = await self._ask_llm(run, prompt)
+        prompt = bolna_render(self._prompts[run.node], run.user_data)
+        reply = await self._ask_llm(run, prompt, event_notice)
         run.node = "listen"
         if reply:
             self._say(run, reply)
@@ -255,15 +258,14 @@ class FakeBolna:
             response.raise_for_status()
             self.statuses.append((run.run_id, status))
 
-    async def _ask_llm(self, run: FakeRun, system_prompt: str) -> str:
+    async def _ask_llm(self, run: FakeRun, system_prompt: str, event_notice: str | None) -> str:
         http = self._client()
         if self.latency_s:
             await asyncio.sleep(self.latency_s)
-        payload = {
-            "model": "ishara-custom-llm",
-            "stream": True,
-            "messages": [{"role": "system", "content": system_prompt}, *run.history],
-        }
+        messages = [{"role": "system", "content": system_prompt}, *run.history]
+        if event_notice is not None:
+            messages.append({"role": "system", "content": event_notice})
+        payload = {"model": "ishara-custom-llm", "stream": True, "messages": messages}
         run.llm_requests.append(payload)
         headers = {"Authorization": f"Bearer {self._token}"}
         async with http.stream("POST", LLM_PATH, json=payload, headers=headers) as response:
@@ -282,8 +284,7 @@ class FakeBolna:
 def _check_event(event: str, properties: Mapping[str, str]) -> None:
     """Reject events our agent graph has no edge for, so backend bugs fail loudly."""
     if event == EVENT_USER_REPLY:
-        missing = {PROP_REPLY_TEXT, PROP_TURN_ID} - properties.keys()
-        if missing:
-            raise ValueError(f"user_reply is missing {sorted(missing)}")
+        if PROP_TURN_ID not in properties:
+            raise ValueError(f"user_reply is missing {PROP_TURN_ID!r}")
     elif event != EVENT_END_CALL:
         raise ValueError(f"unknown event {event!r}")

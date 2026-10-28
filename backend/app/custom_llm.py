@@ -6,15 +6,18 @@ marker block in the node prompt (app.markers). Request kinds and the reply each 
 
 - routing: system prompt starts "Routing Guidelines", tools `transition_to_<node>` /
   `stay_on_current_node`, tool_choice "required". Its "Node Objective" embeds the node
-  prompt with variables filled in, so it carries our marker block and the approved
-  text; it must be recognised first. Reply: no tool call, which Bolna treats as "stay".
+  prompt with variables filled in, so it carries our marker block; it must be
+  recognised first, or it would claim the approval. Reply: no tool call, which Bolna
+  treats as "stay".
 - hang-up check: system prompt asks for `{"hangup": "Yes" or "No"}`. Reply: "No"; we
   end calls only through the end_call event.
 - voicemail check: asks for `{"is_voicemail": ...}`. Reply: "No".
 - listen node: forward new receptionist utterances as captions; reply with nothing,
   or the holding line when the latest user message is Bolna's `[silence]` repeat (the
   app sees that line as an agent caption).
-- speak node: speak the approved text only if the ledger grants the single-use claim.
+- speak node: speak the call's approved in-flight turn, claimed once from the ledger.
+  Bolna puts no event properties in the prompt (first real call, 28 Oct), so the
+  request names only the call; the ledger knows the one turn that may be spoken.
 - anything else: empty reply.
 
 Sources: https://www.bolna.ai/docs/custom-llm-inference.md (OpenAI format, bearer
@@ -149,11 +152,10 @@ async def decide(
             return Reply(say, "delegate")
         return Reply("", "silent")
 
-    # parse_marker_block only returns a speak block with both fields filled in.
-    assert marker.turn_id is not None and marker.reply_text is not None
-    if not await ledger.claim_reply(marker.call_id, marker.turn_id, marker.reply_text):
+    claimed = await ledger.claim_in_flight(marker.call_id)
+    if claimed is None:
         return Reply("", "claim_refused")
-    return Reply(marker.reply_text, "reply", spoken_turn=(marker.call_id, marker.turn_id))
+    return Reply(claimed.text, "reply", spoken_turn=(marker.call_id, claimed.turn_id))
 
 
 async def _delegated_line(ledger: CallLedger, call_id: str, heard: str | None) -> str | None:

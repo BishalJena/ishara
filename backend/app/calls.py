@@ -46,7 +46,7 @@ from app.delegate import (
     build_notes,
 )
 from app.deps import get_ledger, get_settings_dep
-from app.ports import BolnaClient, BolnaError, CallLedger, Composer
+from app.ports import BolnaClient, BolnaError, CallLedger, ClaimedReply, Composer
 from app.protocol import (
     AnswerMessage,
     ApproveMessage,
@@ -319,7 +319,7 @@ class CallManager(CallLedger):
         await self._publish(session, before)
         self._timers[session.call_id] = self._spawn(self._expire_later(session, turn.turn_id))
         assert session.run_id is not None  # approve() requires a run id
-        properties = {markers.PROP_REPLY_TEXT: message.text, markers.PROP_TURN_ID: turn.turn_id}
+        properties = {markers.PROP_TURN_ID: turn.turn_id}
         try:
             await self._bolna.send_event(session.run_id, markers.EVENT_USER_REPLY, properties)
         except BolnaError as error:
@@ -477,7 +477,7 @@ class CallManager(CallLedger):
         await self._publish(session, before)
         self._timers[session.call_id] = self._spawn(self._expire_later(session, turn.turn_id))
         assert session.run_id is not None
-        properties = {markers.PROP_REPLY_TEXT: text, markers.PROP_TURN_ID: turn.turn_id}
+        properties = {markers.PROP_TURN_ID: turn.turn_id}
         try:
             await self._bolna.send_event(session.run_id, markers.EVENT_USER_REPLY, properties)
         except BolnaError as error:
@@ -537,9 +537,13 @@ class CallManager(CallLedger):
             return
         await self._send_agent_line(session, text)
 
-    async def claim_reply(self, call_id: str, turn_id: str, text: str) -> bool:
+    async def claim_in_flight(self, call_id: str) -> ClaimedReply | None:
         session = self._sessions.get(call_id)
-        return session is not None and session.claim(turn_id, text)
+        turn = session.claim() if session is not None else None
+        if turn is None:
+            return None
+        assert turn.approved_text is not None  # approve() always sets it
+        return ClaimedReply(turn.turn_id, turn.approved_text)
 
     async def mark_spoken(self, call_id: str, turn_id: str) -> None:
         session = self._sessions.get(call_id)

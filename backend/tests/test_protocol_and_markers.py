@@ -100,14 +100,19 @@ def _fill(template: str, **values: str) -> str:
     return template
 
 
-def test_speak_block_round_trips_multiline_reply() -> None:
-    reply = "No, sorry, 4 pm doesn't work.\nIs there anything tomorrow morning?"
+def test_speak_block_parses_call_and_node_only() -> None:
+    prompt = "You are a relay.\n" + _fill(render_marker_block("speak"), ishara_call_id="c1")
+    assert parse_marker_block(prompt + "\nSay nothing else.") == MarkerBlock("c1", "speak")
+    assert render_marker_block("speak") == "ISHARA_CALL_ID: {{ishara_call_id}}\nISHARA_NODE: speak"
+
+
+def test_speak_block_ignores_reply_slots_bolna_left_unfilled() -> None:
+    # The pre-fix speak prompt as live Bolna sent it (28 Oct).
     prompt = (
-        "You are a relay.\n"
-        + _fill(render_marker_block("speak"), ishara_call_id="c1", turn_id="t9", reply_text=reply)
-        + "\nSay nothing else."
+        "ISHARA_CALL_ID: c1\nISHARA_NODE: speak\nISHARA_TURN_ID: {turn_id}\n"
+        "ISHARA_REPLY_START\n{reply_text}\nISHARA_REPLY_END"
     )
-    assert parse_marker_block(prompt) == MarkerBlock("c1", "speak", "t9", reply)
+    assert parse_marker_block(prompt) == MarkerBlock("c1", "speak")
 
 
 def test_listen_block_parses() -> None:
@@ -120,9 +125,12 @@ def test_listen_block_parses() -> None:
     [
         "no markers here",
         render_marker_block("listen"),
-        _fill(render_marker_block("speak"), ishara_call_id="c1"),
-        _fill(render_marker_block("speak"), ishara_call_id="c1", turn_id="t1"),
-        _fill(render_marker_block("speak"), ishara_call_id="c1", reply_text="Yes."),
+        render_marker_block("speak"),
+        _fill(render_marker_block("speak"), ishara_call_id=""),
+        _fill(render_marker_block("speak"), ishara_call_id="{ishara_call_id}"),
+        _fill(render_marker_block("listen"), ishara_call_id="{ishara_call_id}"),
+        _fill(render_marker_block("speak"), ishara_call_id="c1 }"),
+        "ISHARA_CALL_ID: c1\nISHARA_NODE: speaker",
     ],
 )
 def test_unfilled_or_missing_blocks_are_ignored(prompt: str) -> None:
