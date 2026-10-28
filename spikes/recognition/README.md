@@ -20,6 +20,10 @@ uv pip install --python .venv/bin/python -r requirements.txt
 .venv/bin/python mini.py serve
 ```
 
+`.venv/bin/python -m unittest light_tests` runs every `test_*.py` here and in
+`../asl_probe` except the exclusions `light_tests.py` names (`test_mini`, the clip-driven
+fallback); `scripts/verify.sh` and CI run the same list, so a new test file needs no edit there.
+
 Open **http://127.0.0.1:8088**. Analyze public doctor and tomorrow clips, select
 appointment-request purpose, compose, edit and approve. Approval records text
 locally; speech is not connected. Supplied-concept mode is explicitly separate
@@ -522,9 +526,9 @@ heavy apps before the demo. If recognition misbehaves during the call, type the 
 port and asserts on what the backend sent back: the drafts for the expected chips, a
 `spoken` for every SEND, the agent's question answered by the yes clip (`ask_resolved`
 from the user, no chip), the call notes (outcome `booked`), and that the recognizer's ready
-line came before the bridge joined the call. `scripts/verify.sh` runs
-it in "recognition light tests" (about 1 minute); without the venvs, model or clips it is
-skipped and prints `SKIPPED clip-driven fallback runs need ...` with what is missing.
+line came before the bridge joined the call. `scripts/verify.sh` runs it as its own
+"clip-driven fallback" category (about 1 minute; `light_tests.py` leaves it out); without
+the venvs, model or clips that category is `SKIPPED` with what is missing.
 `ISHARA_FALLBACK_CLIPS=DIR` points it at other clips with the same names.
 
 ```sh

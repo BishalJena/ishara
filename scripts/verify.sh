@@ -108,23 +108,43 @@ check_call_flow() {
   step python3 -m unittest discover -s spikes/call_flow -p 'test_*.py'
 }
 
-# test_retrieval needs numpy and cv2 only. The full README venv (.venv) or a light one built
-# from requirements-light.txt (.venv-light) both work; test_mini needs torch and is not run.
-check_recognition_light() {
-  local python=""
+# cd into spikes/recognition and set $python: the full README venv (.venv), else a light one
+# built from requirements-light.txt (.venv-light).
+enter_recognition() {
+  local candidate
   cd spikes/recognition 2>/dev/null || skip "no spikes/recognition"
   for candidate in .venv/bin/python .venv-light/bin/python; do
     if [[ -x $candidate ]]; then
       python=$candidate
-      break
+      return
     fi
   done
-  if [[ -z $python ]]; then
-    echo "  to enable: cd spikes/recognition && uv venv --python 3.11 .venv-light" \
-      "&& uv pip install --python .venv-light/bin/python -r requirements-light.txt"
-    skip "no spikes/recognition/.venv or .venv-light"
-  fi
-  step "$python" -m unittest test_retrieval test_detector test_detect_clips test_mac_bridge test_live_source test_record_session test_video_eval test_asl_matcher test_asl_summary
+  echo "  to enable: cd spikes/recognition && uv venv --python 3.11 .venv-light" \
+    "&& uv pip install --python .venv-light/bin/python -r requirements-light.txt"
+  skip "no spikes/recognition/.venv or .venv-light"
+}
+
+# light_tests.py is the one list (CI runs it too): every test_*.py in spikes/recognition and
+# spikes/asl_probe except test_mini (torch) and the clip-driven fallback (next category).
+check_recognition_light() {
+  local python
+  enter_recognition
+  step "$python" -m unittest light_tests
+}
+
+# test_mac_bridge.ClipDrivenFallback (about 1.5 min) plays public ASL clips through the ASL
+# model, the real bridge and a local backend (fake Bolna, nothing dialled). It needs local
+# venvs, the model and the clips; fallback_missing() names what this machine lacks.
+check_clip_fallback() {
+  local python missing
+  enter_recognition
+  missing=$("$python" -c 'import sys, test_mac_bridge as t
+missing = t.fallback_missing()
+for what, where in missing.items():
+    print(f"  missing: {what} ({where})", file=sys.stderr)
+print(", ".join(missing))')
+  [[ -z $missing ]] || skip "needs $missing (recognition README: Demo fallback)"
+  step "$python" -m unittest test_mac_bridge.ClipDrivenFallback
 }
 
 # SignPipelineLiteRT can't load until its LiteRT binary is downloaded (checksum-verified, once).
@@ -197,6 +217,7 @@ echo "Xcode: ${XCODE_DIR:-not found}"
 run_category "backend (format, lint, tests)" check_backend
 run_category "call_flow tests" check_call_flow
 run_category "recognition light tests" check_recognition_light
+run_category "clip-driven fallback" check_clip_fallback
 run_category "shellcheck" check_shellcheck
 run_category "heroku script tests" check_script_tests
 run_category "swift packages" check_swift_packages

@@ -53,8 +53,7 @@ from the repo root unless the command starts with `cd`.
 scripts/verify.sh                         # everything below in one go; --keep-going to see every failure
 cd backend && uv run ruff format --check . && uv run ruff check . && uv run pytest -q
 python3 -m unittest discover -s spikes/call_flow -p 'test_*.py'
-cd spikes/recognition && .venv/bin/python -m unittest test_retrieval test_detector test_detect_clips \
-  test_mac_bridge test_live_source test_record_session test_video_eval
+cd spikes/recognition && .venv/bin/python -m unittest light_tests   # the list verify.sh and CI run
 python3 -m unittest discover -s backend/scripts -p 'test_*.py'    # Heroku scripts, fake heroku CLI
 shellcheck -x scripts/*.sh backend/scripts/*.sh
 ```
@@ -63,7 +62,10 @@ shellcheck -x scripts/*.sh backend/scripts/*.sh
   names what's missing (no venv, no Xcode); it is not a pass for that layer.
 - The recognition light tests need `spikes/recognition/.venv` or `.venv-light`
   (`uv venv --python 3.11 .venv-light && uv pip install --python .venv-light/bin/python -r requirements-light.txt`).
-  `test_mini` needs torch and stays local; so does `ml/coreml/`.
+  `light_tests.py` runs every `test_*.py` in `spikes/recognition` and `spikes/asl_probe` except
+  the exclusions it names: `test_mini` needs torch and stays local (so does `ml/coreml/`), and
+  `test_mac_bridge.ClipDrivenFallback` is verify.sh's own "clip-driven fallback" category,
+  `SKIPPED` without its venvs, model and clips.
 - The backend tests never read the real `.env`, and `tests/conftest.py` refuses DNS
   lookups of non-loopback hosts, so no test can reach a paid API.
 

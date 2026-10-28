@@ -1104,14 +1104,15 @@ class SignLabVideo(unittest.TestCase):
 
 
 def fallback_missing():
-    """What the clip-driven runs need and this machine lacks (empty when they can run)."""
+    """What the clip-driven runs need and this machine lacks, as {what: where it was looked for}
+    (empty when they can run). scripts/verify.sh prints it for its "clip-driven fallback" category."""
     parts = {"the bridge venv": HERE / "artifacts/bridge/.venv/bin/python",
              "the recognition venv": HERE / ".venv/bin/python",
              "the ASL model": HERE / "artifacts/asl_signs/model.tflite",
              "the ASL model venv": HERE / "artifacts/asl_signs/.venv/bin/python",
              **{f"{name}.mp4": FALLBACK_CLIPS / f"{name}.mp4" for name in SCRIPT_CLIPS}}
-    missing = [f"{what} at {path}" for what, path in parts.items() if not path.exists()]
-    return missing + [tool for tool in ("bash", "curl", "uv") if shutil.which(tool) is None]
+    missing = {what: str(path) for what, path in parts.items() if not path.exists()}
+    return missing | {tool: "PATH" for tool in ("bash", "curl", "uv") if shutil.which(tool) is None}
 
 
 def kill_group(process):
@@ -1258,7 +1259,8 @@ class ClipDrivenFallback(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if missing := fallback_missing():
-            reason = f"clip-driven fallback runs need {'; '.join(missing)} (README: Demo fallback)"
+            needs = "; ".join(f"{what} ({where})" for what, where in missing.items())
+            reason = f"clip-driven fallback runs need {needs} (README: Demo fallback)"
             print(f"\nSKIPPED {reason}", file=sys.stderr)  # unittest alone only prints "s"
             raise unittest.SkipTest(reason)
         print(f"\nclip-driven fallback runs on {FALLBACK_CLIPS} (about 1.5 min)", file=sys.stderr)
