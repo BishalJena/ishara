@@ -311,6 +311,13 @@ def test_caption_time_matches_across_formats() -> None:
     assert check("Yes, 10:30 works.", ["yes"], "We have 10.30.") == []
 
 
+def test_caption_time_in_words_matches_digits() -> None:
+    # The live transcriber writes spoken times in words (first real call, 28 Oct).
+    caption = "we have four pm tomorrow does that work"
+    assert check("No, sorry, 4 pm doesn't work.", ["no"], caption) == []
+    assert check("Yes, 10:30 works.", ["yes"], "yes at ten thirty tomorrow morning") == []
+
+
 def test_i_am_is_not_a_clock_time() -> None:
     assert check("Hello, I am here.", ["hello"]) == []
 

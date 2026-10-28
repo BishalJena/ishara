@@ -244,7 +244,7 @@ def _options_for(proposal: str) -> tuple[AskOption, ...]:
 
 
 def _proposal_in(text: str) -> str | None:
-    match = _PROPOSAL.search(text)
+    match = _PROPOSAL.search(_normalise(text))
     if not match:
         return None
     # Keep the surrounding day words if the receptionist said them ("4 pm tomorrow").
@@ -419,7 +419,7 @@ def outcome_of(entries: list[TranscriptEntry], answers: list[str]) -> str:
     if _confirms(receptionist) or any(a.startswith("Yes") for a in answers):
         return "booked" if not any(a.startswith("No") for a in answers[-1:]) else "unclear"
     promised_callback = CALLBACK_LINE in agent
-    if promised_callback and _PROPOSAL.search(receptionist):
+    if promised_callback and _PROPOSAL.search(_normalise(receptionist)):
         return "callback"  # an offer is still waiting for the user's decision
     if _declines(receptionist) or any(a.startswith("No") for a in answers):
         return "declined"
@@ -439,7 +439,11 @@ def build_notes(
     if brief is None:
         return CallNotes(call_id=call_id, mode="live", ready=ready, transcript=entries)
     summary: list[str] = [f"Goal: {brief.goal} for {brief.name}."]
-    offers = [e.text for e in entries if e.speaker == "receptionist" and _PROPOSAL.search(e.text)]
+    offers = [
+        e.text
+        for e in entries
+        if e.speaker == "receptionist" and _PROPOSAL.search(_normalise(e.text))
+    ]
     for offer in offers[:3]:
         summary.append(f'They offered: "{offer.strip()}"')
     for answer in answers:
