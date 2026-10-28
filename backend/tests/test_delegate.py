@@ -16,6 +16,7 @@ import anyio
 import pytest
 from fastapi.testclient import TestClient
 
+from app.bolna_agent import SPEAK_PROMPT
 from app.calls import CallManager
 from app.delegate import (
     CALLBACK_LINE,
@@ -30,8 +31,14 @@ from app.delegate import (
     check_line,
 )
 from app.main import create_app
-from app.markers import EVENT_END_CALL, EVENT_USER_REPLY, render_marker_block
+from app.markers import (
+    EVENT_END_CALL,
+    EVENT_USER_REPLY,
+    USER_DATA_CALL_ID,
+    render_marker_block,
+)
 from app.protocol import BriefRequest, Profile, TranscriptEntry
+from fakes.fake_bolna import EVENT_NOTICE, bolna_render
 from tests.conftest import APP_TOKEN, CUSTOM_LLM_TOKEN, WEBHOOK_SECRET, make_settings
 from tests.test_calls import CLINIC, FakeBolna, FakeComposer
 
@@ -247,29 +254,23 @@ class Flow:
         assert response.status_code == 200, response.text
         return response.json()["choices"][0]["message"]["content"]
 
-    def speak_turn(self, call_id: str, turn_id: str, text: str, heard: str = "") -> str:
-        """Bolna's speak-node request for an injected line (a SEND or a delegated line);
-        returns what the custom LLM told Bolna to say."""
-        block = (
-            render_marker_block("speak")
-            .replace("{{ishara_call_id}}", call_id)
-            .replace("{{turn_id}}", turn_id)
-            .replace("{{reply_text}}", text)
-        )
+    def speak_last(self, call_id: str) -> str:
+        """Bolna's speak-node request after the latest user_reply event (a SEND or a
+        delegated line), as live Bolna sends it: only the call id is filled in, plus its
+        event notice. Returns what the custom LLM told Bolna to say."""
+        prompt = bolna_render(SPEAK_PROMPT, {USER_DATA_CALL_ID: call_id})
+        notice = EVENT_NOTICE.format(event=EVENT_USER_REPLY)
         body = {
             "model": "ishara-relay",
             "stream": False,
-            "messages": [{"role": "system", "content": block}]
-            + ([{"role": "user", "content": heard}] if heard else []),
+            "messages": [
+                {"role": "system", "content": prompt},
+                {"role": "system", "content": notice},
+            ],
         }
         response = self.client.post("/v1/chat/completions", json=body, headers=LLM_AUTH)
         assert response.status_code == 200, response.text
         return response.json()["choices"][0]["message"]["content"]
-
-    def speak_last(self, call_id: str) -> str:
-        """Bolna picks up the latest injected line and speaks it."""
-        last = self.bolna.replies()[-1]
-        return self.speak_turn(call_id, last["turn_id"], last["reply_text"])
 
     def receive(self, ws, timeout: float = 2.0) -> dict:
         async def next_message() -> dict:

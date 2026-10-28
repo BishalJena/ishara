@@ -13,13 +13,22 @@ from fastapi.testclient import TestClient
 from pydantic import SecretStr
 from starlette.websockets import WebSocketDisconnect
 
+from app.bolna_agent import SPEAK_PROMPT
 from app.bolna_client import HttpBolnaClient
 from app.calls import CallManager
 from app.contacts import InvalidContacts, parse_contacts
 from app.main import create_app
-from app.markers import DISCLOSURE, EVENT_END_CALL, EVENT_USER_REPLY, GOODBYE, HOLDING_LINE
+from app.markers import (
+    DISCLOSURE,
+    EVENT_END_CALL,
+    EVENT_USER_REPLY,
+    GOODBYE,
+    HOLDING_LINE,
+    USER_DATA_CALL_ID,
+)
 from app.ports import BolnaClient, BolnaError
 from app.protocol import ComposeRequest, Draft
+from fakes.fake_bolna import EVENT_NOTICE, bolna_render
 from tests.conftest import APP_TOKEN, CUSTOM_LLM_TOKEN, WEBHOOK_SECRET, make_settings
 
 CLINIC = "+910000000001"
@@ -486,6 +495,128 @@ def test_send_publishes_one_user_reply_event(harness: Harness) -> None:
     assert harness.bolna.events == [
         ("run-1", EVENT_USER_REPLY, {"reply_text": TEXT, "turn_id": "t1"})
     ]
+
+
+# ---- Bolna's speak-node request ----
+
+# What Bolna's execution log showed our custom LLM receive for the speak node on the
+# first real call (28 Oct): `user_data` filled, the user_reply properties not, each
+# `{{var}}` left as `{var}`, and an event notice without the properties.
+LIVE_SPEAK_PROMPT = (
+    "ISHARA_CALL_ID: {call_id}\nISHARA_NODE: speak\nISHARA_TURN_ID: {{turn_id}}\n"
+    "ISHARA_REPLY_START\n{{reply_text}}\nISHARA_REPLY_END\n\n"
+    "Say exactly the text between ISHARA_REPLY_START and ISHARA_REPLY_END, word for "
+    "word, and nothing else."
+)
+SPEAK_PROMPTS = {
+    "live log": lambda call_id: LIVE_SPEAK_PROMPT.format(call_id=call_id),
+    "agent.json": lambda call_id: bolna_render(SPEAK_PROMPT, {USER_DATA_CALL_ID: call_id}),
+}
+
+
+def speak_request(harness: Harness, call_id: str, prompt: str | None = None) -> str:
+    """Bolna's speak-node request after a user_reply event; returns the streamed text."""
+    messages = [
+        {"role": "system", "content": prompt or SPEAK_PROMPTS["live log"](call_id)},
+        {"role": "assistant", "content": DISCLOSURE},
+        {"role": "system", "content": EVENT_NOTICE.format(event=EVENT_USER_REPLY)},
+    ]
+    response = harness.client.post(
+        "/v1/chat/completions",
+        json={"model": "ishara-relay", "stream": True, "messages": messages},
+        headers={"Authorization": f"Bearer {CUSTOM_LLM_TOKEN}"},
+    )
+    assert response.status_code == 200, response.text
+    chunks = [
+        json.loads(line.removeprefix("data: "))
+        for line in response.text.splitlines()
+        if line.startswith("data: {")
+    ]
+    return "".join(chunk["choices"][0]["delta"].get("content", "") for chunk in chunks)
+
+
+@pytest.mark.parametrize("prompt", SPEAK_PROMPTS.values(), ids=SPEAK_PROMPTS.keys())
+def test_bolna_speak_request_speaks_the_approved_turn(harness: Harness, prompt) -> None:
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        approve(ws, "t1")
+        assert harness.receive(ws) == status("speaking")
+        assert speak_request(harness, call_id, prompt(call_id)) == TEXT
+        assert harness.receive(ws) == {"type": "spoken", "turn_id": "t1"}
+        assert harness.receive(ws) == status("in_call")
+
+
+def test_second_speak_request_for_the_same_turn_says_nothing(harness: Harness) -> None:
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        approve(ws, "t1")
+        harness.receive(ws)
+        assert speak_request(harness, call_id) == TEXT
+        assert speak_request(harness, call_id) == ""
+        assert harness.receive(ws) == {"type": "spoken", "turn_id": "t1"}
+        assert harness.receive(ws) == status("in_call")
+        assert harness.probe(ws) == status("in_call")
+
+
+def test_speak_request_without_an_approved_turn_says_nothing(harness: Harness) -> None:
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        ws.send_json({"type": "chips", "turn_id": "t1", "chips": ["yes"]})
+        assert harness.receive(ws)["type"] == "draft"
+        assert speak_request(harness, call_id) == ""
+        assert harness.probe(ws) == status("in_call")
+
+
+def test_speak_request_claims_only_its_own_calls_turn(harness: Harness) -> None:
+    quiet, busy = harness.live_call(), harness.live_call()
+    with harness.socket(busy) as ws:
+        harness.receive(ws)
+        approve(ws, "t1")
+        harness.receive(ws)
+        assert speak_request(harness, quiet) == ""
+        assert speak_request(harness, busy) == TEXT
+        assert harness.receive(ws) == {"type": "spoken", "turn_id": "t1"}
+
+
+def test_speak_request_after_stop_says_nothing(harness: Harness) -> None:
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        approve(ws, "t1")
+        harness.receive(ws)
+        ws.send_json({"type": "stop"})
+        assert harness.receive(ws) == status("in_call")
+        assert speak_request(harness, call_id) == ""
+        assert harness.probe(ws) == status("in_call")
+
+
+def test_speak_request_after_not_delivered_says_nothing(make_harness) -> None:
+    harness = make_harness(delivery_timeout_s=0.05)
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        approve(ws, "t1")
+        harness.receive(ws)
+        assert harness.receive(ws)["type"] == "not_delivered"
+        assert harness.receive(ws) == status("in_call")
+        assert speak_request(harness, call_id) == ""
+        assert harness.probe(ws) == status("in_call")
+
+
+def test_speak_request_after_the_end_says_nothing(harness: Harness) -> None:
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        harness.receive(ws)
+        approve(ws, "t1")
+        harness.receive(ws)
+        ws.send_json({"type": "end"})
+        assert harness.receive(ws) == status("ended")
+        assert speak_request(harness, call_id) == ""
+        assert without_at(harness.receive(ws)) == caption(GOODBYE, "agent")
+        assert harness.probe(ws) == status("ended")
 
 
 def test_double_send_speaks_once(harness: Harness) -> None:

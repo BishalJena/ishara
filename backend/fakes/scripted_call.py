@@ -119,9 +119,9 @@ class ScriptedBolna(FakeBolna):
             self.receptionist_mid_speech = False
         self._spawn(self._receptionist_turn(run, TALK_OVER_LINE, self.pauses.talk_over_s))
 
-    async def _respond(self, run: FakeRun) -> str:
+    async def _respond(self, run: FakeRun, event_notice: str | None = None) -> str:
         approved_reply = run.node == "speak"
-        reply = await super()._respond(run)
+        reply = await super()._respond(run, event_notice)
         # The receptionist answers approved replies and, on a delegated call (D9), the
         # agent's own lines from the listen node; never the holding line.
         if reply and (approved_reply or reply != HOLDING_LINE):
