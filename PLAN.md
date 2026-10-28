@@ -1,6 +1,6 @@
 # Ishara demo build plan
 
-Updated **25 October 2026**. This file owns the active tasks, decisions and
+Updated **28 October 2026**. This file owns the active tasks, decisions and
 acceptance criteria. Submission deadline: **Saturday 31 October 2026**.
 
 **Recognition track change (25 Oct, decisions D8 and D9):** no own recordings and no training.
@@ -8,6 +8,12 @@ The demo is **pure ASL** with a published, signer-independent model used as is, 
 25 Oct ([record](docs/experiments/asl-model-probe.md)); a delegated-call mode is proposed. See the
 [handoff](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md). R1–R4 and G2 below are
 superseded by that document until it is folded back in.
+
+**28 Oct:** the first real calls ran. After five root-caused fixes, Live mode and all three
+Call-for-me flows passed on real Bolna calls, end to end from the simulator app with sign
+videos as the camera; Gate 1 passed. Still waiting for the iPhone: install, live camera, speed,
+phone clips and the final thresholds, Gate 4 ([issue #72](https://github.com/BishalJena/ishara/issues/72)).
+Snapshot: [status, 28 Oct](docs/status/2026-10-28.md).
 
 **Visual version:** [architecture board](docs/architecture/README.md)
 (`docs/architecture/ishara-board.excalidraw`). If the board and this plan disagree,
@@ -20,8 +26,9 @@ in the [experiment record](docs/experiments/recognition.md).
 
 ## 1. What we are building
 
-A **demo-ready** iPhone app, not a full product for Deaf users. One signer, about
-**12 signs** and **one rehearsed clinic call** that the team can present flawlessly.
+A **demo-ready** iPhone app, not a full product for Deaf users. One signer, **8 chip words**
+(D8) and **one rehearsed clinic call** that the team can present flawlessly, in two modes: Live
+(the user signs each reply) and Call for me (D9).
 
 ```
 Signer signs ─▶ iPhone recognises each sign ─▶ word chips ─▶ draft sentence
@@ -31,6 +38,12 @@ Receptionist's words ◀── Bolna (Deepgram) ◀── phone call ◀── B
 ```
 
 ### The demo story (the script we rehearse)
+
+> *28 Oct:* the table below is the original 23 Oct story. Under D8 the Live call signs
+> **hello** → **no · tomorrow · please** → **yes · thankyou** (doctor and morning can't chip; the
+> purpose supplies "doctor's appointment"), and the planned wrong chip is not rehearsed. The
+> stage script with both modes is [docs/demo/SCRIPT.md](docs/demo/SCRIPT.md). The simulator's
+> scripted fake call still plays the old signs; that is demo-only playback, not recognition.
 
 | Turn | Who | What happens |
 |---|---|---|
@@ -59,11 +72,11 @@ Agreed on 23 October 2026. Raise any change explicitly; don't switch silently.
 | D2 | Voice (TTS) | **Sarvam Bulbul** (v4 Flash, English-India voice). Cartesia Sonic is the backup | Sponsor, inside Bolna's flat rate, Indian voice |
 | D3 | Call language | **English (India)** only. Hindi is "next" | Lowest effort |
 | D4 | Chips → sentence | **Groq LLM** (OpenAI-compatible API, model `openai/gpt-oss-120b`) drafts the sentence using the chips plus the live transcript, then a **validator** checks it. Fixed **templates** are the fallback. Replaced Cerebras on 23 Oct | Fast, context-aware wording; templates catch meaning drift. Cerebras is not free; Groq is billed per token at a low rate (§10) |
-| D5 | Vocabulary | **12 signs** (see §5), one sign at a time with hands down between signs. Wait and Repeat are buttons | Enough for the script; small enough to record and rehearse |
+| D5 | Vocabulary | *Superseded by D8 (8 ASL chip words).* **12 signs** (see §5), one sign at a time with hands down between signs. Wait and Repeat are buttons | Enough for the script; small enough to record and rehearse |
 | D6 | Where recognition runs | **On the iPhone**: MediaPipe Holistic for iOS (official SwiftPM package, MediaPipeTasksVision 1.1.1) plus SignCLIP converted to Core ML (FP16, run with compute units `.cpuAndGPU`; see P1). The **Mac is the backup** | On-device is the pitch; the Mac replay pipeline (extraction, SignCLIP embedding, reference matching) already runs, though it has no calibrated cut-off yet and abstains on everything until R2b |
 | D7 | Backend hosting | Small Python backend on **Heroku**, **EU** region, **Basic dyno or higher** (never Eco). Deployed by pushing `backend/` with `git subtree` (`backend/HEROKU.md`) | Team has credits; Eco dynos sleep and Bolna would hear silence. EU is closer to India than the default US region (latency not measured) |
 | D8 | Recognition model and data *(25 Oct, revised the same evening)* | **Pure ASL, with a ready-made signer-independent model used as is**: the Kaggle ASL Signs 1st-place model (MIT code, public 11 MB TFLite, 250 glosses, CC-BY corpus of ~94k phone-camera clips from 21 Deaf signers). **No own recordings, no training or fine-tuning, no reference clips.** Any of the 250 glosses can become a chip under the open-set rule (full softmax, p ≥ 0.6, margin ≥ 0.3, gloss in the service-call vocabulary; pick-one tile below that; never restrict to the vocabulary first). Rehearsed words: hello, thankyou, yes, no, now (today), please, tomorrow; candidates morning, wait; dropped sick, time. *28 Oct, after public-clip Gate 2:* only the rehearsed words minus morning may chip (morning waits for the iPhone test of the one-handed form), cut-offs global 0.65 plus per-word, still provisional. ISL forms are **not** mixed in, even where measured to coincide. Details: [handoff](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md), [measurements](docs/experiments/asl-model-probe.md) | We cannot produce sign data ourselves and public ISL data cannot give a signer-independent recognizer (INCLUDE ≈ 16 clips/word, none for yes/no/sorry; cross-signer SignCLIP accepted 4/42). Measured 25 Oct: the ASL model got 6/11 Lifeprint clips at 0.70–0.94 and four of the presenter's signs first try, 4 ms per sign, 0 wrong accepts at p ≥ 0.6, and stays flat on signs it does not know |
-| D9 *(approved 25 Oct, both variants)* | Delegated call mode | The user signs the intent, approves a **brief** once, and the Bolna agent makes the call for them, pursuing only the brief; afterwards the app shows transcript + Bolna's call summary. Optionally **attended**: live captions, and at decision points the agent says "one moment" and the user answers yes/no/wait by sign or tap (event injection); an open "when?" question with no time on offer gets a signed or tapped time word instead (tomorrow, morning, now, or wait; 28 Oct, version B). The verbatim live mode stays. Details: [handoff §D9](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#d9-approved-25-oct-built-the-delegated-call-with-optional-steering) | Removes real-time turn-taking pressure, needs 2–3 content signs per call, fits service calls, and is what Bolna agents are built for (~1 day on the existing backend). Keeps every safety rule: one explicit approval, disclosure, no out-of-brief commitments, allowlisted recipients |
+| D9 *(approved 25 Oct, both variants)* | Delegated call mode | The user signs the intent, approves a **brief** once, and the Bolna agent makes the call for them, pursuing only the brief; afterwards the app shows transcript + Bolna's call summary. Optionally **attended**: live captions, and at decision points the agent says "one moment" and the user answers yes/no/wait by sign or tap (event injection); an open "when?" question with no time on offer gets a signed or tapped time word instead (tomorrow, morning, now, or wait; 28 Oct, version B; morning is tap-only while it can't chip). The verbatim live mode stays. Details: [handoff §D9](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#d9-approved-25-oct-built-the-delegated-call-with-optional-steering) | Removes real-time turn-taking pressure, needs 2–3 content signs per call, fits service calls, and is what Bolna agents are built for (~1 day on the existing backend). Keeps every safety rule: one explicit approval, disclosure, no out-of-brief commitments, allowlisted recipients |
 
 Already settled: native **SwiftUI** app and **nothing is spoken unless the user taps SEND**.
 SignCLIP as the main recognizer (SL-GCN as comparison) held until 25 Oct; D8 replaces it
@@ -81,7 +94,7 @@ is part of it; Bolna is not required by the rules. The team chose Bolna anyway (
 ```
 ┌────────────── iPhone (SwiftUI app) ──────────────┐     ┌──── Heroku backend (Python) ────┐     ┌──── Bolna cloud ────┐
 │ camera → MediaPipe Holistic → start/stop detector │     │ • call + turn state            │     │ graph agent          │
-│ → SignCLIP (Core ML) → match vs your examples     │ WSS │ • composer: Groq + checks      │HTTPS│ Deepgram (hears)     │
+│ → ASL Signs model (LiteRT) → open-set rule (D8)   │ WSS │ • composer: Groq + checks      │HTTPS│ Deepgram (hears)     │
 │ → chips → draft (from backend) → SEND             │◀───▶│   + template fallback          │◀───▶│ Sarvam (speaks)      │
 │ captions · call status · STOP / End               │     │ • custom-LLM endpoint for Bolna│     │ Plivo (phone line)   │
 └───────────────────────────────────────────────────┘     │ • Bolna API client (calls,     │     └─────────┬────────────┘
@@ -90,7 +103,8 @@ is part of it; Bolna is not required by the rules. The team chose Bolna anyway (
 ```
 
 **API keys live only on the backend.** The phone holds a demo app token, never a
-Bolna, Groq or Sarvam key.
+Bolna, Groq or Sarvam key. The backend runs **one dyno with one uvicorn worker**: call state is
+in memory, and on 28 Oct two workers split live calls between processes (#82).
 
 ### How Bolna is made to say exactly the approved text (Path B)
 
@@ -99,8 +113,8 @@ that a graph agent can use a custom LLM** (the custom-LLM inference page sends
 `extra_body` on "graph agent routing" and checks "graph agent nodes" before deleting a
 model, but the quick config still only shows `simple_llm_agent` and the graph settings
 page lists only OpenAI, Anthropic and Google; [ledger B23](docs/CLAIM-LEDGER.md)). That
-is the load-bearing assumption, so V2/V3 check it first. **The combination has not been
-run yet**; day 1 (task V4) proves it.
+is the load-bearing assumption, so V2/V3 check it first. **Run live on 28 Oct:** the hosted
+graph agent calls our endpoint and speaks the approved text ([voice record](docs/experiments/voice.md#runs)).
 
 Set-up order: deploy the backend → **register the custom LLM** with Bolna
 (`POST /user/model/custom`, base URL `PUBLIC_BASE_URL/v1`; Bolna appends
@@ -156,7 +170,9 @@ Captions (the app can't read them), so the composer gets chips only and no trans
 
 ### Components and repo layout (new code)
 
-"PR #N" means the code is in an open pull request (23 Oct), not yet on `main`.
+"PR #N" was written on 23 Oct, when these were open pull requests. **All are merged on `main`
+(28 Oct)**; the numbers show where each part landed. Since then: the ASL model in the app
+(`ios/Packages/SignPipelineLiteRT`, #46) and D9 Call for me (`backend/app/delegate.py`, #46, #64, #87).
 
 | Component | Tech | Repo path | Status |
 |---|---|---|---|
@@ -211,8 +227,9 @@ Captions (the app can't read them), so the composer gets chips only and no trans
 ## 4. The turn: when signing becomes words
 
 1. **Per sign (automatic).** Hands leave rest → start the clip. Hands are back at rest
-   for about 0.4 s → end the clip → SignCLIP → match. If it's close enough, a chip appears;
-   if not, a **[?]** chip appears and is never spoken. The target is about 0.5 s from the hands
+   for about 0.4 s → end the clip → the ASL model → the open-set rule (D8). A confident chip
+   word becomes a chip, a fairly sure one a "Did you mean …?" tile that counts only if tapped,
+   anything else a **[?]** chip that is never spoken. The target is about 0.5 s from the hands
    dropping to the chip appearing.
 2. **Draft (automatic).** Every chip change sends `chips` to the backend. Groq
    drafts a sentence from the chips, the last receptionist caption and the call purpose.
@@ -281,9 +298,10 @@ Owners: **[You]** = founder, **[Mate]** = teammate with the iPhone, **[Build]** 
 engineering work in this repo. Each task says what "done" means, so it can be
 picked up without earlier context.
 
-**Progress (23 Oct, evening).** A tick means the code is in a pull request **and** the
-task's *Done* is fully met offline; the PRs are still open for review. Other tasks list
-the PR and what is still pending. Nothing has run against real Bolna, Heroku or a device yet.
+**Progress (28 Oct).** A tick means the task's *Done* is met, with the evidence linked.
+Other tasks list what is still pending. Real Bolna calls and Heroku: run on 28 Oct
+([voice record](docs/experiments/voice.md#runs)). **Nothing has run on the iPhone yet**: every
+device task waits for it ([issue #72](https://github.com/BishalJena/ishara/issues/72)).
 
 ### Fri 23 Oct: set up
 
@@ -291,9 +309,15 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
   Bolna API key with credits, Groq API key, Heroku app in the **EU** region with a
   **Basic** dyno, and an Apple developer team in Xcode.
   *Done:* the backend's config check (V1) reports every key present.
-- [ ] **H2 [You]** Give the consenting receptionist-teammate's number for `ALLOWED_RECIPIENTS`
+  (keys: done, all 10 present on Heroku and equal to `.env`, [go-live check](docs/status/2026-10-28-live.md);
+  Bolna is still a trial account, which dials only verified numbers; pending: the Apple
+  developer team, with the iPhone install)
+- [x] **H2 [You]** Give the consenting receptionist-teammate's number for `ALLOWED_RECIPIENTS`
   as a `clinic=+E164` entry (it goes only in Heroku config / `.env`, never in the repo).
-- [ ] **H3 [You]** Start learning the 12 signs from the reference videos (§5).
+  (done: `clinic` is the founder's own phone, verified in Bolna; used for the 28 Oct calls)
+- [ ] ~~**H3 [You]** Start learning the 12 signs from the reference videos (§5).~~ Superseded
+  by D8: the presenter learns the 8 ASL chip words from Lifeprint (and the one-handed MORNING
+  for the iPhone test).
 - [x] **P0 [Build]** Plan, decisions, board and doc fixes (this branch).
 - [x] **R0 [Build]** Extend the recognition tools from 5 to the 12 signs:
   `VOCABULARY` in `spikes/recognition/recognition_data.py`, plus tests.
@@ -337,16 +361,21 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
      with "words to interrupt" at 0 (ledger B25)?
 
   Record times from SEND to first audio. *Done:* results written in `docs/experiments/voice.md`.
-  (guided runner and the empty `voice.md` template in PR #17; pending: the call itself.
-  The runner measures SEND → `spoken`, not first audio, so first audio still needs a stopwatch)
-- [ ] **G1 Gate 1** (see §7).
-- [ ] **R1 [You]** Enrollment session: 3–5 takes × 12 signs with `pilot_capture.py`, then
-  review the overlays and `verify` each label against its reference video.
+  (28 Oct: real calls ran, without this runner. Seen live: 1, 2 (after #80), 4, 7 and a
+  single speech per approval; [voice record](docs/experiments/voice.md#runs). Pending: the
+  runner itself for 3, 5, 6, 8, 9 and the timings. The runner measures SEND → `spoken`, not
+  first audio, so first audio still needs a stopwatch)
+- [x] **G1 Gate 1** (see §7). Passed 28 Oct after #80 and #82
+  ([verdict](docs/experiments/voice.md#gate-1-verdict)).
+- [ ] ~~**R1 [You]** Enrollment session: 3–5 takes × 12 signs with `pilot_capture.py`, then
+  review the overlays and `verify` each label against its reference video.~~ Superseded by D8
+  (no own recordings).
 - [ ] **R2 [Build]** Start/stop detector on the Mac (rest calibration, hands-up start,
   0.4 s rest end, minimum and maximum length) over live webcam and saved clips.
   *Done:* it cuts the enrollment takes correctly; unit tests cover the boundaries.
   (code merged, #11/#25; live replay of public clips cuts segments at about 0.47 s after the hands
-  rest; pending: R1 takes from the presenting signer and a live webcam check)
+  rest. Under D8 there are no R1 takes; the same detector cuts the public clips in the app and
+  on the Mac (#66, #68, #89). Pending: the iPhone's live camera, #72)
 - [x] **P1 [Build]** Convert the SignCLIP video encoder to Core ML (`ml/coreml/`), FP16, with
   padding to ≤256 frames. *Done:* the `.mlpackage` gives the same embeddings as PyTorch (cosine ≥ 0.999)
   on the saved clips.
@@ -361,13 +390,16 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
   a 1.5 s timeout and the fallback. *Done:* a fixture test for every script turn (§1), and
   validator tests for invented times, a missing "no" and an over-long draft. (PR #10, wired in
   #26; live Groq drafts for T1/T3/T5 passed the validator in 0.17–0.22 s, #33)
-- [ ] **V5b [Build]** Close the validator gap found in #33: for `thankyou` alone after "You're
+- [x] **V5b [Build]** Close the validator gap found in #33: for `thankyou` alone after "You're
   booked for 10:30 tomorrow morning", Groq's *"Thank you, that works perfectly for me."* passed,
   although nobody signed agreement. Reject drafts that add acceptance, refusal or confirmation
   ("that works", "sounds good", "I agree", "I can't") unless `yes`/`no` is among the chips.
   *Done:* a fixture for the P6 case fails before the fix and passes after; the §1 turns still pass.
-- [ ] **R3 [You]** Calibration session: 5 × 12 signs plus 20 negatives.
-- [ ] **R2b [Build]** Set the "close enough" cut-off on the calibration session only, then freeze it.
+  (done: issue [#34](https://github.com/BishalJena/ishara/issues/34), closed)
+- [ ] ~~**R3 [You]** Calibration session: 5 × 12 signs plus 20 negatives.~~ Superseded by D8.
+- [ ] ~~**R2b [Build]** Set the "close enough" cut-off on the calibration session only, then freeze it.~~
+  Superseded by D8: the ASL bundle's cut-offs are provisional from public clips (#83) and are
+  frozen from the iPhone clips (R7).
   *Done:* on the calibration clips the frozen cut-off accepts **at least 60% of attempts for
   every sign with 0 wrong accepts and 0 accepts on the 20 negatives**. A cut-off that rejects
   everything does not pass. Record the cut-off and the per-sign counts.
@@ -390,8 +422,13 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 - [ ] **R7 [You]** iPhone, when it is available: the phone clips (the Camera app is enough), frozen
   thresholds, device speed, the first real delegated call. *Done:* the
   [founder list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-the-founder-needs-the-iphone).
+  (first real delegated calls: done 28 Oct from the simulator, [voice record](docs/experiments/voice.md#runs);
+  pending, waiting for the device: phone clips, frozen thresholds, speed, MORNING one-handed;
+  steps in [issue #72](https://github.com/BishalJena/ishara/issues/72))
 - [ ] ~~**R4 [You]** Final test session: 10 × 12 signs plus 50 negatives.~~ Superseded by D8.
-- [ ] **G2 Gate 2** (see §7, revised 25 Oct).
+- [ ] **G2 Gate 2** (see §7, revised 25 Oct). Public-clip version done (#66; with the shipped
+  bundle 0 wrong chips and 0 chips on negatives, #83). Pending: the presenter's own signs,
+  10 attempts per script sign (Mac or iPhone, #72).
 - [x] **V6 [Build]** Call session layer: `POST /calls` with the allowlist, the WebSocket messages (§3),
   `turn_id` handling, single-use approval, stale-turn rejection, caption forwarding and
   WebSocket pings. *Done:* tests for double SEND, stale approval and an ended call. (PR #16)
@@ -409,8 +446,10 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 
 - [ ] **P2 [Build]** MediaPipe Holistic (iOS) feeding the Swift detector and matcher, using the
   frozen cut-off and your enrollment references bundled in the app.
-  (code merged and wired, #18/#23/#27, Swift tests pass; pending: the R2b cut-off, enrollment
-  references, and a run on a device with a camera)
+  (code merged and wired, #18/#23/#27; under D8 the matcher is `LogitsMatcher` with the ASL
+  bundle, no enrollment references, and real clips run through the whole in-app chain in the
+  simulator (#68, #89). Pending: the frozen cut-off from the phone clips and a run on the
+  iPhone's camera, #72)
 - [ ] **P3 [Build]** Parity: run the same saved videos through the simulator pipeline and through the Mac.
   Note the Mac uses the legacy `mp.solutions.holistic` (MediaPipe 0.10.21) while iOS only has the
   newer Holistic Landmarker task, so landmarks will differ. The iOS task's pose model is
@@ -424,8 +463,9 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
   model on the app's landmarks reproduces the app exactly
   ([evidence](docs/experiments/evidence/asl-model-probe/parity-simulator-lifeprint.json)). The
   SignCLIP part of P3 is moot under D8. Repeat on the phone clips once they exist.
-- [ ] **G3 Gate 3** (see §7). Met in the simulator for the ASL model on the Lifeprint clips;
-  the phone clips are the remaining check.
+- [ ] **G3 Gate 3** (see §7). Met in the simulator for the ASL model on the Lifeprint clips,
+  and the app path and the Mac path both ran the 142-clip public Gate 2 set (#66); the phone
+  clips are the remaining check.
 - [x] **A2 [Build]** Wire the app to the backend: start call, chips → draft, SEND, captions,
   status, STOP, End. Uses the replay-video recognizer in the simulator.
   (done 24 Oct: #20/#27, `LiveCallDriver` over `POST /calls` and the call WebSocket, tested
@@ -434,19 +474,39 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 
 ### Wed 28 Oct: full flow in the simulator
 
+Landed on 28 Oct (each with tests; evidence in the PR and the [status](docs/status/2026-10-28.md)):
+
+- [x] Go-live: D9 on Heroku and the Bolna agent with the call summary on (#71, #73,
+  [go-live check](docs/status/2026-10-28-live.md))
+- [x] Fixes from the first real calls: speak the approved turn without event properties (#80),
+  times said in words (#81), one uvicorn worker (#82), notes record a promised callback (#85)
+- [x] Chips only for the rehearsed words minus morning, provisional 0.65 cut-offs (#83)
+- [x] Open "when?" question answered with a signed or tapped time word (#87)
+- [x] Sign video → spoken text for every flow, locally and on real calls (#89, #90)
+- [x] Call-for-me opening caption and the offered time (#93), framing hint for one-handed signs
+  (#94), ask card keeps the camera in view (#95)
+- [x] Hardening and test reliability: #64, #69, #70, #74, #79; Mac fallback from clips (#56, #75)
+
 - [ ] **A3 [Build]** Full script with a **real Bolna call** to the teammate, the app in the simulator
   replaying recorded sign videos. *Done:* the whole §1 script works twice in a row.
-  (offline rehearsal with a fake Bolna in PR #8 and a fake app in PR #17; pending: the real call)
+  (28 Oct: the D8 version of the script (hello · no · tomorrow · please · yes · thankyou, End)
+  passed once on a real call from the simulator app with sign videos (#89, #90), plus the three
+  Call-for-me flows; [voice record](docs/experiments/voice.md#runs). Pending: the second run in
+  a row)
 - [ ] **A4 [Build]** Mac fallback: the Mac webcam recognizer posts chips to the same backend
   WebSocket, so the demo works even without the on-device recognizer.
   (code merged, #9/#25/#29/#30: live webcam source, top-3 display, Sign Lab local backend;
-  pending: a webcam run with the presenting signer's bundle and a run against the deployed backend)
+  with the ASL model it runs end to end from clips (#56) and calibrates before dialling (#75).
+  Pending: a run against the deployed backend)
 - [ ] **A5 [Build]** Path A mode (bonus): backend `/tts` (Sarvam) → WAV → app plays it
   with the injection mode on. Needs `SARVAM_API_KEY`.
   (backend `/tts` merged, #7; Sarvam v4-flash answered live requests in 0.65–1.08 s (#33);
-  pending: playback in the app on a device with injection on)
+  pending, waiting for the device: playback in the app with injection on)
 
 ### Thu 29 Oct: real iPhone → Gate 4
+
+All four wait for the iPhone; the steps for whoever holds it are
+[issue #72](https://github.com/BishalJena/ishara/issues/72).
 
 - [ ] **T1 [You]** Install on the iPhone (Xcode, dev team). Record the iOS version, enable
   **Add Audio in Calls**, and grant camera and injection permissions.
@@ -462,6 +522,8 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 - [ ] **D1 [All]** Fix Thursday's failures only. No new features.
 - [ ] **D2 [You + Mate]** Rehearse the script 3 times and **record a backup video**.
 - [ ] **D3 [You]** Write the submission text (what it does, honest limits §9, Bolna and partner use).
+  (draft in [docs/demo/SUBMISSION.md](docs/demo/SUBMISSION.md), #55; pending: the final text
+  once the iPhone results are in)
 
 ### Sat 31 Oct: submit
 
@@ -472,12 +534,12 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 
 ## 7. Gates (go / no-go)
 
-| Gate | When | Pass | If it fails |
-|---|---|---|---|
-| **G1** Voice | Sat 24 | Exact text spoken on the call; no double speech; agent stays quiet otherwise; captions reach the backend | Fallback 1: the speak node uses a built-in LLM with a "repeat exactly" prompt and the backend checks the transcript. Fallback 2: Path A becomes the main path |
-| **G2** Recognition *(revised 25 Oct, D8)* | Mon 26 | Presenter live trial on the Mac, 10 attempts per script sign: **≥ 6/10 correct chips per sign** (auto-accepted or chosen with one tap from a pick-one pair), **0 wrong auto-accepted chips**, **0 auto-accepts on the negatives**, **< 2 s** from the sign ending to the chip | Swap a missed sign for an in-vocabulary synonym or a button; if three or more script signs miss, run "pick-one always" (model proposes top-2, user taps) and say so on the slide |
-| **G3** On-device | Tue 27 | The simulator pipeline matches the Mac on every calibration clip | Demo recognition on the Mac (A4) and pitch "designed for on-device" |
-| **G4** Real call | Thu 29 | The full script works live twice on the iPhone; the recipient hears exactly the approved sentences | Friday becomes a fix day; the Mac fallback and the backup video are the safety net |
+| Gate | When | Pass | If it fails | Status (28 Oct) |
+|---|---|---|---|---|
+| **G1** Voice | Sat 24 | Exact text spoken on the call; no double speech; agent stays quiet otherwise; captions reach the backend | Fallback 1: the speak node uses a built-in LLM with a "repeat exactly" prompt and the backend checks the transcript. Fallback 2: Path A becomes the main path | **Passed 28 Oct** after #80 and #82 ([voice record](docs/experiments/voice.md#gate-1-verdict)) |
+| **G2** Recognition *(revised 25 Oct, D8)* | Mon 26 | Presenter live trial on the Mac, 10 attempts per script sign: **≥ 6/10 correct chips per sign** (auto-accepted or chosen with one tap from a pick-one pair), **0 wrong auto-accepted chips**, **0 auto-accepts on the negatives**, **< 2 s** from the sign ending to the chip | Swap a missed sign for an in-vocabulary synonym or a button; if three or more script signs miss, run "pick-one always" (model proposes top-2, user taps) and say so on the slide | **Pending.** Public clips only (#66, #83): 0 wrong chips, 0 on negatives. The presenter trial and the final thresholds wait for the iPhone (#72) |
+| **G3** On-device | Tue 27 | The simulator pipeline matches the Mac on every calibration clip | Demo recognition on the Mac (A4) and pitch "designed for on-device" | Met in the simulator on the Lifeprint parity clips; pending: the phone clips |
+| **G4** Real call | Thu 29 | The full script works live twice on the iPhone; the recipient hears exactly the approved sentences | Friday becomes a fix day; the Mac fallback and the backup video are the safety net | **Pending: waiting for the iPhone** (#72). The same flows passed on real calls from the simulator on 28 Oct |
 
 ---
 
@@ -502,9 +564,12 @@ results and the latest measured results are in [docs/TESTING.md](docs/TESTING.md
 
 ## 9. Honest limits (say these in the pitch)
 
-- About 12 signs, tuned to the person who recorded them; one sign at a time, with hands down
-  between signs. This is not general ISL translation or continuous signing.
-- Path B calls come from a Bolna number, not the user's own number. Path A keeps the
+- 8 ASL chip words from a published model used as is (morning pending the iPhone test), with
+  provisional thresholds until the phone clips; one sign at a time, with hands down between
+  signs. This is not general sign-language translation or continuous signing, and ISL is the
+  goal, blocked by data.
+- Path B calls come from Ishara's calling number, which is a Bolna number, not the user's own
+  number (the app says "Ishara's calling number"; say "Bolna" out loud). Path A keeps the
   user's number but relies on iOS Live Captions, which the app cannot read.
 - The LLM can reword, but it cannot add facts; the user approves every sentence.
 - No Deaf participant has validated the design.
