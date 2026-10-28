@@ -22,6 +22,7 @@ import logging
 import re
 import uuid
 from dataclasses import dataclass, field
+from typing import Literal
 
 from pydantic import BaseModel, ValidationError
 
@@ -209,6 +210,7 @@ class Decision:
     say: str
     ask: tuple[str, tuple[AskOption, ...]] | None = None  # question and the options' spoken lines
     done: bool = False  # the brief is settled; the agent may close
+    callback: bool = False  # the line promises to call back (it also settles the brief)
     source: str = "rules"
 
 
@@ -227,7 +229,8 @@ class DelegateState:
     pending_ask: str | None = None  # ask_id
     deciding: bool = False  # the brain is working on a receptionist turn
     answers: list[str] = field(default_factory=list)  # what the user chose, in spoken form
-    outcome: str | None = None
+    # How the brief settled; set once, and nothing new is said or asked after it.
+    outcome: Literal["done", "callback"] | None = None
 
     def transcript_text(self) -> str:
         return " ".join(x.receptionist + " " + x.agent for x in self.exchanges)
@@ -298,14 +301,14 @@ class RuleBrain:
         if _OUT_OF_BRIEF.search(_normalise(heard)):
             # The brief shares only the name and the callback number: never guess the rest,
             # and never answer "insurance number" with the phone number.
-            return Decision(CALLBACK_LINE, done=True)
+            return Decision(CALLBACK_LINE, done=True, callback=True)
         proposal = _proposal_in(heard) or _day_offer(heard, state.brief)
         if proposal:
             if state.attended:
                 return Decision(PAUSE_LINE, ask=(heard.strip(), _options_for(proposal)))
-            return Decision(CALLBACK_LINE, done=True)
+            return Decision(CALLBACK_LINE, done=True, callback=True)
         if _declines(heard):
-            return Decision(CALLBACK_LINE, done=True)
+            return Decision(CALLBACK_LINE, done=True, callback=True)
         if "name" in heard.lower():
             return Decision(f"The name is {state.brief.name}.")
         if state.brief.callback and re.search(
@@ -385,7 +388,7 @@ class Brain:
         transcript = state.transcript_text() + " " + heard
         if turn.ask_user is not None:
             if not state.attended:
-                return Decision(CALLBACK_LINE, done=True, source="llm")
+                return Decision(CALLBACK_LINE, done=True, callback=True, source="llm")
             # The agent says PAUSE_LINE whatever "say" held; what gets spoken later are the
             # options, which repeat the proposal back, so the proposal is what is checked.
             proposal = (turn.ask_user.proposal or "").strip() or _proposal_in(heard) or "that"
@@ -398,7 +401,9 @@ class Brain:
         if reasons:
             log.info("delegate: LLM line rejected (%s), using rules", "; ".join(reasons))
             return fallback
-        return Decision(turn.say.strip(), done=turn.done, source="llm")
+        # SYSTEM_PROMPT: done means confirmed by the receptionist or a promised callback.
+        callback = turn.done and not _confirms(heard)
+        return Decision(turn.say.strip(), done=turn.done, callback=callback, source="llm")
 
 
 def build_brain(settings) -> Brain:  # noqa: ANN001  (Settings; avoids an import cycle with config)
@@ -411,14 +416,12 @@ def build_brain(settings) -> Brain:  # noqa: ANN001  (Settings; avoids an import
 # ---- notes ----
 
 
-def outcome_of(entries: list[TranscriptEntry], answers: list[str]) -> str:
+def outcome_of(entries: list[TranscriptEntry], answers: list[str], promised_callback: bool) -> str:
     receptionist = " ".join(e.text for e in entries if e.speaker == "receptionist")
-    agent = " ".join(e.text for e in entries if e.speaker == "agent")
     if not receptionist:
         return "no_answer"
     if _confirms(receptionist) or any(a.startswith("Yes") for a in answers):
         return "booked" if not any(a.startswith("No") for a in answers[-1:]) else "unclear"
-    promised_callback = CALLBACK_LINE in agent
     if promised_callback and _PROPOSAL.search(_normalise(receptionist)):
         return "callback"  # an offer is still waiting for the user's decision
     if _declines(receptionist) or any(a.startswith("No") for a in answers):
@@ -433,6 +436,8 @@ def build_notes(
     answers: list[str],
     bolna_summary: str | None,
     ready: bool,
+    *,
+    promised_callback: bool,
 ) -> CallNotes:
     """Deterministic notes from the transcript: what was offered, what the user chose,
     what is still open. Every bullet quotes or paraphrases a transcript line."""
@@ -451,7 +456,7 @@ def build_notes(
     confirmations = [e.text for e in entries if e.speaker == "receptionist" and _confirms(e.text)]
     for line in confirmations[:2]:
         summary.append(f'They confirmed: "{line.strip()}"')
-    outcome = outcome_of(entries, answers) if ready else None
+    outcome = outcome_of(entries, answers, promised_callback) if ready else None
     open_questions: list[str] = []
     if ready and outcome == "callback":
         open_questions.append(

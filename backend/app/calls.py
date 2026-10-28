@@ -23,7 +23,7 @@ import time
 import uuid
 from collections.abc import Coroutine
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, WebSocket, status
 from pydantic import BaseModel, ValidationError
@@ -184,6 +184,7 @@ class CallManager(CallLedger):
             list(delegate.answers) if delegate else [],
             session.bolna_summary,
             session.finished,
+            promised_callback=delegate is not None and delegate.outcome == "callback",
         )
 
     async def start_call(self, request: StartCallRequest) -> StartCallResponse:
@@ -392,7 +393,7 @@ class CallManager(CallLedger):
         if decision.ask is not None:
             await self._open_ask(session, delegate, decision)
         elif decision.done:
-            self._finish_delegate(session, delegate)
+            self._finish_delegate(session, delegate, "callback" if decision.callback else "done")
         return decision.say
 
     async def _open_ask(
@@ -463,8 +464,10 @@ class CallManager(CallLedger):
         delegate.pending_ask = None
         await self._send(session, AskResolvedMessage(ask_id=ask_id, spoken=spoken, source=source))  # type: ignore[arg-type]
         await self._speak_line(session, spoken, f"ask-{ask_id}")
-        if source == "timeout" or spoken.startswith("Yes"):
-            self._finish_delegate(session, delegate)
+        if source == "timeout":
+            self._finish_delegate(session, delegate, "callback")  # the fallback is CALLBACK_LINE
+        elif spoken.startswith("Yes"):
+            self._finish_delegate(session, delegate, "done")
 
     async def _speak_line(self, session: CallSession, text: str, turn_id: str) -> None:
         """Inject `text` through the verbatim speak node, as if the user had tapped SEND."""
@@ -486,9 +489,11 @@ class CallManager(CallLedger):
             )
             await self._fail_delivery(session, turn.turn_id, BOLNA_UNREACHABLE)
 
-    def _finish_delegate(self, session: CallSession, delegate: DelegateState) -> None:
+    def _finish_delegate(
+        self, session: CallSession, delegate: DelegateState, outcome: Literal["done", "callback"]
+    ) -> None:
         if delegate.outcome is None:
-            delegate.outcome = "done"
+            delegate.outcome = outcome
             self._spawn(self._end_after(session))
 
     async def _end_after(self, session: CallSession) -> None:

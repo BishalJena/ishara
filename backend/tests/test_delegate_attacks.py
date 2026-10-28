@@ -326,7 +326,7 @@ async def test_an_llm_ask_on_an_unattended_call_becomes_the_callback_line() -> N
     raw = llm(PAUSE_LINE, {"question": OFFER, "proposal": "4 pm tomorrow"})
     decision = await Brain(FakeGroq(raw)).reply(state(attended=False), OFFER)
     assert decision.say == CALLBACK_LINE and decision.done and decision.ask is None
-    assert decision.source == "llm"
+    assert decision.callback and decision.source == "llm"
 
 
 # ---- requests and state ----
@@ -585,7 +585,7 @@ def test_a_decline_or_no_slots_is_declined_never_booked(flow, heard) -> None:
 )
 def test_outcome_reads_denials_and_no_slots_as_not_booked(receptionist, outcome) -> None:
     entries = [TranscriptEntry(speaker="receptionist", text=receptionist, at=1.0)]
-    result = build_notes("c1", make_brief().brief, entries, [], None, True)
+    result = build_notes("c1", make_brief().brief, entries, [], None, True, promised_callback=False)
     assert result.outcome == outcome
     confirmed = [s for s in result.summary if s.startswith("They confirmed")]
     assert bool(confirmed) == (outcome == "booked")
@@ -598,7 +598,8 @@ def test_a_callback_after_an_offer_stays_a_callback_even_with_no_slots() -> None
         ),
         TranscriptEntry(speaker="agent", text=CALLBACK_LINE, at=2.0),
     ]
-    assert build_notes("c1", make_brief().brief, entries, [], None, True).outcome == "callback"
+    result = build_notes("c1", make_brief().brief, entries, [], None, True, promised_callback=True)
+    assert result.outcome == "callback"
 
 
 @pytest.mark.parametrize("attended", [True, False])
@@ -611,6 +612,108 @@ def test_out_of_brief_requests_get_the_callback_line_and_a_hang_up(flow, heard, 
     assert "4321" not in said and "Asha" not in said
     wait_for(lambda: ended_by_agent(f))
     assert notes(f, call_id)["outcome"] == "callback"
+
+
+# ---- a promised callback in the notes, whatever words promised it ----
+
+CALLBACK_QUESTION = "The agent promised to call back. Decide on the offer and call again."
+RIYA = {"chips": ["tomorrow"], "profile": {"name": "Riya"}}
+RIYA_CALLBACK = "I will check with Riya and call you back to confirm."
+
+
+def finished_notes(f: Flow, call_id: str) -> dict:
+    """The notes after the agent hung up and Bolna reported the call completed."""
+    wait_for(lambda: ended_by_agent(f))
+    status(f, "run-1", "completed")
+    return notes(f, call_id)
+
+
+def test_an_unattended_llm_callback_in_its_own_words_is_a_callback(flow) -> None:
+    # The live call of 28 Oct: Groq promised the callback in its own words with done=true
+    # and no ask; the notes matched only the rule brain's sentence and said "unclear".
+    groq = FakeGroq(llm(RIYA_CALLBACK, done=True))
+    f = flow(brain=Brain(groq, timeout_s=1.0), end_after_done_s=0.05)
+    call_id = opened_call(f, attended=False, **RIYA)
+    assert notes(f, call_id)["transcript"][-1]["text"] == (
+        "I'd like to book a doctor's appointment for Riya, tomorrow."
+    )
+    assert f.listen_turn(call_id, "we have four pm tomorrow does that work") == RIYA_CALLBACK
+    result = finished_notes(f, call_id)
+    assert result["outcome"] == "callback"
+    assert result["open_questions"] == [CALLBACK_QUESTION]
+
+
+def test_an_attended_llm_callback_in_its_own_words_is_a_callback(flow) -> None:
+    line = "I will check that with Riya and call you back."
+    f = flow(brain=Brain(FakeGroq(llm(line, done=True)), timeout_s=1.0), end_after_done_s=0.05)
+    call_id = opened_call(f, attended=True, **RIYA)
+    assert f.listen_turn(call_id, "What's your insurance number?") == line
+    result = finished_notes(f, call_id)
+    assert result["outcome"] == "callback"
+    assert result["open_questions"] == [CALLBACK_QUESTION]
+
+
+def test_an_llm_goodbye_after_a_confirmation_is_booked_not_a_callback(flow) -> None:
+    line = "Thank you so much, goodbye."
+    f = flow(brain=Brain(FakeGroq(llm(line, done=True)), timeout_s=1.0), end_after_done_s=0.05)
+    call_id = opened_call(f, attended=False, **RIYA)
+    assert f.listen_turn(call_id, "You're booked for 4 pm tomorrow.") == line
+    result = finished_notes(f, call_id)
+    assert result["outcome"] == "booked" and result["open_questions"] == []
+
+
+def test_an_llm_line_that_settles_nothing_promises_no_callback(flow) -> None:
+    line = "Could you tell me which other times are free?"
+    f = flow(brain=Brain(FakeGroq(llm(line)), timeout_s=1.0))
+    call_id = opened_call(f, attended=False, **RIYA)
+    assert f.listen_turn(call_id, "We have 4 pm tomorrow.") == line
+    assert not ended_by_agent(f)
+    status(f, "run-1", "completed")
+    assert notes(f, call_id)["outcome"] == "unclear"
+
+
+def test_an_unanswered_ask_is_a_callback_in_the_notes(flow) -> None:
+    f = flow(ask_timeout_s=0.2, end_after_done_s=0.3)
+    call_id = f.start(f.brief(), attended=True)
+    with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
+        f.live(call_id)
+        f.speak_last(call_id)
+        assert f.listen_turn(call_id, OFFER) == PAUSE_LINE
+        f.drain_until(ws, "ask")
+        assert f.drain_until(ws, "ask_resolved")["source"] == "timeout"
+        assert f.speak_last(call_id) == CALLBACK_LINE
+    result = finished_notes(f, call_id)
+    assert result["outcome"] == "callback"
+    assert result["open_questions"] == [CALLBACK_QUESTION]
+
+
+@pytest.mark.parametrize(
+    ("attended", "heard", "callback"),
+    [
+        (False, OFFER, True),
+        (False, "Could you come on Friday instead?", True),
+        (True, "What's your insurance number?", True),
+        (True, "Sorry, we're fully booked tomorrow.", True),
+        (True, "You're booked for 10:30 tomorrow morning.", False),
+        (True, OFFER, False),  # handed to the user, nothing promised yet
+        (True, "Let me check.", False),
+    ],
+)
+def test_the_rule_brain_marks_each_callback_it_promises(attended, heard, callback) -> None:
+    decision = RuleBrain().decide(state(attended=attended), heard)
+    assert decision.callback is callback
+    assert (decision.say == CALLBACK_LINE) is callback
+
+
+def test_notes_read_the_promised_callback_not_the_agents_words() -> None:
+    offer = entry("receptionist", "We have 4 pm tomorrow.")
+    brief = make_brief().brief
+    own_words = [offer, entry("agent", RIYA_CALLBACK)]
+    rule_words = [offer, entry("agent", CALLBACK_LINE)]
+    promised = build_notes("c1", brief, own_words, [], None, True, promised_callback=True)
+    assert promised.outcome == "callback"
+    unpromised = build_notes("c1", brief, rule_words, [], None, True, promised_callback=False)
+    assert unpromised.outcome == "unclear"
 
 
 def test_a_different_day_goes_to_the_attended_user(flow) -> None:
@@ -956,7 +1059,7 @@ def test_notes_list_only_the_receptionists_offers_and_cap_them() -> None:
     entries += [entry("receptionist", f"We have {h} pm tomorrow.") for h in (1, 2, 3, 4)]
     entries += [entry("agent", "Yes, 5 pm tomorrow works. Thank you.")]
     entries += [entry("receptionist", f"Booked for {h} pm.") for h in (1, 2, 3)]
-    result = build_notes("c1", make_brief().brief, entries, [], None, True)
+    result = build_notes("c1", make_brief().brief, entries, [], None, True, promised_callback=False)
     offered = [s for s in result.summary if s.startswith("They offered")]
     assert offered == [f'They offered: "We have {h} pm tomorrow."' for h in (1, 2, 3)]
     confirmed = [s for s in result.summary if s.startswith("They confirmed")]
@@ -964,49 +1067,59 @@ def test_notes_list_only_the_receptionists_offers_and_cap_them() -> None:
 
 
 @pytest.mark.parametrize(
-    ("entries", "answers", "outcome", "open_questions"),
+    ("entries", "answers", "promised", "outcome", "open_questions"),
     [
         (
             [entry("receptionist", "We have 4 pm."), entry("agent", CALLBACK_LINE)],
             [],
+            True,
             "callback",
             ["The agent promised to call back. Decide on the offer and call again."],
         ),
         (
             [entry("receptionist", "Let me check the diary.")],
             [],
+            False,
             "unclear",
             ["Nothing was confirmed. Read the transcript and decide the next step."],
         ),
-        ([], [], "no_answer", ["Nobody answered or nothing was heard."]),
+        ([], [], False, "no_answer", ["Nobody answered or nothing was heard."]),
         (
             [entry("receptionist", "We have 4 pm tomorrow. Does that work?")],
             ["No, 4 pm tomorrow doesn't work, sorry. Is there another time?"],
+            False,
             "declined",
             [],
         ),
         (
             [entry("receptionist", "Sorry, we're fully"), entry("receptionist", "booked.")],
             [],
+            False,
             "declined",
             [],
         ),
         (
             [entry("receptionist", "4 pm? 10:30? 11?")],
             ["No, 4 pm doesn't work.", "No, 10:30 doesn't work.", "Yes, 11 works."],
+            False,
             "booked",
             [],
         ),
         (
             [entry("receptionist", "You're booked at 4 pm.")],
             ["Yes, 4 pm works.", "No, 4 pm doesn't work."],
+            False,
             "unclear",
             ["Nothing was confirmed. Read the transcript and decide the next step."],
         ),
     ],
 )
-def test_outcomes_and_open_questions_word_for_word(entries, answers, outcome, open_questions):
-    result = build_notes("c1", make_brief().brief, entries, answers, None, True)
+def test_outcomes_and_open_questions_word_for_word(
+    entries, answers, promised, outcome, open_questions
+):
+    result = build_notes(
+        "c1", make_brief().brief, entries, answers, None, True, promised_callback=promised
+    )
     assert result.outcome == outcome
     assert result.open_questions == open_questions
 

@@ -172,7 +172,7 @@ def test_notes_list_an_offer_said_in_words() -> None:
         TranscriptEntry(speaker="receptionist", text="we have four pm tomorrow", at=1.0),
         TranscriptEntry(speaker="agent", text=CALLBACK_LINE, at=2.0),
     ]
-    notes = build_notes("c1", state.brief, entries, [], None, True)
+    notes = build_notes("c1", state.brief, entries, [], None, True, promised_callback=True)
     assert 'They offered: "we have four pm tomorrow"' in notes.summary
     assert notes.outcome == "callback"
 
@@ -181,7 +181,7 @@ def test_rule_brain_unattended_never_asks_and_promises_a_callback() -> None:
     state = make_brief(attended=False)
     state.opened = True
     offer = RuleBrain().decide(state, "We have 4 pm tomorrow. Does that work?")
-    assert offer == Decision(CALLBACK_LINE, done=True)
+    assert offer == Decision(CALLBACK_LINE, done=True, callback=True)
 
 
 def test_rule_brain_shares_only_profile_facts() -> None:
@@ -204,7 +204,13 @@ def test_notes_quote_the_transcript_and_name_the_outcome() -> None:
         TranscriptEntry(speaker="receptionist", text="Booked for 4 pm tomorrow.", at=3.0),
     ]
     notes = build_notes(
-        "c1", state.brief, entries, ["Yes, 4 pm tomorrow works. Thank you."], None, True
+        "c1",
+        state.brief,
+        entries,
+        ["Yes, 4 pm tomorrow works. Thank you."],
+        None,
+        True,
+        promised_callback=False,
     )
     assert notes.outcome == "booked"
     assert notes.summary[0].startswith("Goal: book a doctor's appointment for Asha Rao")
@@ -212,7 +218,7 @@ def test_notes_quote_the_transcript_and_name_the_outcome() -> None:
     assert any(s.startswith("You answered:") for s in notes.summary)
     assert any(s.startswith("They confirmed:") for s in notes.summary)
     assert notes.open_questions == []
-    unfinished = build_notes("c1", state.brief, entries, [], None, False)
+    unfinished = build_notes("c1", state.brief, entries, [], None, False, promised_callback=False)
     assert unfinished.ready is False and unfinished.outcome is None
 
 
@@ -222,7 +228,9 @@ def test_notes_for_a_callback_leave_an_open_question() -> None:
         TranscriptEntry(speaker="receptionist", text="Only Thursday 4 pm is free.", at=1.0),
         TranscriptEntry(speaker="agent", text=CALLBACK_LINE, at=2.0),
     ]
-    notes = build_notes("c1", state.brief, entries, [], "Caller to call back.", True)
+    notes = build_notes(
+        "c1", state.brief, entries, [], "Caller to call back.", True, promised_callback=True
+    )
     assert notes.outcome == "callback"
     assert notes.open_questions and "call again" in notes.open_questions[0]
     assert notes.bolna_summary == "Caller to call back."
