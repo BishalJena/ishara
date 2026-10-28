@@ -4,8 +4,9 @@ The user signs the intent, the app builds a brief from the chips and the profile
 user approves it once (by starting the call with its id), and the agent then pursues
 only that brief. On every receptionist turn the custom-LLM endpoint asks `Brain.reply`
 what to say. Attended calls may pause the receptionist ("one moment, please") and ask
-the user a yes/no/wait question; unattended calls never ask and promise a callback
-instead. Nothing here dials, speaks or stores secrets.
+the user: yes/no/wait about an offered time, or a time word about an open "when?"
+question. Unattended calls never ask: they promise a callback, or answer an open "when?"
+from the brief's preferred time. Nothing here dials, speaks or stores secrets.
 
 Safety: every line the brain produces goes through `check_line`, which reuses the
 composer's validator pieces: no number, time, name or booking claim that neither the
@@ -21,14 +22,15 @@ import json
 import logging
 import re
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Literal
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, model_validator
 
 from app.groq_client import GroqClient, GroqError
 from app.protocol import (
     MAX_CHIPS,
+    AskChoice,
     AskOption,
     BriefRequest,
     BriefResponse,
@@ -57,6 +59,15 @@ ASK_TIMEOUT_S = 10.0
 PAUSE_LINE = "One moment, please."
 CALLBACK_LINE = "I'll need to check that and call back. Thank you."
 CLOSE_LINE = "Thank you for your help. Goodbye."
+WAIT_LINE = "One moment, please, I'm checking."
+# The time words the user can sign (or tap) to answer an open "when?" question, in the
+# card's order, with what each says. NOW reads as "today", like it does in the brief.
+# The model has no number signs, so no clock time is ever signed.
+TIME_ANSWERS: dict[AskChoice, str] = {
+    "tomorrow": "tomorrow",
+    "morning": "in the morning",
+    "now": "today, as soon as possible",
+}
 
 PURPOSE_GOAL: dict[Purpose, str] = {"doctor_appointment": "book a doctor's appointment"}
 
@@ -85,6 +96,16 @@ _PROPOSAL = re.compile(
 )
 _QUESTION = re.compile(
     r"\?\s*$|\b(does that work|is that (ok|okay|fine)|would that (work|suit))\b", re.I
+)
+# The receptionist asks *when* without offering a time ("what time would you like?",
+# "morning or afternoon?"). Matched on normalised text: the live transcriber writes
+# lowercase with no punctuation. "When did ...?" asks about the past, not a booking.
+_OPEN_TIME = re.compile(
+    r"\b(what|which) (time|day|date)s?\b"
+    r"|\bwhen (would|do|can|could|will) (you|she|he|they|we)\b"
+    r"|\bwhen (works|suits|is (good|best|convenient)|are you (free|available))\b"
+    r"|\bmornings? or (afternoons?|evenings?)\b|\b(afternoons?|evenings?) or mornings?\b"
+    r"|\bprefer(red)? (a )?(time|day)\b|\b(time|day) in mind\b|\bparticular (time|day)\b"
 )
 _BOOKED = re.compile(r"\b(booked|confirmed|reserved|scheduled|all set|you're set)\b")
 # Accepting an offer is the user's decision (an attended answer), never the agent's.
@@ -233,7 +254,10 @@ class DelegateState:
     outcome: Literal["done", "callback"] | None = None
 
     def transcript_text(self) -> str:
-        return " ".join(x.receptionist + " " + x.agent for x in self.exchanges)
+        # The user's spoken answers are part of the call too ("In the morning, please."),
+        # so later lines may repeat what the user chose.
+        said = [x.receptionist + " " + x.agent for x in self.exchanges]
+        return " ".join(said + self.answers)
 
 
 def _options_for(proposal: str) -> tuple[AskOption, ...]:
@@ -242,8 +266,30 @@ def _options_for(proposal: str) -> tuple[AskOption, ...]:
         AskOption(
             choice="no", spoken=f"No, {proposal} doesn't work, sorry. Is there another time?"
         ),
-        AskOption(choice="wait", spoken="One moment, please, I'm checking."),
+        AskOption(choice="wait", spoken=WAIT_LINE),
     )
+
+
+def _time_line(when: str) -> str:
+    """The answer to an open "when?": the time, then a nudge towards a concrete offer
+    (which goes to the user as yes/no), so the receptionist doesn't ask "when?" again."""
+    return f"{when[0].upper()}{when[1:]}, please. What times are available?"
+
+
+TIME_OPTIONS: tuple[AskOption, ...] = (
+    *(AskOption(choice=choice, spoken=_time_line(when)) for choice, when in TIME_ANSWERS.items()),
+    AskOption(choice="wait", spoken=WAIT_LINE),
+)
+
+
+def _asks_when(text: str) -> bool:
+    return _OPEN_TIME.search(_normalise(text)) is not None
+
+
+def _preferred_time(brief: Brief) -> str | None:
+    """The brief's "preferred time: ..." constraint, e.g. "tomorrow in the morning"."""
+    prefix = "preferred time: "
+    return next((c[len(prefix) :] for c in brief.constraints if c.startswith(prefix)), None)
 
 
 def _proposal_in(text: str) -> str | None:
@@ -282,16 +328,23 @@ class RuleBrain:
     promises a callback (unattended), closes when the receptionist confirms."""
 
     def opening(self, state: DelegateState) -> str:
-        when = next(
-            (
-                c[len("preferred time: ") :]
-                for c in state.brief.constraints
-                if c.startswith("preferred")
-            ),
-            None,
-        )
+        when = _preferred_time(state.brief)
         line = f"I'd like to {state.brief.goal} for {state.brief.name}"
         return line + (f", {when}." if when else ".")
+
+    def open_time(self, state: DelegateState, heard: str) -> Decision:
+        """An open "when?" with no time on offer. Attended: the user picks a time word.
+        Unattended: the brief's preferred time, said once; otherwise a callback."""
+        if state.attended:
+            return Decision(PAUSE_LINE, ask=(heard.strip(), TIME_OPTIONS))
+        when = _preferred_time(state.brief)
+        if when is None:
+            return Decision(CALLBACK_LINE, done=True, callback=True)
+        line = _time_line(when)
+        if any(x.agent == line for x in state.exchanges):
+            # Asked again after hearing it: the brief has nothing more to add.
+            return Decision(CALLBACK_LINE, done=True, callback=True)
+        return Decision(line)
 
     def decide(self, state: DelegateState, heard: str) -> Decision:
         if not state.opened:
@@ -302,7 +355,12 @@ class RuleBrain:
             # The brief shares only the name and the callback number: never guess the rest,
             # and never answer "insurance number" with the phone number.
             return Decision(CALLBACK_LINE, done=True, callback=True)
-        proposal = _proposal_in(heard) or _day_offer(heard, state.brief)
+        # A clock time is a concrete offer even inside a "when?" question; a day offer
+        # is not: "what time tomorrow?" asks for a time.
+        proposal = _proposal_in(heard)
+        if not proposal and _asks_when(heard):
+            return self.open_time(state, heard)
+        proposal = proposal or _day_offer(heard, state.brief)
         if proposal:
             if state.attended:
                 return Decision(PAUSE_LINE, ask=(heard.strip(), _options_for(proposal)))
@@ -324,13 +382,17 @@ class RuleBrain:
 SYSTEM_PROMPT = """\
 You speak on a phone call on behalf of a Deaf caller, through the Ishara app. You pursue ONE brief
 and nothing else. Reply with JSON only: {"say": <one or two short sentences, at most 25 words>,
-"ask_user": null or {"question": <the receptionist's proposal in plain words>,
-"proposal": <the time/day offered>}, "done": true|false}.
+"ask_user": null or {"kind": "offer", "question": <the receptionist's proposal in plain words>,
+"proposal": <the time/day offered>} or {"kind": "time"}, "done": true|false}.
 Rules:
 - Pursue only the brief. Never agree to, book, confirm or promise anything the brief does not cover.
 - When the receptionist proposes a specific time or day, or asks a yes/no question about one:
-  ATTENDED mode: set "say" to "One moment, please." and fill ask_user; the caller answers.
+  ATTENDED mode: set "say" to "One moment, please." and set ask_user to the "offer" form; the
+  caller answers.
   UNATTENDED mode: say you will check and call back, and set done to true.
+- When the receptionist asks an open question about when (what time, which day, morning or
+  afternoon) without offering a specific time: set "say" to "One moment, please." and ask_user
+  to {"kind": "time"}, in both modes. Never pick a time yourself.
 - Share only the facts in the brief (name, callback number, reason). Never invent symptoms, dates,
   numbers or names. If asked something the brief does not cover, say you will check and call back.
 - Set done to true when the appointment is confirmed by the receptionist or you promised a callback.
@@ -354,7 +416,14 @@ def _user_message(state: DelegateState, heard: str) -> str:
 class _LlmAsk(BaseModel):
     # SYSTEM_PROMPT also asks for a "question"; it is ignored: the user is always shown
     # the receptionist's own words, never the LLM's account of them.
+    kind: Literal["offer", "time"] = "offer"
     proposal: str | None = None
+
+    @model_validator(mode="after")
+    def _time_has_no_proposal(self) -> _LlmAsk:
+        if self.kind == "time" and (self.proposal or "").strip():
+            raise ValueError("an open time question offers no time")
+        return self
 
 
 class _LlmTurn(BaseModel):
@@ -386,6 +455,13 @@ class Brain:
             log.info("delegate: LLM unavailable (%s), using rules", type(exc).__name__)
             return fallback
         transcript = state.transcript_text() + " " + heard
+        if turn.ask_user is not None and turn.ask_user.kind == "time":
+            if _proposal_in(heard):
+                # A clock time was offered: that is a yes/no question for the user.
+                log.info("delegate: LLM time ask over a concrete offer, using rules")
+                return fallback
+            # The lines are fixed (the time words' sentences or the brief's time).
+            return replace(self.rules.open_time(state, heard), source="llm")
         if turn.ask_user is not None:
             if not state.attended:
                 return Decision(CALLBACK_LINE, done=True, callback=True, source="llm")
