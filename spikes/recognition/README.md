@@ -248,6 +248,23 @@ with the SignCLIP venv's Python (`--recognizer-python`, default
 `artifacts/signclip/.venv/bin/python`). Only result lines go to its stdout; any
 other printing, including native MediaPipe/torch output, goes to stderr.
 
+The recognizer starts **before** the call. The bridge runs it with `--handshake`:
+once it has loaded and calibrated, it prints one ready line and holds. Only then does
+the bridge create the brief, place (or join) the call and connect. Once connected, it
+writes `go` to the recognizer's stdin and signs start to count. Saved clips pause while
+holding. A camera keeps running, but nothing it sees before `go` becomes a chip. If the
+recognizer stops before it is ready, nothing is dialled and the bridge exits with
+`! the live recognizer stopped before it was ready (exit N); no call was placed`.
+
+```
+ mac_bridge --live            live_source --handshake           backend
+   │ start ─────────────────────▶ load model, 2 s rest
+   │ ◀── {"event": "ready"} ───── calibrated, holding
+   │ POST /briefs, /calls, WebSocket ──────────────────────────▶ call starts
+   │ go ────────────────────────▶ recognising
+   │ ◀── one line per sign ─────
+```
+
 ### One-time setup
 
 The light `.venv` and the SignCLIP venv as above, plus the bridge venv:
@@ -355,7 +372,8 @@ artifacts/bridge/.venv/bin/python -m unittest test_mac_bridge test_detector test
      --call-id <call_id> --live --replay-videos artifacts/rehearsal
    ```
 
-   Signs become chips, `?` stays local, drafts arrive from the backend and you
+   Rest both hands for 2 s first: the bridge joins or places the call only once the
+   recognizer prints `live recognizer ready`. Signs become chips, `?` stays local, drafts arrive from the backend and you
    press `s` to SEND. You can still type signs, `x`, `c`, `q yes|no|wait|repeat`,
    `stop` and `e` (`h` lists them). If the recognizer stops, the bridge says so
    and typed signs still work. `--bundle PATH` and `--rest-y Y` are passed to
@@ -461,8 +479,9 @@ scripts/sign_lab.sh --bridge-only --model asl --port 8799 -- --video \
 (cd backend && uv run python -m scripts.sign_lab --port 8799 --receptionist manual)   # terminal 1
 scripts/sign_lab.sh --bridge-only --model asl --port 8799 -- --video \
   $C/rest.mp4 $C/yes.mp4 $C/rest.mp4 --delegated --attended --name Asha    # terminal 2
-# when terminal 2 prints "rest line y=...", type in terminal 1: We have 4 pm tomorrow. Does that work?
-# the yes clip answers about 2 s later; then type: Yes, 10:30 tomorrow morning.  (the agent closes)
+# the bridge calibrates on the rest clip, then places the call; when terminal 2 prints the agent's
+# opening line, type in terminal 1: We have 4 pm tomorrow. Does that work?
+# the yes clip answers about 2 s after the call connects; then type: Yes, 10:30 tomorrow morning.  (the agent closes)
 ```
 
 `scripts/sign_lab.sh --free --model asl` starts both in one terminal (webcam by default;
@@ -489,9 +508,12 @@ artifacts/bridge/.venv/bin/python mac_bridge.py --base-url "$ISHARA_BACKEND" --c
 up, but the app doesn't show its call id, and joining replaces the phone's connection
 (the backend keeps one app socket per call). So on demo day the Mac places its own call.
 `--recognizer-python .venv/bin/python` matters: the bridge's default is the SignCLIP venv.
-Rest both hands for 2 s when the recognizer starts. It needs a few seconds to load after
-the call starts (2–15 s measured on a busy Mac), and on a busy Mac played clips fall behind
-real time (tracking was 3x slower than the video once), so close heavy apps before the demo. If recognition misbehaves, type the signs
+The bridge starts the recognizer first (2–15 s to load, measured on a busy Mac): rest both
+hands for 2 s, and the call is placed only after `live recognizer ready (rest line y=…)`,
+so the Mac sees signs from the first second of the call. If the recognizer fails to start,
+nothing is dialled: fix it and re-run, or drop `--live ...` and type the signs. On a busy Mac
+played clips fall behind real time (tracking was 3x slower than the video once), so close
+heavy apps before the demo. If recognition misbehaves during the call, type the signs
 (`hello`, `no tomorrow please`, …) or `a yes`; nothing is ever spoken without `s` or an answer.
 
 ### Automated check
@@ -499,7 +521,8 @@ real time (tracking was 3x slower than the video once), so close heavy apps befo
 `test_mac_bridge.ClipDrivenFallback` plays both runs against a local backend on a free
 port and asserts on what the backend sent back: the drafts for the expected chips, a
 `spoken` for every SEND, the agent's question answered by the yes clip (`ask_resolved`
-from the user, no chip), and the call notes (outcome `booked`). `scripts/verify.sh` runs
+from the user, no chip), the call notes (outcome `booked`), and that the recognizer's ready
+line came before the bridge joined the call. `scripts/verify.sh` runs
 it in "recognition light tests" (about 1 minute); without the venvs, model or clips it is
 skipped and prints `SKIPPED clip-driven fallback runs need ...` with what is missing.
 `ISHARA_FALLBACK_CLIPS=DIR` points it at other clips with the same names.
