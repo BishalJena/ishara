@@ -132,10 +132,30 @@ _META = (
 )
 
 
+_HOUR_WORDS = {
+    word: str(hour)
+    for hour, word in enumerate(
+        ("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")
+        + ("eleven", "twelve"),
+        start=1,
+    )
+}
+_MINUTE_WORDS = {"fifteen": "15", "twenty": "20", "thirty": "30", "forty": "40", "fifty": "50"}
+_MINUTE_WORDS |= {"forty five": "45", "forty-five": "45"}
+_HOUR = "|".join(_HOUR_WORDS)
+_MINUTE = "|".join(sorted(_MINUTE_WORDS, key=len, reverse=True))
+_WORD_CLOCK = re.compile(rf"\b({_HOUR})[ -]({_MINUTE})\b")
+_WORD_HOUR_AM_PM = re.compile(rf"\b({_HOUR})(?= ?[ap]m\b)")
+
+
 def _normalise(text: str) -> str:
-    """Lower case, straight apostrophes, 'a.m.' -> 'am', '10.30' -> '10:30'."""
+    """Lower case, straight apostrophes, 'a.m.' -> 'am', '10.30' -> '10:30', and clock
+    times in words as digits ('four pm' -> '4 pm', 'ten thirty' -> '10:30'), because the
+    call transcriber writes spoken times in words."""
     text = text.lower().replace("’", "'").replace("‘", "'")
     text = re.sub(r"\b([ap])\.m\.?", r"\1m", text)
+    text = _WORD_CLOCK.sub(lambda m: f"{_HOUR_WORDS[m[1]]}:{_MINUTE_WORDS[m[2]]}", text)
+    text = _WORD_HOUR_AM_PM.sub(lambda m: _HOUR_WORDS[m[1]], text)
     return re.sub(r"(\d)\.(\d)", r"\1:\2", text)
 
 
