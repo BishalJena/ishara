@@ -113,11 +113,14 @@ _COMMITMENT = re.compile(
     r"\b(i'll|we'll|i will|we will) take\b|\bbook (it|that|me|her|him|them)\b|\bplease book\b"
     r"|\bgo ahead\b|\bthat's (fine|good|great|perfect|ok|okay)\b"
 )
+# A refusal ("cant": the live transcriber drops apostrophes).
 _NO_SLOT = re.compile(
     r"\b(no (slots?|appointments?|availability)|(fully|all) booked|booked (up|out|solid)"
     r"|nothing (free|available|left)|not available|unavailable"
-    r"|(can't|cannot|can not|unable to) (do|fit|offer|book|give|see|manage))\b"
+    r"|(can't|cant|cannot|can not|unable to) (do|fit|offer|book|give|see|manage))\b"
 )
+# Where one part of a reply ends and the next begins: "we can't do 4 pm, but 5 pm works".
+_CLAUSE_BREAK = re.compile(r"[.,;!?]|\b(?:but|however|though|although|instead|whereas)\b")
 # Details a receptionist may ask for that no brief carries (the profile has only a name,
 # a callback number and a reason).
 _OUT_OF_BRIEF = re.compile(
@@ -292,14 +295,59 @@ def _preferred_time(brief: Brief) -> str | None:
     return next((c[len(prefix) :] for c in brief.constraints if c.startswith(prefix)), None)
 
 
+def _clock_times(text: str) -> dict[str, str]:
+    """Distinct clock times in `text`, keyed without spaces ("4pm"), as said ("4 pm")."""
+    times: dict[str, str] = {}
+    for match in _PROPOSAL.finditer(_normalise(text)):
+        times.setdefault(re.sub(r"\s+", "", match.group(0)), match.group(0).strip())
+    return times
+
+
+@dataclass(frozen=True)
+class _TimesHeard:
+    """The clock times in a receptionist's turn, split by the clauses that refuse."""
+
+    said: frozenset[str]  # every time mentioned (keys)
+    offered: dict[str, str]  # times in clauses that refuse nothing
+    unsure: bool  # one refusing clause names several times: which one it refuses is unclear
+    offering_text: str  # the clauses that refuse nothing
+
+    @property
+    def single(self) -> str | None:
+        """The one time on offer; None when there are none or several to choose from."""
+        if self.unsure or len(self.offered) != 1:
+            return None
+        return next(iter(self.offered.values()))
+
+
+def _times_heard(text: str) -> _TimesHeard:
+    said: set[str] = set()
+    offered: dict[str, str] = {}
+    unsure = False
+    offering: list[str] = []
+    for clause in _CLAUSE_BREAK.split(_normalise(text)):
+        times = _clock_times(clause)
+        said |= times.keys()
+        if _NO_SLOT.search(clause):
+            unsure = unsure or len(times) > 1
+            continue
+        offering.append(clause)
+        for key, time_said in times.items():
+            offered.setdefault(key, time_said)
+    return _TimesHeard(frozenset(said), offered, unsure, " ".join(offering))
+
+
 def _proposal_in(text: str) -> str | None:
-    match = _PROPOSAL.search(_normalise(text))
-    if not match:
-        return None
-    # Keep the surrounding day words if the receptionist said them ("4 pm tomorrow").
-    facts = temporal_facts(text)
+    """The clock time the receptionist offers ("4 pm tomorrow"). Never one she refuses
+    ("can't do 4 pm, but 5 pm works" offers 5 pm); "that" when she offers several, so the
+    agent never picks one for the user; None when she offers none."""
+    heard = _times_heard(text)
+    if heard.single is None:
+        return "that" if heard.offered or heard.unsure else None
+    # Keep the day words of the offer if the receptionist said them ("4 pm tomorrow").
+    facts = temporal_facts(heard.offering_text)
     day = next((f.split(":", 1)[1] for f in sorted(facts) if f.startswith("day:")), None)
-    return f"{match.group(0).strip()} {day}" if day else match.group(0).strip()
+    return f"{heard.single} {day}" if day else heard.single
 
 
 # Days a receptionist can offer instead of the brief's ("today" and "now" are left out:

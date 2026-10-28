@@ -161,6 +161,44 @@ def test_rule_brain_hands_a_time_said_in_words_to_the_user(heard: str, proposal:
     assert offer.ask[1][0].spoken == f"Yes, {proposal} works. Thank you."
 
 
+# Issue #60: the ask named the first time said, even the one the receptionist refused.
+# Live style first: the transcriber writes lowercase, no punctuation, times in words.
+@pytest.mark.parametrize(
+    ("heard", "proposal"),
+    [
+        ("we cant do four pm but five pm works", "5 pm"),
+        ("We can't do 4 pm, but 5 pm works.", "5 pm"),
+        ("sorry we cant do four pm tomorrow but five pm tomorrow works", "5 pm tomorrow"),
+        ("we can't do 4 pm today but 5 pm tomorrow works", "5 pm tomorrow"),
+        ("four pm is not available but five pm is", "5 pm"),
+        ("No slots tomorrow, but 4 pm on Friday?", "4 pm friday"),
+        # More than one time on offer: the agent never picks one for the user.
+        ("we have four pm or five pm tomorrow", "that"),
+        ("we cant do four pm five pm works", "that"),
+        # The same time said twice is still one offer.
+        ("four pm yes four pm tomorrow works for us", "4 pm tomorrow"),
+    ],
+)
+def test_the_ask_names_only_the_time_on_offer(heard: str, proposal: str) -> None:
+    state = make_brief(attended=True)
+    state.opened = True
+    offer = RuleBrain().decide(state, heard)
+    assert offer.say == PAUSE_LINE and offer.ask is not None
+    assert offer.ask[0] == heard
+    assert offer.ask[1][0].spoken == f"Yes, {proposal} works. Thank you."
+    assert offer.ask[1][1].spoken.startswith(f"No, {proposal} doesn't work")
+
+
+@pytest.mark.parametrize("attended", [True, False])
+@pytest.mark.parametrize("heard", ["we cant do four pm tomorrow", "Sorry, 4 pm is unavailable."])
+def test_a_refused_time_with_nothing_else_is_a_decline_not_an_offer(
+    heard: str, attended: bool
+) -> None:
+    state = make_brief(attended=attended)
+    state.opened = True
+    assert RuleBrain().decide(state, heard) == Decision(CALLBACK_LINE, done=True, callback=True)
+
+
 def test_check_line_accepts_a_proposal_the_receptionist_said_in_words() -> None:
     state = make_brief()
     assert check_line("4 pm tomorrow", state.brief, "we have four pm tomorrow") == []
