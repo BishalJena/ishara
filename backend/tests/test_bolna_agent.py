@@ -149,6 +149,14 @@ def test_agent_never_speaks_on_its_own(payload) -> None:
     assert config["voicemail"] is False
 
 
+def test_receptionist_speech_during_the_disclosure_is_ignored(payload) -> None:
+    assert _task(payload)["task_config"]["discard_pre_welcome_utterance"] is True
+
+
+def test_call_summary_is_on_for_call_for_me_notes(payload) -> None:
+    assert payload["agent_config"]["call_summary_enabled"] is True
+
+
 def test_voice_is_sarvam_bulbul_v4_flash_english(payload) -> None:
     synth = _task(payload)["tools_config"]["synthesizer"]
     assert synth["provider"] == "sarvam"
