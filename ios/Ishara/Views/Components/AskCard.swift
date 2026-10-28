@@ -7,6 +7,11 @@ import SwiftUI
 /// signing an option's word answers too. Nothing is spoken until one is chosen (or the
 /// backend's timeout line).
 ///
+/// The user is asked to sign the answer, so the card must leave the camera in view above
+/// it: the answers sit two per row with their sentences in small type, and the question
+/// shows at most two lines (VoiceOver reads all of it), whatever the transcriber made of
+/// the receptionist's words.
+///
 /// At accessibility text sizes the question and the sentences no longer fit with their
 /// buttons, and the answer has a 10 s timeout, so the buttons must never scroll away:
 /// the question and each option's exact sentence scroll in a bounded box, and short
@@ -19,44 +24,44 @@ struct AskCard: View {
 
     @Environment(\.dynamicTypeSize) private var typeSize
 
+    private static let padding: CGFloat = 12
+    private static let compactSpacing: CGFloat = 10
+
     var body: some View {
         Group {
             if typeSize.isAccessibilitySize {
-                compact
+                compact(detailsMaxHeight: detailsMaxHeight)
             } else {
                 regular
             }
         }
-        .padding()
+        .padding(Self.padding)
         .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
     }
 
     private var regular: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 6) {
             header
             questionText
-            ForEach(question.options, id: \.choice) { option in
+                .lineLimit(2)
+            answerGrid { option in
                 answerButton(option) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(option.choice.rawValue.uppercased())
-                            .font(.headline.monospaced())
-                            // Time words ("TOMORROW") are longer than YES / NO: never cut.
-                            .fixedSize()
-                            .frame(minWidth: 56, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 2) {
+                        optionWord(option)
                         Text(option.spoken)
+                            .font(.caption)
                             .multilineTextAlignment(.leading)
                             .fixedSize(horizontal: false, vertical: true)
-                        Spacer(minLength: 0)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
             }
-            fallbackText
+            fallbackText(font: .caption)
         }
     }
 
-    private var compact: some View {
-        VStack(alignment: .leading, spacing: 10) {
+    private func compact(detailsMaxHeight: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: Self.compactSpacing) {
             PinnedSentence(maxHeight: detailsMaxHeight) {
                 VStack(alignment: .leading, spacing: 10) {
                     header
@@ -65,22 +70,14 @@ struct AskCard: View {
                         Text("\(option.choice.rawValue.uppercased()): \u{201C}\(option.spoken)\u{201D}")
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    fallbackText
+                    fallbackText(font: .footnote)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             if question.options.count > 3 {
                 // Four answers (an open "when?") stacked one per row push WAIT off screen:
                 // two per row, the words shrinking to fit.
-                Grid(horizontalSpacing: 10, verticalSpacing: 10) {
-                    ForEach(Array(stride(from: 0, to: question.options.count, by: 2)), id: \.self) { start in
-                        GridRow {
-                            ForEach(question.options[start..<min(start + 2, question.options.count)], id: \.choice) {
-                                shortButton($0)
-                            }
-                        }
-                    }
-                }
+                answerGrid(shortButton)
             } else {
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 10) { shortButtons }
@@ -90,44 +87,70 @@ struct AskCard: View {
         }
     }
 
+    /// Two answers per row (TOMORROW · MORNING / NOW · WAIT, or YES · NO / WAIT); an odd
+    /// last answer takes the whole row.
+    private func answerGrid<Cell: View>(@ViewBuilder _ button: @escaping (AskOption) -> Cell) -> some View {
+        let options = question.options
+        return Grid(horizontalSpacing: 8, verticalSpacing: 6) {
+            ForEach(Array(stride(from: 0, to: options.count, by: 2)), id: \.self) { start in
+                GridRow {
+                    if start + 1 < options.count {
+                        button(options[start])
+                        button(options[start + 1])
+                    } else {
+                        button(options[start]).gridCellColumns(2)
+                    }
+                }
+            }
+        }
+        // Rows as tall as their tallest answer, not as tall as the bar allows.
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
     private var shortButtons: some View {
         ForEach(question.options, id: \.choice) { shortButton($0) }
     }
 
     private func shortButton(_ option: AskOption) -> some View {
-        answerButton(option) {
-            Text(option.choice.rawValue.uppercased())
-                .font(.headline.monospaced())
+        answerButton(option, size: .large) {
+            optionWord(option)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
                 .frame(maxWidth: .infinity)
         }
     }
 
+    private func optionWord(_ option: AskOption) -> some View {
+        Text(option.choice.rawValue.uppercased())
+            .font(.headline.monospaced())
+    }
+
     private var header: some View {
         Label("The agent is asking you", systemImage: "questionmark.bubble.fill")
-            .font(.headline)
+            .font(.subheadline.weight(.semibold))
             .foregroundStyle(.orange)
     }
 
     private var questionText: some View {
         Text(question.question)
-            .font(.title3.weight(.semibold))
+            .font(.headline)
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityIdentifier("ask.question")
     }
 
-    private var fallbackText: some View {
+    private func fallbackText(font: Font) -> some View {
         Text("No answer in \(Int(question.timeoutS)) s: the agent says \u{201C}\(question.fallback)\u{201D}")
-            .font(.footnote)
+            .font(font)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
     }
 
-    private func answerButton(_ option: AskOption, @ViewBuilder label: () -> some View) -> some View {
+    private func answerButton(_ option: AskOption, size: ControlSize = .regular,
+                              @ViewBuilder label: () -> some View) -> some View {
         Button(action: { onAnswer(option.choice) }, label: label)
             .buttonStyle(.bordered)
-            .controlSize(.large)
+            .buttonBorderShape(.roundedRectangle(radius: 12))
+            .controlSize(size)
             .tint(option.choice == .wait ? .gray : .accentColor)
             .accessibilityIdentifier("ask.\(option.choice.rawValue)")
             .accessibilityHint("The agent says \u{201C}\(option.spoken)\u{201D}")
@@ -152,7 +175,7 @@ struct AskCard: View {
 #Preview("Open time question") {
     AskCard(
         question: OpenQuestion(
-            askID: "t1", question: "What time would you like to come in?",
+            askID: "t1", question: "what time would will would you like to come in",
             options: [
                 AskOption(choice: .tomorrow, spoken: "Tomorrow, please. What times are available?"),
                 AskOption(choice: .morning, spoken: "In the morning, please. What times are available?"),
