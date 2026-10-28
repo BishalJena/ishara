@@ -168,7 +168,7 @@ All from the simulator, demo mode (fake call, nothing dialled), synthetic profil
 | | |
 |---|---|
 | ![Home with the calling-number note](img/01-home.png) [01 Home](img/01-home.png) | ![Get ready checklist](img/02-get-ready.png) [02 Get ready](img/02-get-ready.png) (simulated checks) |
-| ![Request chips tomorrow and morning](img/03-request-chips.png) [03 Request](img/03-request-chips.png) | ![The brief and the attended switch](img/04-brief.png) [04 Brief](img/04-brief.png) |
+| ![Request chips tomorrow and morning](img/03-request-chips.png) [03 Request](img/03-request-chips.png) (fake call's scripted chips; `morning` can't chip from a real sign now) | ![The brief and the attended switch](img/04-brief.png) [04 Brief](img/04-brief.png) (from those chips: on stage the brief says "Preferred: tomorrow.") |
 | ![AskCard with yes, no and wait](img/05-ask-card.png) [05 AskCard](img/05-ask-card.png) (fake call: 10:30 offer) | ![After the yes](img/06-after-yes.png) [06 After YES](img/06-after-yes.png) (fake call wording) |
 | ![Call notes, Booked](img/07-notes.png) [07 Notes](img/07-notes.png) (fake call wording) | ![Did you mean TOMORROW tile](img/10-live-pick-one.png) [10 Pick-one tile](img/10-live-pick-one.png) |
 | ![Unsure sign as a red question mark](img/11-live-unsure.png) [11 `?` chip](img/11-live-unsure.png) | ![Hand left the picture hint](img/12-live-hand-out-of-frame.png) [12 Framing hint](img/12-live-hand-out-of-frame.png) |
