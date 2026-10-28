@@ -18,9 +18,10 @@ Tick each line; if one fails, use the fallback order in section 2.
 
 `APP` is the Heroku app name from your shell (never written down in the repo).
 
-- [ ] **D9 is deployed.** On 28 Oct the Call-for-me endpoints were not on Heroku yet.
+- [ ] **D9 is still deployed.** The Call-for-me endpoints went to Heroku on 28 Oct, and real
+      Bolna calls for live mode and Call for me (attended and unattended) passed that day.
       `curl -s -o /dev/null -w "%{http_code}\n" -X POST "$PUBLIC_BASE_URL/briefs"` must
-      print `401` (route exists, no token sent); `404` means the deploy is still missing
+      print `401` (route exists, no token sent); `404` means the deploy is missing
       (deploys follow [backend/HEROKU.md](../../backend/HEROKU.md) and need their own go).
 - [ ] **Dyno is Basic (or larger), never Eco**, and up:
       `heroku ps:type --app "$APP"` (size column says Basic) and `heroku ps --app "$APP"`
@@ -74,8 +75,9 @@ Tick each line; if one fails, use the fallback order in section 2.
       morning."), and knows to stay silent after the YES in part (a).
 - [ ] Their phone's caller ID will show Bolna's number: keep it off the projector and blur it
       in any recording.
-- [ ] Presenter has rehearsed the signs (hello, no, tomorrow, please, yes, thankyou, and
-      morning) in the stage light.
+- [ ] Presenter has rehearsed the signs (hello, no, tomorrow, please, yes, thankyou) in the
+      stage light. **Don't sign MORNING:** it can't chip (the model learned a one-handed form;
+      pending the iPhone test). Tap it on the Call-for-me screen if it is ever needed.
 - [ ] Narrator has the honest-limits lines from [SLIDES.md](SLIDES.md#5-honest-limits).
 
 ## 2. Fallback order
@@ -115,7 +117,7 @@ Bolna said. Captions on the screen recording show both sides anyway.
 | 1 | Title card | 5 s | "Ishara. Calls placed by Bolna from its own number. Presenter is hearing. Not yet tested with Deaf users." |
 | 2 | Wide: presenter at a table, phone propped about an arm away; cut to the receptionist in another room | 5 s | The setting is a rehearsal with a teammate |
 | 3 | Home screen | 5 s | The calling-number note |
-| 4 | Get ready → Call for me, signing TOMORROW, MORNING (picture-in-picture: presenter + screen) | 15 s | Chips appear; a pick-one tap if it happens |
+| 4 | Get ready → Call for me, signing TOMORROW (picture-in-picture: presenter + screen) | 15 s | The chip appears; a pick-one tap if it happens |
 | 5 | The brief, then Approve and call | 10 s | The brief text and the "stay and answer questions" switch |
 | 6 | The call: disclosure and opening (receptionist-side audio) | 15 s | The disclosure is heard in full |
 | 7 | Offer → "One moment, please." → AskCard → presenter signs YES (picture-in-picture) | 15 s | The three options with their exact sentences, then the yes |
