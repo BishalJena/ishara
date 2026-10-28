@@ -41,6 +41,10 @@ struct DemoLaunchOptions {
     var fakeTimeScale = 1.0
     /// Open straight on a prepared screen state for screenshots.
     var fixture: DemoFixture?
+    /// Simulator only: replay the sign videos in this folder on the Mac instead of the
+    /// bundled `LocalAssets/SampleSigns`, without a rebuild, e.g.
+    /// `-IsharaSampleSigns /path/to/clips` (the simulator reads the Mac's files).
+    var sampleSigns: URL?
 
     var recognition: Recognition {
         recognitionOverride ?? (driver == .live ? .pipeline : .scripted)
@@ -58,6 +62,7 @@ struct DemoLaunchOptions {
         options.fakeOpenQuestion = defaults.string(forKey: "IsharaFakeOpenQuestion").map {
             FakeCallDriver.OpenTimeQuestion(signedAnswer: Sign(rawValue: $0))
         }
+        options.sampleSigns = defaults.string(forKey: "IsharaSampleSigns").map { URL(fileURLWithPath: $0, isDirectory: true) }
         let scale = defaults.double(forKey: "IsharaFakeTimeScale")
         if scale > 0 {
             options.fakeTimeScale = scale

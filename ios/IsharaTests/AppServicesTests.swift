@@ -83,6 +83,24 @@ final class AppServicesTests: XCTestCase {
         XCTAssertNotNil(services.makeRecognition().camera)
     }
 
+    func testSimulatorReplaysTheClipsOfAFolderGivenAtLaunch() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        for file in ["rest.mov", "yes_a.MP4", "hello_b.m4v", "expected.csv", "notes.txt"] {
+            try Data().write(to: folder.appendingPathComponent(file))
+        }
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: #function))
+        defer { defaults.removePersistentDomain(forName: #function) }
+        defaults.set("pipeline", forKey: "IsharaRecognition")
+        defaults.set(folder.path, forKey: "IsharaSampleSigns")
+        var services = AppServices(options: .from(defaults), config: .failure(.missingBackendURL))
+        services.runsInSimulator = true
+
+        // Sorted, the calibration clip kept out of the menu, anything not a video ignored.
+        XCTAssertEqual(services.makeRecognition().replayOptions, ["hello_b", "yes_a"])
+    }
+
     func testSimulatorAndScriptedRecognitionHaveNoLiveCamera() {
         var pipeline = DemoLaunchOptions()
         pipeline.recognitionOverride = .pipeline

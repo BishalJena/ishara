@@ -17,6 +17,7 @@ import SignPipelineLiteRT
 /// path runs if its encoder and bundle are installed.
 struct RecognitionAssets: Sendable {
     static let folder = "LocalAssets"
+    static let clipExtensions = ["mov", "mp4", "m4v"]
 
     var holisticModel: URL?
     /// `SignCLIPEncoder.mlmodelc` (or an `.mlpackage`, compiled on first launch).
@@ -34,7 +35,7 @@ struct RecognitionAssets: Sendable {
         func find(_ name: String, _ extensions: [String]) -> URL? {
             extensions.lazy.compactMap { bundle.url(forResource: name, withExtension: $0, subdirectory: folder) }.first
         }
-        let clips = ["mov", "mp4", "m4v"].flatMap {
+        let clips = clipExtensions.flatMap {
             bundle.urls(forResourcesWithExtension: $0, subdirectory: "\(folder)/SampleSigns") ?? []
         }
         return RecognitionAssets(
@@ -45,6 +46,13 @@ struct RecognitionAssets: Sendable {
             aslBundle: bundle.url(forResource: "asl-bundle", withExtension: "json"),
             sampleClips: clips
         )
+    }
+
+    /// The saved sign videos in a folder outside the app (`-IsharaSampleSigns`); none when
+    /// it can't be read.
+    static func clips(in folder: URL) -> [URL] {
+        let files = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []
+        return files.filter { clipExtensions.contains($0.pathExtension.lowercased()) }
     }
 
     /// The ASL model runs when it is installed (D8); SignCLIP is the fallback.
