@@ -307,6 +307,21 @@ class Deploy(HerokuScriptCase):
         self.assertIn("Procfile", self.deployed_files())
         self.assertIn("status: ok", result.stdout)
 
+    def test_one_web_dyno_deploys_without_scale_warning(self) -> None:
+        result = self.deploy("--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("ps:scale", result.stderr)
+
+    def test_more_than_one_web_dyno_warns_but_still_deploys(self) -> None:
+        # Call state is in memory in one process, so a second web dyno splits calls.
+        two_web = BASIC_TYPES.replace(" web    Basic   1 ", " web    Basic   2 ")
+        for listing in (two_web, "│ web │ Basic │ 12 │"):
+            with self.subTest(listing=listing):
+                result = self.deploy("--yes", FAKE_PS_TYPE=listing)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("ps:scale web=1", result.stderr)
+                self.assertIn("status: ok", result.stdout)
+
     def test_other_ps_type_failures_stop_before_pushing(self) -> None:
         result = self.deploy("--yes", FAKE_PS_TYPE_ERROR=" ▸    Invalid credentials provided.")
         self.assertNotEqual(result.returncode, 0)

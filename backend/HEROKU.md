@@ -88,6 +88,17 @@ heroku releases --app "$APP"      # roll back with: heroku rollback vNN --app "$
 heroku ps --app "$APP"
 ```
 
+## Exactly one process: one dyno, one uvicorn worker
+
+Call state (calls, turns, approvals, the app socket) lives in memory in one process, so Bolna
+webhooks, custom-LLM requests and the app WebSocket must all reach the same process. The
+Python buildpack sets `WEB_CONCURRENCY` (2 on a Basic dyno) and uvicorn reads it as its worker
+count, which split calls across two processes on 28 Oct. The `Procfile` therefore passes
+`--workers 1` (an explicit flag wins over `WEB_CONCURRENCY`; `tests/test_procfile.py` guards
+it). Never scale `web` beyond 1 dyno; `heroku_deploy.sh` warns if it is. The
+`WEB_CONCURRENCY=1` config var set on the app is only a belt-and-braces backup. Boot logs
+with two `Started server process` lines mean two workers.
+
 ## Router limits that matter for calls and the app WebSocket
 
 - **30 s to first byte**: an HTTP request (for example Bolna's `/v1/chat/completions`) must
@@ -101,7 +112,7 @@ heroku ps --app "$APP"
   `--timeout-keep-alive 95` (longer than the router's 90 s).
 - Dynos restart at least once a day and on every config change or deploy. Anything held only
   in memory (open sockets, in-flight calls) is lost then, so avoid deploying or changing
-  config during a rehearsal or call, and keep a single web dyno if call state is in memory.
+  config during a rehearsal or call, and keep a single web dyno (see above).
 
 Sources: [uv support](https://devcenter.heroku.com/changelog-items/3238),
 [Python behavior](https://devcenter.heroku.com/articles/python-behavior-in-heroku),

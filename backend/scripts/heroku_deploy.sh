@@ -17,7 +17,7 @@ Usage: backend/scripts/heroku_deploy.sh --app NAME --yes
 
 Pushes the committed backend/ tree (uncommitted changes are refused) to the
 app's main branch, refuses Eco dynos (they sleep and Bolna would hear silence),
-then prints the /health status and the names of missing config.
+warns when more than one web dyno runs (call state is in memory), then prints the /health status and the names of missing config.
 HEROKU_GIT_URL overrides the push target (default https://git.heroku.com/NAME.git).
 EOF
 }
@@ -25,6 +25,11 @@ EOF
 # True when `heroku ps:type` lists any process type on an Eco dyno.
 on_eco() {
   grep -Eiq '^[[:space:]]*[a-z0-9_-]+[[:space:]]+eco([[:space:]]|$)' <<<"${1//│/ }"
+}
+
+# The web row's qty column from `heroku ps:type`; empty when there is no web row yet.
+web_dyno_count() {
+  awk '$1 == "web" { print $3; exit }' <<<"${1//│/ }"
 }
 
 # A brand-new app has no process types until its first build; the CLI reports that as
@@ -69,6 +74,12 @@ git push --force "$remote" "$tree:refs/heads/main"
 types=$(dyno_types)
 if on_eco "$types"; then
   die "deployed, but $APP is on Eco dynos. Run: heroku ps:type web=basic --app $APP"
+fi
+# Call state is in memory in one process, so a second web dyno splits calls.
+web_count=$(web_dyno_count "$types")
+if [[ $web_count =~ ^[0-9]+$ ]] && ((web_count > 1)); then
+  echo "warning: $APP runs $web_count web dynos; calls need exactly one." \
+    "Run: heroku ps:scale web=1 --app $APP" >&2
 fi
 
 web_url=$(heroku info -s --app "$APP" | sed -n 's/^web_url=//p')
