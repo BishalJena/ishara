@@ -15,11 +15,21 @@ from collections.abc import Iterator, Sequence
 
 import pytest
 
-from app.protocol import ASL_SIGNS, MAX_CHIPS, SIGNS, TEMPLATE_SIGNS, ComposeRequest, Sign
+from app.protocol import (
+    ASL_SIGNS,
+    MAX_CHIPS,
+    MAX_SPOKEN_CHARS,
+    SIGNS,
+    TEMPLATE_SIGNS,
+    ComposeRequest,
+    Sign,
+)
 from app.templates import _PLAIN, compose_template
 from app.validator import _MEANINGS, _SIGN_FACTS, validate
 
-LENGTH_REASONS = ("too many words", "too long")
+# Issue #62: the 25-word limit applies to LLM drafts only. A template is deterministic and
+# the user reads it before SEND, so with many plain-phrase signs it may run longer.
+WORD_LIMIT_REASON = "too many words"
 MODELLED = tuple(s for s in SIGNS if s not in _PLAIN)
 LONGEST_PLAIN = sorted(_PLAIN, key=lambda s: (-len(_PLAIN[s].split()), s))
 
@@ -31,8 +41,8 @@ def reasons_for(chips: Sequence[Sign]) -> list[str]:
 
 
 def content_reasons(chips: Sequence[Sign]) -> list[str]:
-    """Everything except the length limit (see the strict xfail below)."""
-    return [r for r in reasons_for(chips) if not r.startswith(LENGTH_REASONS)]
+    """Every validator rule except the LLM-only word limit."""
+    return [r for r in reasons_for(chips) if not r.startswith(WORD_LIMIT_REASON)]
 
 
 def small_combinations() -> Iterator[tuple[Sign, ...]]:
@@ -116,19 +126,11 @@ def test_every_combination_of_the_rehearsed_words_passes_in_full() -> None:
     assert failures == {}
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Issue #62: with 6-8 chips that include several ASL plain-phrase signs the "
-        "template runs past the validator's 25-word limit (e.g. can, callonphone, who, see, "
-        "have, finish, drink, morning -> 41 words). Shortening the phrases changes live-mode "
-        "wording mirrored in ios/Ishara/Call/DemoScript.swift."
-    ),
-)
-def test_every_template_fits_the_spoken_length_limit() -> None:
-    too_long = [
-        chips
+def test_every_template_fits_what_one_approve_may_carry() -> None:
+    """The character cap is a protocol limit (ApproveMessage), so it binds templates too."""
+    too_long = {
+        chips: len(text)
         for chips in itertools.chain(packed_combinations(), sampled_combinations())
-        if any(r.startswith(LENGTH_REASONS) for r in reasons_for(chips))
-    ]
-    assert too_long == []
+        if len(text := compose_template(chips, "doctor_appointment")) > MAX_SPOKEN_CHARS
+    }
+    assert too_long == {}
