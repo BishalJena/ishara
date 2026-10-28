@@ -67,8 +67,6 @@ final class VideoToSpeechUITests: XCTestCase {
     private var backend: Backend!
     private var clips: String!
     private var timings: [(step: String, seconds: TimeInterval)] = []
-    /// Any failure so far (`testRun.hasSucceeded` is only final after tearDown).
-    private var failed = false
 
     private var log: LocalBackendLog? {
         if case .local(let log) = backend { return log }
@@ -102,13 +100,9 @@ final class VideoToSpeechUITests: XCTestCase {
         // A failed step must not leave a paid call open.
         let end = app?.buttons["call.end"]
         if let end, end.exists, end.isHittable { end.tap() }
+        // `hasSucceeded` is only final after tearDown; the failure count so far is.
+        let failed = (testRun?.failureCount ?? 0) + (testRun?.unexpectedExceptionCount ?? 0) > 0
         human.tell("FINISHED: \(failed ? "FAILED" : "passed"). Hang up if the call is still on.")
-    }
-
-    override func record(_ issue: XCTIssue) {
-        // Runtime warnings (a QoS inversion inside XCTest) come through here too.
-        if issue.isFailure { failed = true }
-        super.record(issue)
     }
 
     // MARK: Live mode
