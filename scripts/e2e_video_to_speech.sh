@@ -92,15 +92,15 @@ if [[ -f $SECRETS ]]; then
   had_secrets=1
 fi
 server_pid=
-# shellcheck disable=SC2329  # only called from the EXIT trap below, which shellcheck misses here
-cleanup() {
-  local status=$?
-  [[ -n $server_pid ]] && kill "$server_pid" 2>/dev/null || true
-  if ((had_secrets)); then cp "$backup" "$SECRETS"; else rm -f "$SECRETS"; fi
-  rm -f "$backup"
-  exit "$status"
+# Stops the server and puts the real Secrets.xcconfig back; safe to run twice.
+restore() {
+  if [[ -n $server_pid ]]; then kill "$server_pid" 2>/dev/null || true; fi
+  if [[ -f $backup ]]; then
+    if ((had_secrets)); then cp "$backup" "$SECRETS"; else rm -f "$SECRETS"; fi
+    rm -f "$backup"
+  fi
 }
-trap cleanup EXIT
+trap restore EXIT
 trap 'exit 130' INT TERM
 cat >"$SECRETS" <<EOF
 // Written by scripts/e2e_video_to_speech.sh for this run; the original is restored after it.
@@ -145,6 +145,7 @@ for flow in "${flows[@]}"; do
   echo "  $status"
 done
 
+restore
 echo
 echo "e2e video to speech (results and logs in $OUT):"
 printf '  %s\n' "${results[@]}"
