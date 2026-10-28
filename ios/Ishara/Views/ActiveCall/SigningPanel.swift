@@ -47,7 +47,7 @@ struct DelegatedCallNote: View {
     var body: some View {
         Label {
             Text(attended
-                 ? "The agent is making the call for you. When a decision is yours it will ask here: sign or tap yes, no or wait."
+                 ? "The agent is making the call for you. When a decision is yours it will ask here: sign or tap one of the answers shown."
                  : "The agent is making the call for you. You can put the phone down; the notes will be here when it ends.")
         } icon: {
             Image(systemName: attended ? "person.wave.2" : "phone.connection")

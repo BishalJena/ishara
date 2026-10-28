@@ -229,6 +229,24 @@ final class DelegatedEdgeCaseUITests: XCTestCase {
         XCTAssertTrue(app.element("ask.question").exists, "wait closed the question")
     }
 
+    /// The open "when?" card's four answers (TOMORROW is the longest word) also stay on
+    /// screen and tappable at the largest text size.
+    func testTimeWordAnswersStayReachableAtTheLargestTextSize() {
+        launch(EdgeCaseLaunch.largestText + ["-IsharaFakeTimeScale", "2", "-IsharaFakeOpenQuestion", "tap"])
+        openBrief()
+        prepare()
+        approve()
+
+        XCTAssertTrue(app.element("ask.question").waitForExistence(timeout: 30))
+        for choice in ["tomorrow", "morning", "now", "wait"] {
+            app.assertReachable(app.buttons["ask.\(choice)"], choice)
+        }
+        app.assertReachable(app.buttons["call.end"], "End")
+        app.keepScreenshot("delegated-time-ask-largest-text", in: self)
+        app.buttons["ask.tomorrow"].tap()
+        app.waitFor(app.element("caption.you"), labelContains: "Tomorrow, please.")
+    }
+
     /// Screenshots of the Call for me screens, kept in the results. Opt-in like
     /// `CallEdgeCaseUITests.testScreenshotsOfEveryScreen`.
     func testScreenshotsOfEveryScreen() throws {

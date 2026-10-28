@@ -42,7 +42,7 @@ struct SavedDetails: Equatable, Sendable {
 }
 
 /// Decision D9: the brief the user read and approved, and whether they stay on the call to
-/// answer the agent's yes/no/wait questions (attended) or leave it to the agent (unattended).
+/// answer the agent's questions (attended) or leave it to the agent (unattended).
 struct Delegation: Equatable, Sendable {
     let brief: Brief
     let attended: Bool
