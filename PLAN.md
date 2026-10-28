@@ -112,9 +112,11 @@ receptionist speaks ──▶ Bolna Deepgram ──▶ calls OUR /v1/chat/comple
                                             ├─ we push the transcript to the app as a caption
                                             └─ we reply with nothing (agent stays quiet)
 
-user taps SEND ──▶ backend: POST /v1/call/{run_id}/events  {event: "user_reply", properties: {reply_text, turn_id}}
-               ──▶ Bolna moves to the "speak" node, whose prompt contains {{reply_text}}
-               ──▶ Bolna calls OUR custom LLM ──▶ we stream reply_text back word for word
+user taps SEND ──▶ backend: POST /v1/call/{run_id}/events  {event: "user_reply", properties: {turn_id}}
+               ──▶ Bolna moves to the "speak" node, whose prompt names only the call
+               ──▶ Bolna calls OUR custom LLM ──▶ we claim the call's approved turn once and
+                   stream its text back word for word (Bolna never puts event properties
+                   in a prompt; seen live 28 Oct)
                ──▶ Sarvam speaks it into the call
 
 long silence while the user signs ──▶ node's repeat_after_silence_seconds fires
@@ -314,7 +316,7 @@ the PR and what is still pending. Nothing has run against real Bolna, Heroku or 
 ### Sat 24 Oct: day-1 Bolna test → Gate 1
 
 - [x] **V3 [Build]** `backend/bolna/agent.json`: graph agent with a disclosure welcome, a `listen`
-  node (silence repeat about 15 s), a `speak` node (`{{reply_text}}`), and a static goodbye with
+  node (silence repeat about 15 s), a `speak` node (call id only; the backend supplies the approved text), and a static goodbye with
   `end_call`. Sarvam voice, Deepgram nova-3 en-IN, silence hangup and online check
   off. Create it via the API **only after the custom LLM is registered (V2)**, because the
   agent refers to the registered model by name. *Done:* the agent exists and its id is saved

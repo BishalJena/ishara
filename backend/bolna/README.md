@@ -31,7 +31,8 @@ Nothing here has been run against the live API yet.
  event user_reply                                         │
           ▼                                               │
         speak (LLM, words to interrupt = 0) ──────────────┘
-          │  prompt carries {{reply_text}} {{turn_id}}
+          │  prompt carries only {{ishara_call_id}}; the backend speaks the call's
+          │  approved in-flight turn (event properties never reach a prompt)
           │  event user_reply ─▶ speak (a second SEND before the receptionist answers)
           │
  event end_call (from listen or speak)
@@ -63,6 +64,7 @@ Nothing here has been run against the live API yet.
 | Static node with `function_call: "end_call"` and **no edges** hangs up after the whole message plays; reachable by an event | Documented (Oct 2026) | [static nodes](https://www.bolna.ai/docs/graph-agent/static-nodes.md), [Oct 2026 changelog](https://www.bolna.ai/docs/changelog/october-2026.md) |
 | Static audio is pre-rendered when the agent is saved; re-save after changing the text | Documented | [static nodes](https://www.bolna.ai/docs/graph-agent/static-nodes.md) |
 | `{{var}}` in prompts and the welcome message is filled from `context_data` (call `user_data` + event `properties`) | Documented | [variables](https://www.bolna.ai/docs/graph-agent/variables.md), [events](https://www.bolna.ai/docs/graph-agent/event-injection.md) |
+| Live, only `user_data` fills a node prompt: `user_reply` properties never do, and an unfilled `{{var}}` reaches the custom LLM as `{var}`. So the speak node names only the call and the backend serves the call's one approved in-flight turn | Executed (first real calls, 28 Oct; Bolna execution log) | Contradicts the docs row above |
 | Agent-level `agent_welcome_message` plays when the call connects, before any node | Documented | [graph settings](https://www.bolna.ai/docs/graph-agent/settings.md) |
 
 ### Events

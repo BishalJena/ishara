@@ -346,7 +346,7 @@ the tests added from its survivors raised it to):
 |---|---|---|---|
 | `app/sessions.py` | single-use approval, stale turn, ended call, single claim | 102 / 104 (98.1%) | 2 equivalent: exception text, phase of a turn already dropped from flight |
 | `app/calls.py` | allowlist, approval → event, delivery timer, `not_delivered`, webhook | 355 / 384 (92.4%) | 29: error and exception message texts (10), socket `open` flags after a disconnect (6), timer cancellation (7, equivalent: an expired timer checks the turn id), task set retention (2), default timeout, bearer parsing edge cases (2), exception args |
-| `app/custom_llm.py` | speak only after `claim_reply`, routing first, `[silence]`, captions | 131 / 133 (98.5%) | 2 equivalent: join separator before a substring check, an `assert` |
+| `app/custom_llm.py` | speak only after `claim_in_flight`, routing first, `[silence]`, captions | 131 / 133 (98.5%) | 2 equivalent: join separator before a substring check, an `assert` |
 | `app/validator.py` | no invented day/time/number/name, chip meanings kept, 25-word cap | 228 / 281 (81.1%); 228 / 238 (95.8%) without the 43 import-time mutants | 43 in `_temporal_table`, which runs at import so mutmut can't switch it; a hand pass of 20 mutants on that table killed 18 (the other 2 are a redundant row and a stricter-only regex). 10 more are equivalent |
 | `app/tts.py` | one voice per `turn_id`, failures release the turn | 18 / 18 (100%) | none |
 | `app/contacts.py` | `contact_id=+E164` parsing, no number in errors | 18 / 19 (94.7%) | 1 equivalent (`rpartition`) |
