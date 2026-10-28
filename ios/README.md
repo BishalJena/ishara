@@ -71,8 +71,10 @@ folder). See [LocalAssets/README.md](Ishara/LocalAssets/README.md): `holistic_la
 `SampleSigns/*.mov` for the simulator (including `rest.mov` for calibration).
 
 - With `asl-signs.tflite` the ASL model runs: a confident vocabulary sign is a chip, a fairly
-  sure one a "Did you mean …?" tile that counts only when tapped, anything else **[?]** (with
-  "a hand left the picture" when that is why).
+  sure one a "Did you mean …?" tile that counts only when tapped, anything else **[?]**. When a
+  hand left the picture during the sign or as it ended, the sign is always **[?]** with "a hand
+  left the picture" (never a chip from a partial view); a hand dropped below the rest line is
+  resting, even when a narrow portrait frame puts its wrist past the side edge.
 
 - No recognition bundle or encoder: every accepted sign shows **[?]**. The app never guesses.
 - Rejected attempts (too short, too long, lost tracking) produce no chip at all.
