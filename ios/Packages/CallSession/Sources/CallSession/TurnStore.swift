@@ -27,12 +27,13 @@ public struct Chip: Identifiable, Equatable, Sendable {
     }
 }
 
-/// One line of the call transcript: the receptionist's words, a fixed line the call agent
-/// said without a SEND, or a reply of the user's that the backend confirmed as spoken.
+/// One line of the call transcript: the receptionist's words, a line the call agent said
+/// without a SEND, or a reply of the user's that the backend confirmed as spoken.
 public struct Caption: Equatable, Sendable {
     public enum Speaker: Equatable, Sendable {
         case receptionist
-        /// The call agent's own fixed lines (disclosure, holding line, goodbye).
+        /// The call agent's own lines (disclosure, holding line, goodbye, and a delegated
+        /// call's opening, pause and callback lines).
         case agent
         case user
     }

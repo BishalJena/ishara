@@ -13,8 +13,8 @@ public enum CallState: String, Codable, CaseIterable, Sendable {
     case error
 }
 
-/// Who said a captioned line. `agent` lines are fixed lines the call agent says without a
-/// SEND (the opening disclosure, the holding line, the goodbye).
+/// Who said a captioned line. `agent` lines are lines the call agent says without a SEND
+/// (the opening disclosure, the holding line, the goodbye, a delegated call's own lines).
 public enum CaptionSpeaker: String, Codable, CaseIterable, Sendable {
     case receptionist
     case agent
