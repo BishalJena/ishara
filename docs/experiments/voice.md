@@ -2,9 +2,11 @@
 
 **Status: Not yet run.** No V4 spike call has been placed. Every "Executed" line below
 is empty until a run is recorded; until then only the documented behaviour applies.
-Pre-flight on 28 Oct (read-only, no call): Heroku runs a 24 Oct backend without the D9
-routes, and the live Bolna agent matches `agent.json` but has the call summary off; see the
-[go-live check](../status/2026-10-28-live.md) for the deploy and call plan.
+Pre-flight on 28 Oct (no call): Heroku now runs `main` with the D9 routes (release v9),
+the live Bolna agent matches `agent.json` with the call summary on and speech before the
+welcome message ignored, and the free smoke tests pass; see
+[Deployed state before the first call](#deployed-state-before-the-first-call) and the
+[go-live check](../status/2026-10-28-live.md).
 This file is the authoritative summary of Path B voice measurements (task V4,
 [Gate 1](../../PLAN.md#7-gates-go--no-go), testing layer 3 in
 [PLAN.md §8](../../PLAN.md#8-testing-plan)). [Plan](../../PLAN.md) ·
@@ -133,6 +135,17 @@ Fill in from the runs below once at least one run exists.
 Not decided: no run yet. Gate 1 passes on exact text spoken, no double speech, a quiet
 agent otherwise and captions reaching the backend
 ([PLAN §7](../../PLAN.md#7-gates-go--no-go)).
+
+## Deployed state before the first call
+
+Recorded on 28 Oct after the deploy go; **no call placed**. Details in the
+[go-live check §5](../status/2026-10-28-live.md#5-gate-1-deploy-results-28-oct).
+
+| What | State |
+|---|---|
+| Backend | Heroku release v9, Basic dyno; deployed tree equals `main`'s `backend/` (commit `878f71e`) |
+| Bolna agent | Every payload field matches the live agent, including `call_summary_enabled: true` and `discard_pre_welcome_utterance: true`; agent-level interrupt threshold still 1 word |
+| Free smoke tests | 7/7 pass: `/health`, `POST /briefs` with and without a token, OpenAPI routes, the `[silence]` holding line with the right and a wrong custom-LLM token |
 
 ## Runs
 
