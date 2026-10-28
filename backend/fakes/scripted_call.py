@@ -6,6 +6,8 @@ so this subclass acts on its own, with pauses that feel like a phone call:
 - start_call: `ringing`, then `in-progress` after `Pauses.ring_s`.
 - every approved reply the agent speaks: after `Pauses.reply_s` the receptionist says
   the next line of `RECEPTIONIST_LINES` (T2 after T1, T4 after T3), then stays quiet.
+  Delegated calls (D9) pick one of `RECEPTIONIST_SCRIPTS` instead; there she answers
+  the agent's own lines too.
 - `talk_over_once` (ledger B24): the first SEND of each call lands while the
   receptionist is talking, so Bolna skips it. `Pauses.talk_over_s` later she finishes
   with `TALK_OVER_LINE`, which reaches the stale speak node and must stay silent.
@@ -36,6 +38,18 @@ RECEPTIONIST_LINES = (
     "We have 4 pm tomorrow. Does that work?",
     "Yes, 10:30 tomorrow morning.",
 )
+# Call for me (D9) scripts, written the way the live transcriber hands them over
+# (lowercase, no punctuation, the time in words). The last line is neutral, so the
+# notes' outcome comes from the user's answer (attended) or the callback (unattended).
+RECEPTIONIST_SCRIPTS: dict[str, tuple[str, ...]] = {
+    "clinic": RECEPTIONIST_LINES,
+    "offer": ("we have four pm tomorrow does that work", "okay thank you bye"),
+    "open-question": (
+        "what time would you like to come in",
+        "we have four pm tomorrow does that work",
+        "okay thank you bye",
+    ),
+}
 TALK_OVER_LINE = "Sorry, go ahead."
 ANSWERED_STATUS = "in-progress"
 

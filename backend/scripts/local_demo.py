@@ -3,6 +3,7 @@
     cd backend
     uv run python -m scripts.local_demo                 # http://127.0.0.1:8000
     uv run python -m scripts.local_demo --b24 --delay 0.5
+    uv run python -m scripts.local_demo --receptionist open-question   # Call for me, version B
 
 The real app (create_app with CallManager, the custom-LLM endpoint and template
 drafts) serves the iOS app or the Mac bridge. ScriptedBolna stands in for Bolna and
@@ -37,7 +38,7 @@ from app.calls import CallManager
 from app.composer import TemplateComposer
 from app.config import Settings
 from app.main import configure_logging, create_app
-from fakes.scripted_call import CALL_PAUSES, Pauses, ScriptedBolna
+from fakes.scripted_call import CALL_PAUSES, RECEPTIONIST_SCRIPTS, Pauses, ScriptedBolna
 
 HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
@@ -84,6 +85,7 @@ def build_local_demo(
     pauses: Pauses = CALL_PAUSES,
     talk_over_once: bool = False,
     delivery_timeout_s: float = DELIVERY_TIMEOUT_S,
+    receptionist: str = "clinic",
     log: Callable[[str], None] = print,
 ) -> LocalDemo:
     settings = local_settings(app_token, contacts)
@@ -91,6 +93,7 @@ def build_local_demo(
     fake = ScriptedBolna(
         settings.custom_llm_token.get_secret_value(),
         webhook_secret=settings.bolna_webhook_secret.get_secret_value(),
+        lines=RECEPTIONIST_SCRIPTS[receptionist],
         # The talked-over SEND must time out in the app before she finishes talking.
         pauses=replace(pauses, talk_over_s=delivery_timeout_s + pauses.reply_s),
         talk_over_once=talk_over_once,
@@ -216,6 +219,13 @@ def build_parser() -> argparse.ArgumentParser:
         default=1.0,
         help="scale the ring and receptionist pauses (0.5 = twice as fast)",
     )
+    parser.add_argument(
+        "--receptionist",
+        choices=sorted(RECEPTIONIST_SCRIPTS),
+        default="clinic",
+        help="what the receptionist says: clinic (the PLAN §1 call, default), offer "
+        "(Call for me: a time in words) or open-question (Call for me: 'what time?' first)",
+    )
     return parser
 
 
@@ -236,6 +246,7 @@ def main(argv: list[str] | None = None) -> int:
         contacts=contacts,
         pauses=CALL_PAUSES.scaled(args.delay),
         talk_over_once=args.b24,
+        receptionist=args.receptionist,
         log=_out,
     )
     try:

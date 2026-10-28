@@ -6,19 +6,24 @@ PLAN §1 `run_demo_script`, exactly as `scripts.fake_app` drives a deployed back
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
+import json
 import os
 import signal
 import subprocess
 import sys
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
 import httpx
 import pytest
 
+from app.delegate import CALLBACK_LINE
 from app.markers import DISCLOSURE, GOODBYE, HOLDING_LINE
 from app.protocol import (
     CallState,
@@ -28,12 +33,12 @@ from app.protocol import (
     SpokenMessage,
 )
 from fakes.fake_bolna import FakeRun
-from fakes.scripted_call import RECEPTIONIST_LINES, TALK_OVER_LINE, Pauses
+from fakes.scripted_call import RECEPTIONIST_LINES, RECEPTIONIST_SCRIPTS, TALK_OVER_LINE, Pauses
 from scripts import local_demo
 from scripts.local_demo import HOST, LocalDemo, bind_socket, build_local_demo, running
 from tools.app_client import AppSession
 from tools.call_runner import LiveCall, live_call
-from tools.connection import auth_headers, open_call_socket
+from tools.connection import WebSocketTransport, auth_headers, open_call_socket
 from tools.demo_script import Pacing, run_demo_script
 
 T2, T4 = RECEPTIONIST_LINES
@@ -198,6 +203,110 @@ async def test_a_long_pause_shows_the_holding_line_in_the_app() -> None:
     assert set(events) == {f"agent: {line}" for line in (DISCLOSURE, HOLDING_LINE, GOODBYE)}
 
 
+# ---- Call for me (D9) with the delegated receptionist scripts ----
+
+OPENING = "I'd like to book a doctor's appointment for Riya, tomorrow."
+Message = dict[str, Any]
+
+
+class DelegatedApp:
+    """The app's side of a delegated call: every message it got, in order."""
+
+    def __init__(self, socket: WebSocketTransport) -> None:
+        self.socket = socket
+        self.history: list[Message] = []
+
+    async def expect(self, match: Callable[[Message], bool], timeout: float = WAIT_S) -> Message:
+        async with asyncio.timeout(timeout):
+            while True:
+                raw = await self.socket.receive_text()
+                assert raw is not None, "the backend closed the socket"
+                message = json.loads(raw)
+                self.history.append(message)
+                if match(message):
+                    return message
+
+    async def quiet_for(self, seconds: float) -> list[Message]:
+        """Everything that arrives within `seconds`."""
+        start = len(self.history)
+        with contextlib.suppress(TimeoutError):
+            await self.expect(lambda _: False, timeout=seconds)
+        return self.history[start:]
+
+    async def answer(self, ask: Message, choice: str) -> Message:
+        await self.socket.send_text(
+            json.dumps({"type": "answer", "ask_id": ask["ask_id"], "choice": choice})
+        )
+        return await self.expect(lambda m: m["type"] == "ask_resolved")
+
+    def captions(self, speaker: str) -> list[str]:
+        return [
+            m["text"] for m in self.history if m["type"] == "caption" and m["speaker"] == speaker
+        ]
+
+
+def _is_ask(message: Message) -> bool:
+    return message["type"] == "ask"
+
+
+async def _delegated_call(
+    demo: LocalDemo, attended: bool, script: Callable[[DelegatedApp], Any]
+) -> Message:
+    """Brief for [tomorrow], place the delegated call, run `script` as the app, then
+    return the notes once ready."""
+    async with (
+        running(demo, bind_socket(HOST, 0)) as live,
+        httpx.AsyncClient(base_url=live.base_url, headers=auth_headers(TOKEN)) as client,
+    ):
+        brief = await client.post(
+            "/briefs",
+            json={
+                "purpose": "doctor_appointment",
+                "chips": ["tomorrow"],
+                "profile": {"name": "Riya"},
+            },
+        )
+        call = await client.post(
+            "/calls",
+            json={
+                "contact_id": "clinic",
+                "purpose": "doctor_appointment",
+                "mode": "delegated",
+                "brief_id": brief.json()["brief_id"],
+                "attended": attended,
+            },
+        )
+        call_id = call.json()["call_id"]
+        async with open_call_socket(live.base_url, call_id, TOKEN) as socket:
+            await script(DelegatedApp(socket))
+        await demo.fake.wait_idle()
+        for _ in range(50):
+            notes = (await client.get(f"/calls/{call_id}/notes")).json()
+            if notes["ready"]:
+                return notes
+            await asyncio.sleep(0.05)
+    pytest.fail("the notes never became ready")
+
+
+async def test_unattended_offer_ends_in_a_callback() -> None:
+    logged: list[str] = []
+    demo = build_local_demo(pauses=FAST, receptionist="offer", log=logged.append)
+    offer, bye = RECEPTIONIST_SCRIPTS["offer"]
+
+    async def app(call: DelegatedApp) -> None:
+        await call.expect(lambda m: m["type"] == "caption" and m["text"] == bye)
+        await call.socket.send_text(json.dumps({"type": "end"}))
+        await call.expect(lambda m: m["type"] == "status" and m["state"] == "ended")
+        assert not [m for m in call.history if _is_ask(m)], "an unattended call never asks"
+        assert call.captions("receptionist") == [offer, bye]
+
+    notes = await _delegated_call(demo, attended=False, script=app)
+
+    assert notes["outcome"] == "callback"
+    spoken = [line.removeprefix("agent says: ") for line in logged if "agent says: " in line]
+    assert spoken == [DISCLOSURE, OPENING, CALLBACK_LINE, GOODBYE]
+
+
 def test_local_settings_ignore_dotenv_and_exported_secrets(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -256,10 +365,12 @@ def test_parser_defaults_and_rejections() -> None:
         False,
         1.0,
     )
+    assert args.receptionist == "clinic"
     args = parser.parse_args(["--contact", "clinic", "--contact", "mehta-office", "--b24"])
     assert args.contact == ["clinic", "mehta-office"]
     assert args.b24
-    for bad in (["--delay", "-1"], ["--app-token", " "]):
+    assert parser.parse_args(["--receptionist", "open-question"]).receptionist == "open-question"
+    for bad in (["--delay", "-1"], ["--app-token", " "], ["--receptionist", "nobody"]):
         with pytest.raises(SystemExit):
             parser.parse_args(bad)
 
