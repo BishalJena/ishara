@@ -85,6 +85,21 @@ extension XCUIApplication {
         }
     }
 
+    /// The element is wholly in view: its top edge shows inside its scroll view, below any
+    /// navigation bar, and it ends above the pinned bar.
+    func isInView(_ identifier: String, above barIdentifier: String) -> Bool {
+        let target = element(identifier)
+        let bar = element(barIdentifier)
+        guard target.exists, bar.exists else { return false }
+        let frame = target.frame
+        var top = windows.firstMatch.frame.minY
+        let scrollView = scrollViews.containing(.any, identifier: identifier).firstMatch
+        if scrollView.exists { top = max(top, scrollView.frame.minY) }
+        let navigationBar = navigationBars.firstMatch
+        if navigationBar.exists { top = max(top, navigationBar.frame.maxY) }
+        return frame.minY >= top && target.isHittable && frame.maxY <= bar.frame.minY
+    }
+
     /// A chip sitting under the action bar can't be seen, and a tap on it lands on
     /// the quick reply above it instead. Waits for it to be clear of the bar.
     func waitUntilClearOfActionBar(_ identifier: String, file: StaticString = #filePath, line: UInt = #line) {

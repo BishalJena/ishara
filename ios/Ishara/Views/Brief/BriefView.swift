@@ -3,6 +3,8 @@ import SwiftUI
 
 /// "Call for me" (decision D9): sign what you need, read the brief, approve it once.
 struct BriefView: View {
+    private static let briefCardID = "brief.card"
+
     @Bindable var model: BriefModel
     let modeDescription: String
     let onApprove: (CallSetup) -> Void
@@ -10,30 +12,37 @@ struct BriefView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    signingSection
-                    detailsSection
-                    if let brief = model.brief {
-                        BriefCard(brief: brief, contactName: model.setup.contact.name)
-                        Toggle(isOn: $model.attended) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("I'll stay and answer questions")
-                                Text(model.attended
-                                     ? "The agent pauses and asks you here when a decision is yours."
-                                     : "The agent says it will call back instead of deciding for you.")
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        signingSection
+                        detailsSection
+                        if let brief = model.brief {
+                            BriefCard(brief: brief, contactName: model.setup.contact.name)
+                                .id(Self.briefCardID)
+                            Toggle(isOn: $model.attended) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("I'll stay and answer questions")
+                                    Text(model.attended
+                                         ? "The agent pauses and asks you here when a decision is yours."
+                                         : "The agent says it will call back instead of deciding for you.")
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
+                            .accessibilityIdentifier("brief.attended")
                         }
-                        .accessibilityIdentifier("brief.attended")
+                        if let failure = model.failure {
+                            Label(failure, systemImage: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.red)
+                        }
                     }
-                    if let failure = model.failure {
-                        Label(failure, systemImage: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.red)
-                    }
+                    .padding()
                 }
-                .padding()
+                .onChange(of: model.brief != nil) { _, isShown in
+                    guard isShown else { return }
+                    withAnimation { proxy.scrollTo(Self.briefCardID, anchor: .top) }
+                }
             }
             .navigationTitle("Call for me")
             .toolbar {
@@ -146,6 +155,8 @@ struct BriefView: View {
         }
         .padding()
         .background(.bar)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("brief.actionBar")
     }
 }
 
