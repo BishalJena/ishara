@@ -84,6 +84,29 @@ final class DelegatedCallUITests: XCTestCase {
         XCTAssertFalse(app.element("ask.question").exists, "an unattended call never asks")
     }
 
+    /// Bolna's summary lands a while after the call ended (its final webhook). The notes
+    /// screen, opened before that, picks it up by itself: nobody taps Refresh.
+    func testNotesPickUpBolnasLateSummaryWithoutARefresh() {
+        launch(["-IsharaFakeTimeScale", "0.5", "-IsharaFakeBolnaSummary", "24"])
+        prepareBrief(expecting: "Preferred: tomorrow in the morning.")
+        setAttended(false)
+        approve()
+
+        openNotes()
+        app.waitFor(app.element("notes.outcome"), labelContains: "call back")
+        let summary = app.element("notes.bolnaSummary")
+        // At the end of the transcript, where the summary goes once it's in.
+        XCTAssertTrue(app.scrolledToText(containing: "Agent (for you), I'll need to check that and call back.").exists)
+        XCTAssertFalse(summary.exists, "the summary was there before Bolna sent it")
+
+        let deadline = Date().addingTimeInterval(30)
+        while !summary.exists, Date() < deadline {
+            app.swipeUp()
+            Thread.sleep(forTimeInterval: 1)
+        }
+        app.waitFor(summary, labelContains: "The agent called to book a doctor's appointment for Riya.", timeout: 1)
+    }
+
     func testEditingTheRequestHidesTheBriefUntilRebuilt() {
         launch(["-IsharaFakeTimeScale", "0.5"])
         prepareBrief(expecting: "Preferred: tomorrow in the morning.")
