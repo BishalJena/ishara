@@ -77,9 +77,16 @@ struct AppRootView: View {
                     },
                     onShowNotes: model.isDelegated ? {
                         model.leave()
-                        route = .notes(NotesModel(contactName: model.setup.contact.name, driver: model.driver))
+                        let history = services.history
+                        route = .notes(NotesModel(
+                            contactName: model.setup.contact.name, driver: model.driver,
+                            onNotes: { history.update(model.recordID, notes: $0) }))
                     } : nil
                 )
+                // Saved as soon as the call is over, before the notes (if any) are loaded.
+                .onChange(of: model.isCallOver) { _, isOver in
+                    if isOver, let record = model.record { services.history.save(record) }
+                }
             case .notes(let model):
                 NotesView(model: model, onDone: { route = .home })
             }

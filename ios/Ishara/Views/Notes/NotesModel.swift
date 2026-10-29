@@ -17,15 +17,19 @@ final class NotesModel {
     private(set) var isLoading = false
 
     @ObservationIgnored private let driver: any CallDriver
+    @ObservationIgnored private let onNotes: (CallNotes) -> Void
     @ObservationIgnored private let sleep: @Sendable (Duration) async throws -> Void
 
+    /// `onNotes` gets every set of notes loaded, so the saved call picks up Bolna's summary.
     init(
         contactName: String,
         driver: any CallDriver,
+        onNotes: @escaping (CallNotes) -> Void = { _ in },
         sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
     ) {
         self.contactName = contactName
         self.driver = driver
+        self.onNotes = onNotes
         self.sleep = sleep
     }
 
@@ -45,8 +49,10 @@ final class NotesModel {
         isLoading = true
         defer { isLoading = false }
         do {
-            notes = try await driver.notes()
+            let loaded = try await driver.notes()
+            notes = loaded
             failure = nil
+            onNotes(loaded)
         } catch {
             failure = switch error as? BackendError {
             case .httpStatus(404)?: "The backend no longer has this call (it may have restarted)."
