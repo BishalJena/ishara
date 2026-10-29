@@ -37,6 +37,9 @@ struct DemoLaunchOptions {
     /// time word), `-IsharaFakeOpenQuestion tap` leaves the answer to a tap. Its wording
     /// can be changed with `-IsharaFakeOpenQuestionText "what time would you like to come in"`.
     var fakeOpenQuestion: FakeCallDriver.OpenTimeQuestion?
+    /// Make Bolna's own summary reach the fake Call for me notes this many seconds after the
+    /// call ended, e.g. `-IsharaFakeBolnaSummary 8`.
+    var fakeBolnaSummaryDelay: Double?
     /// Speed up (below 1) or slow down the simulated timers: the Get ready
     /// checklist and the fake call.
     var fakeTimeScale = 1.0
@@ -65,6 +68,10 @@ struct DemoLaunchOptions {
             if let text = defaults.string(forKey: "IsharaFakeOpenQuestionText") { question.question = text }
             return question
         }
+        let summaryDelay = defaults.double(forKey: "IsharaFakeBolnaSummary")
+        if summaryDelay > 0 {
+            options.fakeBolnaSummaryDelay = summaryDelay
+        }
         options.sampleSigns = defaults.string(forKey: "IsharaSampleSigns").map { URL(fileURLWithPath: $0, isDirectory: true) }
         let scale = defaults.double(forKey: "IsharaFakeTimeScale")
         if scale > 0 {
@@ -88,7 +95,8 @@ struct DemoLaunchOptions {
             undeliveredStages: fakeNotDelivered ? [1] : [],
             interruptedStages: fakeInterrupt ? [0] : [],
             connectionDrop: fakeConnectionDrop,
-            openTimeQuestion: fakeOpenQuestion
+            openTimeQuestion: fakeOpenQuestion,
+            bolnaSummaryDelay: fakeBolnaSummaryDelay
         )
     }
 }

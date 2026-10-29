@@ -57,6 +57,7 @@ struct NotesView: View {
                     if let summary = notes.bolnaSummary {
                         Section {
                             Text(summary)
+                                .accessibilityIdentifier("notes.bolnaSummary")
                         } header: {
                             Text("Automatic summary")
                         } footer: {

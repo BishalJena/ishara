@@ -23,6 +23,9 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         /// Delegated call (version B): the receptionist first asks "when?" with no time on
         /// offer, and offers a time once that is answered.
         var openTimeQuestion: OpenTimeQuestion?
+        /// Seconds after a delegated call ends until its notes carry Bolna's own summary, as
+        /// when its final `completed` webhook lands; nil leaves the summary out.
+        var bolnaSummaryDelay: Double?
     }
 
     /// How the delegated call's open "when?" question is answered.
@@ -61,6 +64,7 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     private var speakingTask: Task<Void, Never>?
     private var tasks: [Task<Void, Never>] = []
     private var isOver = false
+    private var endedAt: Date?
     /// The simulated connection is down: nothing the app sends arrives.
     private var isDisconnected = false
 
@@ -120,9 +124,14 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         guard let delegation = setup.delegation else {
             return CallNotes(callID: "demo-call", mode: .live, ready: isOver, transcript: transcript)
         }
-        return DelegatedDemo.notes(
+        var notes = DelegatedDemo.notes(
             goal: delegation.brief.goal, name: setup.details.name, brief: delegation.brief.text,
             transcript: transcript, answers: answers, ready: isOver)
+        if let delay = options.bolnaSummaryDelay, let endedAt,
+           Date().timeIntervalSince(endedAt) >= delay * options.timeScale {
+            notes.bolnaSummary = DelegatedDemo.automaticSummary(goal: delegation.brief.goal, name: setup.details.name)
+        }
+        return notes
     }
 
     // MARK: OutgoingMessageSink (what the backend would receive)
@@ -373,6 +382,7 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
 
     private func finish() {
         isOver = true
+        if endedAt == nil { endedAt = Date() }
         tasks.forEach { $0.cancel() }
         tasks.removeAll()
     }
