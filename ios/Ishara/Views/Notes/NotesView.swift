@@ -2,7 +2,8 @@ import CallSession
 import SwiftUI
 
 /// The notes after a delegated call (D9): outcome, what happened, what is still open, and the
-/// full transcript. Summaries can be wrong; the transcript is what was actually said.
+/// full transcript. Summaries can be wrong; the transcript is what was actually said. The
+/// model loads them on its own (`NotesModel.start()`); this screen only shows them.
 struct NotesView: View {
     let model: NotesModel
     let onDone: () -> Void
@@ -35,7 +36,6 @@ struct NotesView: View {
                     .accessibilityIdentifier("notes.refresh")
                 }
             }
-            .task { await model.run() }
         }
     }
 }

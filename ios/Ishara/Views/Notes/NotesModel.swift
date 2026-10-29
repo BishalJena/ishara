@@ -4,7 +4,7 @@ import Observation
 
 /// Decision D9, last step: the call's notes (`GET /calls/{id}/notes`). The backend marks them
 /// `ready` once the call has ended; Bolna's own summary can arrive a little later through its
-/// webhook, so the screen keeps checking for a short while.
+/// webhook, so the app keeps checking for a short while, whether the notes screen is open or not.
 @MainActor
 @Observable
 final class NotesModel {
@@ -19,6 +19,7 @@ final class NotesModel {
     @ObservationIgnored private let driver: any CallDriver
     @ObservationIgnored private let onNotes: (CallNotes) -> Void
     @ObservationIgnored private let sleep: @Sendable (Duration) async throws -> Void
+    @ObservationIgnored private var polling: Task<Void, Never>?
 
     /// `onNotes` gets every set of notes loaded, so the saved call picks up Bolna's summary.
     init(
@@ -35,6 +36,20 @@ final class NotesModel {
 
     /// Nothing more is expected: the call ended and Bolna's summary (if any) is in.
     var isComplete: Bool { notes.map { $0.ready && $0.bolnaSummary != nil } ?? false }
+
+    /// Starts `run()` once, owned by this model rather than a screen, so it goes on after the
+    /// notes screen closes. Later calls hand back the same task.
+    @discardableResult
+    func start() -> Task<Void, Never> {
+        if let polling { return polling }
+        let task = Task { await run() }
+        polling = task
+        return task
+    }
+
+    func stop() {
+        polling?.cancel()
+    }
 
     /// Loads the notes, then refreshes until they are complete or the attempts run out.
     func run() async {

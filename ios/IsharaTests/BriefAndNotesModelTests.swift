@@ -127,6 +127,35 @@ final class NotesModelTests: XCTestCase {
         XCTAssertEqual(model.notes?.outcome, "booked")
     }
 
+    func testStartPollsOnceHoweverOftenItIsAskedTo() async {
+        let driver = StubCallDriver()
+        driver.notesResults = [.success(notes(ready: true)), .success(notes(ready: true, bolna: "Booked for 10:30."))]
+        let model = NotesModel(contactName: "City Clinic", driver: driver, sleep: { _ in })
+
+        let first = model.start()
+        let second = model.start()
+        await first.value
+        await second.value
+        await model.start().value
+
+        XCTAssertEqual(driver.notesCalls, 2, "a second loop polled the same call")
+        XCTAssertTrue(model.isComplete)
+    }
+
+    func testStopEndsThePolling() async {
+        let driver = StubCallDriver()
+        driver.notesResults = [.success(notes(ready: true))]
+        let model = NotesModel(contactName: "City Clinic", driver: driver)  // real 3 s waits
+
+        let polling = model.start()
+        let loaded = await eventually { driver.notesCalls == 1 }
+        XCTAssertTrue(loaded)
+        model.stop()
+        await polling.value
+
+        XCTAssertEqual(driver.notesCalls, 1)
+    }
+
     func testAForgottenCallIsExplained() async {
         let driver = StubCallDriver()
         driver.notesResults = [.failure(BackendError.httpStatus(404))]

@@ -79,9 +79,11 @@ struct AppRootView: View {
                     onShowNotes: model.isDelegated ? {
                         model.leave()
                         let history = services.history
-                        route = .notes(NotesModel(
+                        let notes = NotesModel(
                             contactName: model.setup.contact.name, driver: model.driver,
-                            onNotes: { history.update(model.recordID, notes: $0) }))
+                            onNotes: { history.update(model.recordID, notes: $0) })
+                        notes.start()
+                        route = .notes(notes)
                     } : nil
                 )
                 // Saved as soon as the call is over, before the notes (if any) are loaded.
@@ -104,7 +106,10 @@ struct AppRootView: View {
         if let fixture = services.options.fixture {
             if fixture == .getReady { return .getReady(ScriptedRecognitionController(), delegated: false) }
             if let model = fixture.makeActiveCall() { return .activeCall(model) }
-            if let model = fixture.makeNotes() { return .notes(model) }
+            if let model = fixture.makeNotes() {
+                model.start()
+                return .notes(model)
+            }
         }
         #endif
         return .home
