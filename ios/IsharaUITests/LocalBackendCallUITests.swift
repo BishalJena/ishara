@@ -45,8 +45,8 @@ final class LocalBackendCallUITests: XCTestCase {
         app = XCUIApplication()
         // Turn 1 comes from the scripted recognizer once signing starts; later turns
         // use the simulator's replay menu, since the script plays only once.
-        app.launchArguments = ["-IsharaDriver", "live", "-IsharaRecognition", "scripted",
-                               "-IsharaReplay", "hello,doctor,tomorrow"]
+        app.launchArguments = EdgeCaseLaunch.freshHistory + ["-IsharaDriver", "live", "-IsharaRecognition", "scripted",
+                                                             "-IsharaReplay", "hello,doctor,tomorrow"]
         app.launch()
         let spokenBefore = spokenLines()
         app.startCall()

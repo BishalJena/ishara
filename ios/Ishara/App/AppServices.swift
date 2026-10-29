@@ -8,6 +8,8 @@ struct AppServices {
     let config: Result<AppConfig, AppConfig.Problem>
     /// The simulator has no camera, so the pipeline replays saved videos there.
     var runsInSimulator = AppServices.isSimulator
+    /// Recent calls; in memory unless `current(options:)` picks the launch option's place.
+    var history = CallHistory(folder: nil)
 
     static func current(options: DemoLaunchOptions) -> AppServices {
         let config: Result<AppConfig, AppConfig.Problem>
@@ -16,7 +18,13 @@ struct AppServices {
         } catch {
             config = .failure(error)
         }
-        return AppServices(options: options, config: config)
+        var services = AppServices(options: options, config: config)
+        services.history = switch options.callHistory {
+        case .applicationSupport: .inApplicationSupport()
+        case .memory: CallHistory(folder: nil)
+        case .folder(let folder): CallHistory(folder: folder)
+        }
+        return services
     }
 
     /// Why a live call can't be placed; nil when it can (or when the fake call is in use).

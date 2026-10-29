@@ -11,6 +11,16 @@ struct DemoLaunchOptions {
         case live
     }
 
+    /// Where Recent calls are kept.
+    enum CallHistoryLocation: Equatable {
+        /// `Application Support/CallHistory` on this phone.
+        case applicationSupport
+        /// This launch only: UI tests start with no calls from earlier runs.
+        case memory
+        /// A folder of the simulator's Mac, so a UI test can relaunch onto the same calls.
+        case folder(URL)
+    }
+
     enum Recognition: String {
         /// Replays fixed results (the fake call's script, `-IsharaReplay`, or the replay menu).
         case scripted
@@ -49,6 +59,8 @@ struct DemoLaunchOptions {
     /// bundled `LocalAssets/SampleSigns`, without a rebuild, e.g.
     /// `-IsharaSampleSigns /path/to/clips` (the simulator reads the Mac's files).
     var sampleSigns: URL?
+    /// `-IsharaCallHistory memory`, or `-IsharaCallHistory /path/to/folder` (simulator).
+    var callHistory: CallHistoryLocation = .applicationSupport
 
     var recognition: Recognition {
         recognitionOverride ?? (driver == .live ? .pipeline : .scripted)
@@ -73,6 +85,11 @@ struct DemoLaunchOptions {
             options.fakeBolnaSummaryDelay = summaryDelay
         }
         options.sampleSigns = defaults.string(forKey: "IsharaSampleSigns").map { URL(fileURLWithPath: $0, isDirectory: true) }
+        options.callHistory = switch defaults.string(forKey: "IsharaCallHistory") {
+        case nil: .applicationSupport
+        case "memory": .memory
+        case let path?: .folder(URL(fileURLWithPath: path, isDirectory: true))
+        }
         let scale = defaults.double(forKey: "IsharaFakeTimeScale")
         if scale > 0 {
             options.fakeTimeScale = scale

@@ -238,7 +238,8 @@ final class VideoToSpeechUITests: XCTestCase {
 
     private func launch() {
         app = XCUIApplication()
-        app.launchArguments = ["-IsharaDriver", "live", "-IsharaRecognition", "pipeline", "-IsharaSampleSigns", clips]
+        app.launchArguments = EdgeCaseLaunch.freshHistory
+            + ["-IsharaDriver", "live", "-IsharaRecognition", "pipeline", "-IsharaSampleSigns", clips]
         app.launch()
     }
 

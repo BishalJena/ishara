@@ -55,6 +55,9 @@ final class ActiveCallViewModel {
     /// The last sign couldn't be read because a hand left the picture.
     private(set) var showsFramingHint = false
     private var userEnded = false
+    /// This call's id in Recent calls.
+    let recordID = UUID()
+    private let placedAt = Date()
 
     @ObservationIgnored let driver: any CallDriver
 
@@ -102,6 +105,15 @@ final class ActiveCallViewModel {
     var isAttended: Bool { setup.delegation?.attended ?? false }
     /// Signs matter on a live call, and on an attended delegated call (to answer questions).
     var watchesSigns: Bool { !isDelegated || isAttended }
+
+    /// What Recent calls keeps once the call is over: its captions (the notes come later).
+    /// Nil while it's on, or if it was never placed.
+    var record: CallRecord? {
+        guard isCallOver, store != nil else { return nil }
+        return CallRecord(
+            id: recordID, date: placedAt, contactName: setup.contact.name, mode: isDelegated ? .delegated : .live,
+            captions: captions.map(CallRecord.Line.init), notes: nil)
+    }
 
     var connectedAt: Date? { store?.connectedAt }
     var captions: [Caption] { store?.captions ?? [] }

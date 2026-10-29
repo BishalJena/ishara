@@ -10,11 +10,13 @@ struct HomeView: View {
     let onCall: (CallSetup) -> Void
     /// D9: the agent makes the call from a brief the user signs and approves.
     let onCallForMe: ((CallSetup) -> Void)?
+    let history: CallHistory?
 
     init(
         setup: CallSetup = .demo,
         modeDescription: String,
         setupProblem: String? = nil,
+        history: CallHistory? = nil,
         onCall: @escaping (CallSetup) -> Void,
         onCallForMe: ((CallSetup) -> Void)? = nil
     ) {
@@ -23,6 +25,7 @@ struct HomeView: View {
         self.setupProblem = setupProblem
         self.onCall = onCall
         self.onCallForMe = onCallForMe
+        self.history = history
     }
 
     private var canCall: Bool {
@@ -69,6 +72,8 @@ struct HomeView: View {
                         ForEach(CallVoice.allCases) { Text($0.title).tag($0) }
                     }
                 }
+
+                if let history { RecentCallsSection(history: history) }
             }
             .navigationTitle("Ishara")
             .safeAreaInset(edge: .bottom) {

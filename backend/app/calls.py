@@ -22,7 +22,7 @@ import contextlib
 import logging
 import time
 import uuid
-from collections.abc import Coroutine
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -97,6 +97,9 @@ class UnknownBrief(Exception):
 
 
 END_AFTER_DONE_S = 6.0  # a delegated agent that promised a callback hangs up after this
+# A finished call stays readable this long (the app polls its notes for Bolna's late
+# summary), then is dropped from memory.
+FINISHED_CALL_TTL_S = 30 * 60.0
 OPENING_TURN_ID = "delegate-open"  # the turn that speaks a delegated call's opening
 
 
@@ -150,6 +153,8 @@ class CallManager(CallLedger):
         brain: Brain | None = None,
         ask_timeout_s: float = ASK_TIMEOUT_S,
         end_after_done_s: float = END_AFTER_DONE_S,
+        finished_ttl_s: float = FINISHED_CALL_TTL_S,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self._contacts = parse_contacts(settings.allowed_recipients)
         self._composer = composer
@@ -158,7 +163,10 @@ class CallManager(CallLedger):
         self._delivery_timeout_s = delivery_timeout_s
         self._ask_timeout_s = ask_timeout_s
         self._end_after_done_s = end_after_done_s
+        self._finished_ttl_s = finished_ttl_s
+        self._clock = clock
         self._sessions: dict[str, CallSession] = {}
+        self._finished_at: dict[str, float] = {}
         self._call_by_run: dict[str, str] = {}
         self._links: dict[str, _AppLink] = {}
         self._timers: dict[str, asyncio.Task[None]] = {}
@@ -175,6 +183,7 @@ class CallManager(CallLedger):
         return response
 
     def notes(self, call_id: str) -> CallNotes | None:
+        self._evict_finished()
         session = self._sessions.get(call_id)
         if session is None:
             return None
@@ -190,6 +199,7 @@ class CallManager(CallLedger):
         )
 
     async def start_call(self, request: StartCallRequest) -> StartCallResponse:
+        self._evict_finished()
         number = self._contacts.get(request.contact_id)
         if number is None:
             raise UnknownContact(request.contact_id)
@@ -211,6 +221,7 @@ class CallManager(CallLedger):
             run_id = await self._bolna.start_call(number, user_data)
         except BolnaError as error:
             session.advance(CallState.ERROR)
+            self._mark_finished(session)
             if brief is not None and request.brief_id is not None:
                 self._briefs[request.brief_id] = brief  # nothing was dialled
             log.warning("call %s: Bolna start failed (%s)", session.call_id, type(error).__name__)
@@ -225,6 +236,7 @@ class CallManager(CallLedger):
         return StartCallResponse(call_id=session.call_id, state=session.state, mode=session.mode)
 
     async def apply_bolna_status(self, update: ExecutionUpdate) -> None:
+        self._evict_finished()
         call_id = self._call_by_run.get(update.run_id)
         if call_id is None:
             return
@@ -591,6 +603,7 @@ class CallManager(CallLedger):
             # However the call ended (the app, Bolna's webhook, the agent), an open
             # question can no longer be answered or time out into speech.
             self._cancel_ask_timers(session.call_id)
+            self._mark_finished(session)
         await self._send(session, StatusMessage(state=session.state))
         if state in _NOT_YET_LIVE and session.line is CallState.IN_CALL:
             # Bolna plays its static welcome message (the disclosure) as the call
@@ -611,6 +624,23 @@ class CallManager(CallLedger):
 
     async def _send_agent_line(self, session: CallSession, text: str) -> None:
         await self._send(session, CaptionMessage(text=text, at=time.time(), speaker="agent"))
+
+    def _mark_finished(self, session: CallSession) -> None:
+        self._finished_at.setdefault(session.call_id, self._clock())
+
+    def _evict_finished(self) -> None:
+        """Drop calls that finished more than the TTL ago; active calls are never dropped."""
+        cutoff = self._clock() - self._finished_ttl_s
+        for call_id, finished_at in list(self._finished_at.items()):
+            if finished_at > cutoff:
+                continue
+            del self._finished_at[call_id]
+            session = self._sessions.pop(call_id)
+            if session.run_id is not None:
+                self._call_by_run.pop(session.run_id, None)
+            self._links.pop(call_id, None)
+            self._cancel_timer(call_id)
+            self._cancel_ask_timers(call_id)
 
     def _cancel_timer(self, call_id: str) -> None:
         timer = self._timers.pop(call_id, None)
