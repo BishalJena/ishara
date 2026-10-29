@@ -124,6 +124,18 @@ extension XCUIApplication {
         return match
     }
 
+    /// The newest call in Recent calls, scrolled up above Home's call buttons (which cover
+    /// the end of the list, so `isHittable` alone isn't enough).
+    func recentCallRow(file: StaticString = #filePath, line: UInt = #line) -> XCUIElement {
+        let row = buttons.matching(identifier: "recentCalls.row").firstMatch
+        let call = buttons["home.call"]
+        XCTAssertTrue(call.waitForExistence(timeout: 10), file: file, line: line)
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "no call in Recent calls", file: file, line: line)
+        for _ in 0..<5 where row.frame.maxY > call.frame.minY - 60 { swipeUp() }
+        XCTAssertLessThan(row.frame.maxY, call.frame.minY, "Recent calls stay under the call buttons", file: file, line: line)
+        return row
+    }
+
     /// Waits for a row that appears at the end of a list while the screen is open, swiping
     /// up now and then: a List only shows the rows scrolled into view.
     func swipedUntilExists(_ element: XCUIElement, timeout: TimeInterval) -> Bool {

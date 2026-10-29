@@ -152,6 +152,28 @@ final class DemoCallUITests: XCTestCase {
         XCTAssertTrue(app.buttons["home.call"].waitForExistence(timeout: 5))
     }
 
+    /// After Back to Home the call is in Recent calls; its row opens the captions, read only.
+    func testALiveCallStaysInRecentCallsWithItsCaptions() {
+        launch()
+        app.startCall()
+        app.waitForDraft(containing: turn1)
+        app.buttons["call.end"].tap()
+        app.waitFor(app.element("call.endedPanel"), labelContains: "You ended the call")
+        app.buttons["call.backHome"].tap()
+
+        let row = app.recentCallRow()
+        XCTAssertTrue(row.label.contains("City Clinic"), row.label)
+        XCTAssertTrue(row.label.contains("You signed the call"), row.label)
+        row.tap()
+        app.waitFor(app.element("notes.outcome"), labelContains: "You signed the call")
+        XCTAssertTrue(app.scrolledToText(containing: "Ishara (voice), Hello, I'm calling for a Deaf caller").exists,
+                      "the disclosure caption is missing")
+        XCTAssertTrue(app.scrolledToText(containing: "Ishara (voice), Thank you for your time. Goodbye.").exists,
+                      "the goodbye caption is missing")
+        XCTAssertFalse(app.element("call.send").exists, "a saved call can't send anything")
+        app.keepScreenshot("recent-call-live", in: self)
+    }
+
     /// The default 0.5 halves every fake-call and Get ready timer. Faster scales made the
     /// Delivered banner flash by between polls.
     private func launch(timeScale: Double = 0.5, extraArguments: [String] = []) {

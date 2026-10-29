@@ -116,7 +116,7 @@ final class DelegatedCallUITests: XCTestCase {
         XCTAssertTrue(app.swipedUntilExists(app.element("notes.bolnaSummary"), timeout: 30))
         app.buttons["notes.done"].tap()
 
-        let row = recentCallRow()
+        let row = app.recentCallRow()
         XCTAssertTrue(row.label.contains("City Clinic"), row.label)
         XCTAssertTrue(row.label.contains("The agent will need to call back"), row.label)
         app.keepScreenshot("recent-calls", in: self)
@@ -129,7 +129,7 @@ final class DelegatedCallUITests: XCTestCase {
         app.keepScreenshot("recent-call-summary", in: self)
         app.navigationBars.buttons["Ishara"].tap()
 
-        recentCallRow().swipeLeft()
+        app.recentCallRow().swipeLeft()
         app.buttons["Delete"].tap()
         waitUntil("the deleted call to leave Home") { !app.buttons["recentCalls.row"].exists }
     }
@@ -143,12 +143,12 @@ final class DelegatedCallUITests: XCTestCase {
         callForMeUnattended()
         XCTAssertTrue(app.buttons["call.backHome"].waitForExistence(timeout: 30))
         app.buttons["call.backHome"].tap()
-        XCTAssertTrue(recentCallRow().label.contains("City Clinic"))
+        XCTAssertTrue(app.recentCallRow().label.contains("City Clinic"))
 
         app.terminate()
         launch(arguments, history: ["-IsharaCallHistory", folder.path])
 
-        let row = recentCallRow()
+        let row = app.recentCallRow()
         XCTAssertTrue(row.label.contains("City Clinic"), row.label)
         XCTAssertEqual(app.buttons.matching(identifier: "recentCalls.row").count, 1)
     }
@@ -235,18 +235,6 @@ final class DelegatedCallUITests: XCTestCase {
         prepareBrief(expecting: "Preferred: tomorrow in the morning.")
         setAttended(false)
         approve()
-    }
-
-    /// The newest call in Recent calls, scrolled up above Home's call buttons (which cover
-    /// the end of the list, so `isHittable` alone isn't enough).
-    private func recentCallRow(file: StaticString = #filePath, line: UInt = #line) -> XCUIElement {
-        let row = app.buttons.matching(identifier: "recentCalls.row").firstMatch
-        let call = app.buttons["home.call"]
-        XCTAssertTrue(call.waitForExistence(timeout: 10), file: file, line: line)
-        XCTAssertTrue(row.waitForExistence(timeout: 5), "no call in Recent calls", file: file, line: line)
-        for _ in 0..<5 where row.frame.maxY > call.frame.minY - 60 { app.swipeUp() }
-        XCTAssertLessThan(row.frame.maxY, call.frame.minY, "Recent calls stay under the call buttons", file: file, line: line)
-        return row
     }
 
     private func openNotes(timeout: TimeInterval = 30) {
