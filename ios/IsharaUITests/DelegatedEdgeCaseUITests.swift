@@ -34,6 +34,17 @@ final class DelegatedEdgeCaseUITests: XCTestCase {
         XCTAssertTrue(app.buttons["brief.approve"].waitForExistence(timeout: 5))
     }
 
+    /// The brief is built below the request and the details; the user must see it before
+    /// Approve, not find it hidden under the bar that holds the button.
+    func testPreparedBriefScrollsIntoViewAboveApprove() {
+        launch(EdgeCaseLaunch.halfSpeed)
+        openBrief()
+        prepare()
+        waitUntil("the brief to be in view above Approve", timeout: 3) {
+            app.isInView("brief.text", above: "brief.actionBar")
+        }
+    }
+
     /// Any edit after the brief was built (a removed sign, a changed name) hides it until it
     /// is built again; the attended choice is not part of the brief and keeps it.
     func testEditingAfterPreparingHidesTheBriefUntilRebuilt() {

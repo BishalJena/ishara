@@ -119,7 +119,13 @@ struct ActiveCallView: View {
                 // and the chips together; keep the chips in view so a wrong one can be
                 // removed before SEND.
                 .onChange(of: model.chips) { proxy.scrollTo(SigningPanel.chipRowID, anchor: .bottom) }
-                .onChange(of: actionBarHeight) { proxy.scrollTo(SigningPanel.chipRowID, anchor: .bottom) }
+                .onChange(of: actionBarHeight) { scrollToNewest(proxy) }
+                // The banner comes in with the animated switch back from the speaking panel,
+                // which undoes a scroll made while it runs.
+                .transaction(value: model.delivery) { transaction in
+                    guard showsDeliveryBanner else { return }
+                    transaction.addAnimationCompletion { withAnimation { scrollToNewest(proxy) } }
+                }
             }
         }
         .padding(.horizontal)
@@ -140,6 +146,24 @@ struct ActiveCallView: View {
         .animation(.default, value: model.isSpeaking)
         .animation(.default, value: model.isEnded)
         .task { await model.run() }
+    }
+
+    /// The result of the last SEND, when shown, is the newest thing in the panel; otherwise
+    /// the chips are.
+    private func scrollToNewest(_ proxy: ScrollViewProxy) {
+        if showsDeliveryBanner {
+            proxy.scrollTo(SigningPanel.deliveryBannerID, anchor: .top)
+        } else {
+            proxy.scrollTo(SigningPanel.chipRowID, anchor: .bottom)
+        }
+    }
+
+    private var showsDeliveryBanner: Bool {
+        guard !model.isDelegated, model.showsDeliveryResult else { return false }
+        switch model.delivery {
+        case .delivered, .deliveredDespiteStop, .notDelivered, .stopped: return true
+        case .idle, .speaking: return false
+        }
     }
 
     @ViewBuilder

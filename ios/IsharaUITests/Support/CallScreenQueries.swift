@@ -43,7 +43,7 @@ extension XCUIApplication {
         XCTAssertTrue(!sendEnabled || hasDraft, "SEND was enabled without a draft", file: file, line: line)
     }
 
-    /// Taps SEND, then expects Delivered, the sentence as the user's caption and the
+    /// Taps SEND, then expects Delivered in view, the sentence as the user's caption and the
     /// draft wiped. The draft must be readable right above SEND when it is tapped.
     func sendAndExpectDelivered(_ sentence: String, file: StaticString = #filePath, line: UInt = #line) {
         let send = buttons["call.send"]
@@ -51,6 +51,7 @@ extension XCUIApplication {
         assertFullyVisible("call.draft", above: "call.send", file: file, line: line)
         send.tap()
         waitFor(element("call.deliveryBanner"), labelContains: "Delivered", file: file, line: line)
+        waitUntilDeliveryBannerInView(file: file, line: line)
         waitFor(element("caption.you"), labelContains: sentence, file: file, line: line)
         XCTAssertFalse(element("call.draft").label.contains(sentence),
                        "the spoken draft was not wiped", file: file, line: line)
@@ -82,6 +83,33 @@ extension XCUIApplication {
             format: "identifier BEGINSWITH 'quickReply.' OR identifier BEGINSWITH 'call.'"))
         for control in controls.allElementsBoundByIndex where control.frame.intersects(frame) {
             XCTFail("\(control.identifier) covers \(sentenceIdentifier)", file: file, line: line)
+        }
+    }
+
+    /// The element's top edge shows inside its scroll view, below any navigation bar, and the
+    /// element is wholly above the pinned bar, or with `wholly` false at least its first
+    /// line (44 pt) is.
+    func isInView(_ identifier: String, above barIdentifier: String, wholly: Bool = true) -> Bool {
+        let target = element(identifier)
+        let bar = element(barIdentifier)
+        guard target.exists, bar.exists else { return false }
+        let frame = target.frame
+        var top = windows.firstMatch.frame.minY
+        let scrollView = scrollViews.containing(.any, identifier: identifier).firstMatch
+        if scrollView.exists { top = max(top, scrollView.frame.minY) }
+        let navigationBar = navigationBars.firstMatch
+        if navigationBar.exists { top = max(top, navigationBar.frame.maxY) }
+        // 1 pt for a border drawn half outside the element's frame.
+        guard frame.minY >= top - 1 else { return false }
+        return wholly ? target.isHittable && frame.maxY <= bar.frame.minY : frame.minY + 44 <= bar.frame.minY
+    }
+
+    /// The result of a SEND (Delivered, Not delivered) must scroll into view, also on small
+    /// screens and at large text sizes, instead of staying under the action bar. At large
+    /// text sizes the banner can be taller than the room left, so its first line must show.
+    func waitUntilDeliveryBannerInView(file: StaticString = #filePath, line: UInt = #line) {
+        waitUntil("the delivery banner to be in view above the action bar", timeout: 3, file: file, line: line) {
+            isInView("call.deliveryBanner", above: "call.actionBar", wholly: false)
         }
     }
 
