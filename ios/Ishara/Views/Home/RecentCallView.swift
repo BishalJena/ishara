@@ -2,11 +2,19 @@ import CallSession
 import SwiftUI
 
 /// A saved call, read only: its Call for me notes when they were loaded, otherwise the
-/// captions the call screen showed.
+/// captions the call screen showed. Read from the history, so notes that arrive while it is
+/// open (Bolna's late summary) show up.
 struct RecentCallView: View {
-    let record: CallRecord
+    let history: CallHistory
+    let id: UUID
 
     var body: some View {
+        if let record = history.records.first(where: { $0.id == id }) {
+            content(record)
+        }
+    }
+
+    private func content(_ record: CallRecord) -> some View {
         List {
             if let notes = record.notes {
                 NotesSections(notes: notes, contactName: record.contactName)

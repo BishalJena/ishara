@@ -16,7 +16,7 @@ struct RecentCallsSection: View {
                 }
                 ForEach(history.records) { record in
                     NavigationLink {
-                        RecentCallView(record: record)
+                        RecentCallView(history: history, id: record.id)
                     } label: {
                         RecentCallRow(record: record)
                     }
