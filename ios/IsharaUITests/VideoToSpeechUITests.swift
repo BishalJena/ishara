@@ -79,6 +79,12 @@ final class VideoToSpeechUITests: XCTestCase {
         return nil
     }
 
+    /// A real call: the deployed backend, not `--rehearse` against the local stand-in, which
+    /// sends no summary.
+    private var callsRealBolna: Bool {
+        human != nil && ProcessInfo.processInfo.environment["ISHARA_LOCAL_BACKEND"] != "1"
+    }
+
     override func setUp() async throws {
         let environment = ProcessInfo.processInfo.environment
         if environment["ISHARA_E2E_BACKEND"] == "deployed" {
@@ -509,6 +515,14 @@ final class VideoToSpeechUITests: XCTestCase {
         // The outcome's icon shares its identifier, so read the text itself.
         app.waitFor(app.staticTexts["notes.outcome"], labelContains: outcome, timeout: 30, file: file, line: line)
         human?.tell("  notes: “\(app.staticTexts["notes.outcome"].label)”")
+        if callsRealBolna {
+            // Bolna's summary comes with its final webhook, 8–16 s after the line drops. Ending
+            // the test before that quits the app after its first notes fetch (28 Oct calls).
+            let summary = app.element("notes.bolnaSummary")
+            XCTAssertTrue(app.swipedUntilExists(summary, timeout: 30), "Bolna's summary never reached the notes",
+                          file: file, line: line)
+            human?.tell("  Bolna's summary is on the notes")
+        }
         app.keepScreenshot("e2e-notes", in: self)
     }
 

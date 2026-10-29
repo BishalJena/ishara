@@ -120,6 +120,17 @@ extension XCUIApplication {
         return match
     }
 
+    /// Waits for a row that appears at the end of a list while the screen is open, swiping
+    /// up now and then: a List only shows the rows scrolled into view.
+    func swipedUntilExists(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while !element.exists, Date() < deadline {
+            swipeUp()
+            Thread.sleep(forTimeInterval: 1)
+        }
+        return element.exists
+    }
+
     /// A screenshot kept in the test results (export with `xcresulttool export attachments`).
     func keepScreenshot(_ name: String, in testCase: XCTestCase) {
         let attachment = XCTAttachment(screenshot: screenshot())

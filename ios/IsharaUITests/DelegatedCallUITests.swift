@@ -99,11 +99,7 @@ final class DelegatedCallUITests: XCTestCase {
         XCTAssertTrue(app.scrolledToText(containing: "Agent (for you), I'll need to check that and call back.").exists)
         XCTAssertFalse(summary.exists, "the summary was there before Bolna sent it")
 
-        let deadline = Date().addingTimeInterval(30)
-        while !summary.exists, Date() < deadline {
-            app.swipeUp()
-            Thread.sleep(forTimeInterval: 1)
-        }
+        XCTAssertTrue(app.swipedUntilExists(summary, timeout: 30), "Bolna's summary never reached the notes")
         app.waitFor(summary, labelContains: "The agent called to book a doctor's appointment for Riya.", timeout: 1)
     }
 
