@@ -156,7 +156,7 @@ final class DemoCallUITests: XCTestCase {
     /// Delivered banner flash by between polls.
     private func launch(timeScale: Double = 0.5, extraArguments: [String] = []) {
         app = XCUIApplication()
-        app.launchArguments = ["-IsharaFakeTimeScale", String(timeScale)] + extraArguments
+        app.launchArguments = EdgeCaseLaunch.freshHistory + ["-IsharaFakeTimeScale", String(timeScale)] + extraArguments
         app.launch()
     }
 }

@@ -134,7 +134,7 @@ final class RecognitionReplayUITests: XCTestCase {
 
     private func launch(_ extraArguments: [String] = []) {
         app = XCUIApplication()
-        app.launchArguments = ["-IsharaRecognition", "pipeline"] + extraArguments
+        app.launchArguments = EdgeCaseLaunch.freshHistory + ["-IsharaRecognition", "pipeline"] + extraArguments
         app.launch()
     }
 

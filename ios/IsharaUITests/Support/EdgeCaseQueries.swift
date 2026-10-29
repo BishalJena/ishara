@@ -13,6 +13,10 @@ enum EdgeCaseLaunch {
     }
 
     static func fixture(_ name: String) -> [String] { ["-IsharaFixture", name] }
+
+    /// Recent calls in memory for this launch only, so calls saved by earlier runs never
+    /// show on Home. Every UI test launch starts with it.
+    static let freshHistory = ["-IsharaCallHistory", "memory"]
 }
 
 /// The local demo backend's pid, for the opt-in tests that stop it mid-call. Skips the test
