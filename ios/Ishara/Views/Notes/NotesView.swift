@@ -11,59 +11,7 @@ struct NotesView: View {
         NavigationStack {
             List {
                 if let notes = model.notes {
-                    Section {
-                        Label {
-                            Text(NotesModel.describe(outcome: notes.outcome, ready: notes.ready))
-                        } icon: {
-                            // VoiceOver read the check mark as a separate "Selected".
-                            Image(systemName: notes.outcome == "booked" ? "checkmark.circle.fill" : "info.circle")
-                                .accessibilityHidden(true)
-                        }
-                        .font(.headline)
-                        .accessibilityElement(children: .combine)
-                        .accessibilityIdentifier("notes.outcome")
-                    } header: {
-                        Text("Call with \(model.contactName)")
-                    }
-                    if !notes.summary.isEmpty {
-                        Section("What happened") {
-                            ForEach(notes.summary, id: \.self) { Text($0) }
-                        }
-                    }
-                    if !notes.openQuestions.isEmpty {
-                        Section("Still open") {
-                            ForEach(notes.openQuestions, id: \.self) {
-                                Label($0, systemImage: "questionmark.circle").foregroundStyle(.orange)
-                            }
-                        }
-                    }
-                    if let brief = notes.brief {
-                        Section("The brief you approved") { Text(brief) }
-                    }
-                    Section("Transcript") {
-                        if notes.transcript.isEmpty {
-                            Text("Nothing was heard on the call.").foregroundStyle(.secondary)
-                        }
-                        ForEach(Array(notes.transcript.enumerated()), id: \.offset) { _, entry in
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(entry.speaker == .agent ? "Agent (for you)" : "They said")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(entry.speaker == .agent ? Color.blue : Color.secondary)
-                                Text(entry.text)
-                            }
-                            .accessibilityElement(children: .combine)
-                        }
-                    }
-                    if let summary = notes.bolnaSummary {
-                        Section {
-                            Text(summary)
-                                .accessibilityIdentifier("notes.bolnaSummary")
-                        } header: {
-                            Text("Automatic summary")
-                        } footer: {
-                            Text("Written by the call service's AI. It can be wrong; the transcript is what was said.")
-                        }
-                    }
+                    NotesSections(notes: notes, contactName: model.contactName)
                 } else if model.failure == nil {
                     ProgressView("Loading the notes…")
                 }
@@ -89,5 +37,80 @@ struct NotesView: View {
             }
             .task { await model.run() }
         }
+    }
+}
+
+/// The notes themselves, shared by the notes screen after a call and a saved call in
+/// Recent calls.
+struct NotesSections: View {
+    let notes: CallNotes
+    let contactName: String
+
+    var body: some View {
+        Section {
+            Label {
+                Text(NotesModel.describe(outcome: notes.outcome, ready: notes.ready))
+            } icon: {
+                // VoiceOver read the check mark as a separate "Selected".
+                Image(systemName: notes.outcome == "booked" ? "checkmark.circle.fill" : "info.circle")
+                    .accessibilityHidden(true)
+            }
+            .font(.headline)
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("notes.outcome")
+        } header: {
+            Text("Call with \(contactName)")
+        }
+        if !notes.summary.isEmpty {
+            Section("What happened") {
+                ForEach(notes.summary, id: \.self) { Text($0) }
+            }
+        }
+        if !notes.openQuestions.isEmpty {
+            Section("Still open") {
+                ForEach(notes.openQuestions, id: \.self) {
+                    Label($0, systemImage: "questionmark.circle").foregroundStyle(.orange)
+                }
+            }
+        }
+        if let brief = notes.brief {
+            Section("The brief you approved") { Text(brief) }
+        }
+        Section("Transcript") {
+            if notes.transcript.isEmpty {
+                Text("Nothing was heard on the call.").foregroundStyle(.secondary)
+            }
+            ForEach(Array(notes.transcript.enumerated()), id: \.offset) { _, entry in
+                TranscriptRow(speaker: entry.speaker == .agent ? "Agent (for you)" : "They said",
+                              text: entry.text, isAgent: entry.speaker == .agent)
+            }
+        }
+        if let summary = notes.bolnaSummary {
+            Section {
+                Text(summary)
+                    .accessibilityIdentifier("notes.bolnaSummary")
+            } header: {
+                Text("Automatic summary")
+            } footer: {
+                Text("Written by the call service's AI. It can be wrong; the transcript is what was said.")
+            }
+        }
+    }
+}
+
+/// One line of a call's transcript: who spoke, then what they said.
+struct TranscriptRow: View {
+    let speaker: String
+    let text: String
+    let isAgent: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(speaker)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(isAgent ? Color.blue : Color.secondary)
+            Text(text)
+        }
+        .accessibilityElement(children: .combine)
     }
 }
