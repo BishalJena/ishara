@@ -365,7 +365,7 @@ final class DelegatedEdgeCaseUITests: XCTestCase {
 
     private func launch(_ arguments: [String]) {
         app = XCUIApplication()
-        app.launchArguments = arguments
+        app.launchArguments = EdgeCaseLaunch.freshHistory + arguments
         app.launch()
     }
 

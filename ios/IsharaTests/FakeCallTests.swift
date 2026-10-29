@@ -185,6 +185,34 @@ final class FakeCallTests: XCTestCase {
         XCTAssertEqual(notes.openQuestions.count, 1)
     }
 
+    /// Like Bolna's final webhook: the notes are ready when the call ends, its own summary
+    /// only a while later (`-IsharaFakeBolnaSummary`).
+    func testBolnasSummaryReachesTheNotesOnlyAfterItsDelay() async throws {
+        let driver = FakeCallDriver(options: .init(timeScale: fast, bolnaSummaryDelay: 30))
+        let model = ActiveCallViewModel(setup: delegatedSetup(attended: false), driver: driver, recognition: StubRecognition())
+        let run = Task { await model.run() }
+        defer { run.cancel() }
+
+        let ended = await eventually(timeout: .seconds(5)) { model.isEnded }
+        XCTAssertTrue(ended)
+        let atEnd = try await driver.notes()
+        XCTAssertTrue(atEnd.ready)
+        XCTAssertNil(atEnd.bolnaSummary, "the summary came with the end of the call")
+
+        let arrived = await eventually(timeout: .seconds(3)) { (try? await driver.notes())?.bolnaSummary != nil }
+        XCTAssertTrue(arrived)
+        let later = try await driver.notes()
+        XCTAssertEqual(later.bolnaSummary, "The agent called to book a doctor's appointment for Riya.")
+        XCTAssertEqual(later.outcome, "callback")
+    }
+
+    func testBolnaSummaryLaunchArgument() {
+        let defaults = UserDefaults(suiteName: "bolna-summary-\(UUID().uuidString)")!
+        XCTAssertNil(DemoLaunchOptions.from(defaults).fakeDriverOptions.bolnaSummaryDelay)
+        defaults.set("8", forKey: "IsharaFakeBolnaSummary")
+        XCTAssertEqual(DemoLaunchOptions.from(defaults).fakeDriverOptions.bolnaSummaryDelay, 8)
+    }
+
     func testUnansweredQuestionTimesOutToTheCallbackLine() async throws {
         let driver = FakeCallDriver(options: .init(timeScale: fast))
         let model = ActiveCallViewModel(setup: delegatedSetup(attended: true), driver: driver, recognition: StubRecognition())

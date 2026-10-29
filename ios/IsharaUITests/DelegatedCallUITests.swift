@@ -84,6 +84,90 @@ final class DelegatedCallUITests: XCTestCase {
         XCTAssertFalse(app.element("ask.question").exists, "an unattended call never asks")
     }
 
+    /// Bolna's summary lands a while after the call ended (its final webhook). The notes
+    /// screen, opened before that, picks it up by itself: nobody taps Refresh.
+    func testNotesPickUpBolnasLateSummaryWithoutARefresh() {
+        launch(["-IsharaFakeTimeScale", "0.5", "-IsharaFakeBolnaSummary", "24"])
+        prepareBrief(expecting: "Preferred: tomorrow in the morning.")
+        setAttended(false)
+        approve()
+
+        openNotes()
+        app.waitFor(app.element("notes.outcome"), labelContains: "call back")
+        let summary = app.element("notes.bolnaSummary")
+        // At the end of the transcript, where the summary goes once it's in.
+        XCTAssertTrue(app.scrolledToText(containing: "Agent (for you), I'll need to check that and call back.").exists)
+        XCTAssertFalse(summary.exists, "the summary was there before Bolna sent it")
+
+        XCTAssertTrue(app.swipedUntilExists(summary, timeout: 30), "Bolna's summary never reached the notes")
+        app.waitFor(summary, labelContains: "The agent called to book a doctor's appointment for Riya.", timeout: 1)
+    }
+
+    // MARK: Recent calls
+
+    /// Done right away, long before Bolna's summary: the app goes on checking the notes, and
+    /// the summary reaches the saved call in Recent calls (whose screen only reads it). Its
+    /// row opens the same notes, read only, and a swipe deletes it.
+    func testACallForMeStaysInRecentCallsWithItsLateSummaryUntilDeleted() {
+        launch(["-IsharaFakeTimeScale", "0.5", "-IsharaFakeBolnaSummary", "24"])
+        XCTAssertFalse(app.buttons["recentCalls.row"].exists, "a call from an earlier run is on Home")
+        callForMeUnattended()
+        openNotes()
+        app.waitFor(app.element("notes.outcome"), labelContains: "call back")
+        app.buttons["notes.done"].tap()
+
+        let row = app.recentCallRow()
+        XCTAssertTrue(row.label.contains("City Clinic"), row.label)
+        XCTAssertTrue(row.label.contains("The agent will need to call back"), row.label)
+        app.keepScreenshot("recent-calls", in: self)
+        row.tap()
+        app.waitFor(app.element("notes.outcome"), labelContains: "call back")
+        app.keepScreenshot("recent-call-detail", in: self)
+        XCTAssertFalse(app.buttons["notes.refresh"].exists, "a saved call is read only")
+        XCTAssertTrue(app.scrolledToText(containing: "Agent (for you), I'll need to check that and call back.").exists,
+                      "the transcript is missing")
+        let summary = app.element("notes.bolnaSummary")
+        XCTAssertFalse(summary.exists, "the summary was there before Bolna sent it")
+        XCTAssertTrue(app.swipedUntilExists(summary, timeout: 30), "Bolna's summary never reached the saved call")
+        app.waitFor(summary, labelContains: "The agent called to book a doctor's appointment for Riya.", timeout: 1)
+        app.keepScreenshot("recent-call-summary", in: self)
+        app.navigationBars.buttons["Ishara"].tap()
+
+        // Opened again, the saved call has it.
+        app.recentCallRow().tap()
+        XCTAssertTrue(app.swipedUntilExists(app.element("notes.bolnaSummary"), timeout: 5))
+        app.navigationBars.buttons["Ishara"].tap()
+
+        app.recentCallRow().swipeLeft()
+        app.buttons["Delete"].tap()
+        waitUntil("the deleted call to leave Home") { !app.buttons["recentCalls.row"].exists }
+    }
+
+    /// The call is saved on the phone, with notes loaded although the notes screen was never
+    /// opened: the app quits and opens again with it on Home.
+    func testRecentCallsSurviveARelaunch() throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "ishara-history-\(UUID().uuidString)")
+        addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
+        let arguments = ["-IsharaFakeTimeScale", "0.5"]
+        launch(arguments, history: ["-IsharaCallHistory", folder.path])
+        callForMeUnattended()
+        XCTAssertTrue(app.buttons["call.backHome"].waitForExistence(timeout: 30))
+        app.buttons["call.backHome"].tap()
+        let firstRow = app.recentCallRow()
+        XCTAssertTrue(firstRow.label.contains("City Clinic"), firstRow.label)
+        waitUntil("the notes to reach the saved call without the notes screen", timeout: 15) {
+            app.buttons.matching(identifier: "recentCalls.row").firstMatch.label.contains("The agent will need to call back")
+        }
+
+        app.terminate()
+        launch(arguments, history: ["-IsharaCallHistory", folder.path])
+
+        let row = app.recentCallRow()
+        XCTAssertTrue(row.label.contains("City Clinic"), row.label)
+        XCTAssertTrue(row.label.contains("The agent will need to call back"), row.label)
+        XCTAssertEqual(app.buttons.matching(identifier: "recentCalls.row").count, 1)
+    }
+
     func testEditingTheRequestHidesTheBriefUntilRebuilt() {
         launch(["-IsharaFakeTimeScale", "0.5"])
         prepareBrief(expecting: "Preferred: tomorrow in the morning.")
@@ -115,9 +199,9 @@ final class DelegatedCallUITests: XCTestCase {
 
     // MARK: Steps
 
-    private func launch(_ arguments: [String]) {
+    private func launch(_ arguments: [String], history: [String] = EdgeCaseLaunch.freshHistory) {
         app = XCUIApplication()
-        app.launchArguments = arguments
+        app.launchArguments = history + arguments
         app.launch()
     }
 
@@ -160,6 +244,12 @@ final class DelegatedCallUITests: XCTestCase {
         let approve = app.buttons["brief.approve"]
         XCTAssertTrue(approve.waitForExistence(timeout: 5))
         approve.tap()
+    }
+
+    private func callForMeUnattended() {
+        prepareBrief(expecting: "Preferred: tomorrow in the morning.")
+        setAttended(false)
+        approve()
     }
 
     private func openNotes(timeout: TimeInterval = 30) {

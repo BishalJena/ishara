@@ -248,7 +248,7 @@ final class CallEdgeCaseUITests: XCTestCase {
 
     private func launch(_ arguments: [String] = []) {
         app = XCUIApplication()
-        app.launchArguments = EdgeCaseLaunch.halfSpeed + arguments
+        app.launchArguments = EdgeCaseLaunch.freshHistory + EdgeCaseLaunch.halfSpeed + arguments
         app.launch()
     }
 }

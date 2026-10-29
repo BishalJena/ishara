@@ -13,6 +13,10 @@ enum EdgeCaseLaunch {
     }
 
     static func fixture(_ name: String) -> [String] { ["-IsharaFixture", name] }
+
+    /// Recent calls in memory for this launch only, so calls saved by earlier runs never
+    /// show on Home. Every UI test launch starts with it.
+    static let freshHistory = ["-IsharaCallHistory", "memory"]
 }
 
 /// The local demo backend's pid, for the opt-in tests that stop it mid-call. Skips the test
@@ -118,6 +122,29 @@ extension XCUIApplication {
         let match = staticTexts.containing(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
         for _ in 0..<swipes where !(match.exists && match.isHittable) { swipeUp() }
         return match
+    }
+
+    /// The newest call in Recent calls, scrolled up above Home's call buttons (which cover
+    /// the end of the list, so `isHittable` alone isn't enough).
+    func recentCallRow(file: StaticString = #filePath, line: UInt = #line) -> XCUIElement {
+        let row = buttons.matching(identifier: "recentCalls.row").firstMatch
+        let call = buttons["home.call"]
+        XCTAssertTrue(call.waitForExistence(timeout: 10), file: file, line: line)
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "no call in Recent calls", file: file, line: line)
+        for _ in 0..<5 where row.frame.maxY > call.frame.minY - 60 { swipeUp() }
+        XCTAssertLessThan(row.frame.maxY, call.frame.minY, "Recent calls stay under the call buttons", file: file, line: line)
+        return row
+    }
+
+    /// Waits for a row that appears at the end of a list while the screen is open, swiping
+    /// up now and then: a List only shows the rows scrolled into view.
+    func swipedUntilExists(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while !element.exists, Date() < deadline {
+            swipeUp()
+            Thread.sleep(forTimeInterval: 1)
+        }
+        return element.exists
     }
 
     /// A screenshot kept in the test results (export with `xcresulttool export attachments`).

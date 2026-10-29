@@ -74,6 +74,11 @@ enum DelegatedDemo {
         AskOption(choice: .wait, spoken: waitLine),
     ]
 
+    /// What Bolna's own summary says about the demo call, once it has arrived.
+    static func automaticSummary(goal: String, name: String) -> String {
+        "The agent called to \(goal) for \(name)."
+    }
+
     /// Notes from the transcript, quoting it, like the backend's deterministic notes.
     static func notes(goal: String, name: String, brief: String, transcript: [TranscriptEntry], answers: [String], ready: Bool) -> CallNotes {
         var summary = ["Goal: \(goal) for \(name)."]

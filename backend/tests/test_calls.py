@@ -16,7 +16,7 @@ from starlette.websockets import WebSocketDisconnect
 
 from app.bolna_agent import SPEAK_PROMPT
 from app.bolna_client import HttpBolnaClient
-from app.calls import CallManager
+from app.calls import FINISHED_CALL_TTL_S, CallManager
 from app.contacts import InvalidContacts, parse_contacts
 from app.main import create_app
 from app.markers import (
@@ -192,10 +192,17 @@ class Harness:
 def make_harness():
     stack = contextlib.ExitStack()
 
-    def build(delivery_timeout_s: float = 5.0, bolna: BolnaClient | None = None) -> Harness:
+    def build(
+        delivery_timeout_s: float = 5.0,
+        bolna: BolnaClient | None = None,
+        clock: Callable[[], float] | None = None,
+    ) -> Harness:
         settings = make_settings(allowed_recipients=f"clinic={CLINIC},pharmacy={PHARMACY}")
         bolna, composer = bolna or FakeBolna(), FakeComposer()
-        manager = CallManager(settings, composer, bolna, delivery_timeout_s=delivery_timeout_s)
+        timing = {"clock": clock} if clock is not None else {}
+        manager = CallManager(
+            settings, composer, bolna, delivery_timeout_s=delivery_timeout_s, **timing
+        )
         app = create_app(settings, composer=composer, bolna=bolna, ledger=manager)
         client = stack.enter_context(TestClient(app))
         return Harness(client, manager, bolna, composer)
@@ -1154,6 +1161,104 @@ def test_webhook_bad_payload_does_not_echo_it(harness: Harness) -> None:
     )
     assert response.status_code == 422
     assert CLINIC not in response.text
+
+
+# ---- finished calls leave memory ----
+
+
+@dataclass
+class FakeClock:
+    now: float = 1000.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+def notes_status(harness: Harness, call_id: str) -> int:
+    return harness.client.get(f"/calls/{call_id}/notes", headers=AUTH).status_code
+
+
+def test_finished_call_stays_readable_until_the_ttl_then_is_dropped(make_harness) -> None:
+    clock = FakeClock()
+    harness = make_harness(clock=clock)
+    call_id = harness.live_call()
+    assert harness.webhook("run-1", "call-disconnected") == 204
+
+    clock.now += FINISHED_CALL_TTL_S - 1
+    # The app polls for Bolna's late summary: reading the notes doesn't drop the call.
+    for _ in range(11):
+        assert notes_status(harness, call_id) == 200
+    assert harness.manager.has_call(call_id)
+
+    clock.now += 1
+    assert notes_status(harness, call_id) == 404
+    assert not harness.manager.has_call(call_id)
+
+
+def test_the_ttl_counts_from_the_end_of_the_call(make_harness) -> None:
+    clock = FakeClock()
+    harness = make_harness(clock=clock)
+    call_id = harness.live_call()
+    clock.now += 2 * FINISHED_CALL_TTL_S
+    assert harness.webhook("run-1", "call-disconnected") == 204
+    # A later webhook (Bolna's `completed`) doesn't restart the clock.
+    clock.now += FINISHED_CALL_TTL_S / 2
+    assert harness.webhook("run-1", "completed") == 204
+
+    clock.now += FINISHED_CALL_TTL_S / 2 - 1
+    assert notes_status(harness, call_id) == 200
+    clock.now += 1
+    assert notes_status(harness, call_id) == 404
+
+
+def test_active_calls_are_never_dropped(make_harness) -> None:
+    clock = FakeClock()
+    harness = make_harness(clock=clock)
+    dialing = harness.start()
+    live = harness.live_call()
+    ended = harness.start("pharmacy")
+    assert harness.webhook("run-3", "completed") == 204
+
+    clock.now += 10 * FINISHED_CALL_TTL_S
+    assert notes_status(harness, ended) == 404
+    assert notes_status(harness, dialing) == 200
+    assert notes_status(harness, live) == 200
+    with harness.socket(live) as ws:
+        assert harness.receive(ws) == status("in_call")
+
+
+def test_a_call_that_failed_to_start_is_dropped_after_the_ttl(make_harness) -> None:
+    clock = FakeClock()
+    harness = make_harness(clock=clock)
+    harness.bolna.fail_start = True
+    response = harness.client.post(
+        "/calls", json={"contact_id": "clinic", "purpose": "doctor_appointment"}, headers=AUTH
+    )
+    assert response.status_code == 502
+    (failed,) = harness.manager._sessions
+    clock.now += FINISHED_CALL_TTL_S
+    harness.bolna.fail_start = False
+    harness.start()
+    assert failed not in harness.manager._sessions
+
+
+def test_a_dropped_call_ignores_late_webhooks_and_its_socket(make_harness) -> None:
+    clock = FakeClock()
+    harness = make_harness(clock=clock)
+    call_id = harness.live_call()
+    with harness.socket(call_id) as ws:
+        assert harness.receive(ws) == status("in_call")
+        assert harness.webhook("run-1", "completed") == 204
+        assert harness.receive(ws) == status("ended")
+        clock.now += FINISHED_CALL_TTL_S
+        assert notes_status(harness, call_id) == 404
+        # The app leaving after the call was dropped is no error.
+
+    assert harness.webhook("run-1", "completed") == 204
+    assert notes_status(harness, call_id) == 404
+    with pytest.raises(WebSocketDisconnect) as closed, harness.socket(call_id) as ws:
+        harness.receive(ws)
+    assert closed.value.code == 4404
 
 
 # ---- privacy ----
