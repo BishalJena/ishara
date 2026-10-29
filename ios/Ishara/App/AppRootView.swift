@@ -13,6 +13,8 @@ struct AppRootView: View {
 
     @State private var route: Route
     @State private var setup: CallSetup = .demo
+    /// The last ended Call for me call's notes, followed by `CallFollowUp` outside any screen.
+    @State private var notesFollowUp: (recordID: UUID, notes: NotesModel)?
     private let services: AppServices
 
     init(services: AppServices) {
@@ -78,22 +80,29 @@ struct AppRootView: View {
                     },
                     onShowNotes: model.isDelegated ? {
                         model.leave()
-                        let history = services.history
-                        let notes = NotesModel(
-                            contactName: model.setup.contact.name, driver: model.driver,
-                            onNotes: { history.update(model.recordID, notes: $0) })
+                        // A call that was never placed has no follow-up; its notes say why.
+                        let notes = followUp(model) ?? NotesModel(contactName: model.setup.contact.name, driver: model.driver)
                         notes.start()
                         route = .notes(notes)
                     } : nil
                 )
-                // Saved as soon as the call is over, before the notes (if any) are loaded.
+                // Saved and followed as soon as the call is over, whatever the user does next.
                 .onChange(of: model.isCallOver) { _, isOver in
-                    if isOver, let record = model.record { services.history.save(record) }
+                    if isOver { followUp(model) }
                 }
             case .notes(let model):
                 NotesView(model: model, onDone: { route = .home })
             }
         }
+    }
+
+    /// The ended call's follow-up, started once per call.
+    @discardableResult
+    private func followUp(_ call: ActiveCallViewModel) -> NotesModel? {
+        if let notesFollowUp, notesFollowUp.recordID == call.recordID { return notesFollowUp.notes }
+        let notes = CallFollowUp.callEnded(call, history: services.history)
+        if let notes { notesFollowUp = (call.recordID, notes) }
+        return notes
     }
 
     private func startCall(recognition: any RecognitionController) {

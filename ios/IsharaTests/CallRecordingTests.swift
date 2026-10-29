@@ -85,6 +85,86 @@ final class CallRecordingTests: XCTestCase {
         XCTAssertFalse(json.contains("+91"))
     }
 
+    // MARK: Follow-up after the call
+
+    private func delegatedSetup() -> CallSetup {
+        var setup = CallSetup.demo
+        let request = BriefRequest(purpose: .doctorAppointment, chips: [.tomorrow], profile: Profile(name: "Riya"))
+        setup.delegation = Delegation(brief: DelegatedDemo.brief(for: request), attended: false)
+        return setup
+    }
+
+    private func delegatedNotes(bolna: String? = nil) -> CallNotes {
+        CallNotes(callID: "c1", mode: .delegated, ready: true, outcome: "callback", bolnaSummary: bolna)
+    }
+
+    /// The user leaves at once (no notes screen at all); Bolna's summary comes two checks
+    /// later and still reaches the saved call. Then the checking stops.
+    func testCallForMeNotesAreFollowedAfterTheUserLeaves() async throws {
+        let (model, driver) = await placedCall(delegatedSetup())
+        driver.store.receive(.status(.ended))
+        driver.notesResults = [.success(delegatedNotes()), .success(delegatedNotes()),
+                               .success(delegatedNotes(bolna: "The caller will be called back."))]
+        let history = CallHistory(folder: folder)
+
+        let followed = CallFollowUp.callEnded(model, history: history, sleep: { _ in })
+        model.leave()
+
+        let saved = await eventually { CallHistory(folder: self.folder).records.first?.notes?.bolnaSummary != nil }
+        XCTAssertTrue(saved, "Bolna's summary never reached the saved call")
+        let record = try XCTUnwrap(CallHistory(folder: folder).records.first)
+        XCTAssertEqual(record.id, model.recordID)
+        XCTAssertEqual(record.notes?.bolnaSummary, "The caller will be called back.")
+        XCTAssertEqual(record.notes?.outcome, "callback")
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertEqual(driver.notesCalls, 3, "it kept checking after the summary was in")
+        // The notes screen shows this same follow-up; opening it doesn't poll again.
+        await followed?.start().value
+        XCTAssertEqual(followed?.notes?.bolnaSummary, "The caller will be called back.")
+        XCTAssertEqual(driver.notesCalls, 3)
+    }
+
+    func testTheFollowUpGivesUpWhenTheTriesRunOut() async throws {
+        let (model, driver) = await placedCall(delegatedSetup())
+        driver.store.receive(.status(.ended))
+        driver.notesResults = [.success(delegatedNotes())]
+        let history = CallHistory(folder: folder)
+
+        _ = CallFollowUp.callEnded(model, history: history, sleep: { _ in })
+
+        let gaveUp = await eventually { driver.notesCalls == NotesModel.maxRefreshes + 1 }
+        XCTAssertTrue(gaveUp)
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertEqual(driver.notesCalls, NotesModel.maxRefreshes + 1, "it went on past its tries")
+        XCTAssertEqual(history.records.first?.notes, delegatedNotes(), "the notes it did get weren't saved")
+    }
+
+    /// A live call's notes never get an outcome or Bolna's summary, so nothing is followed.
+    func testALiveCallIsSavedButNotFollowed() async throws {
+        let (model, driver) = await placedCall()
+        driver.store.receive(.status(.ended))
+        driver.notesResults = [.success(CallNotes(callID: "c1", mode: .live, ready: true))]
+        let history = CallHistory(folder: folder)
+
+        XCTAssertNil(CallFollowUp.callEnded(model, history: history, sleep: { _ in }))
+
+        XCTAssertEqual(history.records.map(\.id), [model.recordID])
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertEqual(driver.notesCalls, 0)
+    }
+
+    func testACallThatWasNeverPlacedHasNoFollowUp() async {
+        let driver = StubCallDriver()
+        driver.startError = BackendError.httpStatus(403)
+        let model = ActiveCallViewModel(setup: delegatedSetup(), driver: driver, recognition: StubRecognition())
+        await model.start()
+        let history = CallHistory(folder: folder)
+
+        XCTAssertNil(CallFollowUp.callEnded(model, history: history, sleep: { _ in }))
+        XCTAssertTrue(history.records.isEmpty)
+        XCTAssertEqual(driver.notesCalls, 0)
+    }
+
     func testTheNotesScreenHandsBolnasLateSummaryToTheSavedCall() async throws {
         let (model, driver) = await placedCall()
         driver.store.receive(.status(.ended))

@@ -80,6 +80,7 @@
 		B175077471A14CDF4D03785B /* SigningPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB6B8D11DDB84728431AB21 /* SigningPanel.swift */; };
 		B3F1EE6C119A28B0E630198F /* AppServicesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03724EE20F84C835CC3C1142 /* AppServicesTests.swift */; };
 		B9EE54C1A903D77D8CC031A0 /* SignPipeline in Frameworks */ = {isa = PBXBuildFile; productRef = E9A1F023F4B9BF78D9BFA4DF /* SignPipeline */; };
+		BCDC702433725E63C8FD43A3 /* CallFollowUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B7E0DD9F7F0FE7E8935C840 /* CallFollowUp.swift */; };
 		BD4096477C19958A499B498E /* BriefAndNotesModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1BDBCC4C1231FE765495C66 /* BriefAndNotesModelTests.swift */; };
 		C1340906FBE5402A8197CB25 /* ReplayMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = C75094643E4319B9D9FE9EAA /* ReplayMenu.swift */; };
 		C1DC8469BF46E3EE3317FC51 /* CallSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 146D51FA7E56F8FA3642AB84 /* CallSetup.swift */; };
@@ -168,6 +169,7 @@
 		5CB6B8D11DDB84728431AB21 /* SigningPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SigningPanel.swift; sourceTree = "<group>"; };
 		658229E17E52DE2B38E8125B /* DemoScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoScript.swift; sourceTree = "<group>"; };
 		6AEDF6404417D0C8EBD70DBE /* ActiveCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveCallView.swift; sourceTree = "<group>"; };
+		6B7E0DD9F7F0FE7E8935C840 /* CallFollowUp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallFollowUp.swift; sourceTree = "<group>"; };
 		6DD519B31C344AE60FA2B480 /* RecognitionSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecognitionSession.swift; sourceTree = "<group>"; };
 		72003B06FE25D45B81D7DC86 /* DelegatedEdgeCaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DelegatedEdgeCaseUITests.swift; sourceTree = "<group>"; };
 		72CBBE8F44BD346E38846F50 /* CallSession */ = {isa = PBXFileReference; lastKnownFileType = folder; name = CallSession; path = Packages/CallSession; sourceTree = SOURCE_ROOT; };
@@ -246,6 +248,7 @@
 			children = (
 				D861A941BD04449A68ABDC3A /* ActiveCallViewModel.swift */,
 				4D587321982D2C8966B818CB /* CallDriver.swift */,
+				6B7E0DD9F7F0FE7E8935C840 /* CallFollowUp.swift */,
 				1A22748E5DA10AFDBC78C18E /* DelegatedDemo.swift */,
 				658229E17E52DE2B38E8125B /* DemoScript.swift */,
 				DBBEF1F2F01D8A80C53914BA /* FakeCallDriver.swift */,
@@ -675,6 +678,7 @@
 				20730BC373E8AD9357B531DE /* BriefView.swift in Sources */,
 				86F74599AECF0F5B3148CA2C /* CallDriver.swift in Sources */,
 				EE50BD11AE242AFC37DB82C5 /* CallEndedPanel.swift in Sources */,
+				BCDC702433725E63C8FD43A3 /* CallFollowUp.swift in Sources */,
 				A4EEFE959FC910AC50D6EC0E /* CallHistory.swift in Sources */,
 				08AF537C8F2C3A4A769D8F01 /* CallModels.swift in Sources */,
 				7EE5D6C3D9FF472650DBE5AF /* CallRecord.swift in Sources */,
