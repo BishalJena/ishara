@@ -12,9 +12,7 @@ struct RecentCallView: View {
                 NotesSections(notes: notes, contactName: record.contactName)
             } else {
                 Section {
-                    Label(record.outcomeText, systemImage: "info.circle")
-                        .font(.headline)
-                        .accessibilityIdentifier("notes.outcome")
+                    OutcomeLabel(text: record.outcomeText, systemImage: "info.circle")
                 } header: {
                     Text("Call with \(record.contactName)")
                 }

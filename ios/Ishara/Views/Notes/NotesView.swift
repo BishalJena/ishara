@@ -48,16 +48,8 @@ struct NotesSections: View {
 
     var body: some View {
         Section {
-            Label {
-                Text(NotesModel.describe(outcome: notes.outcome, ready: notes.ready))
-            } icon: {
-                // VoiceOver read the check mark as a separate "Selected".
-                Image(systemName: notes.outcome == "booked" ? "checkmark.circle.fill" : "info.circle")
-                    .accessibilityHidden(true)
-            }
-            .font(.headline)
-            .accessibilityElement(children: .combine)
-            .accessibilityIdentifier("notes.outcome")
+            OutcomeLabel(text: NotesModel.describe(outcome: notes.outcome, ready: notes.ready),
+                         systemImage: notes.outcome == "booked" ? "checkmark.circle.fill" : "info.circle")
         } header: {
             Text("Call with \(contactName)")
         }
@@ -95,6 +87,25 @@ struct NotesSections: View {
                 Text("Written by the call service's AI. It can be wrong; the transcript is what was said.")
             }
         }
+    }
+}
+
+/// The call's outcome, read as one element.
+struct OutcomeLabel: View {
+    let text: String
+    let systemImage: String
+
+    var body: some View {
+        Label {
+            Text(text)
+        } icon: {
+            // VoiceOver read the check mark as a separate "Selected".
+            Image(systemName: systemImage)
+                .accessibilityHidden(true)
+        }
+        .font(.headline)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("notes.outcome")
     }
 }
 
