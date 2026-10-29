@@ -105,15 +105,15 @@ final class DelegatedCallUITests: XCTestCase {
 
     // MARK: Recent calls
 
-    /// The call is on Home after Done, Bolna's late summary included; its row opens the same
-    /// notes, read only, and a swipe deletes it.
+    /// Done right away, long before Bolna's summary: the app goes on checking the notes, and
+    /// the summary reaches the saved call in Recent calls (whose screen only reads it). Its
+    /// row opens the same notes, read only, and a swipe deletes it.
     func testACallForMeStaysInRecentCallsWithItsLateSummaryUntilDeleted() {
-        launch(["-IsharaFakeTimeScale", "0.5", "-IsharaFakeBolnaSummary", "4"])
+        launch(["-IsharaFakeTimeScale", "0.5", "-IsharaFakeBolnaSummary", "24"])
         XCTAssertFalse(app.buttons["recentCalls.row"].exists, "a call from an earlier run is on Home")
         callForMeUnattended()
         openNotes()
         app.waitFor(app.element("notes.outcome"), labelContains: "call back")
-        XCTAssertTrue(app.swipedUntilExists(app.element("notes.bolnaSummary"), timeout: 30))
         app.buttons["notes.done"].tap()
 
         let row = app.recentCallRow()
@@ -124,9 +124,18 @@ final class DelegatedCallUITests: XCTestCase {
         app.waitFor(app.element("notes.outcome"), labelContains: "call back")
         app.keepScreenshot("recent-call-detail", in: self)
         XCTAssertFalse(app.buttons["notes.refresh"].exists, "a saved call is read only")
-        XCTAssertTrue(app.scrolledToText(containing: "They said, We have 10:30 tomorrow morning.").exists, "the transcript is missing")
-        app.waitFor(app.element("notes.bolnaSummary"), labelContains: "The agent called to book a doctor's appointment for Riya.")
+        XCTAssertTrue(app.scrolledToText(containing: "Agent (for you), I'll need to check that and call back.").exists,
+                      "the transcript is missing")
+        let summary = app.element("notes.bolnaSummary")
+        XCTAssertFalse(summary.exists, "the summary was there before Bolna sent it")
+        XCTAssertTrue(app.swipedUntilExists(summary, timeout: 30), "Bolna's summary never reached the saved call")
+        app.waitFor(summary, labelContains: "The agent called to book a doctor's appointment for Riya.", timeout: 1)
         app.keepScreenshot("recent-call-summary", in: self)
+        app.navigationBars.buttons["Ishara"].tap()
+
+        // Opened again, the saved call has it.
+        app.recentCallRow().tap()
+        XCTAssertTrue(app.swipedUntilExists(app.element("notes.bolnaSummary"), timeout: 5))
         app.navigationBars.buttons["Ishara"].tap()
 
         app.recentCallRow().swipeLeft()
@@ -134,7 +143,8 @@ final class DelegatedCallUITests: XCTestCase {
         waitUntil("the deleted call to leave Home") { !app.buttons["recentCalls.row"].exists }
     }
 
-    /// The call is saved on the phone: the app quits and opens again with it on Home.
+    /// The call is saved on the phone, with notes loaded although the notes screen was never
+    /// opened: the app quits and opens again with it on Home.
     func testRecentCallsSurviveARelaunch() throws {
         let folder = FileManager.default.temporaryDirectory.appending(path: "ishara-history-\(UUID().uuidString)")
         addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
@@ -143,13 +153,18 @@ final class DelegatedCallUITests: XCTestCase {
         callForMeUnattended()
         XCTAssertTrue(app.buttons["call.backHome"].waitForExistence(timeout: 30))
         app.buttons["call.backHome"].tap()
-        XCTAssertTrue(app.recentCallRow().label.contains("City Clinic"))
+        let firstRow = app.recentCallRow()
+        XCTAssertTrue(firstRow.label.contains("City Clinic"), firstRow.label)
+        waitUntil("the notes to reach the saved call without the notes screen", timeout: 15) {
+            app.buttons.matching(identifier: "recentCalls.row").firstMatch.label.contains("The agent will need to call back")
+        }
 
         app.terminate()
         launch(arguments, history: ["-IsharaCallHistory", folder.path])
 
         let row = app.recentCallRow()
         XCTAssertTrue(row.label.contains("City Clinic"), row.label)
+        XCTAssertTrue(row.label.contains("The agent will need to call back"), row.label)
         XCTAssertEqual(app.buttons.matching(identifier: "recentCalls.row").count, 1)
     }
 
