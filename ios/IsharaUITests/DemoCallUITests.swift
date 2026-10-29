@@ -53,22 +53,13 @@ final class DemoCallUITests: XCTestCase {
 
     func testNotDeliveredReplyIsOnlyResentAfterSendIsTappedAgain() {
         launch(extraArguments: ["-IsharaFakeNotDelivered", "YES"])
-        app.startCall()
+        walkNotDeliveredTurn()
+    }
 
-        app.waitForDraft(containing: turn1)
-        app.sendAndExpectDelivered(turn1)
-
-        app.waitForDraft(containing: "In the morning")
-        app.buttons["chip.afternoon"].tap()
-        app.waitForDraft(containing: turn3)
-        app.buttons["call.send"].tap()
-
-        // The fake call reports the first turn-3 reply as not delivered.
-        app.waitFor(app.element("call.deliveryBanner"), labelContains: "Not delivered")
-        app.waitForDraft(containing: turn3)
-        XCTAssertFalse(app.element("caption.you").label.contains(turn3), "a failed reply was shown as spoken")
-
-        app.sendAndExpectDelivered(turn3)
+    /// At a large text size the Not delivered banner used to stay hidden under the action bar.
+    func testNotDeliveredBannerIsInViewAtAccessibilityTextSize() {
+        launch(extraArguments: Self.accessibilityLarge + ["-IsharaFakeNotDelivered", "YES"])
+        walkNotDeliveredTurn()
     }
 
     // MARK: Timers
@@ -104,6 +95,27 @@ final class DemoCallUITests: XCTestCase {
     private static let accessibilityLargest = [
         "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
     ]
+
+    private func walkNotDeliveredTurn() {
+        app.startCall()
+
+        app.waitForDraft(containing: turn1)
+        app.sendAndExpectDelivered(turn1)
+
+        app.waitForDraft(containing: "In the morning")
+        app.waitUntilClearOfActionBar("chip.afternoon")
+        app.buttons["chip.afternoon"].tap()
+        app.waitForDraft(containing: turn3)
+        app.buttons["call.send"].tap()
+
+        // The fake call reports the first turn-3 reply as not delivered.
+        app.waitFor(app.element("call.deliveryBanner"), labelContains: "Not delivered")
+        app.waitUntilDeliveryBannerInView()
+        app.waitForDraft(containing: turn3)
+        XCTAssertFalse(app.element("caption.you").label.contains(turn3), "a failed reply was shown as spoken")
+
+        app.sendAndExpectDelivered(turn3)
+    }
 
     private func walkRehearsedClinicCall() {
         app.startCall()

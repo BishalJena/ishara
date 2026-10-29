@@ -7,6 +7,7 @@ import SwiftUI
 struct SigningPanel: View {
     /// Lets the call screen scroll the chips into view.
     static let chipRowID = "signingPanel.chips"
+    static let deliveryBannerID = "signingPanel.delivery"
 
     let model: ActiveCallViewModel
 
@@ -34,6 +35,7 @@ struct SigningPanel: View {
             } else {
                 if model.showsDeliveryResult {
                     DeliveryBanner(delivery: model.delivery)
+                        .id(Self.deliveryBannerID)
                 }
                 ChipRow(chips: model.chips, onRemove: model.removeChip)
                     .id(Self.chipRowID)
