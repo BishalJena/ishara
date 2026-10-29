@@ -96,11 +96,13 @@
 		DE15D8A832F7382DA4EB5304 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3E9FFF5CA12A20DD8DB7A11D /* Assets.xcassets */; };
 		DF6EFD99A570D7D3227F3612 /* DelegatedCallUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF59A2BC09B2A14728D3BFFE /* DelegatedCallUITests.swift */; };
 		E6DE1D86332577CE9453EBBC /* DemoScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = 658229E17E52DE2B38E8125B /* DemoScript.swift */; };
+		EC0B734C6CCE41457FCBD049 /* RecentCallsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D31BEB0BA2F4BC2D1F38CEF4 /* RecentCallsSection.swift */; };
 		EE50BD11AE242AFC37DB82C5 /* CallEndedPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37E3DFD4B04E861E03A810F8 /* CallEndedPanel.swift */; };
 		EFFE56324E25DA9967FAC9D6 /* CallScreenQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF16FAD06AD0EA1E853B7E99 /* CallScreenQueries.swift */; };
 		F30F8CF2E0207D4A92DCAB04 /* DemoLaunchOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFCB4C66A1B64CB25D1DE963 /* DemoLaunchOptions.swift */; };
 		F66DA64D0768333299E008CD /* ScriptedRecognitionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B0B239718EAD7B747B9309 /* ScriptedRecognitionController.swift */; };
 		F99F4D80EDB23CE77C0CF3EA /* ReplayClips.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2163923ABE0CC33CECF0C70 /* ReplayClips.swift */; };
+		FD1BFF2386C6233780756C65 /* RecentCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5219A8CE3F52CA1F0BC0F41F /* RecentCallView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -161,6 +163,7 @@
 		4F9340008F890C6DF39207B2 /* HumanReceptionist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HumanReceptionist.swift; sourceTree = "<group>"; };
 		4FA40AC93BF6C0E0E097D36E /* CallHistoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallHistoryTests.swift; sourceTree = "<group>"; };
 		512FCB91D7CF7418CBC16051 /* NotesModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesModel.swift; sourceTree = "<group>"; };
+		5219A8CE3F52CA1F0BC0F41F /* RecentCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentCallView.swift; sourceTree = "<group>"; };
 		5C15DFBD2767926FFF5FCEF2 /* CameraCardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCardTests.swift; sourceTree = "<group>"; };
 		5CB6B8D11DDB84728431AB21 /* SigningPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SigningPanel.swift; sourceTree = "<group>"; };
 		658229E17E52DE2B38E8125B /* DemoScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoScript.swift; sourceTree = "<group>"; };
@@ -200,6 +203,7 @@
 		C75094643E4319B9D9FE9EAA /* ReplayMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplayMenu.swift; sourceTree = "<group>"; };
 		CB52AD1F79B3B09A39BA112C /* IsharaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IsharaApp.swift; sourceTree = "<group>"; };
 		CC24A59049F2F9164F1B03CF /* SignPipelineMediaPipe */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SignPipelineMediaPipe; path = Packages/SignPipelineMediaPipe; sourceTree = SOURCE_ROOT; };
+		D31BEB0BA2F4BC2D1F38CEF4 /* RecentCallsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentCallsSection.swift; sourceTree = "<group>"; };
 		D46C6308AE9393903A390E83 /* AppConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfigTests.swift; sourceTree = "<group>"; };
 		D861A941BD04449A68ABDC3A /* ActiveCallViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveCallViewModel.swift; sourceTree = "<group>"; };
 		D8A4B247BCA2EC732004F032 /* RecognitionReplayUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecognitionReplayUITests.swift; sourceTree = "<group>"; };
@@ -426,6 +430,8 @@
 			isa = PBXGroup;
 			children = (
 				F122F57D5868D990A7D8607F /* HomeView.swift */,
+				D31BEB0BA2F4BC2D1F38CEF4 /* RecentCallsSection.swift */,
+				5219A8CE3F52CA1F0BC0F41F /* RecentCallView.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -700,6 +706,8 @@
 				DB20032D04C1D5AA1914BD39 /* NotesView.swift in Sources */,
 				74A11F08935C2D0D80626B4F /* PipelineRecognitionController.swift in Sources */,
 				075052019F52310F95B92698 /* QuickReplyBar.swift in Sources */,
+				FD1BFF2386C6233780756C65 /* RecentCallView.swift in Sources */,
+				EC0B734C6CCE41457FCBD049 /* RecentCallsSection.swift in Sources */,
 				3B216E1616E508A0DE9F00F4 /* RecognitionAssets.swift in Sources */,
 				28A130A60A7795A2344A6059 /* RecognitionController.swift in Sources */,
 				A295DD7383246578129885F8 /* RecognitionSession.swift in Sources */,

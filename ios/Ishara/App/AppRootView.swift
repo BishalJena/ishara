@@ -28,6 +28,7 @@ struct AppRootView: View {
                     setup: setup,
                     modeDescription: services.modeDescription,
                     setupProblem: services.setupProblem,
+                    history: services.history,
                     onCall: { chosen in
                         setup = chosen
                         route = .getReady(services.makeRecognition(), delegated: false)

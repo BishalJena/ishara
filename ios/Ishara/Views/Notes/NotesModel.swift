@@ -64,7 +64,7 @@ final class NotesModel {
     }
 
     /// Plain words for the backend's outcome.
-    static func describe(outcome: String?, ready: Bool) -> String {
+    nonisolated static func describe(outcome: String?, ready: Bool) -> String {
         guard ready else { return "The call is still being wrapped up" }
         return switch outcome {
         case "booked": "Booked"

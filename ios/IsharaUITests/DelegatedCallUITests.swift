@@ -103,6 +103,56 @@ final class DelegatedCallUITests: XCTestCase {
         app.waitFor(summary, labelContains: "The agent called to book a doctor's appointment for Riya.", timeout: 1)
     }
 
+    // MARK: Recent calls
+
+    /// The call is on Home after Done, Bolna's late summary included; its row opens the same
+    /// notes, read only, and a swipe deletes it.
+    func testACallForMeStaysInRecentCallsWithItsLateSummaryUntilDeleted() {
+        launch(["-IsharaFakeTimeScale", "0.5", "-IsharaFakeBolnaSummary", "4"])
+        XCTAssertFalse(app.buttons["recentCalls.row"].exists, "a call from an earlier run is on Home")
+        callForMeUnattended()
+        openNotes()
+        app.waitFor(app.element("notes.outcome"), labelContains: "call back")
+        XCTAssertTrue(app.swipedUntilExists(app.element("notes.bolnaSummary"), timeout: 30))
+        app.buttons["notes.done"].tap()
+
+        let row = recentCallRow()
+        XCTAssertTrue(row.label.contains("City Clinic"), row.label)
+        XCTAssertTrue(row.label.contains("The agent will need to call back"), row.label)
+        app.keepScreenshot("recent-calls", in: self)
+        row.tap()
+        app.waitFor(app.element("notes.outcome"), labelContains: "call back")
+        app.keepScreenshot("recent-call-detail", in: self)
+        XCTAssertFalse(app.buttons["notes.refresh"].exists, "a saved call is read only")
+        XCTAssertTrue(app.scrolledToText(containing: "They said, We have 10:30 tomorrow morning.").exists, "the transcript is missing")
+        app.waitFor(app.element("notes.bolnaSummary"), labelContains: "The agent called to book a doctor's appointment for Riya.")
+        app.keepScreenshot("recent-call-summary", in: self)
+        app.navigationBars.buttons["Ishara"].tap()
+
+        recentCallRow().swipeLeft()
+        app.buttons["Delete"].tap()
+        waitUntil("the deleted call to leave Home") { !app.buttons["recentCalls.row"].exists }
+    }
+
+    /// The call is saved on the phone: the app quits and opens again with it on Home.
+    func testRecentCallsSurviveARelaunch() throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "ishara-history-\(UUID().uuidString)")
+        addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
+        let arguments = ["-IsharaFakeTimeScale", "0.5"]
+        launch(arguments, history: ["-IsharaCallHistory", folder.path])
+        callForMeUnattended()
+        XCTAssertTrue(app.buttons["call.backHome"].waitForExistence(timeout: 30))
+        app.buttons["call.backHome"].tap()
+        XCTAssertTrue(recentCallRow().label.contains("City Clinic"))
+
+        app.terminate()
+        launch(arguments, history: ["-IsharaCallHistory", folder.path])
+
+        let row = recentCallRow()
+        XCTAssertTrue(row.label.contains("City Clinic"), row.label)
+        XCTAssertEqual(app.buttons.matching(identifier: "recentCalls.row").count, 1)
+    }
+
     func testEditingTheRequestHidesTheBriefUntilRebuilt() {
         launch(["-IsharaFakeTimeScale", "0.5"])
         prepareBrief(expecting: "Preferred: tomorrow in the morning.")
@@ -134,9 +184,9 @@ final class DelegatedCallUITests: XCTestCase {
 
     // MARK: Steps
 
-    private func launch(_ arguments: [String]) {
+    private func launch(_ arguments: [String], history: [String] = EdgeCaseLaunch.freshHistory) {
         app = XCUIApplication()
-        app.launchArguments = EdgeCaseLaunch.freshHistory + arguments
+        app.launchArguments = history + arguments
         app.launch()
     }
 
@@ -179,6 +229,24 @@ final class DelegatedCallUITests: XCTestCase {
         let approve = app.buttons["brief.approve"]
         XCTAssertTrue(approve.waitForExistence(timeout: 5))
         approve.tap()
+    }
+
+    private func callForMeUnattended() {
+        prepareBrief(expecting: "Preferred: tomorrow in the morning.")
+        setAttended(false)
+        approve()
+    }
+
+    /// The newest call in Recent calls, scrolled up above Home's call buttons (which cover
+    /// the end of the list, so `isHittable` alone isn't enough).
+    private func recentCallRow(file: StaticString = #filePath, line: UInt = #line) -> XCUIElement {
+        let row = app.buttons.matching(identifier: "recentCalls.row").firstMatch
+        let call = app.buttons["home.call"]
+        XCTAssertTrue(call.waitForExistence(timeout: 10), file: file, line: line)
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "no call in Recent calls", file: file, line: line)
+        for _ in 0..<5 where row.frame.maxY > call.frame.minY - 60 { app.swipeUp() }
+        XCTAssertLessThan(row.frame.maxY, call.frame.minY, "Recent calls stay under the call buttons", file: file, line: line)
+        return row
     }
 
     private func openNotes(timeout: TimeInterval = 30) {
