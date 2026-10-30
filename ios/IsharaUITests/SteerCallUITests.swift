@@ -43,15 +43,20 @@ final class SteerCallUITests: XCTestCase {
         field.tap()
         field.typeText("can we do 11 instead")
         app.buttons["steer.send"].tap()
-        XCTAssertTrue(app.staticTexts["Can we do 11 instead."].waitForExistence(timeout: 10), "the typed line is previewed, then shown as the user's")
+        XCTAssertTrue(app.staticTexts["Can we do 11 instead?"].waitForExistence(timeout: 10), "the typed line is previewed, then shown as the user's")
         attach("typed")
 
-        // The call runs to its end on its own; the gist is one tap away.
-        let gist = app.buttons["steer.gist"]
-        XCTAssertTrue(gist.waitForExistence(timeout: 60))
-        gist.tap()
-        XCTAssertTrue(app.staticTexts["notes.outcome"].waitForExistence(timeout: 10) || app.otherElements["notes.outcome"].waitForExistence(timeout: 2))
+        // The call runs to its end on its own and goes on to the gist by itself.
+        XCTAssertTrue(app.staticTexts["notes.outcome"].waitForExistence(timeout: 60) || app.otherElements["notes.outcome"].waitForExistence(timeout: 2))
         attach("gist")
+
+        // One tap home, and Home is ready for the next call.
+        let done = app.buttons["notes.done"]
+        XCTAssertTrue(done.waitForExistence(timeout: 2))
+        done.tap()
+        XCTAssertTrue(app.textFields["setup.number"].firstMatch.waitForExistence(timeout: 5), "Done goes back to Home")
+        let leftover = app.textFields["setup.number"].firstMatch.value as? String ?? ""
+        XCTAssertTrue(leftover.isEmpty || leftover == "10-digit number", "the finished call's draft is cleared")
     }
 
     private func attach(_ name: String) {

@@ -275,14 +275,79 @@ def validate_polish(candidate: str, typed: str, last_caption: str | None) -> lis
     return reasons
 
 
+# A typed line that opens with one of these is a question ("can we do 11 instead").
+_QUESTION_START = re.compile(
+    r"^(can|could|would|will|is|are|do|does|did|may|shall|should|what|when|where|which|who"
+    r"|why|how|any|anything)\b",
+    re.IGNORECASE,
+)
+
+
 def tidy(typed: str) -> str:
     """The typed line as spoken when no LLM polishes it: trimmed, one space between
-    words, a capital to start and a full stop to end."""
+    words, "i" as "I", a capital to start, and a question mark or full stop to end."""
     text = " ".join(typed.split())
     if not text:
         return text
+    text = re.sub(r"\bi\b", "I", text)
+    text = re.sub(r"\bi(['’](?:m|ve|d|ll))\b", r"I\1", text)
     text = text[0].upper() + text[1:]
-    return text if text.endswith((".", "!", "?")) else text + "."
+    if text.endswith((".", "!", "?")):
+        return text
+    return text + ("?" if _QUESTION_START.search(text) else ".")
+
+
+# The caller's own words, retold by the assistant: "my passport" -> "their passport".
+_THIRD_PERSON = [
+    (re.compile(r"\bi\s+am\b", re.IGNORECASE), "they are"),
+    (re.compile(r"\bi\s+was\b", re.IGNORECASE), "they were"),
+    (re.compile(r"\bi['’]m\b", re.IGNORECASE), "they're"),
+    (re.compile(r"\bi['’]ve\b", re.IGNORECASE), "they've"),
+    (re.compile(r"\bi['’]d\b", re.IGNORECASE), "they'd"),
+    (re.compile(r"\bi['’]ll\b", re.IGNORECASE), "they'll"),
+    (re.compile(r"\bmyself\b", re.IGNORECASE), "themselves"),
+    (re.compile(r"\bmine\b", re.IGNORECASE), "theirs"),
+    (re.compile(r"\bmy\b", re.IGNORECASE), "their"),
+    (re.compile(r"\bme\b", re.IGNORECASE), "them"),
+    (re.compile(r"\bi\b", re.IGNORECASE), "they"),
+]
+# Requests typed as instructions to Ishara ("book a check-up", "ask about my refund").
+_IMPERATIVES = frozenset(
+    {
+        *("add", "apply", "arrange", "ask", "block", "book", "buy", "call", "cancel", "change"),
+        *("check", "claim", "collect", "complain", "confirm", "deliver", "discuss", "enquire"),
+        *("file", "find", "fix", "follow", "get", "inquire", "know", "make", "move", "open"),
+        *("order", "pay", "pick", "postpone", "register", "renew", "replace", "report"),
+        *("request", "reschedule", "reserve", "return", "see", "schedule", "send", "set"),
+        *("sort", "speak", "submit", "talk", "tell", "track", "transfer", "update", "verify"),
+    }
+)
+
+
+def third_person(text: str) -> str:
+    for pattern, replacement in _THIRD_PERSON:
+        text = pattern.sub(replacement, text)
+    return text
+
+
+def phrase_request(request: str) -> str:
+    """What the caller typed the call is about, as the assistant says it on their behalf
+    when no LLM phrases it: in the third person, with no word added but a lead-in.
+    "talk about my passport, I want a new one" -> "They'd like to talk about their
+    passport, they want a new one." """
+    text = re.sub(r"^(please|pls|kindly)\s+", "", " ".join(request.split()), flags=re.IGNORECASE)
+    if not text:
+        return text
+    text = third_person(text)
+    first = text.split(" ", 1)[0].lower().strip(",.")
+    lowered = text[0].lower() + text[1:] if len(text) < 2 or not text[1].isupper() else text
+    if first.startswith("they"):
+        body = text
+    elif first in _IMPERATIVES:
+        body = "They'd like to " + lowered
+    else:
+        body = "It's about " + lowered
+    return tidy(body)
 
 
 def validate(draft_text: str, request: ComposeRequest) -> list[str]:

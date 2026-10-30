@@ -304,8 +304,12 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         isComposing = false
         heldLine = nil
         steerSteppedIn += 1
+        // As the backend's tidy() does without an LLM: a capital, and "?" for a question.
         let tidy = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let polished = tidy.prefix(1).uppercased() + tidy.dropFirst() + (tidy.hasSuffix(".") || tidy.hasSuffix("?") ? "" : ".")
+        let questionWords: Set<String> = ["can", "could", "would", "will", "is", "are", "do", "does", "what", "when", "where", "how", "why", "any"]
+        let isQuestion = questionWords.contains(tidy.split(separator: " ").first.map { $0.lowercased() } ?? "")
+        let ending = tidy.hasSuffix(".") || tidy.hasSuffix("?") ? "" : (isQuestion ? "?" : ".")
+        let polished = tidy.prefix(1).uppercased() + tidy.dropFirst() + ending
         let continuation: () -> Void = { [weak self] in
             self?.schedule(after: 2) { driver in
                 driver.say(.receptionist, "Of course. Let me check that for you.")

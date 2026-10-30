@@ -15,6 +15,8 @@ struct AppRootView: View {
 
     /// Why the steer call couldn't be set up (creating its brief failed).
     @State private var steerProblem: String?
+    /// What's typed on Home, kept across the call so "Back to the request" finds it.
+    @State private var draft = SetupDraft()
 
     @State private var route: Route
     @State private var setup: CallSetup = .demo
@@ -35,6 +37,7 @@ struct AppRootView: View {
                     modeDescription: services.modeDescription,
                     setupProblem: services.setupProblem ?? steerProblem,
                     history: services.history,
+                    draft: draft,
                     onCall: { chosen in startSteerCall(chosen) }
                 )
             case .steerCall(let model):
@@ -120,7 +123,14 @@ struct AppRootView: View {
                     if isOver { followUp(model) }
                 }
             case .notes(let model) where services.options.flow == .steer:
-                SteerGistView(model: model, onDone: { route = .home })
+                SteerGistView(
+                    model: model,
+                    onDone: {
+                        draft.clear()
+                        route = .home
+                    },
+                    onCallAgain: { startSteerCall(setup) }
+                )
             case .notes(let model):
                 NotesView(model: model, onDone: { route = .home })
             }
@@ -157,6 +167,7 @@ struct AppRootView: View {
             } catch {
                 driver.close()
                 steerProblem = "Couldn't set up the call: \(error.localizedDescription)"
+                route = .home  // "Call again" starts from the gist; the problem shows on Home
             }
         }
     }

@@ -223,13 +223,21 @@ class CallManager(CallLedger):
         self._asks: dict[str, _OpenAsk] = {}
         self._proposals: dict[str, _Proposal] = {}  # by call id; at most one per call
         self._briefs: dict[str, tuple[BriefRequest, BriefResponse]] = {}
+        self._openings: dict[str, str] = {}  # steer: the request phrased on the caller's behalf
         self._tasks: set[asyncio.Task[None]] = set()
 
     # ---- REST ----
 
-    def create_brief(self, request: BriefRequest) -> BriefResponse:
+    async def create_brief(self, request: BriefRequest) -> BriefResponse:
         response = build_brief(request)
         self._briefs[response.brief_id] = (request, response)
+        if request.request:
+            # Phrased once here, before anything is dialled, so the call never waits on it.
+            phrase = getattr(self._composer, "phrase_request", None)
+            if phrase is not None:
+                self._openings[response.brief_id] = await phrase(
+                    request.request, request.profile.name
+                )
         return response
 
     def notes(self, call_id: str) -> CallNotes | None:
@@ -275,8 +283,11 @@ class CallManager(CallLedger):
             brief = self._briefs.pop(request.brief_id or "", None)
             if brief is None:
                 raise UnknownBrief(request.brief_id)
+            opening = self._openings.pop(request.brief_id or "", None)
             delegate = DelegateState(
-                brief_from(*brief), attended=request.attended, steer=request.mode == "steer"
+                brief_from(*brief, opening=opening),
+                attended=request.attended,
+                steer=request.mode == "steer",
             )
         session = CallSession(
             call_id=uuid.uuid4().hex, purpose=request.purpose, mode=request.mode, delegate=delegate
@@ -908,8 +919,10 @@ async def start_call(
 
 
 @router.post("/briefs", dependencies=[Depends(require_app_token)])
-def create_brief(body: BriefRequest, manager: CallManager = Depends(get_manager)) -> BriefResponse:
-    return manager.create_brief(body)
+async def create_brief(
+    body: BriefRequest, manager: CallManager = Depends(get_manager)
+) -> BriefResponse:
+    return await manager.create_brief(body)
 
 
 @router.get("/calls/{call_id}/notes", dependencies=[Depends(require_app_token)])

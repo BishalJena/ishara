@@ -7,6 +7,7 @@ import SwiftUI
 struct SteerGistView: View {
     let model: NotesModel
     let onDone: () -> Void
+    let onCallAgain: () -> Void
 
     var body: some View {
         NavigationStack {
@@ -29,11 +30,28 @@ struct SteerGistView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Call with \(model.contactName)")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done", action: onDone).accessibilityIdentifier("notes.done")
+            // The way out is the one big button at the bottom, where the thumb already is.
+            .safeAreaInset(edge: .bottom) {
+                HStack(spacing: 12) {
+                    Button(action: onCallAgain) {
+                        Label("Call again", systemImage: "phone.arrow.up.right")
+                            .frame(maxWidth: .infinity).padding(.vertical, 6)
+                    }
+                    .buttonStyle(.bordered).buttonBorderShape(.capsule)
+                    .accessibilityIdentifier("notes.callAgain")
+                    Button(action: onDone) {
+                        Text("Done").font(.headline)
+                            .frame(maxWidth: .infinity).padding(.vertical, 6)
+                    }
+                    .buttonStyle(.borderedProminent).buttonBorderShape(.capsule)
+                    .accessibilityIdentifier("notes.done")
                 }
-                ToolbarItem(placement: .topBarLeading) {
+                .controlSize(.large)
+                .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 6)
+                .background(.bar)
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button { Task { await model.refresh() } } label: { Label("Refresh", systemImage: "arrow.clockwise") }
                         .disabled(model.isLoading)
                         .accessibilityIdentifier("notes.refresh")

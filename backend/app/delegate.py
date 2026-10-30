@@ -52,6 +52,7 @@ from app.validator import (
     _invented_numbers,
     _meta_text,
     _normalise,
+    phrase_request,
     temporal_facts,
 )
 from app.validator import (
@@ -243,6 +244,9 @@ class Brief:
     request: str | None = None
     details: tuple[Detail, ...] = ()
     documents: tuple[Document, ...] = ()
+    # Steer: the request as the agent says it on the caller's behalf, phrased once when
+    # the brief was created; None means the rule phrasing is used.
+    opening: str | None = None
 
     @property
     def days(self) -> frozenset[str]:
@@ -266,7 +270,7 @@ class Brief:
         )
 
 
-def brief_from(request: BriefRequest, response: BriefResponse) -> Brief:
+def brief_from(request: BriefRequest, response: BriefResponse, opening: str | None = None) -> Brief:
     return Brief(
         response.text,
         response.goal,
@@ -278,6 +282,7 @@ def brief_from(request: BriefRequest, response: BriefResponse) -> Brief:
         request.request.strip() if request.request else None,
         tuple(request.profile.details),
         tuple(request.profile.documents),
+        opening,
     )
 
 
@@ -643,9 +648,9 @@ class RuleBrain:
     def opening(self, state: DelegateState) -> str:
         when = _preferred_time(state.brief)
         if state.steer and state.brief.request:
-            # The typed request is the goal: "I'm calling for Bishal about: renew my passport."
-            request = state.brief.request.rstrip(" .")
-            return f"I'm calling for {state.brief.name}. {request[:1].upper()}{request[1:]}."
+            # The typed request is the goal, retold on the caller's behalf, never verbatim.
+            said = state.brief.opening or phrase_request(state.brief.request)
+            return f"I'm calling on behalf of {state.brief.name}. {said}"
         line = f"I'd like to {state.brief.goal} for {state.brief.name}"
         return line + (f", {when}." if when else ".")
 

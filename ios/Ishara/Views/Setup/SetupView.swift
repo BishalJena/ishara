@@ -2,20 +2,48 @@ import CallSession
 import PhotosUI
 import SwiftUI
 
+/// What the user has typed on Home, kept while they're on a call so "Back to the request"
+/// finds it as they left it; cleared once a call has been through and they're done.
+@MainActor @Observable
+final class SetupDraft {
+    var number = ""
+    var pickedName = ""
+    var request = ""
+    var attachments: [Attachment] = []
+
+    func clear() {
+        number = ""
+        pickedName = ""
+        request = ""
+        attachments = []
+    }
+}
+
 /// Home for steer calls: who to call (a typed or pasted number, a contact, or someone called
-/// before), what the call is about, and the details Ishara may share, typed or read from an
-/// attached photo or PDF on this phone. One tap places the call; Ishara
-/// runs it and the user steps in whenever they like.
+/// before), what the call is about, and any card, letter or bill Ishara may quote from, read
+/// on this phone. One tap places the call; Ishara runs it and the user steps in whenever
+/// they like.
 struct SetupView: View {
     let modeDescription: String
     /// Why a call can't be placed right now (for example no backend configured).
     let setupProblem: String?
     let history: CallHistory?
+    @Bindable var draft: SetupDraft
     let onCall: (CallSetup) -> Void
 
-    @State private var number = ""
-    @State private var pickedName = ""
-    @State private var request = ""
+    private var number: String {
+        get { draft.number }
+        nonmutating set { draft.number = newValue }
+    }
+    private var pickedName: String {
+        get { draft.pickedName }
+        nonmutating set { draft.pickedName = newValue }
+    }
+    private var request: String { draft.request }
+    private var attachments: [Attachment] {
+        get { draft.attachments }
+        nonmutating set { draft.attachments = newValue }
+    }
     @AppStorage("ishara.name") private var name = ""
     @AppStorage("ishara.callback") private var callback = ""
     @State private var showsSettings = false
@@ -25,7 +53,6 @@ struct SetupView: View {
     @State private var showsFilePicker = false
     @State private var showsAttachMenu = false
     @State private var photoItem: PhotosPickerItem?
-    @State private var attachments: [Attachment] = []
     @State private var reading = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var focus: Field?
@@ -188,7 +215,7 @@ struct SetupView: View {
                 Text("To").font(.headline).foregroundStyle(.secondary)
                 Text("+91").font(.body.monospacedDigit()).foregroundStyle(usesNumber ? .primary : .secondary)
                     .accessibilityHidden(true)
-                TextField("10-digit number", text: $number)
+                TextField("10-digit number", text: $draft.number)
                     .keyboardType(.numberPad)
                     .textContentType(.telephoneNumber)
                     .font(.body.monospacedDigit())
@@ -227,7 +254,7 @@ struct SetupView: View {
             }
             Divider()
 
-            TextField("What should Ishara do? e.g. Book a check-up next week, mornings only.", text: $request, axis: .vertical)
+            TextField("What should Ishara do? e.g. Book a check-up next week, mornings only.", text: $draft.request, axis: .vertical)
                 .lineLimit(3...8)
                 .font(.title3.weight(.medium))
                 .focused($focus, equals: .request)

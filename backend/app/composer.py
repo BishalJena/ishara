@@ -18,7 +18,7 @@ from app.groq_client import GroqClient, GroqError
 from app.ports import Composer
 from app.protocol import ComposeRequest, Draft, DraftSource, Purpose
 from app.templates import compose_template
-from app.validator import tidy, validate, validate_polish
+from app.validator import phrase_request, tidy, validate, validate_polish
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,20 @@ Rules:
 - Output only the sentence: no quotes, labels, markdown or explanations.
 Example: typed "can we do 11 instead"; receptionist said "We have Tuesday at 4 pm."
 Output: Could we make it 11 o'clock instead, please?"""
+OPENING_TIMEOUT_S = 3.0  # phrased once, while the brief is created, before anything is dialled
+OPENING_PROMPT = """\
+You turn what a Deaf caller typed about why they are calling into the words an assistant says
+on the phone on their behalf, right after introducing them.
+Rules:
+- Refer to the caller as "they"; never speak as the caller.
+- Keep every fact and preference exactly; fix grammar, spelling and flow only.
+- Add nothing: no days, dates, times, numbers, names, reasons or claims that anything is booked.
+- Do not mention that the caller is Deaf; that was already said.
+- Polite and natural, one or two short sentences, at most 25 words.
+- Repeat nouns rather than writing "one" for them; number words read as new facts.
+- Output only the sentences: no quotes, labels, markdown or explanations.
+Example: typed "talk about update in my passport that I want a new passport"
+Output: They'd like to ask about updating their passport, as they want a new passport."""
 PURPOSE_TEXT: dict[Purpose, str] = {
     "doctor_appointment": "asking a clinic for a doctor's appointment",
 }
@@ -73,6 +87,9 @@ class TemplateComposer:
     async def polish(self, typed: str, last_caption: str | None) -> str:
         return tidy(typed)
 
+    async def phrase_request(self, request: str, name: str) -> str:
+        return phrase_request(request)
+
 
 class GroqComposer:
     def __init__(self, client: GroqClient | None, timeout_s: float = LLM_TIMEOUT_S) -> None:
@@ -108,6 +125,28 @@ class GroqComposer:
             logger.info(
                 "polish: LLM rewording rejected (%s), speaking as typed", "; ".join(reasons)
             )
+            return fallback
+        return text
+
+    async def phrase_request(self, request: str, name: str) -> str:
+        """Steer calls: the typed request as the agent says it after introducing the
+        caller, phrased by the LLM and checked for added facts; the rule-based third-person
+        version when the LLM is slow, fails or adds something."""
+        fallback = phrase_request(request)
+        if self.client is None:
+            return fallback
+        try:
+            raw = await asyncio.wait_for(
+                self.client.complete(OPENING_PROMPT, json.dumps({"typed": request})),
+                OPENING_TIMEOUT_S,
+            )
+        except (TimeoutError, GroqError) as exc:
+            logger.warning("opening: LLM unavailable (%s), using the rule phrasing", exc)
+            return fallback
+        text = raw.strip().strip('"')
+        reasons = validate_polish(text, f"{request} {name}", None)
+        if reasons:
+            logger.info("opening: LLM phrasing rejected (%s), using rules", "; ".join(reasons))
             return fallback
         return text
 

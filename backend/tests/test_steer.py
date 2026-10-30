@@ -15,6 +15,7 @@ from functools import partial
 import pytest
 
 from app.calls import FILLER_GAP_S, CallManager, steer_window_s
+from app.composer import GroqComposer
 from app.delegate import (
     ANOTHER_TIME_LINE,
     CALLBACK_LINE,
@@ -31,7 +32,7 @@ from app.delegate import (
 )
 from app.main import create_app
 from app.protocol import BriefRequest, Detail, Document, Profile, StartCallRequest
-from app.validator import tidy, validate_polish
+from app.validator import phrase_request, tidy, validate_polish
 from tests.conftest import make_settings
 from tests.test_calls import CLINIC, PHARMACY, FakeBolna, FakeComposer
 from tests.test_delegate import AUTH, Flow
@@ -179,8 +180,40 @@ def test_fillers_never_repeat_back_to_back() -> None:
 
 
 def test_tidy_capitalises_and_punctuates() -> None:
-    assert tidy("  can we   do 11 instead ") == "Can we do 11 instead."
+    assert tidy("  can we   do 11 instead ") == "Can we do 11 instead?"
     assert tidy("thanks!") == "Thanks!"
+    assert tidy("i think i'm free after 5") == "I think I'm free after 5."
+
+
+def test_the_request_is_retold_on_the_callers_behalf_without_an_llm() -> None:
+    assert phrase_request("talk about update in my passport that I want a new passport") == (
+        "They'd like to talk about update in their passport that they want a new passport."
+    )
+    assert phrase_request("I need a new passport, my old one expired") == (
+        "They need a new passport, their old one expired."
+    )
+    assert phrase_request("please book a check-up for me") == (
+        "They'd like to book a check-up for them."
+    )
+    assert phrase_request("Passport renewal") == "It's about passport renewal."
+
+
+class _OneReply:
+    def __init__(self, reply: str) -> None:
+        self.reply = reply
+
+    async def complete(self, system: str, user: str) -> str:
+        return self.reply
+
+
+async def test_the_llm_phrases_the_opening_and_may_add_nothing() -> None:
+    typed = "talk about update in my passport that I want a new passport"
+    good = "They'd like to ask about updating their passport, as they want a new passport."
+    assert await GroqComposer(_OneReply(good)).phrase_request(typed, "Bishal Jena") == good
+    invented = "They'd like a new passport by Friday at 10 am."
+    assert await GroqComposer(_OneReply(invented)).phrase_request(typed, "Bishal Jena") == (
+        phrase_request(typed)
+    )
 
 
 def test_polish_may_reuse_the_users_and_receptionists_facts_but_add_none() -> None:
@@ -268,8 +301,11 @@ def test_away_user_hears_nothing_the_agent_speaks_at_once(steer) -> None:
         assert f.receive(ws)["type"] == "status"
         f.live(call_id)
         f.drain_until(ws, "caption")  # disclosure
-        # The opening is the typed request, not a fixed purpose line.
-        assert f.speak_last(call_id) == f"I'm calling for Bishal Jena. {REQUEST}"
+        # The opening retells the typed request on the caller's behalf, not a fixed line.
+        assert f.speak_last(call_id) == (
+            "I'm calling on behalf of Bishal Jena. They'd like to book a check-up next week, "
+            "mornings only. Tuesday or Wednesday is fine."
+        )
         # No presence message: the app is not in front, so the line is spoken straight away.
         said = f.listen_turn(call_id, "We have Wednesday at 10:30. Does that work?")
         assert said == "Yes, 10:30 wednesday works. Thank you."
@@ -327,16 +363,16 @@ def test_holding_drops_the_line_and_covers_until_the_user_speaks(steer) -> None:
 
         ws.send_json({"type": "say", "text": "can we do 11 instead"})
         preview = f.drain_until(ws, "proposal")
-        assert preview["origin"] == "user" and preview["text"] == "Can we do 11 instead."
+        assert preview["origin"] == "user" and preview["text"] == "Can we do 11 instead?"
         assert f.drain_until(ws, "proposal_resolved")["outcome"] == "spoken"
-        assert f.bolna.injected[-1] == "Can we do 11 instead."
-        assert f.speak_last(call_id) == "Can we do 11 instead."
+        assert f.bolna.injected[-1] == "Can we do 11 instead?"
+        assert f.speak_last(call_id) == "Can we do 11 instead?"
 
     f.finish()
     notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
     assert notes["mode"] == "steer"
     assert notes["stepped_in"] == 1
-    assert 'You answered: "Can we do 11 instead."' in notes["summary"]
+    assert 'You answered: "Can we do 11 instead?"' in notes["summary"]
 
 
 def test_backing_out_of_composing_speaks_the_held_line_after_all(steer) -> None:

@@ -39,6 +39,13 @@ struct SteerCallView: View {
                 activity.end(outcome: "Call ended · open Ishara for the gist")
             }
         }
+        // A call that got through goes straight on to its gist after a beat, so the last
+        // line can be read; a call that didn't stays here with its tray of next steps.
+        .task(id: model.isCallOver) {
+            guard model.isCallOver, notThrough == nil else { return }
+            try? await Task.sleep(for: .seconds(2))
+            if !Task.isCancelled { onShowNotes() }
+        }
         .onAppear { activity.start(contactName: model.setup.contact.name) }
         .onDisappear { activity.end(outcome: nil) }
         .onChange(of: model.captions.count) { _, _ in activity.update(from: model) }
