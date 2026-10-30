@@ -110,18 +110,33 @@ public struct Detail: Codable, Equatable, Hashable, Sendable {
     }
 }
 
+/// The text of a card, letter or bill the user attached, read on their phone. The agent may
+/// quote from it when asked, word for word only; it never volunteers it.
+public struct Document: Codable, Equatable, Hashable, Sendable {
+    public var name: String
+    public var text: String
+
+    public init(name: String, text: String) {
+        self.name = name
+        self.text = text
+    }
+}
+
 /// What the agent may share about the caller; nothing else is ever said.
 public struct Profile: Codable, Equatable, Sendable {
     public var name: String
     public var callback: String?
     public var notes: String?
     public var details: [Detail]
+    /// Omitted from the JSON when there are none, so older briefs are byte-for-byte the same.
+    public var documents: [Document]?
 
-    public init(name: String, callback: String? = nil, notes: String? = nil, details: [Detail] = []) {
+    public init(name: String, callback: String? = nil, notes: String? = nil, details: [Detail] = [], documents: [Document] = []) {
         self.name = name
         self.callback = callback
         self.notes = notes
         self.details = details
+        self.documents = documents.isEmpty ? nil : documents
     }
 }
 

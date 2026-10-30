@@ -88,6 +88,8 @@ struct CallSetup: Equatable, Sendable {
     var request: String? = nil
     /// Steer call: facts the user approved for sharing when the receptionist asks.
     var sharedDetails: [Detail] = []
+    /// Cards, letters or bills the user attached, as text read on the phone.
+    var documents: [Document] = []
 
     var isSteer: Bool { delegation?.mode == .steer }
 
@@ -95,7 +97,7 @@ struct CallSetup: Equatable, Sendable {
     var steerBriefRequest: BriefRequest {
         BriefRequest(
             purpose: purpose, chips: [],
-            profile: Profile(name: details.name, details: sharedDetails),
+            profile: Profile(name: details.name, details: sharedDetails, documents: documents),
             request: request)
     }
 

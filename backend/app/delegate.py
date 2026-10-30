@@ -37,6 +37,7 @@ from app.protocol import (
     CallMode,
     CallNotes,
     Detail,
+    Document,
     Purpose,
     Sign,
     TranscriptEntry,
@@ -233,6 +234,7 @@ class Brief:
     purpose: Purpose
     request: str | None = None
     details: tuple[Detail, ...] = ()
+    documents: tuple[Document, ...] = ()
 
     @property
     def days(self) -> frozenset[str]:
@@ -267,6 +269,7 @@ def brief_from(request: BriefRequest, response: BriefResponse) -> Brief:
         request.purpose,
         request.request.strip() if request.request else None,
         tuple(request.profile.details),
+        tuple(request.profile.documents),
     )
 
 
@@ -749,6 +752,39 @@ class _LlmTurn(BaseModel):
     done: bool = False
 
 
+LOOKUP_PROMPT = """\
+You help a phone assistant answer a question from the person on the other end of a call, using
+only documents the caller attached (a card, letter or bill, as plain text). Reply with JSON only:
+{"label": "<one to three plain words naming what was asked, e.g. Policy number>",
+ "value": "<the answer copied EXACTLY as it appears in a document>"}
+or {"label": null, "value": null} if the documents do not contain it.
+Never guess, complete, reformat or combine values. If several documents have it, use the first.
+"""
+
+
+class _Lookup(BaseModel):
+    label: str | None = None
+    value: str | None = None
+
+
+def _normalised_text(text: str) -> str:
+    return "".join(ch for ch in text.lower() if ch.isalnum())
+
+
+def verified_lookup(found: _Lookup, documents: tuple[Document, ...]) -> Detail | None:
+    """The looked-up fact as a detail, only if its value appears verbatim (ignoring case,
+    spaces and punctuation) in one of the documents. This is what stops an invented answer."""
+    if not found.label or not found.value:
+        return None
+    label, value = found.label.strip(), found.value.strip()
+    if not (1 <= len(label.split()) <= 3 and 1 <= len(value) <= 80):
+        return None
+    needle = _normalised_text(value)
+    if not needle or not any(needle in _normalised_text(d.text) for d in documents):
+        return None
+    return Detail(label=label[:1].upper() + label[1:], value=value)
+
+
 class Brain:
     """Groq with the rule brain as the fallback; every line is checked before it is spoken."""
 
@@ -757,13 +793,39 @@ class Brain:
         self.timeout_s = timeout_s
         self.rules = RuleBrain()
 
+    async def lookup(self, brief: Brief, heard: str) -> Decision | None:
+        """Steer: the receptionist asked for something the brief doesn't hold. Find it in
+        the attached documents; share it only when it is there word for word."""
+        if self.client is None or not brief.documents:
+            return None
+        docs = "\n\n".join(f"### {d.name}\n{d.text[:6000]}" for d in brief.documents)
+        try:
+            raw = await asyncio.wait_for(
+                self.client.complete(
+                    LOOKUP_PROMPT, f"They asked: {heard.strip()}\n\nDocuments:\n{docs}"
+                ),
+                self.timeout_s,
+            )
+            found = _Lookup.model_validate_json(raw.strip().strip("`").removeprefix("json"))
+        except (TimeoutError, GroqError, ValidationError) as exc:
+            log.info("steer: lookup unavailable (%s), deferring", type(exc).__name__)
+            return None
+        detail = verified_lookup(found, brief.documents)
+        if detail is None:
+            log.info("steer: lookup found nothing verbatim, deferring")
+            return None
+        return Decision(f"{detail.label} is {detail.value}.", source="llm", kind="share")
+
     async def reply(self, state: DelegateState, heard: str) -> Decision:
         fallback = self.rules.decide(state, heard)
         if self.client is None:
             return fallback
         if state.steer:
             # Every commitment, share, deferral and time answer is rule-bound; the LLM
-            # may only phrase the conversational turns, and never asks the user.
+            # may only phrase the conversational turns, and never asks the user. The one
+            # exception: a deferral may become a share if the answer is in a document.
+            if fallback.kind == "defer":
+                return await self.lookup(state.brief, heard) or fallback
             if fallback.kind != "other":
                 return fallback
             try:

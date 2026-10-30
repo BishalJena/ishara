@@ -4,25 +4,26 @@ import PDFKit
 import UIKit
 import Vision
 
-/// A photo or PDF the user attached to the request, read on this iPhone. Nothing of it leaves
-/// the phone: only the details the user keeps as chips are sent with the brief.
+/// A photo or PDF the user attached to the request. Its text is read on this iPhone and goes
+/// with the brief as a document, so Ishara can quote it (word for word, only when asked).
 struct Attachment: Identifiable, Equatable {
     let id = UUID()
     let name: String
     let thumbnail: UIImage?
-    var details: [Detail]
+    let text: String
     var problem: String?
 
-    /// What gets added to the request box, so the user sees exactly what was read.
-    var sentence: String {
-        guard !details.isEmpty else { return "" }
-        return "From \(name): " + details.map { "\($0.label.lowercased()) \($0.value)" }.joined(separator: ", ") + "."
+    var summary: String {
+        problem ?? "Read on this iPhone · Ishara can quote it when asked"
+    }
+
+    var document: Document? {
+        problem == nil ? Document(name: name, text: text) : nil
     }
 }
 
 enum AttachmentReader {
-    /// Reads the text with Vision (photos) or PDFKit (PDFs, falling back to Vision for scans)
-    /// and picks out the details worth sharing on a call.
+    /// Reads the text with Vision (photos) or PDFKit (PDFs, falling back to Vision for scans).
     static func read(data: Data, name: String) async -> Attachment {
         if let pdf = PDFDocument(data: data) {
             var text = (0..<pdf.pageCount).compactMap { pdf.page(at: $0)?.string }.joined(separator: "\n")
@@ -33,16 +34,14 @@ enum AttachmentReader {
             return attachment(name: name, thumbnail: thumb, text: text)
         }
         guard let image = UIImage(data: data) else {
-            return Attachment(name: name, thumbnail: nil, details: [], problem: "Couldn't open this file.")
+            return Attachment(name: name, thumbnail: nil, text: "", problem: "Couldn't open this file.")
         }
         return attachment(name: name, thumbnail: image, text: await recognise(image))
     }
 
     private static func attachment(name: String, thumbnail: UIImage?, text: String) -> Attachment {
-        let details = DetailExtractor.extract(from: text)
-        return Attachment(
-            name: name, thumbnail: thumbnail, details: details,
-            problem: details.isEmpty ? (text.isEmpty ? "No text found in it." : "No details found to share.") : nil)
+        let text = String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(20_000))
+        return Attachment(name: name, thumbnail: thumbnail, text: text, problem: text.isEmpty ? "No text found in it." : nil)
     }
 
     private static func recognise(_ image: UIImage) async -> String {
@@ -60,97 +59,6 @@ enum AttachmentReader {
                 if (try? handler.perform([request])) == nil { continuation.resume(returning: "") }
             }
         }
-    }
-}
-
-/// Finds the fields a receptionist tends to ask for, in what the user typed ("my policy
-/// number is AH-4821") and in a card or letter ("Policy No: AH-4821"): "Label: value" lines,
-/// label-then-value clauses, and dates, policy or member numbers and phone numbers near a
-/// word that names them. Deterministic on purpose: what it finds is shown as chips the user
-/// can keep private, never sent unseen.
-enum DetailExtractor {
-    private static let knownLabels: [(pattern: String, label: String)] = [
-        (#"(?i)\b(date of birth|dob|birth date|born on|born)\b"#, "Date of birth"),
-        (#"(?i)\b(policy (?:no|number|#)?|policy)\b"#, "Policy number"),
-        (#"(?i)\b(member(?:ship)? (?:no|number|id)|member id)\b"#, "Member ID"),
-        (#"(?i)\b(insurance (?:no|number|id)|insurer|insurance|provider|plan)\b"#, "Insurer"),
-        (#"(?i)\b(patient(?: name)?|name|insured|holder)\b"#, "Name"),
-        (#"(?i)\b(group (?:no|number)|group)\b"#, "Group number"),
-        (#"(?i)\b(valid (?:till|until|thru|through)|expiry|expires|exp)\b"#, "Valid until"),
-        (#"(?i)\b(callback(?: number)?|phone|mobile|tel|contact)\b"#, "Phone"),
-        (#"(?i)\b(address)\b"#, "Address"),
-    ]
-    private static let textLabels: Set<String> = ["Name", "Insurer", "Address"]
-    private static let connector = #"^\s*(?:is|was|are|be|number|no\.?|#|:|-|=|of)?\s*(?:is|:|-|=)?\s*"#
-
-    static func extract(from text: String) -> [Detail] {
-        var found = fromLines(text)
-        // Free text: "my date of birth is 12/03/1994, policy number AH-4821 and ..."
-        for clause in text.split(whereSeparator: { ".;\n".contains($0) }) {
-            let clause = String(clause)
-            var hits: [(at: String.Index, label: String, value: String)] = []
-            for (pattern, label) in knownLabels where !found.contains(where: { $0.label == label }) {
-                guard let hit = clause.range(of: pattern, options: .regularExpression) else { continue }
-                var rest = String(clause[hit.upperBound...])
-                if let skip = rest.range(of: connector, options: .regularExpression) { rest = String(rest[skip.upperBound...]) }
-                let value = rest.components(separatedBy: ",").first.map { String($0.split(separator: " and ").first ?? "") } ?? ""
-                guard value.contains(where: \.isNumber) || textLabels.contains(label) else { continue }
-                hits.append((hit.lowerBound, label, value))
-            }
-            // In reading order, so the chips follow the text.
-            for hit in hits.sorted(by: { $0.at < $1.at }) { add(label: hit.label, value: hit.value, to: &found) }
-        }
-        return Array(found.prefix(8))
-    }
-
-    private static func fromLines(_ text: String) -> [Detail] {
-        var found: [Detail] = []
-        let lines = text.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespaces) }
-        for (index, line) in lines.enumerated() {
-            // "Label: value" or "Label - value" on one line.
-            if let range = line.range(of: #"\s*[:\-–]\s+"#, options: .regularExpression),
-               line.distance(from: line.startIndex, to: range.lowerBound) <= 32 {
-                let label = String(line[..<range.lowerBound]), value = String(line[range.upperBound...])
-                add(label: canonical(label) ?? label.capitalized, value: value, to: &found)
-                continue
-            }
-            // A label on its own line with the value on the next.
-            if let label = canonical(line), index + 1 < lines.count, looksLikeValue(lines[index + 1]) {
-                add(label: label, value: lines[index + 1], to: &found)
-                continue
-            }
-            // A short card line: a date, long number or phone number after a label word.
-            // Long sentences are left to the free-text pass, which keeps reading order.
-            if line.split(separator: " ").count <= 8, let label = canonical(line), let value = trailingValue(in: line) {
-                add(label: label, value: value, to: &found)
-            }
-        }
-        return found
-    }
-
-    private static func canonical(_ label: String) -> String? {
-        knownLabels.first { label.range(of: $0.pattern, options: .regularExpression) != nil }?.label
-    }
-
-    private static func looksLikeValue(_ line: String) -> Bool {
-        (2...60).contains(line.count) && canonical(line) == nil && !line.hasSuffix(":")
-    }
-
-    private static func trailingValue(in line: String) -> String? {
-        for pattern in [
-            #"\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4}"#, #"\d{4}[/.\-]\d{1,2}[/.\-]\d{1,2}"#,
-            #"\+?\d[\d\s\-]{7,16}\d"#, #"\b(?=[A-Z0-9\-]*\d)[A-Z0-9][A-Z0-9\-]{5,}\b"#,
-        ] {
-            if let range = line.range(of: pattern, options: .regularExpression) { return String(line[range]) }
-        }
-        return nil
-    }
-
-    private static func add(label: String, value: String, to found: inout [Detail]) {
-        let value = value.trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
-        guard (1...60).contains(value.count), value.split(separator: " ").count <= 6,
-              !found.contains(where: { $0.label == label }) else { return }
-        found.append(Detail(label: label, value: value))
     }
 }
 

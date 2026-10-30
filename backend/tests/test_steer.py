@@ -9,6 +9,7 @@ endpoint and the app WebSocket, with the fake Bolna recording what would be spok
 from __future__ import annotations
 
 import contextlib
+from dataclasses import replace
 from functools import partial
 
 import pytest
@@ -21,13 +22,14 @@ from app.delegate import (
     DEFER_LINE,
     FILLERS,
     TIMES_LINE,
+    Brain,
     Brief,
     DelegateState,
     RuleBrain,
     build_brief,
 )
 from app.main import create_app
-from app.protocol import BriefRequest, Detail, Profile, StartCallRequest
+from app.protocol import BriefRequest, Detail, Document, Profile, StartCallRequest
 from app.validator import tidy, validate_polish
 from tests.conftest import make_settings
 from tests.test_calls import CLINIC, PHARMACY, FakeBolna, FakeComposer
@@ -414,3 +416,51 @@ def every(f: Flow, ws, timeout: float = 0.3) -> list[dict]:
         while True:
             messages.append(f.receive(ws, timeout=timeout))
     return messages
+
+
+# ---- documents: the agent may quote an attached card or letter, verbatim only ----
+
+
+class _ScriptedGroq:
+    """Returns the given JSON for every completion and records the prompts it saw."""
+
+    def __init__(self, reply: str) -> None:
+        self.reply = reply
+        self.calls: list[tuple[str, str]] = []
+
+    async def complete(self, system: str, user: str) -> str:
+        self.calls.append((system, user))
+        return self.reply
+
+
+CARD = Document(
+    name="Insurance card", text="ACME Health\nPolicy No: AH-4821-7732\nMember: Bishal Jena"
+)
+
+
+def document_state() -> DelegateState:
+    brief = steer_brief()
+    state = steer_state(replace(brief, documents=(CARD,)))
+    return state
+
+
+async def test_asked_for_something_in_a_document_shares_it_word_for_word():
+    groq = _ScriptedGroq('{"label": "policy number", "value": "AH-4821-7732"}')
+    decision = await Brain(groq).reply(document_state(), "What's your insurance policy number?")
+    assert decision.kind == "share"
+    assert decision.say == "Policy number is AH-4821-7732."
+    assert "AH-4821-7732" in groq.calls[0][1], "the document text goes to the lookup"
+
+
+async def test_a_looked_up_value_not_in_the_document_is_not_said():
+    groq = _ScriptedGroq('{"label": "Policy number", "value": "AH-4821-7733"}')
+    decision = await Brain(groq).reply(document_state(), "What's your policy number?")
+    assert decision.kind == "defer"
+    assert decision.say == DEFER_LINE
+
+
+async def test_without_documents_the_deferral_stands_and_no_lookup_is_made():
+    groq = _ScriptedGroq('{"label": "Policy number", "value": "AH-4821-7732"}')
+    decision = await Brain(groq).reply(steer_state(), "What's your policy number?")
+    assert decision.kind == "defer"
+    assert groq.calls == []

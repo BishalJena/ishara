@@ -27,8 +27,6 @@ struct SetupView: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var attachments: [Attachment] = []
     @State private var reading = 0
-    /// Details the user tapped to keep private, by label.
-    @State private var privateLabels: Set<String> = []
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var focus: Field?
 
@@ -36,11 +34,6 @@ struct SetupView: View {
 
     private var typedContact: Contact? { Contact.indian(number, name: pickedName) }
     private var usesNumber: Bool { !number.isEmpty }
-
-    /// What Ishara noticed in the request (and in anything attached, which is written into
-    /// the request too), so there's one place the user reads and edits.
-    private var inferred: [Detail] { DetailExtractor.extract(from: request) }
-    private var shared: [Detail] { inferred.filter { !privateLabels.contains($0.label) } }
 
     /// People called before from this phone, newest first, one chip each.
     private var recentPeople: [Contact] {
@@ -103,7 +96,7 @@ struct SetupView: View {
                 Button("Photo") { showsPhotoPicker = true }
                 Button("File or PDF") { showsFilePicker = true }
             } message: {
-                Text("Read on this iPhone. Only the details you keep are shared on the call.")
+                Text("A card, letter or bill. Ishara reads it on this iPhone and can quote it on the call, word for word, only when asked.")
             }
             .photosPicker(isPresented: $showsPhotoPicker, selection: $photoItem, matching: .images)
             .onChange(of: photoItem) { _, item in
@@ -128,19 +121,11 @@ struct SetupView: View {
         reading += 1
         let attachment = await AttachmentReader.read(data: data, name: name)
         reading -= 1
-        withAnimation(motion) {
-            attachments.append(attachment)
-            if !attachment.sentence.isEmpty {
-                request = request.trimmingCharacters(in: .whitespacesAndNewlines) + (request.isEmpty ? "" : "\n") + attachment.sentence
-            }
-        }
+        withAnimation(motion) { attachments.append(attachment) }
     }
 
     private func remove(_ attachment: Attachment) {
-        withAnimation(motion) {
-            attachments.removeAll { $0.id == attachment.id }
-            request = request.replacingOccurrences(of: attachment.sentence, with: "").trimmingCharacters(in: .whitespacesAndNewlines)
-        }
+        withAnimation(motion) { attachments.removeAll { $0.id == attachment.id } }
     }
 
     /// A settled spring (no bounce) for things that appear because of what the user did;
@@ -242,17 +227,13 @@ struct SetupView: View {
             }
             Divider()
 
-            TextField("What should Ishara do? e.g. Book a check-up next week, mornings only. My policy number is …", text: $request, axis: .vertical)
+            TextField("What should Ishara do? e.g. Book a check-up next week, mornings only.", text: $request, axis: .vertical)
                 .lineLimit(3...8)
                 .font(.title3.weight(.medium))
                 .focused($focus, equals: .request)
                 .accessibilityIdentifier("setup.request")
 
             if !attachments.isEmpty || reading > 0 { attachmentsRow }
-
-            if !inferred.isEmpty { noticedSection }
-            // The section itself slides in with the first detail and out with the last.
-            Color.clear.frame(height: 0).animation(motion, value: inferred.isEmpty)
 
             if let problem {
                 Label(problem, systemImage: "info.circle")
@@ -302,7 +283,7 @@ struct SetupView: View {
                     }
                     VStack(alignment: .leading, spacing: 1) {
                         Text(attachment.name).font(.subheadline.weight(.semibold)).lineLimit(1)
-                        Text(attachment.problem ?? "Read on this iPhone · \(attachment.details.count) detail\(attachment.details.count == 1 ? "" : "s") found")
+                        Text(attachment.summary)
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
@@ -318,45 +299,6 @@ struct SetupView: View {
         }
     }
 
-    /// The details Ishara noticed in the request, as chips that spring in as they're typed.
-    /// Tap one to keep it private (it stays in the text; Ishara just won't say it).
-    private var noticedSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Ishara may share", systemImage: "sparkles")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.secondary)
-            FlowLayout(spacing: 8) {
-                ForEach(inferred, id: \.label) { detail in
-                    let isPrivate = privateLabels.contains(detail.label)
-                    Button {
-                        withAnimation(motion) {
-                            if isPrivate { privateLabels.remove(detail.label) } else { privateLabels.insert(detail.label) }
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text(detail.label).foregroundStyle(isPrivate ? .secondary : Color(.systemBackground).opacity(0.7))
-                            Text(detail.value).strikethrough(isPrivate)
-                            if isPrivate { Image(systemName: "eye.slash").imageScale(.small) }
-                        }
-                        .font(.footnote.weight(.semibold))
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 10)
-                        .background(isPrivate ? Color(.tertiarySystemBackground) : Color.primary, in: Capsule())
-                        .foregroundStyle(isPrivate ? Color.secondary : Color(.systemBackground))
-                    }
-                    .accessibilityLabel("\(detail.label), \(detail.value)\(isPrivate ? ", kept private" : "")")
-                    .accessibilityHint(isPrivate ? "Double-tap to let Ishara share it" : "Double-tap to keep it private")
-                    .transition(appear)
-                }
-            }
-            Text("Tap a detail to keep it private.")
-                .font(.caption2).foregroundStyle(.tertiary)
-        }
-        .animation(motion, value: inferred.map(\.label))
-        .sensoryFeedback(.selection, trigger: inferred.count)
-        .transition(appear)
-    }
-
     private func call() {
         guard problem == nil, let who = typedContact else { return }
         if name.trimmingCharacters(in: .whitespaces).isEmpty {
@@ -369,23 +311,10 @@ struct SetupView: View {
             details: SavedDetails(name: name.trimmingCharacters(in: .whitespaces), preferredTime: .mornings),
             voice: .indianEnglish)
         setup.request = request.trimmingCharacters(in: .whitespacesAndNewlines)
-        setup.sharedDetails = shared
-        if callback.count == 10, !shared.contains(where: { $0.label == "Phone" }) {
-            setup.sharedDetails.append(Detail(label: "Callback number", value: "+91 " + callback))
+        setup.documents = attachments.compactMap(\.document)
+        if callback.count == 10 {
+            setup.sharedDetails = [Detail(label: "Callback number", value: "+91 " + callback)]
         }
         onCall(setup)
     }
-}
-
-private struct TrailingIconLabelStyle: LabelStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: 6) {
-            configuration.title
-            configuration.icon.imageScale(.small)
-        }
-    }
-}
-
-private extension LabelStyle where Self == TrailingIconLabelStyle {
-    static var trailingIcon: TrailingIconLabelStyle { TrailingIconLabelStyle() }
 }

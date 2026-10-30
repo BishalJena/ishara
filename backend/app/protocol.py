@@ -171,6 +171,14 @@ class Detail(_Message):
     value: str = Field(min_length=1, max_length=80)
 
 
+class Document(_Message):
+    """The text of a card, letter or bill the user attached, read on their phone. The agent
+    may quote from it when asked, verbatim only; it never volunteers it."""
+
+    name: str = Field(min_length=1, max_length=80)
+    text: str = Field(min_length=1, max_length=20_000)
+
+
 class Profile(_Message):
     """What the agent may share about the caller. Nothing else is ever said."""
 
@@ -178,6 +186,7 @@ class Profile(_Message):
     callback: str | None = Field(default=None, max_length=40)
     notes: str | None = Field(default=None, max_length=200)
     details: list[Detail] = Field(default_factory=list, max_length=12)
+    documents: list[Document] = Field(default_factory=list, max_length=6)
 
 
 class BriefRequest(_Message):
