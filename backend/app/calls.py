@@ -100,9 +100,18 @@ STEER_WINDOW_PER_WORD_S = 0.25
 STEER_WINDOW_MAX_S = 8.0
 USER_PREVIEW_S = 1.5
 FILLER_GAP_S = 6.0
+# How soon after the user starts typing or signing the first cover line is said, if the
+# receptionist hasn't spoken in the meantime (her turn would get one at once).
+COVER_FIRST_S = 2.0
+# Cover lines said in one stretch of composing before they turn into thanks for waiting.
+COVER_LONG_WAIT_AFTER = 3
 # Turn ids the backend mints for lines the user steered (typed) or the agent proposed.
 SAY_TURN_PREFIX = "say-"
 STEER_TURN_PREFIX = "steer-"
+# Lines the backend speaks on its own (no proposal): cover lines and a held line resumed.
+# The app never approved them, so they are captioned once Bolna has said them.
+COVER_TURN_PREFIX = f"{STEER_TURN_PREFIX}cover-"
+RESUME_TURN_PREFIX = f"{STEER_TURN_PREFIX}resume-"
 
 
 class UnknownContact(Exception):
@@ -201,6 +210,7 @@ class CallManager(CallLedger):
         steer_window: Callable[[str], float] = steer_window_s,
         user_preview_s: float = USER_PREVIEW_S,
         filler_gap_s: float = FILLER_GAP_S,
+        cover_first_s: float = COVER_FIRST_S,
     ) -> None:
         self._contacts = parse_contacts(settings.allowed_recipients)
         self._composer = composer
@@ -214,6 +224,8 @@ class CallManager(CallLedger):
         self._steer_window = steer_window
         self._user_preview_s = user_preview_s
         self._filler_gap_s = filler_gap_s
+        self._cover_first_s = cover_first_s
+        self._covers: dict[str, asyncio.Task[None]] = {}  # by call id, while the user composes
         self._sessions: dict[str, CallSession] = {}
         self._finished_at: dict[str, float] = {}
         self._call_by_run: dict[str, str] = {}
@@ -257,6 +269,7 @@ class CallManager(CallLedger):
             mode=delegate.mode if delegate else "delegated",
             follow_ups=list(delegate.follow_ups) if delegate else None,
             stepped_in=delegate.stepped_in if delegate else 0,
+            agent_answers=list(delegate.agent_answers) if delegate else None,
         )
 
     def _recipient(self, request: StartCallRequest) -> tuple[str, str]:
@@ -426,6 +439,7 @@ class CallManager(CallLedger):
             # A signed line on a steer call: the user stepped in, so a proposed agent
             # line is dropped and the cover stops.
             self._settle_proposal(session, "held", origin="agent")
+            self._stop_cover(session)
             delegate.composing = False
             delegate.held_text = None
             delegate.stepped_in += 1
@@ -522,6 +536,7 @@ class CallManager(CallLedger):
         if decision.kind == "accept":
             # The agent agreed within the brief: counts like a user's "yes" in the notes.
             delegate.answers.append(decision.say)
+            delegate.agent_answers.append(decision.say)
         if decision.ask is not None:
             await self._open_ask(session, delegate, decision)
         elif decision.done:
@@ -578,7 +593,12 @@ class CallManager(CallLedger):
             pending.settle(outcome)
 
     def _filler_if_due(
-        self, session: CallSession, delegate: DelegateState, *, first: bool = False
+        self,
+        session: CallSession,
+        delegate: DelegateState,
+        *,
+        first: bool = False,
+        long_wait: bool = False,
     ) -> str | None:
         """A cover line for the receptionist while the user composes, at most one every
         `filler_gap_s` (the first one right away); None keeps quiet."""
@@ -587,10 +607,44 @@ class CallManager(CallLedger):
         if not first and last is not None and now - last < self._filler_gap_s:
             return None
         delegate.last_filler_at = now
-        line = delegate.next_filler()
+        line = delegate.next_filler(long_wait)
         self._note(session, "agent", line)
         self._spawn(self._send_agent_line(session, line))
         return line
+
+    def _start_cover(self, session: CallSession, delegate: DelegateState) -> None:
+        if session.call_id not in self._covers:
+            self._covers[session.call_id] = self._spawn(self._cover(session, delegate))
+
+    def _stop_cover(self, session: CallSession) -> None:
+        task = self._covers.pop(session.call_id, None)
+        if task is not None:
+            task.cancel()
+
+    async def _cover(self, session: CallSession, delegate: DelegateState) -> None:
+        """While the user types or signs, the receptionist is never left in silence: a
+        cover line soon after they start, then one every `filler_gap_s`, varied, and
+        thanks for waiting once it runs long. Ends when they send, back out or the call
+        ends."""
+        try:
+            await asyncio.sleep(self._cover_first_s)
+            said = 0
+            while delegate.composing and not session.finished:
+                now, last = self._clock(), delegate.last_filler_at
+                # A filler said in reply to the receptionist meanwhile counts as one.
+                if last is None or now - last >= self._filler_gap_s:
+                    delegate.last_filler_at = now
+                    line = delegate.next_filler(long_wait=said >= COVER_LONG_WAIT_AFTER)
+                    said += 1
+                    # Spoken through the speak node, unprompted: no receptionist turn
+                    # is waiting for an answer while she sits in silence.
+                    await self._speak_line(
+                        session, line, f"{COVER_TURN_PREFIX}{uuid.uuid4().hex[:6]}"
+                    )
+                await asyncio.sleep(self._filler_gap_s)
+        finally:
+            if self._covers.get(session.call_id) is asyncio.current_task():
+                del self._covers[session.call_id]
 
     async def _on_hold(self, session: CallSession, message: HoldMessage) -> None:
         delegate = session.delegate
@@ -608,14 +662,14 @@ class CallManager(CallLedger):
                     pending.settle("held")
                 else:
                     pending.settle("cancelled")  # editing their own line
+            self._start_cover(session, delegate)
             return
         # The user backed out of composing: the held agent line is spoken after all.
+        self._stop_cover(session)
         delegate.composing = False
         held, delegate.held_text = delegate.held_text, None
         if held is not None and not session.finished:
-            await self._speak_line(
-                session, held, f"{STEER_TURN_PREFIX}resume-{uuid.uuid4().hex[:6]}"
-            )
+            await self._speak_line(session, held, f"{RESUME_TURN_PREFIX}{uuid.uuid4().hex[:6]}")
 
     async def _on_say(self, session: CallSession, message: SayMessage) -> None:
         delegate = session.delegate
@@ -625,6 +679,7 @@ class CallManager(CallLedger):
             )
             return
         self._settle_proposal(session, "held", origin="agent")
+        self._stop_cover(session)
         delegate.composing = False
         delegate.held_text = None
         delegate.stepped_in += 1
@@ -808,9 +863,11 @@ class CallManager(CallLedger):
                     # Only an answer the receptionist heard counts in the notes; one that
                     # was never delivered must not turn into "booked".
                     delegate.answers.append(spoken_text)
-                if turn_id == OPENING_TURN_ID:
-                    # The app never approved the opening, so `spoken` alone can't tell it
-                    # the words: caption them now that Bolna has said them (#59).
+                if turn_id == OPENING_TURN_ID or turn_id.startswith(
+                    (COVER_TURN_PREFIX, RESUME_TURN_PREFIX)
+                ):
+                    # The app never approved these, so `spoken` alone can't tell it the
+                    # words: caption them now that Bolna has said them (#59).
                     await self._send_agent_line(session, spoken_text)
             await self._send(session, SpokenMessage(turn_id=turn_id))
         await self._publish(session, before)

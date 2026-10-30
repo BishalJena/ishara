@@ -58,10 +58,9 @@ struct SteerCallView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
-            Circle().fill(.blue).frame(width: 44, height: 44)
-                .overlay(Text(initials).font(.headline).foregroundStyle(.white))
+            InitialsAvatar(name: model.setup.contact.name)
             VStack(alignment: .leading, spacing: 2) {
-                Text(model.setup.contact.name).font(.title3.weight(.bold))
+                Text(model.setup.contact.name).font(.title3.weight(.bold)).lineLimit(1).minimumScaleFactor(0.8)
                 CallTimerText(connectedAt: model.connectedAt, phase: model.phase)
                     .font(.footnote).foregroundStyle(.secondary)
             }
@@ -77,11 +76,6 @@ struct SteerCallView: View {
             }
         }
         .padding(.horizontal, 20).padding(.vertical, 8)
-    }
-
-    private var initials: String {
-        let words = model.setup.contact.name.split(separator: " ").prefix(2)
-        return words.map { String($0.prefix(1)) }.joined().uppercased()
     }
 
     private var statusPill: some View {
@@ -155,7 +149,8 @@ struct SteerCallView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
-                    ForEach(Array(model.captions.enumerated()), id: \.offset) { index, caption in
+                    ForEach(CoverLines.rows(model.captions), id: \.index) { row in
+                        let index = row.index, caption = row.caption
                         let isLatest = index == model.captions.count - 1
                         VStack(alignment: .leading, spacing: 4) {
                             Label(speakerName(caption.speaker), systemImage: speakerSymbol(caption.speaker))
@@ -164,6 +159,10 @@ struct SteerCallView: View {
                             Text(caption.text)
                                 .font(isLatest && caption.speaker == .receptionist ? .title2.weight(.semibold) : .body)
                                 .foregroundStyle(isLatest ? .primary : .secondary)
+                            if row.folded > 0 {
+                                Text("Ishara covered the pause \(row.folded + 1) times while you replied")
+                                    .font(.caption).foregroundStyle(.tertiary)
+                            }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .id(index)
@@ -483,6 +482,38 @@ private struct CoverLine: View {
     }
 }
 
+/// The lines Ishara says to the receptionist while the user types or signs (the backend's
+/// FILLERS and LONG_WAIT_LINES in app/delegate.py). A run of them shows as its last line.
+enum CoverLines {
+    static let all: Set<String> = [
+        "One moment, please.", "Just a second, let me check.", "Bear with me a moment.",
+        "Let me confirm that.", "One moment, I'm checking.",
+        "Thank you for waiting. Their reply is on its way.", "Sorry for the wait, they're still replying.",
+    ]
+
+    struct Row {
+        let index: Int
+        let caption: Caption
+        /// How many cover lines before this one were folded into it.
+        let folded: Int
+    }
+
+    static func rows(_ captions: [Caption]) -> [Row] {
+        func isCover(_ i: Int) -> Bool { captions[i].speaker == .agent && all.contains(captions[i].text) }
+        var rows: [Row] = []
+        var run = 0
+        for i in captions.indices {
+            if isCover(i), i + 1 < captions.count, isCover(i + 1) {
+                run += 1
+                continue
+            }
+            rows.append(Row(index: i, caption: captions[i], folded: isCover(i) ? run : 0))
+            run = 0
+        }
+        return rows
+    }
+}
+
 /// Days, clock times and amounts in the receptionist's words, as pinned facts.
 enum CallFacts {
     struct Fact: Hashable {
@@ -497,9 +528,31 @@ enum CallFacts {
         (#"(?:₹|Rs\.?\s?)\d[\d,]*"#, "indianrupeesign.circle"),
     ]
 
+    /// The live transcriber writes times in words ("four pm", "ten thirty am"); as digits
+    /// they match the clock patterns. Only words next to am/pm, o'clock or minutes change.
+    static func digitsForSpokenTimes(_ line: String) -> String {
+        let hours = ["one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
+                     "nine": 9, "ten": 10, "eleven": 11, "twelve": 12]
+        let minutes = ["fifteen": "15", "thirty": "30", "forty five": "45", "forty-five": "45"]
+        let pattern = #"\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)(?:\s+(fifteen|thirty|forty[ -]five))?(\s*(?:o'clock|am|pm|a\.m\.|p\.m\.))?\b"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { return line }
+        var result = line
+        for match in regex.matches(in: line, range: NSRange(line.startIndex..., in: line)).reversed() {
+            guard let whole = Range(match.range, in: line), let hourRange = Range(match.range(at: 1), in: line),
+                  let hour = hours[line[hourRange].lowercased()] else { continue }
+            let minute = Range(match.range(at: 2), in: line).flatMap { minutes[line[$0].lowercased()] }
+            let suffix = Range(match.range(at: 3), in: line).map { String(line[$0]) }
+            guard minute != nil || suffix != nil else { continue }
+            let clock = "\(hour)" + (minute.map { ":\($0)" } ?? "")
+            let tail = suffix.map { $0.lowercased().contains("o'clock") ? "" : $0 } ?? ""
+            result.replaceSubrange(whole, with: clock + tail)
+        }
+        return result
+    }
+
     static func extract(from lines: [String]) -> [Fact] {
         var seen: [Fact] = []
-        for line in lines {
+        for line in lines.map(digitsForSpokenTimes) {
             for (pattern, symbol) in patterns {
                 guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { continue }
                 for match in regex.matches(in: line, range: NSRange(line.startIndex..., in: line)) {

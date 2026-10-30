@@ -65,7 +65,8 @@ LLM_TIMEOUT_S = 2.5
 ASK_TIMEOUT_S = 10.0
 PAUSE_LINE = "One moment, please."
 CALLBACK_LINE = "I'll need to check that and call back. Thank you."
-CLOSE_LINE = "Thank you for your help. Goodbye."
+# No "goodbye" here: hanging up moves Bolna to its goodbye node, which says it (once).
+CLOSE_LINE = "That's all, thank you so much for your help."
 WAIT_LINE = "One moment, please, I'm checking."
 # Steer calls (CallMode "steer").
 DEFER_LINE = "I don't have that with me. Could I send it to you afterwards?"
@@ -79,6 +80,12 @@ FILLERS = (
     "Bear with me a moment.",
     "Let me confirm that.",
     "One moment, I'm checking.",
+)
+# Once the user has been composing a while: thank the receptionist for waiting, still with
+# no fact in it ("replying" holds for typing and signing alike).
+LONG_WAIT_LINES = (
+    "Thank you for waiting. Their reply is on its way.",
+    "Sorry for the wait, they're still replying.",
 )
 # Days a typed request can pin an appointment to. Spans ("next week") only narrow it.
 _PIN_DAYS = frozenset(("today", "tomorrow", "day after tomorrow", *_WEEKDAYS))
@@ -151,6 +158,26 @@ _OUT_OF_BRIEF = re.compile(
     r"|e-?mail|aadhaar|social security|ssn|id number|medical (history|records?)"
     r"|allerg(y|ies)|medications?|password|otp)\b"
 )
+# Asked for some number, id or detail of theirs ("can i have your file number please"),
+# written the way the live transcriber hands it over: lowercase, no punctuation.
+_ASKS_FOR_DETAIL = re.compile(
+    r"\b(can i (have|get|take|know)|could (i|you) (have|get|give|tell|share)|may i (have|get|know)"
+    r"|what('s| is) (your|the)|tell me (your|the)|give me (your|the)|need (your|the)"
+    r"|do you have (your|the))\b[^.?!]{0,40}?\b(number|no|id|code|details?|reference|date"
+    r"|address|e-?mail|name of)\b"
+)
+# The receptionist opens the floor ("how can i help you"): say what the call is about.
+_HOW_CAN_I_HELP = re.compile(
+    r"\b(how (can|may|could) (i|we) help|what can (i|we) do for you|how can i assist"
+    r"|what is it (about|regarding)|what('s| is) this (about|regarding)|go ahead|tell me)\b"
+)
+# A request that is about getting a time, where asking for the times available makes sense.
+_WANTS_A_SLOT = re.compile(
+    r"\b(book|booking|appointment|slot|schedule|reschedule|visit|check-?up|consult"
+    r"|meeting|reserve|reservation|table)\b",
+    re.I,
+)
+NEXT_STEP_LINE = "Okay, thank you. What would be the next step?"
 # "That isn't confirmed yet", "not booked": a booking word that denies the booking.
 _NOT_BOOKED = re.compile(
     r"(\b(not|never)\b|n't\b)[^.?!]{0,20}?\b(booked|confirmed|reserved|scheduled)\b"
@@ -351,6 +378,7 @@ class DelegateState:
     pending_ask: str | None = None  # ask_id
     deciding: bool = False  # the brain is working on a receptionist turn
     answers: list[str] = field(default_factory=list)  # what the user chose, in spoken form
+    agent_answers: list[str] = field(default_factory=list)  # steer: answers the agent gave
     # How the brief settled; set once, and nothing new is said or asked after it.
     outcome: Literal["done", "callback"] | None = None
     # Steer bookkeeping.
@@ -373,9 +401,11 @@ class DelegateState:
     def mode(self) -> CallMode:
         return "steer" if self.steer else "delegated"
 
-    def next_filler(self) -> str:
-        """The next cover line, never the one just said."""
-        candidates = [f for f in FILLERS if f != self.last_filler]
+    def next_filler(self, long_wait: bool = False) -> str:
+        """The next cover line, never the one just said; after a long wait, every other
+        line thanks the receptionist for waiting."""
+        pool = LONG_WAIT_LINES if long_wait and self.fillers_said % 2 else FILLERS
+        candidates = [f for f in pool if f != self.last_filler]
         line = candidates[self.fillers_said % len(candidates)]
         self.fillers_said += 1
         self.last_filler = line
@@ -590,9 +620,12 @@ class RuleBrain:
             return Decision(CLOSE_LINE, done=True, kind="close")
         if (detail := _shareable(heard, brief.details)) is not None:
             return Decision(f"{detail.label.strip()} is {detail.value.strip()}.", kind="share")
-        if brief.callback and re.search(r"\b(number|phone|call you|reach you)\b", heard, re.I):
+        if brief.callback and re.search(
+            r"\b(phone|mobile|contact|call you|reach you|callback)\b", heard, re.I
+        ):
             return Decision(f"You can reach me on {brief.callback}.", kind="share")
-        if _OUT_OF_BRIEF.search(_normalise(heard)):
+        normalised = _normalise(heard)
+        if _OUT_OF_BRIEF.search(normalised) or _ASKS_FOR_DETAIL.search(normalised):
             return Decision(DEFER_LINE, kind="defer", follow_up=heard.strip())
         times = _times_heard(heard)
         if times.single is not None:
@@ -641,9 +674,19 @@ class RuleBrain:
             return Decision(ANOTHER_TIME_LINE, kind="time")
         if "name" in heard.lower():
             return Decision(f"The name is {brief.name}.", kind="share")
-        if _QUESTION.search(heard):
-            return Decision(self.opening(state), kind="other")
-        return Decision(TIMES_LINE, kind="other")
+        # Nothing to commit to. Say what the call is about when asked; ask for the times
+        # only when the request is about a time; otherwise ask what happens next.
+        if _QUESTION.search(heard) or _HOW_CAN_I_HELP.search(normalised):
+            return Decision(self.restate(state), kind="other")
+        if not brief.request or _WANTS_A_SLOT.search(brief.request):
+            return Decision(TIMES_LINE, kind="other")
+        return Decision(NEXT_STEP_LINE, kind="other")
+
+    def restate(self, state: DelegateState) -> str:
+        """The request again, without the introduction the opening already gave."""
+        if state.steer and state.brief.request:
+            return state.brief.opening or phrase_request(state.brief.request)
+        return self.opening(state)
 
     def opening(self, state: DelegateState) -> str:
         when = _preferred_time(state.brief)
@@ -936,12 +979,16 @@ def build_notes(
     mode: CallMode = "delegated",
     follow_ups: list[str] | None = None,
     stepped_in: int = 0,
+    agent_answers: list[str] | None = None,
 ) -> CallNotes:
     """Deterministic notes from the transcript: what was offered, what the user chose,
     what is still open. Every bullet quotes or paraphrases a transcript line."""
     if brief is None:
         return CallNotes(call_id=call_id, mode="live", ready=ready, transcript=entries)
-    summary: list[str] = [f"Goal: {brief.goal} for {brief.name}."]
+    if mode == "steer" and brief.request:
+        summary: list[str] = [f'You asked: "{brief.request}"']
+    else:
+        summary = [f"Goal: {brief.goal} for {brief.name}."]
     offers = [
         e.text
         for e in entries
@@ -950,7 +997,8 @@ def build_notes(
     for offer in offers[:3]:
         summary.append(f'They offered: "{offer.strip()}"')
     for answer in answers:
-        summary.append(f'You answered: "{answer}"')
+        who = "Ishara answered" if answer in (agent_answers or []) else "You answered"
+        summary.append(f'{who}: "{answer}"')
     confirmations = [e.text for e in entries if e.speaker == "receptionist" and _confirms(e.text)]
     for line in confirmations[:2]:
         summary.append(f'They confirmed: "{line.strip()}"')

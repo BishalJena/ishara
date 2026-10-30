@@ -10,11 +10,26 @@ struct Contact: Identifiable, Hashable, Sendable {
     /// its allowlist; saved contacts have none and are dialled by id.
     var phoneNumber: String? = nil
 
-    /// A typed or pasted number as a contact; the name defaults to the number.
+    /// A typed or pasted number as a contact; the name defaults to the number, spaced.
     static func number(_ digits: String, name: String? = nil) -> Contact? {
         let e164 = digits.filter { $0.isNumber || $0 == "+" }
         guard e164.range(of: #"^\+[1-9]\d{6,14}$"#, options: .regularExpression) != nil else { return nil }
-        return Contact(id: "number", name: name?.isEmpty == false ? name! : e164, phoneNumber: e164)
+        let given = name.map { $0.trimmingCharacters(in: .whitespaces) } ?? ""
+        return Contact(id: "number", name: given.isEmpty || isNumberName(given) ? display(e164) : given, phoneNumber: e164)
+    }
+
+    /// "+919337473802" as people write it: "+91 93374 73802".
+    static func display(_ e164: String) -> String {
+        let digits = e164.filter(\.isNumber)
+        guard e164.hasPrefix("+91"), digits.count == 12 else { return e164 }
+        let national = digits.dropFirst(2)
+        return "+91 \(national.prefix(5)) \(national.suffix(5))"
+    }
+
+    /// A "name" that is really a number (a record of a call to a typed number).
+    static func isNumberName(_ name: String) -> Bool {
+        guard let first = name.first else { return false }
+        return first == "+" || first.isNumber
     }
 
     /// An Indian number from its 10 national digits (the app is India-only, so +91 is implied).
@@ -90,6 +105,8 @@ struct CallSetup: Equatable, Sendable {
     var sharedDetails: [Detail] = []
     /// Cards, letters or bills the user attached, as text read on the phone.
     var documents: [Document] = []
+    /// The user's callback number from Settings, given only if they ask how to reach them.
+    var callback: String? = nil
 
     var isSteer: Bool { delegation?.mode == .steer }
 
@@ -97,7 +114,7 @@ struct CallSetup: Equatable, Sendable {
     var steerBriefRequest: BriefRequest {
         BriefRequest(
             purpose: purpose, chips: [],
-            profile: Profile(name: details.name, details: sharedDetails, documents: documents),
+            profile: Profile(name: details.name, callback: callback, details: sharedDetails, documents: documents),
             request: request)
     }
 

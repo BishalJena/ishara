@@ -11,7 +11,7 @@ final class CallActivityController {
 
     func start(contactName: String) {
         guard activity == nil, ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-        let initials = contactName.split(separator: " ").prefix(2).map { String($0.prefix(1)) }.joined().uppercased()
+        let initials = InitialsAvatar.initials(contactName)
         let attributes = CallActivityAttributes(contactName: contactName, contactInitials: initials)
         let state = CallActivityAttributes.ContentState(
             latestLine: "Calling \(contactName)…", latestSpeakerIsUs: true, driving: .connecting, startedAt: nil)

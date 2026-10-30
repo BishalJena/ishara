@@ -230,7 +230,7 @@ def test_rule_brain_shares_only_profile_facts() -> None:
     assert RuleBrain().decide(state, "What is the patient's name?").say == "The name is Asha Rao."
     assert "ending 4321" in RuleBrain().decide(state, "Which number can we call you on?").say
     assert RuleBrain().decide(state, "Your appointment is booked, see you then.") == Decision(
-        "Thank you for your help. Goodbye.", done=True
+        "That's all, thank you so much for your help.", done=True
     )
 
 

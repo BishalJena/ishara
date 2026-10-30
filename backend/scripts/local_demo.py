@@ -239,7 +239,8 @@ def build_parser() -> argparse.ArgumentParser:
         choices=sorted(RECEPTIONIST_SCRIPTS),
         default="clinic",
         help="what the receptionist says: clinic (the PLAN §1 call, default), offer "
-        "(Call for me: a time in words) or open-question (Call for me: 'what time?' first)",
+        "(Call for me: a time in words), open-question (Call for me: 'what time?' first) "
+        "or steer (a longer call to step into)",
     )
     return parser
 

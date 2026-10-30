@@ -31,7 +31,7 @@ from typing import Any
 import httpx
 
 from app.bolna_agent import SILENCE_REPEAT_S
-from app.delegate import PAUSE_LINE, WAIT_LINE
+from app.delegate import FILLERS, LONG_WAIT_LINES, PAUSE_LINE, WAIT_LINE
 from app.markers import EVENT_USER_REPLY, HOLDING_LINE
 from fakes.fake_bolna import FakeBolna, FakeRun, RunEnded
 
@@ -52,10 +52,18 @@ RECEPTIONIST_SCRIPTS: dict[str, tuple[str, ...]] = {
         "we have four pm tomorrow does that work",
         "okay thank you bye",
     ),
+    # A longer steer call to step into: a greeting, a detail nobody gave, an offer, a close.
+    "steer": (
+        "hello passport office how can i help you",
+        "sure can i have your file number please",
+        "okay we have wednesday at eleven am does that work",
+        "alright that is booked see you then bye",
+    ),
 }
 TALK_OVER_LINE = "Sorry, go ahead."
-# The agent's lines that ask the receptionist to hold on: she says nothing back.
-WAIT_FOR_AGENT = frozenset((HOLDING_LINE, PAUSE_LINE, WAIT_LINE))
+# The agent's lines that ask the receptionist to hold on: she says nothing back. That
+# includes the cover lines said while the user types or signs.
+WAIT_FOR_AGENT = frozenset((HOLDING_LINE, PAUSE_LINE, WAIT_LINE, *FILLERS, *LONG_WAIT_LINES))
 ANSWERED_STATUS = "in-progress"
 
 

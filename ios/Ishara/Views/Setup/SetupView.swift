@@ -46,8 +46,14 @@ struct SetupView: View {
     }
     @AppStorage("ishara.name") private var name = ""
     @AppStorage("ishara.callback") private var callback = ""
-    @State private var showsSettings = false
+    @State private var settingsPrompt: SettingsPrompt?
+    /// Set by the sheet's Call button; the call is placed once the sheet is gone.
     @State private var callAfterSettings = false
+
+    private enum SettingsPrompt: String, Identifiable {
+        case settings, nameForCall
+        var id: String { rawValue }
+    }
     @State private var showsContacts = false
     @State private var showsPhotoPicker = false
     @State private var showsFilePicker = false
@@ -67,7 +73,7 @@ struct SetupView: View {
         var seen = Set<String>()
         return (history?.records ?? []).compactMap { record -> Contact? in
             guard let number = record.contactNumber, seen.insert(number).inserted else { return nil }
-            return Contact.number(number, name: record.contactName == number ? nil : record.contactName)
+            return Contact.number(number, name: record.contactName)
         }
     }
 
@@ -107,11 +113,16 @@ struct SetupView: View {
                 // UI tests start with a clean store and no way to type into Settings first.
                 if name.isEmpty, let preset = ProcessInfo.processInfo.environment["ISHARA_UITEST_NAME"] { name = preset }
             }
-            .sheet(isPresented: $showsSettings, onDismiss: {
+            .sheet(item: $settingsPrompt, onDismiss: {
                 guard callAfterSettings else { return }
                 callAfterSettings = false
-                if !name.trimmingCharacters(in: .whitespaces).isEmpty { call() }
-            }) { SettingsSheet(reason: callAfterSettings ? "Ishara introduces you by name on the call. Add it once; it stays on this phone." : nil) }
+                call()
+            }) { prompt in
+                switch prompt {
+                case .settings: SettingsSheet()
+                case .nameForCall: SettingsSheet(onContinueCall: { callAfterSettings = true })
+                }
+            }
             .sheet(isPresented: $showsContacts) {
                 ContactPicker { pickedName, pickedNumber in
                     self.pickedName = pickedName
@@ -164,11 +175,10 @@ struct SetupView: View {
 
     private var topBar: some View {
         HStack(spacing: 10) {
-            Circle().fill(.yellow).frame(width: 36, height: 36)
-                .overlay(Text(String(name.prefix(1)).uppercased()).font(.headline))
+            InitialsAvatar(name: String(name.prefix(1)), color: .yellow, size: 36, foreground: .black)
             Text(name.isEmpty ? "Hi there" : "Hi \(name.split(separator: " ").first.map(String.init) ?? name)").font(.headline)
             Spacer()
-            Button { showsSettings = true } label: {
+            Button { settingsPrompt = .settings } label: {
                 Image(systemName: "slider.horizontal.3")
                     .frame(width: 36, height: 36)
                     .background(Color(.secondarySystemBackground), in: Circle())
@@ -187,11 +197,10 @@ struct SetupView: View {
                     RecentCallView(history: history, id: record.id)
                 } label: {
                     HStack(spacing: 12) {
-                        Circle().fill(.purple).frame(width: 44, height: 44)
-                            .overlay(Text(initials(record.contactName)).font(.subheadline.weight(.bold)).foregroundStyle(.white))
+                        InitialsAvatar(name: record.contactName, color: .purple)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(record.outcomeText).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
-                            Text("\(record.contactName) · \(record.date.formatted(date: .abbreviated, time: .shortened))")
+                            Text("\(Contact.isNumberName(record.contactName) ? Contact.display(record.contactName) : record.contactName) · \(record.date.formatted(date: .abbreviated, time: .shortened))")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -203,10 +212,6 @@ struct SetupView: View {
                 .buttonStyle(.plain)
             }
         }
-    }
-
-    private func initials(_ name: String) -> String {
-        name.split(separator: " ").prefix(2).map { String($0.prefix(1)) }.joined().uppercased()
     }
 
     private var composer: some View {
@@ -239,7 +244,7 @@ struct SetupView: View {
                         ForEach(recentPeople) { person in
                             Button {
                                 number = Contact.indianDigits(from: person.phoneNumber ?? "")
-                                pickedName = person.name == person.phoneNumber ? "" : person.name
+                                pickedName = Contact.isNumberName(person.name) ? "" : person.name
                             } label: {
                                 Label(person.name, systemImage: "clock.arrow.circlepath")
                                     .font(.footnote.weight(.semibold))
@@ -329,8 +334,7 @@ struct SetupView: View {
     private func call() {
         guard problem == nil, let who = typedContact else { return }
         if name.trimmingCharacters(in: .whitespaces).isEmpty {
-            callAfterSettings = true
-            showsSettings = true
+            settingsPrompt = .nameForCall
             return
         }
         var setup = CallSetup(
@@ -339,9 +343,8 @@ struct SetupView: View {
             voice: .indianEnglish)
         setup.request = request.trimmingCharacters(in: .whitespacesAndNewlines)
         setup.documents = attachments.compactMap(\.document)
-        if callback.count == 10 {
-            setup.sharedDetails = [Detail(label: "Callback number", value: "+91 " + callback)]
-        }
+        // Said only when they ask how to reach the caller ("You can reach me on ...").
+        setup.callback = callback.count == 10 ? Contact.display("+91" + callback) : nil
         onCall(setup)
     }
 }

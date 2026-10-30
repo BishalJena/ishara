@@ -74,7 +74,13 @@ private struct Avatar: View {
     let initials: String
     var body: some View {
         Circle().fill(.blue).frame(width: 34, height: 34)
-            .overlay(Text(initials).font(.caption.weight(.bold)).foregroundStyle(.white))
+            .overlay {
+                if initials.isEmpty {
+                    Image(systemName: "person.fill").font(.caption).foregroundStyle(.white)
+                } else {
+                    Text(initials).font(.caption.weight(.bold)).foregroundStyle(.white)
+                }
+            }
     }
 }
 

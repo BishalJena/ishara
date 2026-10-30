@@ -519,3 +519,89 @@ def test_goodbye_after_an_accepted_time_closes_the_call():
 def test_goodbye_before_anything_was_agreed_does_not_close():
     decision = RuleBrain().decide(steer_state(), "okay bye")
     assert decision.kind != "close"
+
+
+def test_steer_notes_say_what_was_asked_and_who_answered():
+    from app.delegate import build_notes
+    from app.protocol import TranscriptEntry
+
+    brief = steer_brief(request="renew my passport")
+    entries = [
+        TranscriptEntry(
+            speaker="receptionist", text="we have four pm tomorrow does that work", at=0.0
+        )
+    ]
+    notes = build_notes(
+        "c1",
+        brief,
+        entries,
+        ["Yes, 4 pm tomorrow works. Thank you.", "Could we do 11 instead?"],
+        None,
+        True,
+        promised_callback=False,
+        mode="steer",
+        agent_answers=["Yes, 4 pm tomorrow works. Thank you."],
+    )
+    assert notes.summary[0] == 'You asked: "renew my passport"'
+    assert 'Ishara answered: "Yes, 4 pm tomorrow works. Thank you."' in notes.summary
+    assert 'You answered: "Could we do 11 instead?"' in notes.summary
+
+
+# ---- unpunctuated turns, as the live transcriber writes them ----
+
+PASSPORT = "ask about my passport renewal, I need a new passport"
+
+
+def test_how_can_i_help_gets_the_request_not_a_question_about_times():
+    state = steer_state(steer_brief(request=PASSPORT))
+    decision = RuleBrain().decide(state, "hello passport office how can i help you")
+    assert decision.say == (
+        "They'd like to ask about their passport renewal, they need a new passport."
+    )
+
+
+def test_a_file_number_nobody_gave_is_deferred_and_saved():
+    state = steer_state(steer_brief(request=PASSPORT))
+    decision = RuleBrain().decide(state, "sure can i have your file number please")
+    assert decision.kind == "defer" and decision.say == DEFER_LINE
+    assert decision.follow_up == "sure can i have your file number please"
+
+
+def test_a_request_that_is_not_about_a_time_never_asks_for_times():
+    state = steer_state(steer_brief(request=PASSPORT))
+    decision = RuleBrain().decide(state, "okay let me pull that up")
+    assert decision.say != TIMES_LINE
+    booking = RuleBrain().decide(steer_state(), "okay let me pull that up")
+    assert booking.say == TIMES_LINE
+
+
+# ---- the receptionist is never left in silence while the user composes ----
+
+
+def test_while_the_user_types_the_receptionist_keeps_hearing_varied_cover_lines(steer) -> None:
+    import time
+
+    from app.delegate import LONG_WAIT_LINES
+
+    f = steer(filler_gap_s=0.15, cover_first_s=0.05)
+    call_id = start_steer(f)
+    with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
+        assert f.receive(ws)["type"] == "status"
+        f.live(call_id)
+        f.speak_last(call_id)
+        ws.send_json({"type": "presence", "present": True})
+        spoken_before = len(f.bolna.injected)
+        # The user starts typing with nothing on offer and the receptionist silent.
+        ws.send_json({"type": "hold", "turn_id": "none", "composing": True})
+        time.sleep(1.0)
+        covers = [line for line in f.bolna.injected[spoken_before:] if line]
+        assert len(covers) >= 4, covers
+        assert all(a != b for a, b in zip(covers, covers[1:], strict=False)), covers
+        assert set(covers) <= set(FILLERS) | set(LONG_WAIT_LINES)
+        assert any(line in LONG_WAIT_LINES for line in covers), "a long wait gets thanks"
+
+        ws.send_json({"type": "say", "text": "my file number is pp4471920"})
+        f.drain_until(ws, "proposal_resolved")
+        settled = len(f.bolna.injected)
+        time.sleep(0.5)
+        assert len(f.bolna.injected) == settled, "the cover stops once the user sends"
