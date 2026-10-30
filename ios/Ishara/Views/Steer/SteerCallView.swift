@@ -10,6 +10,7 @@ struct SteerCallView: View {
     let onShowNotes: () -> Void
 
     @Environment(\.scenePhase) private var scenePhase
+    @State private var activity = CallActivityController()
     @State private var typed = ""
     /// What the user last sent, shown under its polished preview.
     @State private var lastTyped = ""
@@ -32,7 +33,18 @@ struct SteerCallView: View {
         .onChange(of: typing) { _, isTyping in
             if isTyping { model.beginSteppingIn() } else if typed.isEmpty { model.cancelSteppingIn() }
         }
-        .onChange(of: model.isCallOver) { _, isOver in if isOver { typing = false } }
+        .onChange(of: model.isCallOver) { _, isOver in
+            if isOver {
+                typing = false
+                activity.end(outcome: "Call ended · open Ishara for the gist")
+            }
+        }
+        .onAppear { activity.start(contactName: model.setup.contact.name) }
+        .onDisappear { activity.end(outcome: nil) }
+        .onChange(of: model.captions.count) { _, _ in activity.update(from: model) }
+        .onChange(of: model.phase) { _, _ in activity.update(from: model) }
+        .onChange(of: model.isSteppingIn) { _, _ in activity.update(from: model) }
+        .onReceive(NotificationCenter.default.publisher(for: .isharaEndCallRequested)) { _ in model.end() }
     }
 
     // MARK: Header
