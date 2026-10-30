@@ -119,6 +119,8 @@ struct AppRootView: View {
                 .onChange(of: model.isCallOver) { _, isOver in
                     if isOver { followUp(model) }
                 }
+            case .notes(let model) where services.options.flow == .steer:
+                SteerGistView(model: model, onDone: { route = .home })
             case .notes(let model):
                 NotesView(model: model, onDone: { route = .home })
             }

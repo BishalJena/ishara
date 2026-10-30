@@ -127,6 +127,16 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         var notes = DelegatedDemo.notes(
             goal: delegation.brief.goal, name: setup.details.name, brief: delegation.brief.text,
             transcript: transcript, answers: answers, ready: isOver)
+        if delegation.mode == .steer {
+            notes.mode = .steer
+            notes.steppedIn = steerSteppedIn
+            notes.followUps = steerFollowUps
+            if isOver {
+                notes.outcome = steerBooked ? "booked" : "unclear"
+                notes.summary += steerSaid.map { "You said: \"\($0)\"" }
+                if steerBooked { notes.summary.append("They confirmed: \"You're booked for 10:30 tomorrow. Please bring an ID.\"") }
+            }
+        }
         if let delay = options.bolnaSummaryDelay, let endedAt,
            Date().timeIntervalSince(endedAt) >= delay * options.timeScale {
             notes.bolnaSummary = DelegatedDemo.automaticSummary(goal: delegation.brief.goal, name: setup.details.name)
@@ -188,6 +198,10 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     private var proposalTask: Task<Void, Never>?
     private var fillerIndex = 0
     private var steerStep = 0
+    private var steerSteppedIn = 0
+    private var steerFollowUps: [String] = []
+    private var steerSaid: [String] = []
+    private var steerBooked = false
     private static let fillers = ["One moment, please.", "Just a second, let me check.", "Bear with me a moment."]
 
     /// Disclosure and opening, then a receptionist who offers the wrong time first, then a
@@ -221,10 +235,12 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
             agentLine("Yes, 10:30 tomorrow morning works. Thank you.") { $0.steerNext() }
         case 2:
             say(.receptionist, "Can I get the date of birth?")
+            steerFollowUps.append("Can I get the date of birth?")
             deliver(.followUp(text: "Can I get the date of birth?"))
             agentLine("I don't have that with me. Could I send it to you afterwards?") { $0.steerNext() }
         default:
             say(.receptionist, "That's fine. You're booked for 10:30 tomorrow. Please bring an ID.")
+            steerBooked = true
             agentLine(DelegatedDemo.closeLine) { $0.hangUp() }
         }
     }
@@ -287,6 +303,7 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     private func sayTyped(_ text: String) {
         isComposing = false
         heldLine = nil
+        steerSteppedIn += 1
         let tidy = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let polished = tidy.prefix(1).uppercased() + tidy.dropFirst() + (tidy.hasSuffix(".") || tidy.hasSuffix("?") ? "" : ".")
         let continuation: () -> Void = { [weak self] in
@@ -306,6 +323,7 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     /// A user's typed line, spoken by the voice: in the notes' transcript, shown by the
     /// store itself (the app captions it as the user's when its preview ends).
     private func note(_ text: String) {
+        steerSaid.append(text)
         transcript.append(TranscriptEntry(speaker: .agent, text: text, at: Date().timeIntervalSince1970))
     }
 
@@ -324,6 +342,7 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
             if pendingProposal != nil { settleProposal(spoken: false) }
             isComposing = false
             heldLine = nil
+            steerSteppedIn += 1
         }
         // Single use per turn id, like the backend.
         guard speakingTurn == nil, approvedTurns.insert(turnID).inserted else { return }

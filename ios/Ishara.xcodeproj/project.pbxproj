@@ -18,6 +18,7 @@
 		1C8762A6CA075EBF176A27A3 /* CallStatusBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32623642172F907AC73BE51E /* CallStatusBar.swift */; };
 		1D4F439ECD7A360C9AFABFCD /* LocalAssets in Resources */ = {isa = PBXBuildFile; fileRef = E3CBA8973C3BC30E14064F5C /* LocalAssets */; };
 		1E8A521475650C58D7821232 /* ActiveCallViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D861A941BD04449A68ABDC3A /* ActiveCallViewModel.swift */; };
+		1F36487461A93BFA6E31D303 /* SteerGistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 779F59285009C7C570B81DA4 /* SteerGistView.swift */; };
 		2069027A8EF73CEC60DE6587 /* DraftCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36D8E6BB02BA49CC4B2610BC /* DraftCard.swift */; };
 		20730BC373E8AD9357B531DE /* BriefView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 864218E1742955E0740DC853 /* BriefView.swift */; };
 		2213A4677B173D53CE53FC17 /* CameraCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F001413BD46CD6B9B9C2B11 /* CameraCard.swift */; };
@@ -179,6 +180,7 @@
 		72003B06FE25D45B81D7DC86 /* DelegatedEdgeCaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DelegatedEdgeCaseUITests.swift; sourceTree = "<group>"; };
 		72CBBE8F44BD346E38846F50 /* CallSession */ = {isa = PBXFileReference; lastKnownFileType = folder; name = CallSession; path = Packages/CallSession; sourceTree = SOURCE_ROOT; };
 		7733306CD71EC403F80B8E93 /* BodyOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyOverlay.swift; sourceTree = "<group>"; };
+		779F59285009C7C570B81DA4 /* SteerGistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SteerGistView.swift; sourceTree = "<group>"; };
 		77B3A0415C571FAC8D58D3A5 /* RecognitionCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RecognitionCore; path = Packages/RecognitionCore; sourceTree = SOURCE_ROOT; };
 		77D7420F8A42ADF8BEC5497D /* CallEdgeCaseUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallEdgeCaseUITests.swift; sourceTree = "<group>"; };
 		793623AFD565C5BDE1E1123A /* LiveCallDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveCallDriver.swift; sourceTree = "<group>"; };
@@ -368,6 +370,7 @@
 			isa = PBXGroup;
 			children = (
 				1648DE460A4173B18F947500 /* SteerCallView.swift */,
+				779F59285009C7C570B81DA4 /* SteerGistView.swift */,
 			);
 			path = Steer;
 			sourceTree = "<group>";
@@ -748,6 +751,7 @@
 				B175077471A14CDF4D03785B /* SigningPanel.swift in Sources */,
 				A9597A116CBBB26CD42893B4 /* SpeakingPanel.swift in Sources */,
 				4F6ABD80D3FCA8147C6FC7D8 /* SteerCallView.swift in Sources */,
+				1F36487461A93BFA6E31D303 /* SteerGistView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -790,7 +794,7 @@
 		};
 		7CF04723B07381FB3529A877 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			productRef = "TEMP_742D9B46-358F-432A-A81F-DD1C40F77A1C" /* RecognitionCore */;
+			productRef = "TEMP_BD854173-3095-4ABC-AA62-CCDD27F06805" /* RecognitionCore */;
 		};
 		8D836E1255E12A899A4CDAF7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -799,11 +803,11 @@
 		};
 		ACA055A004290D6378457E19 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			productRef = "TEMP_432071F2-A528-4025-B491-A2B7B283B7BC" /* SignPipeline */;
+			productRef = "TEMP_410C649D-3CF2-43B3-883D-EBF03A64928A" /* SignPipeline */;
 		};
 		BF8921BFD98D75F37B982C09 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			productRef = "TEMP_1E799E1A-181D-4CFE-A2B7-4ECCEA8937EB" /* CallSession */;
+			productRef = "TEMP_86843183-5776-46A0-8887-2B32D9078DDE" /* CallSession */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1142,15 +1146,15 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = SignPipelineMediaPipe;
 		};
-		"TEMP_1E799E1A-181D-4CFE-A2B7-4ECCEA8937EB" /* CallSession */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = CallSession;
-		};
-		"TEMP_432071F2-A528-4025-B491-A2B7B283B7BC" /* SignPipeline */ = {
+		"TEMP_410C649D-3CF2-43B3-883D-EBF03A64928A" /* SignPipeline */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SignPipeline;
 		};
-		"TEMP_742D9B46-358F-432A-A81F-DD1C40F77A1C" /* RecognitionCore */ = {
+		"TEMP_86843183-5776-46A0-8887-2B32D9078DDE" /* CallSession */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CallSession;
+		};
+		"TEMP_BD854173-3095-4ABC-AA62-CCDD27F06805" /* RecognitionCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RecognitionCore;
 		};

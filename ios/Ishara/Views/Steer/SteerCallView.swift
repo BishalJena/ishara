@@ -11,6 +11,8 @@ struct SteerCallView: View {
 
     @Environment(\.scenePhase) private var scenePhase
     @State private var typed = ""
+    /// What the user last sent, shown under its polished preview.
+    @State private var lastTyped = ""
     @State private var isSigning = false
     @FocusState private var typing: Bool
 
@@ -18,6 +20,7 @@ struct SteerCallView: View {
         VStack(spacing: 0) {
             header
             statusPill
+            factsStrip
             captions
             composer
         }
@@ -103,6 +106,30 @@ struct SteerCallView: View {
         return .secondary
     }
 
+    // MARK: Facts strip
+
+    /// Times, days and amounts the receptionist said, pinned so they needn't be reread.
+    private var factsStrip: some View {
+        let facts = CallFacts.extract(from: model.captions.filter { $0.speaker == .receptionist }.map(\.text))
+        return Group {
+            if !facts.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(facts, id: \.self) { fact in
+                            Label(fact.text, systemImage: fact.symbol)
+                                .font(.caption.weight(.bold))
+                                .padding(.vertical, 5).padding(.horizontal, 9)
+                                .background(Color.yellow.opacity(0.22), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .foregroundStyle(Color(red: 0.6, green: 0.42, blue: 0))
+                        }
+                    }
+                    .padding(.horizontal, 20).padding(.top, 8)
+                }
+                .accessibilityIdentifier("steer.facts")
+            }
+        }
+    }
+
     // MARK: Captions
 
     private var captions: some View {
@@ -163,9 +190,32 @@ struct SteerCallView: View {
 
     // MARK: Composer
 
+    /// Why the call didn't get through, if it didn't: it never started, or ended with no
+    /// receptionist line heard.
+    private var notThrough: String? {
+        if let failure = model.startFailure { return failure }
+        guard case .ended(let reason) = model.phase else { return nil }
+        if case .failed(let text) = reason { return text }
+        if reason == .remoteEnded, !model.captions.contains(where: { $0.speaker == .receptionist }) {
+            return "\(model.setup.contact.name) didn't answer."
+        }
+        return nil
+    }
+
     @ViewBuilder
     private var composer: some View {
+        if let problem = notThrough {
+            NotThroughTray(problem: problem, onCallAgain: onLeave, onShowNotes: onShowNotes)
+        } else {
+            replyPanel
+        }
+    }
+
+    private var replyPanel: some View {
         VStack(spacing: 10) {
+            if model.isSteppingIn, !isSigning, let cover = model.captions.last(where: { $0.speaker == .agent }) {
+                CoverLine(text: cover.text, since: cover.at)
+            }
             if let proposal = model.proposal {
                 ProposalBar(
                     proposal: proposal,
@@ -179,10 +229,18 @@ struct SteerCallView: View {
                         }
                         typing = true
                     })
+                if proposal.origin == .user, !lastTyped.isEmpty {
+                    Text("You typed: “\(lastTyped)”")
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("steer.youTyped")
+                }
             }
             if isSigning {
                 signingPanel
             } else if !model.isCallOver {
+                if model.proposal == nil, !typing, case .live = model.phase {
+                    quickReplies
+                }
                 typingBar
             }
             if !model.isCallOver, !isSigning, !typing {
@@ -227,9 +285,30 @@ struct SteerCallView: View {
         }
     }
 
+    /// One-tap replies drawn from what the receptionist just asked; each goes out like a
+    /// typed line (polished, previewed, spoken).
+    private var quickReplies: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(QuickSteerReply.suggestions(for: model.captions.last(where: { $0.speaker == .receptionist })?.text), id: \.self) { reply in
+                    Button(reply) {
+                        model.beginSteppingIn()
+                        lastTyped = reply
+                        model.say(reply)
+                    }
+                    .buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small)
+                    .font(.footnote.weight(.semibold))
+                }
+            }
+            .padding(.horizontal, 4)
+        }
+        .accessibilityIdentifier("steer.quickReplies")
+    }
+
     private func sendTyped() {
         let text = typed.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
+        lastTyped = text
         model.say(text)
         typed = ""
         typing = false
@@ -328,6 +407,108 @@ struct ProposalBar: View {
     }
 
     private var tint: Color { proposal.origin == .agent ? .purple : .blue }
+}
+
+/// The call didn't get through: nothing was said, so nothing to undo. Offers the ways back.
+private struct NotThroughTray: View {
+    let problem: String
+    let onCallAgain: () -> Void
+    let onShowNotes: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label("Didn't get through", systemImage: "phone.arrow.down.left")
+                .font(.headline).foregroundStyle(.red)
+            Text(problem).font(.title3.weight(.bold))
+            Text("Nothing was said on your behalf. Your request is kept, so you can try again when it suits you.")
+                .font(.footnote).foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                Button("Back to the request", systemImage: "arrow.uturn.left", action: onCallAgain)
+                    .buttonStyle(.bordered).buttonBorderShape(.capsule)
+                Button("What happened", systemImage: "list.bullet.rectangle", action: onShowNotes)
+                    .buttonStyle(.borderedProminent).buttonBorderShape(.capsule)
+            }
+            .controlSize(.large)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .padding(10)
+        .accessibilityIdentifier("steer.notThrough")
+    }
+}
+
+/// While the user types: what Ishara just said to the receptionist to cover the pause, and
+/// how long they've been waiting.
+private struct CoverLine: View {
+    let text: String
+    let since: Date
+
+    var body: some View {
+        TimelineView(.periodic(from: since, by: 1)) { context in
+            HStack(spacing: 8) {
+                Image(systemName: "waveform").foregroundStyle(.purple)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Ishara just said").font(.caption2.weight(.semibold)).foregroundStyle(.purple)
+                    Text("“\(text)”").font(.footnote.weight(.semibold))
+                }
+                Spacer()
+                Text("\(Int(context.date.timeIntervalSince(since))) s")
+                    .font(.caption.weight(.bold)).foregroundStyle(.secondary)
+                    .accessibilityLabel("waiting \(Int(context.date.timeIntervalSince(since))) seconds")
+            }
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .background(Color.purple.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .accessibilityIdentifier("steer.cover")
+    }
+}
+
+/// Days, clock times and amounts in the receptionist's words, as pinned facts.
+enum CallFacts {
+    struct Fact: Hashable {
+        let text: String
+        let symbol: String
+    }
+
+    private static let patterns: [(String, String)] = [
+        (#"\b\d{1,2}(?::\d{2})?\s*(?:am|pm|a\.m\.|p\.m\.)\b"#, "clock"),
+        (#"\b\d{1,2}:\d{2}\b"#, "clock"),
+        (#"\b(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|tomorrow|today)\b(?:\s+(?:morning|afternoon|evening))?"#, "calendar"),
+        (#"(?:₹|Rs\.?\s?)\d[\d,]*"#, "indianrupeesign.circle"),
+    ]
+
+    static func extract(from lines: [String]) -> [Fact] {
+        var seen: [Fact] = []
+        for line in lines {
+            for (pattern, symbol) in patterns {
+                guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { continue }
+                for match in regex.matches(in: line, range: NSRange(line.startIndex..., in: line)) {
+                    guard let range = Range(match.range, in: line) else { continue }
+                    let fact = Fact(text: String(line[range]), symbol: symbol)
+                    if !seen.contains(fact) { seen.append(fact) }
+                }
+            }
+        }
+        return Array(seen.suffix(6))
+    }
+}
+
+/// One-tap replies for the receptionist's last line: a time on offer gets yes/no; a question
+/// gets a repeat; everything gets "hold on".
+enum QuickSteerReply {
+    static func suggestions(for lastLine: String?) -> [String] {
+        let line = (lastLine ?? "").lowercased()
+        var replies: [String] = []
+        let times = CallFacts.extract(from: [lastLine ?? ""]).filter { $0.symbol != "indianrupeesign.circle" }
+        if let time = times.last {
+            replies += ["Yes, \(time.text) works", "\(time.text) doesn't work, anything else?"]
+        } else if line.contains("?") {
+            replies += ["Yes", "No"]
+        }
+        replies += ["Could you repeat that?", "One moment, please"]
+        return replies
+    }
 }
 
 /// "01:12 · from Ishara's number" while connected; the phase otherwise.
