@@ -37,8 +37,10 @@ struct SetupView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
+                    topBar
                     Text("Who are we\ncalling today?")
-                        .font(.system(size: 34, weight: .bold))
+                        .font(.system(size: 36, weight: .bold))
+                        .tracking(-0.8)
                         .accessibilityAddTraits(.isHeader)
 
                     composer
@@ -48,15 +50,57 @@ struct SetupView: View {
                         .foregroundStyle(.secondary)
 
                     if let history, !history.records.isEmpty {
-                        RecentCallsSection(history: history)
+                        recent(history)
                     }
                 }
                 .padding(20)
             }
             .scrollDismissesKeyboard(.interactively)
-            .navigationTitle("Ishara")
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
         }
+    }
+
+    private var topBar: some View {
+        HStack(spacing: 10) {
+            Circle().fill(.yellow).frame(width: 36, height: 36)
+                .overlay(Text(String(name.prefix(1)).uppercased()).font(.headline))
+            Text("Hi \(name.split(separator: " ").first.map(String.init) ?? name)").font(.headline)
+            Spacer()
+            Image(systemName: "slider.horizontal.3")
+                .frame(width: 36, height: 36)
+                .background(Color(.secondarySystemBackground), in: Circle())
+                .accessibilityLabel("Settings")
+        }
+    }
+
+    private func recent(_ history: CallHistory) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Recent").font(.title3.weight(.bold))
+            ForEach(history.records) { record in
+                NavigationLink {
+                    RecentCallView(history: history, id: record.id)
+                } label: {
+                    HStack(spacing: 12) {
+                        Circle().fill(.purple).frame(width: 44, height: 44)
+                            .overlay(Text(initials(record.contactName)).font(.subheadline.weight(.bold)).foregroundStyle(.white))
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(record.outcomeText).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                            Text("\(record.contactName) · \(record.date.formatted(date: .abbreviated, time: .shortened))")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right").imageScale(.small).foregroundStyle(.tertiary)
+                    }
+                    .padding(14)
+                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func initials(_ name: String) -> String {
+        name.split(separator: " ").prefix(2).map { String($0.prefix(1)) }.joined().uppercased()
     }
 
     private var composer: some View {
@@ -84,13 +128,6 @@ struct SetupView: View {
                     Button("Clear", systemImage: "xmark.circle.fill") { number = "" }
                         .labelStyle(.iconOnly)
                         .foregroundStyle(.secondary)
-                } else {
-                    PasteButton(payloadType: String.self) { strings in
-                        if let first = strings.first { number = first }
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonBorderShape(.capsule)
-                    .controlSize(.small)
                 }
             }
             Divider()
@@ -110,13 +147,24 @@ struct SetupView: View {
 
             detailsSection
 
-            HStack(alignment: .center) {
-                if let problem {
-                    Label(problem, systemImage: "info.circle")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .accessibilityIdentifier("setup.problem")
+            if let problem {
+                Label(problem, systemImage: "info.circle")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("setup.problem")
+            }
+            HStack(alignment: .center, spacing: 8) {
+                PasteButton(payloadType: String.self) { strings in
+                    if let first = strings.first { number = first }
                 }
+                .labelStyle(.iconOnly)
+                .buttonBorderShape(.circle)
+                .tint(.primary)
+                Button { focus = .number } label: {
+                    Image(systemName: "person.crop.rectangle.stack").frame(width: 22, height: 22)
+                }
+                .buttonStyle(.bordered).buttonBorderShape(.circle).tint(.primary)
+                .accessibilityLabel("Contacts")
                 Spacer()
                 Button(action: call) {
                     Label("Call", systemImage: "phone.fill")
@@ -131,7 +179,7 @@ struct SetupView: View {
             }
         }
         .padding(16)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
 
     private var detailsSection: some View {
