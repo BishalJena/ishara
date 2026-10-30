@@ -25,6 +25,7 @@ from app.delegate import (
     Brain,
     Brief,
     DelegateState,
+    Exchange,
     RuleBrain,
     build_brief,
 )
@@ -267,9 +268,8 @@ def test_away_user_hears_nothing_the_agent_speaks_at_once(steer) -> None:
         assert f.receive(ws)["type"] == "status"
         f.live(call_id)
         f.drain_until(ws, "caption")  # disclosure
-        assert f.speak_last(call_id).startswith(
-            "I'd like to book a doctor's appointment for Bishal Jena"
-        )
+        # The opening is the typed request, not a fixed purpose line.
+        assert f.speak_last(call_id) == f"I'm calling for Bishal Jena. {REQUEST}"
         # No presence message: the app is not in front, so the line is spoken straight away.
         said = f.listen_turn(call_id, "We have Wednesday at 10:30. Does that work?")
         assert said == "Yes, 10:30 wednesday works. Thank you."
@@ -464,3 +464,22 @@ async def test_without_documents_the_deferral_stands_and_no_lookup_is_made():
     decision = await Brain(groq).reply(steer_state(), "What's your policy number?")
     assert decision.kind == "defer"
     assert groq.calls == []
+
+
+# ---- wrapping up ----
+
+
+def test_goodbye_after_an_accepted_time_closes_the_call():
+    brain = RuleBrain()
+    state = steer_state()
+    first = brain.decide(state, "We have Wednesday at 10:30. Does that work?")
+    assert first.kind == "accept"
+    state.exchanges.append(Exchange("We have Wednesday at 10:30. Does that work?", first.say))
+    decision = brain.decide(state, "okay thank you bye")
+    assert decision.kind == "close" and decision.done
+    assert decision.say == CLOSE_LINE
+
+
+def test_goodbye_before_anything_was_agreed_does_not_close():
+    decision = RuleBrain().decide(steer_state(), "okay bye")
+    assert decision.kind != "close"

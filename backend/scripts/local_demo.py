@@ -56,7 +56,12 @@ def synthetic_number(index: int) -> str:
 def local_settings(app_token: str, contacts: Sequence[str]) -> Settings:
     """Every secret is passed explicitly, so neither `.env` nor exported variables
     (a real GROQ_API_KEY, BOLNA_API_KEY, ...) can leak into the local server."""
-    recipients = ",".join(f"{contact}={synthetic_number(i)}" for i, contact in enumerate(contacts))
+    # `id` gets a synthetic number; `id=+E164` keeps the given one, so a number typed in the
+    # app can match the allowlist. Nothing is dialled either way.
+    recipients = ",".join(
+        contact if "=" in contact else f"{contact}={synthetic_number(i)}"
+        for i, contact in enumerate(contacts)
+    )
     return Settings(
         _env_file=None,
         app_token=app_token,
@@ -210,12 +215,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="local_demo", description=__doc__.splitlines()[0])
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
     parser.add_argument(
+        "--host", default=HOST, help="0.0.0.0 to let an iPhone on the same Wi-Fi connect"
+    )
+    parser.add_argument(
         "--app-token", type=_token, default=DEV_APP_TOKEN, help="what the app sends"
     )
     parser.add_argument(
         "--contact",
         action="append",
-        help=f"allowlisted contact id, repeatable (default: {DEFAULT_CONTACT})",
+        help=f"allowlisted contact, `id` or `id=+E164`, repeatable (default: {DEFAULT_CONTACT})",
     )
     parser.add_argument(
         "--b24", action="store_true", help="the receptionist talks over the first SEND once"
@@ -257,9 +265,9 @@ def main(argv: list[str] | None = None) -> int:
         log=_out,
     )
     try:
-        sock = bind_socket(HOST, args.port)
+        sock = bind_socket(args.host, args.port)
     except OSError as error:
-        _out(f"can't listen on {HOST}:{args.port} ({error.strerror}); try --port")
+        _out(f"can't listen on {args.host}:{args.port} ({error.strerror}); try --port")
         return 1
     configure_logging()
     # One line per fake-Bolna request (and the webhook secret in each URL) is noise here.

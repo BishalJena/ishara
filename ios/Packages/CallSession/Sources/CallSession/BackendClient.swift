@@ -40,10 +40,23 @@ extension URLSession: HTTPClient {
     }
 }
 
-public enum BackendError: Error, Equatable {
+public enum BackendError: Error, Equatable, LocalizedError {
     /// `POST /calls` answered with a non-2xx status (401 bad token, 403 not allowlisted, ...).
     case httpStatus(Int)
     case notHTTPResponse
+
+    /// What the user reads on the setup screen; says what to do, not an error code.
+    public var errorDescription: String? {
+        switch self {
+        case .httpStatus(401): "The backend didn't accept this app's token."
+        case .httpStatus(403): "That number isn't on the backend's allowlist."
+        case .httpStatus(404): "The backend doesn't know this call. Start again."
+        case .httpStatus(422): "The backend is running an older version than this app. Update the backend."
+        case .httpStatus(let status) where status >= 500: "The backend had a problem (\(status)). Try again in a moment."
+        case .httpStatus(let status): "The backend answered \(status)."
+        case .notHTTPResponse: "No proper answer from the backend. Check the backend address."
+        }
+    }
 }
 
 /// Why the call socket closed, from the backend's close codes (backend/app/calls.py).

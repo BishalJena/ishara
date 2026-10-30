@@ -156,6 +156,14 @@ _NOT_BOOKED = re.compile(
 )
 
 
+# The receptionist is wrapping up: once an offer was accepted, this settles the call.
+_FAREWELL = re.compile(r"\b(bye|goodbye|see you|take care|have a (good|nice|great) (day|one))\b")
+
+
+def _says_goodbye(text: str) -> bool:
+    return _FAREWELL.search(_normalise(text)) is not None
+
+
 def _confirms(text: str) -> bool:
     """The receptionist says it is booked ("fully booked" and "not confirmed" are not)."""
     words = _NOT_BOOKED.sub(" ", _NO_SLOT.sub(" ", _normalise(text)))
@@ -572,6 +580,9 @@ class RuleBrain:
             return Decision(self.opening(state), kind="open")
         if _confirms(heard):
             return Decision(CLOSE_LINE, done=True, kind="close")
+        # "Okay, thank you, bye" after we accepted a time: the booking stands, close too.
+        if _says_goodbye(heard) and any(x.agent.startswith("Yes, ") for x in state.exchanges):
+            return Decision(CLOSE_LINE, done=True, kind="close")
         if (detail := _shareable(heard, brief.details)) is not None:
             return Decision(f"{detail.label.strip()} is {detail.value.strip()}.", kind="share")
         if brief.callback and re.search(r"\b(number|phone|call you|reach you)\b", heard, re.I):
@@ -631,6 +642,10 @@ class RuleBrain:
 
     def opening(self, state: DelegateState) -> str:
         when = _preferred_time(state.brief)
+        if state.steer and state.brief.request:
+            # The typed request is the goal: "I'm calling for Bishal about: renew my passport."
+            request = state.brief.request.rstrip(" .")
+            return f"I'm calling for {state.brief.name}. {request[:1].upper()}{request[1:]}."
         line = f"I'd like to {state.brief.goal} for {state.brief.name}"
         return line + (f", {when}." if when else ".")
 
