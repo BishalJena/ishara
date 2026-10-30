@@ -6,6 +6,16 @@ import Foundation
 struct Contact: Identifiable, Hashable, Sendable {
     let id: String
     let name: String
+    /// A number the user typed or pasted (E.164). The backend dials it only when it is on
+    /// its allowlist; saved contacts have none and are dialled by id.
+    var phoneNumber: String? = nil
+
+    /// A typed or pasted number as a contact; the name defaults to the number.
+    static func number(_ digits: String, name: String? = nil) -> Contact? {
+        let e164 = digits.filter { $0.isNumber || $0 == "+" }
+        guard e164.range(of: #"^\+[1-9]\d{6,14}$"#, options: .regularExpression) != nil else { return nil }
+        return Contact(id: "number", name: name?.isEmpty == false ? name! : e164, phoneNumber: e164)
+    }
 }
 
 extension CallPurpose {
@@ -46,6 +56,8 @@ struct SavedDetails: Equatable, Sendable {
 struct Delegation: Equatable, Sendable {
     let brief: Brief
     let attended: Bool
+    /// `.delegated` (D9) or `.steer`: the agent runs the call and the user may step in.
+    var mode: CallMode = .delegated
 }
 
 /// Everything chosen on the Home screen before a call starts.
@@ -54,15 +66,32 @@ struct CallSetup: Equatable, Sendable {
     var purpose: CallPurpose
     var details: SavedDetails
     var voice: CallVoice
-    /// Set for a delegated call (D9); nil for a live call, where every sentence is approved.
+    /// Set for a delegated or steer call; nil for a live call, where every sentence is approved.
     var delegation: Delegation? = nil
+    /// Steer call: what the user typed the call is about.
+    var request: String? = nil
+    /// Steer call: facts the user approved for sharing when the receptionist asks.
+    var sharedDetails: [Detail] = []
+
+    var isSteer: Bool { delegation?.mode == .steer }
+
+    /// The brief request for a steer call: the typed request plus the profile and details.
+    var steerBriefRequest: BriefRequest {
+        BriefRequest(
+            purpose: purpose, chips: [],
+            profile: Profile(name: details.name, details: sharedDetails),
+            request: request)
+    }
 
     /// The `POST /calls` body for this call. Starting a delegated call with its brief id is
     /// the user's one approval of that brief.
     var startRequest: StartCallRequest {
-        guard let delegation else { return StartCallRequest(contactID: contact.id, purpose: purpose) }
+        let contactID = contact.phoneNumber == nil ? contact.id : nil
+        guard let delegation else {
+            return StartCallRequest(contactID: contactID, phoneNumber: contact.phoneNumber, purpose: purpose)
+        }
         return StartCallRequest(
-            contactID: contact.id, purpose: purpose, mode: .delegated,
+            contactID: contactID, phoneNumber: contact.phoneNumber, purpose: purpose, mode: delegation.mode,
             briefID: delegation.brief.briefID, attended: delegation.attended)
     }
 }

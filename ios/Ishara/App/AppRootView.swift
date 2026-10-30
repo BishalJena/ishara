@@ -8,8 +8,13 @@ struct AppRootView: View {
         case getReady(any RecognitionController, delegated: Bool)
         case brief(BriefModel)
         case activeCall(ActiveCallViewModel)
+        /// Steer flow: the one call screen (Ishara runs the call, the user steps in).
+        case steerCall(ActiveCallViewModel)
         case notes(NotesModel)
     }
+
+    /// Why the steer call couldn't be set up (creating its brief failed).
+    @State private var steerProblem: String?
 
     @State private var route: Route
     @State private var setup: CallSetup = .demo
@@ -25,6 +30,30 @@ struct AppRootView: View {
     var body: some View {
         Group {
             switch route {
+            case .home where services.options.flow == .steer:
+                SetupView(
+                    modeDescription: services.modeDescription,
+                    setupProblem: services.setupProblem ?? steerProblem,
+                    history: services.history,
+                    onCall: { chosen in startSteerCall(chosen) }
+                )
+            case .steerCall(let model):
+                SteerCallView(
+                    model: model,
+                    onLeave: {
+                        model.leave()
+                        route = .home
+                    },
+                    onShowNotes: {
+                        model.leave()
+                        let notes = followUp(model) ?? NotesModel(contactName: model.setup.contact.name, driver: model.driver)
+                        notes.start()
+                        route = .notes(notes)
+                    }
+                )
+                .onChange(of: model.isCallOver) { _, isOver in
+                    if isOver { followUp(model) }
+                }
             case .home:
                 HomeView(
                     setup: setup,
@@ -108,6 +137,26 @@ struct AppRootView: View {
     private func startCall(recognition: any RecognitionController) {
         let driver = services.makeDriver(recognition: recognition)
         route = .activeCall(ActiveCallViewModel(setup: setup, driver: driver, recognition: recognition))
+    }
+
+    /// Steer flow: the typed request becomes the brief (the one approval), then the call
+    /// starts with it. Signing is only set up if the user taps the sign button on the call.
+    private func startSteerCall(_ chosen: CallSetup) {
+        steerProblem = nil
+        let recognition = services.makeRecognition()
+        let driver = services.makeDriver(recognition: recognition)
+        Task { @MainActor in
+            do {
+                let brief = try await driver.createBrief(chosen.steerBriefRequest)
+                var ready = chosen
+                ready.delegation = Delegation(brief: brief, attended: false, mode: .steer)
+                setup = ready
+                route = .steerCall(ActiveCallViewModel(setup: ready, driver: driver, recognition: recognition))
+            } catch {
+                driver.close()
+                steerProblem = "Couldn't set up the call: \(error.localizedDescription)"
+            }
+        }
     }
 
     private static func initialRoute(for services: AppServices) -> Route {

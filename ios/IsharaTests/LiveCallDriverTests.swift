@@ -221,7 +221,7 @@ final class LiveCallDriverTests: XCTestCase {
         XCTAssertEqual(requests.map(\.url?.path), ["/briefs", "/calls", "/calls/call_9/notes"])
         XCTAssertEqual(requests.map(\.httpMethod), ["POST", "POST", "GET"])
         let briefBody = try XCTUnwrap(requests[0].httpBody.map { String(decoding: $0, as: UTF8.self) })
-        XCTAssertEqual(briefBody, #"{"chips":["tomorrow"],"profile":{"name":"Riya"},"purpose":"doctor_appointment"}"#)
+        XCTAssertEqual(briefBody, #"{"chips":["tomorrow"],"profile":{"details":[],"name":"Riya"},"purpose":"doctor_appointment"}"#)
         let startBody = try XCTUnwrap(requests[1].httpBody.map { String(decoding: $0, as: UTF8.self) })
         XCTAssertEqual(startBody,
                        #"{"attended":true,"brief_id":"b7","contact_id":"clinic","mode":"delegated","purpose":"doctor_appointment"}"#)

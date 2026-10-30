@@ -63,6 +63,7 @@ extension CallRecord {
         return switch mode {
         case .live: "You signed the call"
         case .delegated: "Call for me: the notes weren't loaded"
+        case .steer: "Ishara ran the call: the notes weren't loaded"
         }
     }
 }

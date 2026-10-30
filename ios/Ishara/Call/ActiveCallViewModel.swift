@@ -100,11 +100,35 @@ final class ActiveCallViewModel {
 
     /// D9: the agent pursues an approved brief; the user only answers its questions.
     var isDelegated: Bool { setup.delegation != nil }
+    /// The agent runs the call and the user may step in by typing or signing.
+    var isSteer: Bool { setup.isSteer }
     /// D9 attended: the user watches and answers the agent's questions by sign or tap
     /// (yes / no / wait, or a time word for an open "when?").
     var isAttended: Bool { setup.delegation?.attended ?? false }
-    /// Signs matter on a live call, and on an attended delegated call (to answer questions).
-    var watchesSigns: Bool { !isDelegated || isAttended }
+    /// Signs matter on a live call, on an attended delegated call (to answer questions) and
+    /// on a steer call (to step in).
+    var watchesSigns: Bool { !isDelegated || isAttended || isSteer }
+
+    // MARK: Steer call
+
+    var proposal: Proposal? { store?.proposal }
+    var followUps: [String] { store?.followUps ?? [] }
+    var steppedIn: Int { store?.steppedIn ?? 0 }
+    /// The user is typing or signing; the agent only covers the pause.
+    var isSteppingIn: Bool { store?.isComposing ?? false }
+
+    /// The call screen came to the front (or left it) on an unlocked phone.
+    func setPresent(_ present: Bool) { store?.setPresent(present) }
+    /// "Send now" on the proposed line.
+    func approveProposal() { store?.approveProposal() }
+    /// The user tapped into the text field or made a first sign.
+    func beginSteppingIn() { store?.startComposing() }
+    /// The user left the field empty and dismissed the keyboard.
+    func cancelSteppingIn() { store?.stopComposing() }
+    /// A typed line, to be polished, previewed and spoken.
+    func say(_ text: String) { store?.say(text) }
+    /// Edit the previewed typed line instead of letting it be spoken.
+    func editPreview() { store?.holdPreview() }
 
     /// What Recent calls keeps once the call is over: its captions (the notes come later).
     /// Nil while it's on, or if it was never placed.
@@ -242,13 +266,15 @@ final class ActiveCallViewModel {
     private func accept(_ sign: Sign) {
         // D9: while the agent waits for an answer, a signed option word answers it.
         if store?.answerIfAsked(sign) == true { return }
-        // On a delegated call nothing is composed; only answers reach the call.
-        guard !isDelegated else { return }
+        // On a delegated call nothing is composed; only answers reach the call. On a steer
+        // call a sign is the user stepping in: the agent's proposed line is held first.
+        guard !isDelegated || isSteer else { return }
+        if isSteer { store?.startComposing() }
         store?.add(.recognised(sign))
     }
 
     private func addUnsure() {
-        guard !isDelegated else { return }
+        guard !isDelegated || isSteer else { return }
         store?.add(.unsure())
     }
 

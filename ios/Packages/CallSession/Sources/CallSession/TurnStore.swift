@@ -365,8 +365,14 @@ public final class TurnStore {
             captions.append(Caption(text: spoken, at: Date(), speaker: source == "user" ? .user : .agent))
         case let .proposal(turnID, text, windowS, origin):
             proposal = Proposal(turnID: turnID, text: text, windowS: windowS, origin: origin, shownAt: Date())
-        case let .proposalResolved(turnID, _):
-            if proposal?.turnID == turnID { proposal = nil }
+        case let .proposalResolved(turnID, outcome):
+            guard let shown = proposal, shown.turnID == turnID else { return }
+            proposal = nil
+            // The backend captions the agent's lines once said; the user's own typed line
+            // is shown here, as theirs, when its preview ran out.
+            if shown.origin == .user, outcome == .spoken {
+                captions.append(Caption(text: shown.text, at: Date(), speaker: .user))
+            }
         case let .followUp(text):
             followUps.append(text)
         case .unknown:
