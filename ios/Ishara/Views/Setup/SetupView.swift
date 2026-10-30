@@ -1,0 +1,350 @@
+import CallSession
+import PhotosUI
+import SwiftUI
+
+/// What the user has typed on Home, kept while they're on a call so "Back to the request"
+/// finds it as they left it; cleared once a call has been through and they're done.
+@MainActor @Observable
+final class SetupDraft {
+    var number = ""
+    var pickedName = ""
+    var request = ""
+    var attachments: [Attachment] = []
+
+    func clear() {
+        number = ""
+        pickedName = ""
+        request = ""
+        attachments = []
+    }
+}
+
+/// Home for steer calls: who to call (a typed or pasted number, a contact, or someone called
+/// before), what the call is about, and any card, letter or bill Ishara may quote from, read
+/// on this phone. One tap places the call; Ishara runs it and the user steps in whenever
+/// they like.
+struct SetupView: View {
+    let modeDescription: String
+    /// Why a call can't be placed right now (for example no backend configured).
+    let setupProblem: String?
+    let history: CallHistory?
+    @Bindable var draft: SetupDraft
+    let onCall: (CallSetup) -> Void
+
+    private var number: String {
+        get { draft.number }
+        nonmutating set { draft.number = newValue }
+    }
+    private var pickedName: String {
+        get { draft.pickedName }
+        nonmutating set { draft.pickedName = newValue }
+    }
+    private var request: String { draft.request }
+    private var attachments: [Attachment] {
+        get { draft.attachments }
+        nonmutating set { draft.attachments = newValue }
+    }
+    @AppStorage("ishara.name") private var name = ""
+    @AppStorage("ishara.callback") private var callback = ""
+    @State private var settingsPrompt: SettingsPrompt?
+    /// Set by the sheet's Call button; the call is placed once the sheet is gone.
+    @State private var callAfterSettings = false
+
+    private enum SettingsPrompt: String, Identifiable {
+        case settings, nameForCall
+        var id: String { rawValue }
+    }
+    @State private var showsContacts = false
+    @State private var showsPhotoPicker = false
+    @State private var showsFilePicker = false
+    @State private var showsAttachMenu = false
+    @State private var photoItem: PhotosPickerItem?
+    @State private var reading = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @FocusState private var focus: Field?
+
+    private enum Field { case number, request }
+
+    private var typedContact: Contact? { Contact.indian(number, name: pickedName) }
+    private var usesNumber: Bool { !number.isEmpty }
+
+    /// People called before from this phone, newest first, one chip each.
+    private var recentPeople: [Contact] {
+        var seen = Set<String>()
+        return (history?.records ?? []).compactMap { record -> Contact? in
+            guard let number = record.contactNumber, seen.insert(number).inserted else { return nil }
+            return Contact.number(number, name: record.contactName)
+        }
+    }
+
+    private var problem: String? {
+        if let setupProblem { return setupProblem }
+        if !usesNumber { return "Enter a number, or pick someone." }
+        if typedContact == nil { return "Enter the 10-digit number." }
+        if request.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "Say what the call is about." }
+        return nil
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    topBar
+                    Text("Who are we\ncalling today?")
+                        .font(.system(size: 36, weight: .bold))
+                        .tracking(-0.8)
+                        .accessibilityAddTraits(.isHeader)
+
+                    composer
+
+                    Text("Ishara leads the call from what you wrote and never adds anything else. It calls from Ishara's number, not yours. \(modeDescription)")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    if let history, !history.records.isEmpty {
+                        recent(history)
+                    }
+                }
+                .padding(20)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .toolbar(.hidden, for: .navigationBar)
+            .onAppear {
+                // UI tests start with a clean store and no way to type into Settings first.
+                if name.isEmpty, let preset = ProcessInfo.processInfo.environment["ISHARA_UITEST_NAME"] { name = preset }
+            }
+            .sheet(item: $settingsPrompt, onDismiss: {
+                guard callAfterSettings else { return }
+                callAfterSettings = false
+                call()
+            }) { prompt in
+                switch prompt {
+                case .settings: SettingsSheet()
+                case .nameForCall: SettingsSheet(onContinueCall: { callAfterSettings = true })
+                }
+            }
+            .sheet(isPresented: $showsContacts) {
+                ContactPicker { pickedName, pickedNumber in
+                    self.pickedName = pickedName
+                    number = Contact.indianDigits(from: pickedNumber)
+                }
+                .ignoresSafeArea()
+            }
+            .confirmationDialog("Attach", isPresented: $showsAttachMenu) {
+                Button("Photo") { showsPhotoPicker = true }
+                Button("File or PDF") { showsFilePicker = true }
+            } message: {
+                Text("A card, letter or bill. Ishara reads it on this iPhone and can quote it on the call, word for word, only when asked.")
+            }
+            .photosPicker(isPresented: $showsPhotoPicker, selection: $photoItem, matching: .images)
+            .onChange(of: photoItem) { _, item in
+                guard let item else { return }
+                photoItem = nil
+                Task {
+                    if let data = try? await item.loadTransferable(type: Data.self) { await attach(data, name: "Photo") }
+                }
+            }
+            .fileImporter(isPresented: $showsFilePicker, allowedContentTypes: [.pdf, .image]) { result in
+                guard case let .success(url) = result else { return }
+                Task {
+                    let accessed = url.startAccessingSecurityScopedResource()
+                    defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+                    if let data = try? Data(contentsOf: url) { await attach(data, name: url.lastPathComponent) }
+                }
+            }
+        }
+    }
+
+    private func attach(_ data: Data, name: String) async {
+        reading += 1
+        let attachment = await AttachmentReader.read(data: data, name: name)
+        reading -= 1
+        withAnimation(motion) { attachments.append(attachment) }
+    }
+
+    private func remove(_ attachment: Attachment) {
+        withAnimation(motion) { attachments.removeAll { $0.id == attachment.id } }
+    }
+
+    /// A settled spring (no bounce) for things that appear because of what the user did;
+    /// a plain fade with Reduce Motion on.
+    private var motion: Animation { reduceMotion ? .easeOut(duration: 0.2) : .spring(duration: 0.4, bounce: 0) }
+    private var appear: AnyTransition {
+        reduceMotion ? .opacity : .scale(scale: 0.85, anchor: .leading).combined(with: .opacity)
+    }
+
+    private var topBar: some View {
+        HStack(spacing: 10) {
+            InitialsAvatar(name: String(name.prefix(1)), color: .yellow, size: 36, foreground: .black)
+            Text(name.isEmpty ? "Hi there" : "Hi \(name.split(separator: " ").first.map(String.init) ?? name)").font(.headline)
+            Spacer()
+            Button { settingsPrompt = .settings } label: {
+                Image(systemName: "slider.horizontal.3")
+                    .frame(width: 36, height: 36)
+                    .background(Color(.secondarySystemBackground), in: Circle())
+            }
+            .tint(.primary)
+            .accessibilityLabel("Settings")
+            .accessibilityIdentifier("setup.settings")
+        }
+    }
+
+    private func recent(_ history: CallHistory) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Recent").font(.title3.weight(.bold))
+            ForEach(history.records) { record in
+                NavigationLink {
+                    RecentCallView(history: history, id: record.id)
+                } label: {
+                    HStack(spacing: 12) {
+                        InitialsAvatar(name: record.contactName, color: .purple)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(record.outcomeText).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                            Text("\(Contact.isNumberName(record.contactName) ? Contact.display(record.contactName) : record.contactName) · \(record.date.formatted(date: .abbreviated, time: .shortened))")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right").imageScale(.small).foregroundStyle(.tertiary)
+                    }
+                    .padding(14)
+                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private var composer: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) {
+                Text("To").font(.headline).foregroundStyle(.secondary)
+                Text("+91").font(.body.monospacedDigit()).foregroundStyle(usesNumber ? .primary : .secondary)
+                    .accessibilityHidden(true)
+                TextField("10-digit number", text: $draft.number)
+                    .keyboardType(.numberPad)
+                    .textContentType(.telephoneNumber)
+                    .font(.body.monospacedDigit())
+                    .focused($focus, equals: .number)
+                    .onChange(of: number) { _, raw in
+                        let digits = raw.count > 10 ? Contact.indianDigits(from: raw) : raw.filter(\.isNumber)
+                        if digits != raw { number = digits }
+                    }
+                    .accessibilityLabel("Number, +91")
+                    .accessibilityIdentifier("setup.number")
+                if usesNumber {
+                    if !pickedName.isEmpty { Text(pickedName).font(.subheadline.weight(.semibold)).lineLimit(1) }
+                    Button("Clear", systemImage: "xmark.circle.fill") { number = ""; pickedName = "" }
+                        .labelStyle(.iconOnly)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if !usesNumber, !recentPeople.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(recentPeople) { person in
+                            Button {
+                                number = Contact.indianDigits(from: person.phoneNumber ?? "")
+                                pickedName = Contact.isNumberName(person.name) ? "" : person.name
+                            } label: {
+                                Label(person.name, systemImage: "clock.arrow.circlepath")
+                                    .font(.footnote.weight(.semibold))
+                                    .padding(.vertical, 6).padding(.horizontal, 10)
+                                    .background(Color(.tertiarySystemBackground), in: Capsule())
+                            }
+                            .tint(.primary)
+                        }
+                    }
+                }
+                .accessibilityIdentifier("setup.recentPeople")
+            }
+            Divider()
+
+            TextField("What should Ishara do? e.g. Book a check-up next week, mornings only.", text: $draft.request, axis: .vertical)
+                .lineLimit(3...8)
+                .font(.title3.weight(.medium))
+                .focused($focus, equals: .request)
+                .accessibilityIdentifier("setup.request")
+
+            if !attachments.isEmpty || reading > 0 { attachmentsRow }
+
+            if let problem {
+                Label(problem, systemImage: "info.circle")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("setup.problem")
+            }
+            HStack(alignment: .center, spacing: 8) {
+                Button { showsAttachMenu = true } label: {
+                    Image(systemName: "paperclip").frame(width: 22, height: 22)
+                }
+                .buttonStyle(.bordered).buttonBorderShape(.circle).tint(.primary)
+                .accessibilityLabel("Attach a photo or file")
+                .accessibilityIdentifier("setup.attach")
+                Button { showsContacts = true } label: {
+                    Image(systemName: "person.crop.circle").frame(width: 22, height: 22)
+                }
+                .buttonStyle(.bordered).buttonBorderShape(.circle).tint(.primary)
+                .accessibilityLabel("Contacts")
+                .accessibilityIdentifier("setup.contacts")
+                Spacer()
+                Button(action: call) {
+                    Label("Call", systemImage: "phone.fill")
+                        .font(.headline)
+                        .padding(.horizontal, 6)
+                }
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .tint(.green)
+                .disabled(problem != nil)
+                .accessibilityIdentifier("setup.call")
+            }
+        }
+        .padding(16)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+    }
+
+    private var attachmentsRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(attachments) { attachment in
+                HStack(spacing: 10) {
+                    if let thumbnail = attachment.thumbnail {
+                        Image(uiImage: thumbnail).resizable().scaledToFill()
+                            .frame(width: 36, height: 36).clipShape(RoundedRectangle(cornerRadius: 8))
+                    } else {
+                        Image(systemName: "doc").frame(width: 36, height: 36)
+                    }
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(attachment.name).font(.subheadline.weight(.semibold)).lineLimit(1)
+                        Text(attachment.summary)
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Remove", systemImage: "xmark.circle.fill") { remove(attachment) }
+                        .labelStyle(.iconOnly).foregroundStyle(.secondary)
+                }
+                .transition(appear)
+            }
+            if reading > 0 {
+                Label("Reading on this iPhone…", systemImage: "doc.text.magnifyingglass")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func call() {
+        guard problem == nil, let who = typedContact else { return }
+        if name.trimmingCharacters(in: .whitespaces).isEmpty {
+            settingsPrompt = .nameForCall
+            return
+        }
+        var setup = CallSetup(
+            contact: who, purpose: .doctorAppointment,
+            details: SavedDetails(name: name.trimmingCharacters(in: .whitespaces), preferredTime: .mornings),
+            voice: .indianEnglish)
+        setup.request = request.trimmingCharacters(in: .whitespacesAndNewlines)
+        setup.documents = attachments.compactMap(\.document)
+        // Said only when they ask how to reach the caller ("You can reach me on ...").
+        setup.callback = callback.count == 10 ? Contact.display("+91" + callback) : nil
+        onCall(setup)
+    }
+}

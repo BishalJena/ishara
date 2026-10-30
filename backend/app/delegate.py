@@ -34,7 +34,10 @@ from app.protocol import (
     AskOption,
     BriefRequest,
     BriefResponse,
+    CallMode,
     CallNotes,
+    Detail,
+    Document,
     Purpose,
     Sign,
     TranscriptEntry,
@@ -49,7 +52,11 @@ from app.validator import (
     _invented_numbers,
     _meta_text,
     _normalise,
+    phrase_request,
     temporal_facts,
+)
+from app.validator import (
+    _PARTS as PART_WORDS,
 )
 
 log = logging.getLogger(__name__)
@@ -58,8 +65,30 @@ LLM_TIMEOUT_S = 2.5
 ASK_TIMEOUT_S = 10.0
 PAUSE_LINE = "One moment, please."
 CALLBACK_LINE = "I'll need to check that and call back. Thank you."
-CLOSE_LINE = "Thank you for your help. Goodbye."
+# No "goodbye" here: hanging up moves Bolna to its goodbye node, which says it (once).
+CLOSE_LINE = "That's all, thank you so much for your help."
 WAIT_LINE = "One moment, please, I'm checking."
+# Steer calls (CallMode "steer").
+DEFER_LINE = "I don't have that with me. Could I send it to you afterwards?"
+TIMES_LINE = "What times do you have available?"
+ANOTHER_TIME_LINE = "I see. What is the nearest time you do have?"
+# Said to the receptionist while the user is typing or signing a reply. Rotated so the
+# same line is never said twice in a row; none carries a fact.
+FILLERS = (
+    "One moment, please.",
+    "Just a second, let me check.",
+    "Bear with me a moment.",
+    "Let me confirm that.",
+    "One moment, I'm checking.",
+)
+# Once the user has been composing a while: thank the receptionist for waiting, still with
+# no fact in it ("replying" holds for typing and signing alike).
+LONG_WAIT_LINES = (
+    "Thank you for waiting. Their reply is on its way.",
+    "Sorry for the wait, they're still replying.",
+)
+# Days a typed request can pin an appointment to. Spans ("next week") only narrow it.
+_PIN_DAYS = frozenset(("today", "tomorrow", "day after tomorrow", *_WEEKDAYS))
 # The time words the user can sign (or tap) to answer an open "when?" question, in the
 # card's order, with what each says. NOW reads as "today", like it does in the brief.
 # The model has no number signs, so no clock time is ever signed.
@@ -129,10 +158,47 @@ _OUT_OF_BRIEF = re.compile(
     r"|e-?mail|aadhaar|social security|ssn|id number|medical (history|records?)"
     r"|allerg(y|ies)|medications?|password|otp)\b"
 )
+# Asked for some number, id or detail of theirs ("can i have your file number please"),
+# written the way the live transcriber hands it over: lowercase, no punctuation.
+_ASKS_FOR_DETAIL = re.compile(
+    r"\b(can i (have|get|take|know)|could (i|you) (have|get|give|tell|share)|may i (have|get|know)"
+    r"|what('s| is) (your|the)|tell me (your|the)|give me (your|the)|need (your|the)"
+    r"|do you have (your|the))\b[^.?!]{0,40}?\b(number|no|id|code|details?|reference|date"
+    r"|address|e-?mail|name of)\b"
+)
+# The receptionist opens the floor ("how can i help you"): say what the call is about.
+_HOW_CAN_I_HELP = re.compile(
+    r"\b(how (can|may|could) (i|we) help|what can (i|we) do for you|how can i assist"
+    r"|what is it (about|regarding)|what('s| is) this (about|regarding)|go ahead|tell me)\b"
+)
+# A request that is about getting a time, where asking for the times available makes sense.
+_WANTS_A_SLOT = re.compile(
+    r"\b(book|booking|appointment|slot|schedule|reschedule|visit|check-?up|consult"
+    r"|meeting|reserve|reservation|table)\b",
+    re.I,
+)
+NEXT_STEP_LINE = "Okay, thank you. What would be the next step?"
 # "That isn't confirmed yet", "not booked": a booking word that denies the booking.
 _NOT_BOOKED = re.compile(
     r"(\b(not|never)\b|n't\b)[^.?!]{0,20}?\b(booked|confirmed|reserved|scheduled)\b"
 )
+
+
+# The receptionist is wrapping up: once an offer was accepted, this settles the call.
+_FAREWELL = re.compile(r"\b(bye|goodbye|see you|take care|have a (good|nice|great) (day|one))\b")
+
+
+def _says_goodbye(text: str) -> bool:
+    return _FAREWELL.search(_normalise(text)) is not None
+
+
+def wraps_up(state: DelegateState, heard: str) -> bool:
+    """The receptionist settles the call: it's booked, or a goodbye after we accepted a
+    time ("okay thank you bye"). The agent closes on it."""
+    accepted = any(x.agent.startswith("Yes, ") for x in state.exchanges) or bool(
+        state.agent_answers
+    )
+    return _confirms(heard) or (_says_goodbye(heard) and accepted)
 
 
 def _confirms(text: str) -> bool:
@@ -148,23 +214,50 @@ def _declines(text: str) -> bool:
 # ---- the brief ----
 
 
+def _typed_when(request_text: str) -> str | None:
+    """The days and parts of day a typed request names, as the agent says them, e.g.
+    "on Tuesday or Wednesday in the morning"; None when it names none."""
+    facts = temporal_facts(request_text)
+    days = [d for d in _WEEKDAYS if f"day:{d}" in facts]
+    relative = [d for d in ("today", "tomorrow", "day after tomorrow") if f"day:{d}" in facts]
+    pieces: list[str] = []
+    if days:
+        pieces.append("on " + " or ".join(d.capitalize() for d in days))
+    if relative:
+        pieces.append(
+            " or ".join("the day after tomorrow" if d.startswith("day") else d for d in relative)
+        )
+    parts = [p for p in PART_WORDS if f"part:{p}" in facts]
+    if parts:
+        pieces.append("in the " + " or ".join(parts) if parts != ["night"] else "at night")
+    return " ".join(pieces) if pieces else None
+
+
 def build_brief(request: BriefRequest) -> BriefResponse:
-    """Deterministic: the brief says only what the chips and the profile carry."""
+    """Deterministic: the brief says only what the chips, the typed request and the
+    profile carry."""
     chips = list(dict.fromkeys(request.chips))[:MAX_CHIPS]
     goal = PURPOSE_GOAL[request.purpose]
     when = [_DAYS[c] for c in chips if c in _DAYS] + [_PARTS[c] for c in chips if c in _PARTS]
+    typed = _typed_when(request.request) if request.request else None
+    if typed and not when:
+        when = [typed]
     constraints = []
     if when:
         constraints.append("preferred time: " + " ".join(dict.fromkeys(when)))
     constraints += [_EXTRA_FACTS[c] for c in chips if c in _EXTRA_FACTS]
     name = request.profile.name.strip()
     lines = [f"Call on behalf of {name}, who is Deaf and uses the Ishara app, to {goal}."]
+    if request.request:
+        text = request.request.strip()
+        lines.append(f"Request: {text}{'' if text.endswith(('.', '!', '?')) else '.'}")
     if when:
         lines.append(f"Preferred: {' '.join(dict.fromkeys(when))}.")
     if request.profile.notes:
         reason = request.profile.notes.strip()
         lines.append(f"Reason, if asked: {reason}{'' if reason.endswith(('.', '!', '?')) else '.'}")
     share = [f"name ({name})"] + (["callback number"] if request.profile.callback else [])
+    share += [d.label.strip() for d in request.profile.details]
     lines.append("May share: " + ", ".join(share) + ".")
     lines.append(
         "Will not agree to anything outside this brief; "
@@ -184,9 +277,36 @@ class Brief:
     callback: str | None
     notes: str | None
     purpose: Purpose
+    request: str | None = None
+    details: tuple[Detail, ...] = ()
+    documents: tuple[Document, ...] = ()
+    # Steer: the request as the agent says it on the caller's behalf, phrased once when
+    # the brief was created; None means the rule phrasing is used.
+    opening: str | None = None
+
+    @property
+    def days(self) -> frozenset[str]:
+        """Days the typed request pins the appointment to; empty means any day."""
+        if not self.request:
+            return frozenset()
+        return (
+            frozenset(
+                f.split(":", 1)[1] for f in temporal_facts(self.request) if f.startswith("day:")
+            )
+            & _PIN_DAYS
+        )
+
+    @property
+    def parts(self) -> frozenset[str]:
+        """Parts of day the typed request allows; empty means any time."""
+        if not self.request:
+            return frozenset()
+        return frozenset(
+            f.split(":", 1)[1] for f in temporal_facts(self.request) if f.startswith("part:")
+        )
 
 
-def brief_from(request: BriefRequest, response: BriefResponse) -> Brief:
+def brief_from(request: BriefRequest, response: BriefResponse, opening: str | None = None) -> Brief:
     return Brief(
         response.text,
         response.goal,
@@ -195,6 +315,10 @@ def brief_from(request: BriefRequest, response: BriefResponse) -> Brief:
         request.profile.callback,
         request.profile.notes,
         request.purpose,
+        request.request.strip() if request.request else None,
+        tuple(request.profile.details),
+        tuple(request.profile.documents),
+        opening,
     )
 
 
@@ -211,6 +335,7 @@ def check_line(line: str, brief: Brief, transcript_text: str) -> list[str]:
         reasons.append(f"too many words: {len(text.split())}")
     known = " ".join(
         [brief.text, brief.name, brief.callback or "", brief.notes or "", transcript_text]
+        + [f"{d.label} {d.value}" for d in brief.details]
     )
     reasons += _invented_numbers(text, known)
     reasons += _invented_names(text, known)
@@ -229,6 +354,11 @@ def check_line(line: str, brief: Brief, transcript_text: str) -> list[str]:
     return reasons
 
 
+# What a steer decision did, so the brain knows which lines are rule-bound (every
+# commitment, share or deferral) and which the LLM may reword ("other").
+DecisionKind = Literal["other", "open", "close", "share", "defer", "accept", "decline", "time"]
+
+
 @dataclass(frozen=True)
 class Decision:
     say: str
@@ -236,6 +366,8 @@ class Decision:
     done: bool = False  # the brief is settled; the agent may close
     callback: bool = False  # the line promises to call back (it also settles the brief)
     source: str = "rules"
+    kind: DecisionKind = "other"
+    follow_up: str | None = None  # steer: what was asked for and deferred
 
 
 @dataclass
@@ -248,19 +380,47 @@ class Exchange:
 class DelegateState:
     brief: Brief
     attended: bool
+    # Steer calls: the agent decides every turn by the brief, the user may step in.
+    steer: bool = False
     exchanges: list[Exchange] = field(default_factory=list)
     opened: bool = False
     pending_ask: str | None = None  # ask_id
     deciding: bool = False  # the brain is working on a receptionist turn
     answers: list[str] = field(default_factory=list)  # what the user chose, in spoken form
+    agent_answers: list[str] = field(default_factory=list)  # steer: answers the agent gave
     # How the brief settled; set once, and nothing new is said or asked after it.
     outcome: Literal["done", "callback"] | None = None
+    # Steer bookkeeping.
+    follow_ups: list[str] = field(default_factory=list)
+    stepped_in: int = 0
+    composing: bool = False  # the user is typing or signing; the agent only fills
+    fillers_said: int = 0
+    last_filler: str | None = None
+    last_filler_at: float | None = None  # manager clock
+    held_text: str | None = None  # an agent line the user held; spoken if they back out
+    # The receptionist wrapped up while the user was typing: close once their line is said.
+    close_after_user: bool = False
+    asked_for_another_time: bool = False
 
     def transcript_text(self) -> str:
         # The user's spoken answers are part of the call too ("In the morning, please."),
         # so later lines may repeat what the user chose.
         said = [x.receptionist + " " + x.agent for x in self.exchanges]
         return " ".join(said + self.answers)
+
+    @property
+    def mode(self) -> CallMode:
+        return "steer" if self.steer else "delegated"
+
+    def next_filler(self, long_wait: bool = False) -> str:
+        """The next cover line, never the one just said; after a long wait, every other
+        line thanks the receptionist for waiting."""
+        pool = LONG_WAIT_LINES if long_wait and self.fillers_said % 2 else FILLERS
+        candidates = [f for f in pool if f != self.last_filler]
+        line = candidates[self.fillers_said % len(candidates)]
+        self.fillers_said += 1
+        self.last_filler = line
+        return line
 
 
 def _options_for(proposal: str) -> tuple[AskOption, ...]:
@@ -383,12 +543,165 @@ def _day_offer(text: str, brief: Brief) -> str | None:
     return day if day == "tomorrow" else day.capitalize()
 
 
+# ---- steer: fitting an offer to the typed request ----
+
+_CLOCK = re.compile(r"(\d{1,2})(?::(\d{2}))?\s*(am|pm)?")
+# Label words that name the same detail in the receptionist's mouth.
+_DETAIL_SYNONYMS: dict[str, tuple[str, ...]] = {
+    "birth": ("dob", "born", "birthday", "birth"),
+    "insurance": ("insurance", "policy", "insurer"),
+    "address": ("address", "live", "postcode", "pin code", "zip"),
+    "email": ("email", "e-mail", "mail"),
+    "phone": ("phone", "number", "reach you", "call you back"),
+    "age": ("age", "how old"),
+}
+_DETAIL_STOP_WORDS = frozenset(("the", "of", "and", "number", "his", "her", "their", "my"))
+
+
+def _part_of(clock: str) -> str | None:
+    """The part of day a clock time falls in ("4 pm" -> afternoon; "10:30" with no am/pm
+    reads as a working hour: 1-6 as afternoon or evening, 7-11 as morning)."""
+    match = _CLOCK.match(clock.strip())
+    if match is None:
+        return None
+    hour, meridiem = int(match.group(1)), match.group(3)
+    if (meridiem == "pm" and hour != 12) or (meridiem is None and 1 <= hour <= 6):
+        hour += 12
+    if 5 <= hour < 12:
+        return "morning"
+    if 12 <= hour < 17:
+        return "afternoon"
+    if 17 <= hour < 21:
+        return "evening"
+    return "night"
+
+
+def _offer_fits(heard: str, brief: Brief, clock: str | None) -> bool:
+    """Whether the time on offer is one the typed request allows: its day is one of the
+    request's pinned days (or the request pins none) and its part of day is one of the
+    request's parts (or it names none). A day the receptionist never said is no bar."""
+    facts = temporal_facts(heard)
+    offer_days = {f.split(":", 1)[1] for f in facts if f.startswith("day:")} & _PIN_DAYS
+    if brief.days and offer_days and not (offer_days & brief.days):
+        return False
+    offer_parts = {f.split(":", 1)[1] for f in facts if f.startswith("part:")}
+    if clock and (part := _part_of(clock)):
+        offer_parts = {part}
+    return not (brief.parts and offer_parts and not (offer_parts & brief.parts))
+
+
+def _preferred_phrase(brief: Brief) -> str:
+    """ "on Tuesday or Wednesday in the morning" for the decline line; "" when the
+    request pins nothing."""
+    when = _preferred_time(brief)
+    return f" {when}" if when else ""
+
+
+def _shareable(heard: str, details: tuple[Detail, ...]) -> Detail | None:
+    """The approved detail the receptionist is asking for, matched on its label's words
+    and their common synonyms; None when nothing approved fits."""
+    text = _normalise(heard)
+    words = set(re.findall(r"[a-z]+", text))
+    for detail in details:
+        label_words = {w for w in re.findall(r"[a-z]+", detail.label.lower()) if len(w) >= 3}
+        label_words -= _DETAIL_STOP_WORDS
+        if label_words & words:
+            return detail
+        for key, synonyms in _DETAIL_SYNONYMS.items():
+            if key in detail.label.lower() and any(s in text for s in synonyms):
+                return detail
+    return None
+
+
 class RuleBrain:
     """No LLM: opens with the brief, hands every proposal to the user (attended) or
     promises a callback (unattended), closes when the receptionist confirms."""
 
+    def decide_steer(self, state: DelegateState, heard: str) -> Decision:
+        """Steer calls: every commitment is decided here, by the typed request. Accept an
+        offer only when it fits, decline with the request's preference otherwise, share
+        only approved details, defer anything else as a follow-up. Never asks the user."""
+        brief = state.brief
+        if not state.opened:
+            return Decision(self.opening(state), kind="open")
+        if wraps_up(state, heard):
+            return Decision(CLOSE_LINE, done=True, kind="close")
+        if (detail := _shareable(heard, brief.details)) is not None:
+            return Decision(f"{detail.label.strip()} is {detail.value.strip()}.", kind="share")
+        if brief.callback and re.search(
+            r"\b(phone|mobile|contact|call you|reach you|callback)\b", heard, re.I
+        ):
+            return Decision(f"You can reach me on {brief.callback}.", kind="share")
+        normalised = _normalise(heard)
+        if _OUT_OF_BRIEF.search(normalised) or _ASKS_FOR_DETAIL.search(normalised):
+            return Decision(DEFER_LINE, kind="defer", follow_up=heard.strip())
+        times = _times_heard(heard)
+        if times.single is not None:
+            proposal = _proposal_in(heard) or times.single
+            if _offer_fits(times.offering_text, brief, times.single):
+                return Decision(f"Yes, {proposal} works. Thank you.", kind="accept")
+            return Decision(
+                f"No, {proposal} doesn't work, sorry. Is there anything{_preferred_phrase(brief)}?",
+                kind="decline",
+            )
+        if times.offered or times.unsure:
+            # Several times at once: pick none; let the request's preference narrow it.
+            preferred = _preferred_phrase(brief)
+            if preferred:
+                return Decision(f"Which of those would be{preferred}?", kind="time")
+            return Decision("Yes, the earliest of those works. Thank you.", kind="accept")
+        if _asks_when(heard):
+            when = _preferred_time(brief)
+            return Decision(_time_line(when) if when else TIMES_LINE, kind="time")
+        heard_days = {
+            f.split(":", 1)[1] for f in temporal_facts(heard) if f.startswith("day:")
+        } & _PIN_DAYS
+        if heard_days and _OFFERING.search(_normalise(heard)):
+            # A day on offer with no clock time: fine when the request allows it, then
+            # ask for the times; otherwise decline with the request's preference.
+            fits = not brief.days or bool(heard_days & brief.days)
+            day = min(heard_days, key=lambda d: (d not in brief.days, d))
+            spoken = "the day after tomorrow" if day == "day after tomorrow" else day
+            spoken = (
+                spoken
+                if spoken in ("today", "tomorrow", "the day after tomorrow")
+                else spoken.capitalize()
+            )
+            if fits and len(heard_days) == 1:
+                return Decision(f"{spoken[0].upper()}{spoken[1:]} works. {TIMES_LINE}", kind="time")
+            if fits:
+                return Decision(f"Which of those would be{_preferred_phrase(brief)}?", kind="time")
+            return Decision(
+                f"No, {spoken} doesn't work, sorry. Is there anything{_preferred_phrase(brief)}?",
+                kind="decline",
+            )
+        if _declines(heard):
+            if state.asked_for_another_time:
+                return Decision(CALLBACK_LINE, done=True, callback=True, kind="close")
+            state.asked_for_another_time = True
+            return Decision(ANOTHER_TIME_LINE, kind="time")
+        if "name" in heard.lower():
+            return Decision(f"The name is {brief.name}.", kind="share")
+        # Nothing to commit to. Say what the call is about when asked; ask for the times
+        # only when the request is about a time; otherwise ask what happens next.
+        if _QUESTION.search(heard) or _HOW_CAN_I_HELP.search(normalised):
+            return Decision(self.restate(state), kind="other")
+        if not brief.request or _WANTS_A_SLOT.search(brief.request):
+            return Decision(TIMES_LINE, kind="other")
+        return Decision(NEXT_STEP_LINE, kind="other")
+
+    def restate(self, state: DelegateState) -> str:
+        """The request again, without the introduction the opening already gave."""
+        if state.steer and state.brief.request:
+            return state.brief.opening or phrase_request(state.brief.request)
+        return self.opening(state)
+
     def opening(self, state: DelegateState) -> str:
         when = _preferred_time(state.brief)
+        if state.steer and state.brief.request:
+            # The typed request is the goal, retold on the caller's behalf, never verbatim.
+            said = state.brief.opening or phrase_request(state.brief.request)
+            return f"I'm calling on behalf of {state.brief.name}. {said}"
         line = f"I'd like to {state.brief.goal} for {state.brief.name}"
         return line + (f", {when}." if when else ".")
 
@@ -407,6 +720,8 @@ class RuleBrain:
         return Decision(line)
 
     def decide(self, state: DelegateState, heard: str) -> Decision:
+        if state.steer:
+            return self.decide_steer(state, heard)
         if not state.opened:
             return Decision(self.opening(state))
         if _confirms(heard):
@@ -460,10 +775,23 @@ Rules:
 - Plain spoken English, first person, no markdown, no commentary."""
 
 
+STEER_PROMPT = """\
+You speak on a phone call on behalf of a Deaf caller, through the Ishara app. You pursue ONE brief
+and nothing else. Reply with JSON only: {"say": <one or two short sentences, at most 25 words>,
+"ask_user": null, "done": false}.
+Rules:
+- Pursue only the brief. Never agree to, book, confirm or promise anything, and never pick or
+  suggest a time: another part of the system answers offers and questions about times.
+- Share only the facts in the brief. Never invent symptoms, dates, numbers or names.
+- If asked something the brief does not cover, say you don't have it with you and will send it
+  afterwards.
+- Plain spoken English, first person, no markdown, no commentary."""
+
+
 def _user_message(state: DelegateState, heard: str) -> str:
     return json.dumps(
         {
-            "mode": "ATTENDED" if state.attended else "UNATTENDED",
+            "mode": "STEER" if state.steer else "ATTENDED" if state.attended else "UNATTENDED",
             "brief": state.brief.text,
             "conversation": [
                 {"receptionist": x.receptionist, "you": x.agent} for x in state.exchanges[-6:]
@@ -495,6 +823,39 @@ class _LlmTurn(BaseModel):
     done: bool = False
 
 
+LOOKUP_PROMPT = """\
+You help a phone assistant answer a question from the person on the other end of a call, using
+only documents the caller attached (a card, letter or bill, as plain text). Reply with JSON only:
+{"label": "<one to three plain words naming what was asked, e.g. Policy number>",
+ "value": "<the answer copied EXACTLY as it appears in a document>"}
+or {"label": null, "value": null} if the documents do not contain it.
+Never guess, complete, reformat or combine values. If several documents have it, use the first.
+"""
+
+
+class _Lookup(BaseModel):
+    label: str | None = None
+    value: str | None = None
+
+
+def _normalised_text(text: str) -> str:
+    return "".join(ch for ch in text.lower() if ch.isalnum())
+
+
+def verified_lookup(found: _Lookup, documents: tuple[Document, ...]) -> Detail | None:
+    """The looked-up fact as a detail, only if its value appears verbatim (ignoring case,
+    spaces and punctuation) in one of the documents. This is what stops an invented answer."""
+    if not found.label or not found.value:
+        return None
+    label, value = found.label.strip(), found.value.strip()
+    if not (1 <= len(label.split()) <= 3 and 1 <= len(value) <= 80):
+        return None
+    needle = _normalised_text(value)
+    if not needle or not any(needle in _normalised_text(d.text) for d in documents):
+        return None
+    return Detail(label=label[:1].upper() + label[1:], value=value)
+
+
 class Brain:
     """Groq with the rule brain as the fallback; every line is checked before it is spoken."""
 
@@ -503,10 +864,57 @@ class Brain:
         self.timeout_s = timeout_s
         self.rules = RuleBrain()
 
+    async def lookup(self, brief: Brief, heard: str) -> Decision | None:
+        """Steer: the receptionist asked for something the brief doesn't hold. Find it in
+        the attached documents; share it only when it is there word for word."""
+        if self.client is None or not brief.documents:
+            return None
+        docs = "\n\n".join(f"### {d.name}\n{d.text[:6000]}" for d in brief.documents)
+        try:
+            raw = await asyncio.wait_for(
+                self.client.complete(
+                    LOOKUP_PROMPT, f"They asked: {heard.strip()}\n\nDocuments:\n{docs}"
+                ),
+                self.timeout_s,
+            )
+            found = _Lookup.model_validate_json(raw.strip().strip("`").removeprefix("json"))
+        except (TimeoutError, GroqError, ValidationError) as exc:
+            log.info("steer: lookup unavailable (%s), deferring", type(exc).__name__)
+            return None
+        detail = verified_lookup(found, brief.documents)
+        if detail is None:
+            log.info("steer: lookup found nothing verbatim, deferring")
+            return None
+        return Decision(f"{detail.label} is {detail.value}.", source="llm", kind="share")
+
     async def reply(self, state: DelegateState, heard: str) -> Decision:
         fallback = self.rules.decide(state, heard)
         if self.client is None:
             return fallback
+        if state.steer:
+            # Every commitment, share, deferral and time answer is rule-bound; the LLM
+            # may only phrase the conversational turns, and never asks the user. The one
+            # exception: a deferral may become a share if the answer is in a document.
+            if fallback.kind == "defer":
+                return await self.lookup(state.brief, heard) or fallback
+            if fallback.kind != "other":
+                return fallback
+            try:
+                raw = await asyncio.wait_for(
+                    self.client.complete(STEER_PROMPT, _user_message(state, heard)),
+                    self.timeout_s,
+                )
+                turn = _LlmTurn.model_validate_json(raw.strip().strip("`").removeprefix("json"))
+            except (TimeoutError, GroqError, ValidationError) as exc:
+                log.info("steer: LLM unavailable (%s), using rules", type(exc).__name__)
+                return fallback
+            if turn.ask_user is not None or turn.done:
+                return fallback
+            reasons = check_line(turn.say, state.brief, state.transcript_text() + " " + heard)
+            if reasons:
+                log.info("steer: LLM line rejected (%s), using rules", "; ".join(reasons))
+                return fallback
+            return Decision(turn.say.strip(), source="llm", kind="other")
         try:
             raw = await asyncio.wait_for(
                 self.client.complete(SYSTEM_PROMPT, _user_message(state, heard)), self.timeout_s
@@ -576,12 +984,19 @@ def build_notes(
     ready: bool,
     *,
     promised_callback: bool,
+    mode: CallMode = "delegated",
+    follow_ups: list[str] | None = None,
+    stepped_in: int = 0,
+    agent_answers: list[str] | None = None,
 ) -> CallNotes:
     """Deterministic notes from the transcript: what was offered, what the user chose,
     what is still open. Every bullet quotes or paraphrases a transcript line."""
     if brief is None:
         return CallNotes(call_id=call_id, mode="live", ready=ready, transcript=entries)
-    summary: list[str] = [f"Goal: {brief.goal} for {brief.name}."]
+    if mode == "steer" and brief.request:
+        summary: list[str] = [f'You asked: "{brief.request}"']
+    else:
+        summary = [f"Goal: {brief.goal} for {brief.name}."]
     offers = [
         e.text
         for e in entries
@@ -590,7 +1005,8 @@ def build_notes(
     for offer in offers[:3]:
         summary.append(f'They offered: "{offer.strip()}"')
     for answer in answers:
-        summary.append(f'You answered: "{answer}"')
+        who = "Ishara answered" if answer in (agent_answers or []) else "You answered"
+        summary.append(f'{who}: "{answer}"')
     confirmations = [e.text for e in entries if e.speaker == "receptionist" and _confirms(e.text)]
     for line in confirmations[:2]:
         summary.append(f'They confirmed: "{line.strip()}"')
@@ -606,9 +1022,11 @@ def build_notes(
         )
     if ready and outcome == "no_answer":
         open_questions.append("Nobody answered or nothing was heard.")
+    for asked in follow_ups or []:
+        open_questions.append(f'They asked for something you didn\'t give: "{asked}"')
     return CallNotes(
         call_id=call_id,
-        mode="delegated",
+        mode=mode,
         ready=ready,
         brief=brief.text,
         outcome=outcome,
@@ -616,4 +1034,6 @@ def build_notes(
         open_questions=open_questions,
         transcript=entries,
         bolna_summary=bolna_summary,
+        follow_ups=list(follow_ups or []),
+        stepped_in=stepped_in,
     )

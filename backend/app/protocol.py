@@ -9,7 +9,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
 
 # Decision D8: the recognizer is the public ASL Signs model (250 glosses). TEMPLATE_SIGNS are
 # the original twelve the fixed templates know in full; ASL_SIGNS are the service-call glosses
@@ -121,20 +121,37 @@ class _Message(BaseModel):
 # ---- REST ----
 
 
-CallMode = Literal["live", "delegated"]
+# "steer": the agent runs the whole call from the brief and the user may step in at any
+# moment by typing or signing. While the app is in front, each agent line is proposed to
+# the app first and spoken when its window runs out; while it is away, lines are spoken
+# at once. The agent accepts an offer only when it fits the brief, shares only the
+# brief's details, and defers anything else as a follow-up. It never asks a question.
+CallMode = Literal["live", "delegated", "steer"]
 BriefId = Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")]
+PhoneNumber = Annotated[str, Field(pattern=r"^\+[1-9]\d{6,14}$")]
+MAX_REQUEST_CHARS = 600
 
 
 class StartCallRequest(_Message):
-    contact_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")
+    # Who to call: an allowlisted contact id, or an E.164 number that must equal one of
+    # the allowlisted numbers (the app may let the user paste any number; the backend
+    # still dials only consenting recipients).
+    contact_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{1,64}$")
+    phone_number: PhoneNumber | None = None
     purpose: Purpose
     # Decision D9. "live": every sentence is composed from signs and approved with SEND.
     # "delegated": the agent pursues an approved brief; `brief_id` is required and its
     # approval is this request. `attended` lets the agent ask the user yes/no/wait
-    # questions during the call; unattended calls never ask.
+    # questions during the call; unattended calls never ask. "steer": see CallMode.
     mode: CallMode = "live"
     brief_id: BriefId | None = None
     attended: bool = False
+
+    @model_validator(mode="after")
+    def _one_recipient(self) -> StartCallRequest:
+        if (self.contact_id is None) == (self.phone_number is None):
+            raise ValueError("give exactly one of contact_id and phone_number")
+        return self
 
 
 class StartCallResponse(_Message):
@@ -146,18 +163,39 @@ class StartCallResponse(_Message):
 # ---- delegated calls (D9) ----
 
 
+class Detail(_Message):
+    """One fact the user approved for sharing ("Date of birth" -> "12 March 1998"). The
+    agent says it only when the receptionist asks for something its label names."""
+
+    label: str = Field(min_length=1, max_length=40)
+    value: str = Field(min_length=1, max_length=80)
+
+
+class Document(_Message):
+    """The text of a card, letter or bill the user attached, read on their phone. The agent
+    may quote from it when asked, verbatim only; it never volunteers it."""
+
+    name: str = Field(min_length=1, max_length=80)
+    text: str = Field(min_length=1, max_length=20_000)
+
+
 class Profile(_Message):
     """What the agent may share about the caller. Nothing else is ever said."""
 
     name: str = Field(min_length=1, max_length=60)
     callback: str | None = Field(default=None, max_length=40)
     notes: str | None = Field(default=None, max_length=200)
+    details: list[Detail] = Field(default_factory=list, max_length=12)
+    documents: list[Document] = Field(default_factory=list, max_length=6)
 
 
 class BriefRequest(_Message):
     purpose: Purpose
     chips: list[Sign] = Field(default_factory=list, max_length=MAX_CHIPS)
     profile: Profile
+    # Steer calls: what the user typed the call is about. The agent pursues exactly this;
+    # its days and parts of day are the only times the agent may agree to.
+    request: str | None = Field(default=None, min_length=1, max_length=MAX_REQUEST_CHARS)
 
 
 class BriefResponse(_Message):
@@ -222,9 +260,39 @@ class CallNotes(_Message):
     open_questions: list[str] = Field(default_factory=list)
     transcript: list[TranscriptEntry] = Field(default_factory=list)
     bolna_summary: str | None = None
+    # Steer calls: what the receptionist asked for that the brief didn't carry, and how
+    # many times the user stepped in (typed or signed a line).
+    follow_ups: list[str] = Field(default_factory=list)
+    stepped_in: int = 0
 
 
 # ---- app -> backend (WebSocket) ----
+
+
+class PresenceMessage(_Message):
+    """Steer calls: whether the call screen is in front on an unlocked phone. Present,
+    the agent proposes each line and waits its window; away, it speaks at once."""
+
+    type: Literal["presence"] = "presence"
+    present: bool
+
+
+class HoldMessage(_Message):
+    """Steer calls. `composing` true: the user started typing or signing, so the
+    proposed line is dropped and the agent covers the pause with filler lines until a
+    `say`, an `approve` or `composing` false (which speaks the held line after all)."""
+
+    type: Literal["hold"] = "hold"
+    turn_id: TurnId
+    composing: bool = True
+
+
+class SayMessage(_Message):
+    """Steer calls: a line the user typed. It is polished (reworded, never given new
+    facts), proposed back briefly, then spoken unless the user holds it."""
+
+    type: Literal["say"] = "say"
+    text: str = Field(min_length=1, max_length=MAX_SPOKEN_CHARS)
 
 
 class ChipsMessage(_Message):
@@ -250,7 +318,14 @@ class EndMessage(_Message):
 
 
 AppMessage = Annotated[
-    ChipsMessage | ApproveMessage | StopMessage | EndMessage | AnswerMessage,
+    ChipsMessage
+    | ApproveMessage
+    | StopMessage
+    | EndMessage
+    | AnswerMessage
+    | PresenceMessage
+    | HoldMessage
+    | SayMessage,
     Field(discriminator="type"),
 ]
 app_message_adapter: TypeAdapter[AppMessage] = TypeAdapter(AppMessage)
@@ -309,6 +384,38 @@ class ErrorMessage(_Message):
     message: str
 
 
+ProposalOrigin = Literal["agent", "user"]
+
+
+class ProposalMessage(_Message):
+    """Steer calls: a line about to be spoken. "agent": the agent's next line, spoken
+    when `window_s` runs out unless the app approves it sooner or holds it. "user": the
+    polished form of what the user typed, with a short window to catch a bad rewording."""
+
+    type: Literal["proposal"] = "proposal"
+    turn_id: TurnId
+    text: str
+    window_s: float
+    origin: ProposalOrigin = "agent"
+
+
+ProposalOutcome = Literal["spoken", "held", "cancelled"]
+
+
+class ProposalResolvedMessage(_Message):
+    type: Literal["proposal_resolved"] = "proposal_resolved"
+    turn_id: TurnId
+    outcome: ProposalOutcome
+
+
+class FollowUpMessage(_Message):
+    """Steer calls: the receptionist asked for something the brief doesn't carry. The
+    agent deferred it instead of guessing; the notes list it for the user to act on."""
+
+    type: Literal["follow_up"] = "follow_up"
+    text: str
+
+
 ServerMessage = Annotated[
     StatusMessage
     | CaptionMessage
@@ -317,7 +424,10 @@ ServerMessage = Annotated[
     | NotDeliveredMessage
     | ErrorMessage
     | AskMessage
-    | AskResolvedMessage,
+    | AskResolvedMessage
+    | ProposalMessage
+    | ProposalResolvedMessage
+    | FollowUpMessage,
     Field(discriminator="type"),
 ]
 server_message_adapter: TypeAdapter[ServerMessage] = TypeAdapter(ServerMessage)

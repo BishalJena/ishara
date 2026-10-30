@@ -29,8 +29,18 @@ struct DemoLaunchOptions {
         case pipeline
     }
 
+    enum Flow: String {
+        /// Home is the steer composer: type the request, Ishara runs the call, step in any time.
+        case steer
+        /// The earlier Home with CALL (sign each reply) and CALL FOR ME (D9), kept for the
+        /// UI tests and the rehearsed demo.
+        case classic
+    }
+
     /// Fake unless asked otherwise, so running the app never places a call by surprise.
     var driver: Driver = .fake
+    /// `-IsharaFlow classic` keeps the earlier Home; the steer flow is the default.
+    var flow: Flow = .steer
     /// Defaults to scripted with the fake call and to the pipeline with the live one.
     var recognitionOverride: Recognition?
     /// Results the scripted recognizer plays once signing starts, e.g. "hello,doctor,?".
@@ -68,7 +78,10 @@ struct DemoLaunchOptions {
 
     static func from(_ defaults: UserDefaults = .standard) -> DemoLaunchOptions {
         var options = DemoLaunchOptions()
-        options.driver = defaults.string(forKey: "IsharaDriver").flatMap(Driver.init(rawValue:)) ?? .fake
+        // Live by default: this is a real app. The scripted driver is only for tests and
+        // simulators, which ask for it with `-IsharaDriver fake`.
+        options.driver = defaults.string(forKey: "IsharaDriver").flatMap(Driver.init(rawValue:)) ?? .live
+        options.flow = defaults.string(forKey: "IsharaFlow").flatMap(Flow.init(rawValue:)) ?? .steer
         options.recognitionOverride = defaults.string(forKey: "IsharaRecognition").flatMap(Recognition.init(rawValue:))
         options.replayScript = parseReplay(defaults.string(forKey: "IsharaReplay") ?? "")
         options.fakeNotDelivered = defaults.bool(forKey: "IsharaFakeNotDelivered")

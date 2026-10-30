@@ -8,7 +8,7 @@ import Foundation
 enum DelegatedDemo {
     static let pauseLine = "One moment, please."
     static let callbackLine = "I'll need to check that and call back. Thank you."
-    static let closeLine = "Thank you for your help. Goodbye."
+    static let closeLine = "That's all, thank you so much for your help."
     static let offer = "We have 10:30 tomorrow morning. Does that work?"
     static let proposal = "10:30 tomorrow"
     static let confirmation = "Great, you're booked for 10:30 tomorrow morning."

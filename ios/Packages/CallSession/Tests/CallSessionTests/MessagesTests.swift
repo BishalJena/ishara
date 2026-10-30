@@ -75,7 +75,7 @@ final class MessagesTests: XCTestCase {
             BriefRequest(purpose: .doctorAppointment, chips: [.tomorrow, .morning], profile: Profile(name: "Asha")))
         XCTAssertEqual(
             String(decoding: data, as: UTF8.self),
-            #"{"chips":["tomorrow","morning"],"profile":{"name":"Asha"},"purpose":"doctor_appointment"}"#)
+            #"{"chips":["tomorrow","morning"],"profile":{"details":[],"name":"Asha"},"purpose":"doctor_appointment"}"#)
         let brief = try JSONDecoder().decode(
             Brief.self,
             from: Data(#"{"brief_id":"b9","text":"Call on behalf of Asha.","goal":"book a doctor's appointment","constraints":["preferred time: tomorrow in the morning"]}"#.utf8))

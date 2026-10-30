@@ -22,12 +22,18 @@ struct CameraPreviewView: UIViewRepresentable {
         view.release()
     }
 
-    /// Portrait and mirrored. The connection only exists once the camera is configured,
-    /// so this runs again when the session starts.
+    /// Upright and mirrored. The angle comes from the camera's rotation coordinator, which
+    /// knows how this device's sensor is mounted (a fixed 90° shows the iPhone 17 front
+    /// camera sideways). The connection only exists once the camera is configured, so this
+    /// runs again when the session starts.
     static func configure(_ layer: AVCaptureVideoPreviewLayer) {
         guard let connection = layer.connection else { return }
-        if connection.isVideoRotationAngleSupported(90) {
-            connection.videoRotationAngle = 90
+        if let device = layer.session?.inputs.lazy.compactMap({ ($0 as? AVCaptureDeviceInput)?.device }).first {
+            let angle = AVCaptureDevice.RotationCoordinator(device: device, previewLayer: layer)
+                .videoRotationAngleForHorizonLevelPreview
+            if connection.isVideoRotationAngleSupported(angle) {
+                connection.videoRotationAngle = angle
+            }
         }
         if connection.isVideoMirroringSupported {
             connection.automaticallyAdjustsVideoMirroring = false

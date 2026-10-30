@@ -97,7 +97,7 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         self.store = store
         self.setup = setup
         if let delegation = setup.delegation {
-            playDelegated(setup, delegation)
+            if delegation.mode == .steer { playSteer(setup, delegation) } else { playDelegated(setup, delegation) }
             return store
         }
         schedule(after: 1) { $0.deliver(.status(.ringing)) }
@@ -127,6 +127,16 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         var notes = DelegatedDemo.notes(
             goal: delegation.brief.goal, name: setup.details.name, brief: delegation.brief.text,
             transcript: transcript, answers: answers, ready: isOver)
+        if delegation.mode == .steer {
+            notes.mode = .steer
+            notes.steppedIn = steerSteppedIn
+            notes.followUps = steerFollowUps
+            if isOver {
+                notes.outcome = steerBooked ? "booked" : "unclear"
+                notes.summary += steerSaid.map { "You said: \"\($0)\"" }
+                if steerBooked { notes.summary.append("They confirmed: \"You're booked for 10:30 tomorrow. Please bring an ID.\"") }
+            }
+        }
         if let delay = options.bolnaSummaryDelay, let endedAt,
            Date().timeIntervalSince(endedAt) >= delay * options.timeScale {
             notes.bolnaSummary = DelegatedDemo.automaticSummary(goal: delegation.brief.goal, name: setup.details.name)
@@ -162,7 +172,163 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
             finish()
         case let .answer(askID, choice):
             answer(askID: askID, choice: choice)
+        case let .presence(present):
+            isPresent = present
+            if !present, let pending = pendingProposal, pending.origin == .agent { settleProposal(spoken: true) }
+        case let .hold(turnID, composing):
+            hold(turnID: turnID, composing: composing)
+        case let .say(text):
+            sayTyped(text)
         }
+    }
+
+    // MARK: Steer script
+
+    private struct PendingProposal {
+        let turnID: TurnID
+        let text: String
+        let origin: ProposalOrigin
+        let then: () -> Void
+    }
+
+    private var isPresent = false
+    private var isComposing = false
+    private var heldLine: (() -> Void)?
+    private var pendingProposal: PendingProposal?
+    private var proposalTask: Task<Void, Never>?
+    private var fillerIndex = 0
+    private var steerStep = 0
+    private var steerSteppedIn = 0
+    private var steerFollowUps: [String] = []
+    private var steerSaid: [String] = []
+    private var steerBooked = false
+    private static let fillers = ["One moment, please.", "Just a second, let me check.", "Bear with me a moment."]
+
+    /// Disclosure and opening, then a receptionist who offers the wrong time first, then a
+    /// fitting one, then confirms. Each agent line is proposed while the app is in front.
+    private func playSteer(_ setup: CallSetup, _ delegation: Delegation) {
+        let when = delegation.brief.constraints.first { $0.hasPrefix("preferred time: ") }
+            .map { String($0.dropFirst("preferred time: ".count)) }
+        let opening = DelegatedDemo.opening(name: setup.details.name, goal: delegation.brief.goal, when: when)
+        schedule(after: 1) { $0.deliver(.status(.ringing)) }
+        schedule(after: 2.5) { driver in
+            driver.deliver(.status(.inCall))
+            driver.say(.agent, DemoScript.disclosure)
+        }
+        schedule(after: 4.5) { driver in
+            driver.say(.agent, opening)
+            driver.schedule(after: 2.5) { $0.steerNext() }
+        }
+    }
+
+    /// The receptionist's next turn and the agent's rule-bound answer to it.
+    private func steerNext() {
+        guard !isOver else { return }
+        let step = steerStep
+        steerStep += 1
+        switch step {
+        case 0:
+            say(.receptionist, "We have 4 pm tomorrow. Does that work?")
+            agentLine("No, 4 pm tomorrow doesn't work, sorry. Is there anything in the morning?") { $0.steerNext() }
+        case 1:
+            say(.receptionist, "Let me see. We have 10:30 tomorrow morning.")
+            agentLine("Yes, 10:30 tomorrow morning works. Thank you.") { $0.steerNext() }
+        case 2:
+            say(.receptionist, "Can I get the date of birth?")
+            steerFollowUps.append("Can I get the date of birth?")
+            deliver(.followUp(text: "Can I get the date of birth?"))
+            agentLine("I don't have that with me. Could I send it to you afterwards?") { $0.steerNext() }
+        default:
+            say(.receptionist, "That's fine. You're booked for 10:30 tomorrow. Please bring an ID.")
+            steerBooked = true
+            agentLine(DelegatedDemo.closeLine) { $0.hangUp() }
+        }
+    }
+
+    /// Proposes `text` to a present user (spoken when the window runs out) or says it at once.
+    private func agentLine(_ text: String, then: @escaping (FakeCallDriver) -> Void) {
+        let continuation = { [weak self] in
+            guard let self else { return }
+            self.schedule(after: 2) { then($0) }
+        }
+        guard isPresent, !isComposing else {
+            schedule(after: 1.5) { driver in
+                driver.say(.agent, text)
+                continuation()
+            }
+            return
+        }
+        schedule(after: 1.5) { $0.propose(text, origin: .agent, then: continuation) }
+    }
+
+    private func propose(_ text: String, origin: ProposalOrigin, then: @escaping () -> Void) {
+        let turnID = TurnID("steer-\(UUID().uuidString.prefix(8))")!
+        let window = (origin == .agent ? min(8, 3.5 + 0.25 * Double(text.split(separator: " ").count)) : 1.5)
+        pendingProposal = PendingProposal(turnID: turnID, text: text, origin: origin, then: then)
+        deliver(.proposal(turnID: turnID, text: text, windowS: window, origin: origin))
+        proposalTask = schedule(after: window) { $0.settleProposal(spoken: true) }
+    }
+
+    private func settleProposal(spoken: Bool) {
+        guard let pending = pendingProposal else { return }
+        proposalTask?.cancel()
+        proposalTask = nil
+        pendingProposal = nil
+        deliver(.proposalResolved(turnID: pending.turnID, outcome: spoken ? .spoken : .held))
+        guard spoken else { return }
+        if pending.origin == .agent { say(.agent, pending.text) } else { note(pending.text) }
+        pending.then()
+    }
+
+    private func hold(turnID: TurnID, composing: Bool) {
+        if composing {
+            isComposing = true
+            if let pending = pendingProposal, pending.turnID == turnID {
+                if pending.origin == .agent { heldLine = { [weak self] in self?.say(.agent, pending.text); pending.then() } }
+                settleProposal(spoken: false)
+            }
+            // The agent covers the pause with a rotating filler.
+            let filler = Self.fillers[fillerIndex % Self.fillers.count]
+            fillerIndex += 1
+            schedule(after: 1) { $0.say(.agent, filler) }
+            return
+        }
+        isComposing = false
+        if let held = heldLine {
+            heldLine = nil
+            schedule(after: 0.5) { _ in held() }
+        }
+    }
+
+    private func sayTyped(_ text: String) {
+        isComposing = false
+        heldLine = nil
+        steerSteppedIn += 1
+        // As the backend's tidy() does without an LLM: a capital, and "?" for a question.
+        let tidy = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let questionWords: Set<String> = ["can", "could", "would", "will", "is", "are", "do", "does", "what", "when", "where", "how", "why", "any"]
+        let isQuestion = questionWords.contains(tidy.split(separator: " ").first.map { $0.lowercased() } ?? "")
+        let ending = tidy.hasSuffix(".") || tidy.hasSuffix("?") ? "" : (isQuestion ? "?" : ".")
+        let polished = tidy.prefix(1).uppercased() + tidy.dropFirst() + ending
+        let continuation: () -> Void = { [weak self] in
+            self?.schedule(after: 2) { driver in
+                driver.say(.receptionist, "Of course. Let me check that for you.")
+                driver.schedule(after: 2) { $0.steerNext() }
+            }
+        }
+        if isPresent {
+            propose(polished, origin: .user, then: continuation)
+        } else {
+            note(polished)
+            continuation()
+        }
+    }
+
+    /// A user's typed line, spoken by the voice: in the notes' transcript, shown by the
+    /// store itself (the app captions it as the user's when its preview ends).
+    private func note(_ text: String) {
+        steerSaid.append(text)
+        transcript.append(TranscriptEntry(speaker: .agent, text: text, at: Date().timeIntervalSince1970))
     }
 
     func discardPending() {}
@@ -170,6 +336,18 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     // MARK: Script
 
     private func approve(turnID: TurnID, text: String) {
+        // "Send now" on a proposed steer line: its window ends early.
+        if pendingProposal?.turnID == turnID {
+            settleProposal(spoken: true)
+            return
+        }
+        if setup?.isSteer == true {
+            // A signed line on a steer call: the user stepped in; the agent's line is dropped.
+            if pendingProposal != nil { settleProposal(spoken: false) }
+            isComposing = false
+            heldLine = nil
+            steerSteppedIn += 1
+        }
         // Single use per turn id, like the backend.
         guard speakingTurn == nil, approvedTurns.insert(turnID).inserted else { return }
         speakingTurn = turnID
