@@ -9,7 +9,8 @@ final class SteerCallUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
-        app.launchArguments = ["-IsharaCallHistory", "memory", "-IsharaFlow", "steer"]
+        app.launchArguments = ["-IsharaCallHistory", "memory", "-IsharaFlow", "steer", "-IsharaDriver", "fake"]
+        app.launchEnvironment["ISHARA_UITEST_NAME"] = "Riya"
         app.launch()
     }
 

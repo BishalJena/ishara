@@ -78,7 +78,9 @@ struct DemoLaunchOptions {
 
     static func from(_ defaults: UserDefaults = .standard) -> DemoLaunchOptions {
         var options = DemoLaunchOptions()
-        options.driver = defaults.string(forKey: "IsharaDriver").flatMap(Driver.init(rawValue:)) ?? .fake
+        // Live by default: this is a real app. The scripted driver is only for tests and
+        // simulators, which ask for it with `-IsharaDriver fake`.
+        options.driver = defaults.string(forKey: "IsharaDriver").flatMap(Driver.init(rawValue:)) ?? .live
         options.flow = defaults.string(forKey: "IsharaFlow").flatMap(Flow.init(rawValue:)) ?? .steer
         options.recognitionOverride = defaults.string(forKey: "IsharaRecognition").flatMap(Recognition.init(rawValue:))
         options.replayScript = parseReplay(defaults.string(forKey: "IsharaReplay") ?? "")

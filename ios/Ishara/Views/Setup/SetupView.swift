@@ -13,8 +13,12 @@ struct SetupView: View {
 
     @State private var contact: Contact = .cityClinic
     @State private var number = ""
+    @State private var pickedName = ""
     @State private var request = ""
-    @State private var name = CallSetup.demo.details.name
+    @AppStorage("ishara.name") private var name = ""
+    @AppStorage("ishara.callback") private var callback = ""
+    @State private var showsSettings = false
+    @State private var showsContacts = false
     @State private var details: [Detail] = []
     @State private var newDetailLabel = ""
     @State private var newDetailValue = ""
@@ -22,7 +26,7 @@ struct SetupView: View {
 
     private enum Field { case number, request, detailLabel, detailValue }
 
-    private var typedContact: Contact? { Contact.number(number) }
+    private var typedContact: Contact? { Contact.number(number, name: pickedName) }
     private var usesNumber: Bool { !number.trimmingCharacters(in: .whitespaces).isEmpty }
 
     private var problem: String? {
@@ -57,6 +61,18 @@ struct SetupView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .toolbar(.hidden, for: .navigationBar)
+            .onAppear {
+                // UI tests start with a clean store and no way to type into Settings first.
+                if name.isEmpty, let preset = ProcessInfo.processInfo.environment["ISHARA_UITEST_NAME"] { name = preset }
+            }
+            .sheet(isPresented: $showsSettings) { SettingsSheet() }
+            .sheet(isPresented: $showsContacts) {
+                ContactPicker { pickedName, pickedNumber in
+                    self.pickedName = pickedName
+                    number = pickedNumber
+                }
+                .ignoresSafeArea()
+            }
         }
     }
 
@@ -64,12 +80,16 @@ struct SetupView: View {
         HStack(spacing: 10) {
             Circle().fill(.yellow).frame(width: 36, height: 36)
                 .overlay(Text(String(name.prefix(1)).uppercased()).font(.headline))
-            Text("Hi \(name.split(separator: " ").first.map(String.init) ?? name)").font(.headline)
+            Text(name.isEmpty ? "Hi there" : "Hi \(name.split(separator: " ").first.map(String.init) ?? name)").font(.headline)
             Spacer()
-            Image(systemName: "slider.horizontal.3")
-                .frame(width: 36, height: 36)
-                .background(Color(.secondarySystemBackground), in: Circle())
-                .accessibilityLabel("Settings")
+            Button { showsSettings = true } label: {
+                Image(systemName: "slider.horizontal.3")
+                    .frame(width: 36, height: 36)
+                    .background(Color(.secondarySystemBackground), in: Circle())
+            }
+            .tint(.primary)
+            .accessibilityLabel("Settings")
+            .accessibilityIdentifier("setup.settings")
         }
     }
 
@@ -125,7 +145,8 @@ struct SetupView: View {
                     .accessibilityIdentifier("setup.contact")
                 }
                 if usesNumber {
-                    Button("Clear", systemImage: "xmark.circle.fill") { number = "" }
+                    if !pickedName.isEmpty { Text(pickedName).font(.subheadline.weight(.semibold)).lineLimit(1) }
+                    Button("Clear", systemImage: "xmark.circle.fill") { number = ""; pickedName = "" }
                         .labelStyle(.iconOnly)
                         .foregroundStyle(.secondary)
                 }
@@ -160,7 +181,7 @@ struct SetupView: View {
                 .labelStyle(.iconOnly)
                 .buttonBorderShape(.circle)
                 .tint(.primary)
-                Button { focus = .number } label: {
+                Button { showsContacts = true } label: {
                     Image(systemName: "person.crop.rectangle.stack").frame(width: 22, height: 22)
                 }
                 .buttonStyle(.bordered).buttonBorderShape(.circle).tint(.primary)
@@ -231,19 +252,15 @@ struct SetupView: View {
     private func call() {
         guard problem == nil else { return }
         let who = typedContact ?? contact
-        var setup = CallSetup.demo
-        setup.contact = who
-        setup.details.name = name.trimmingCharacters(in: .whitespaces)
+        var setup = CallSetup(
+            contact: who, purpose: .doctorAppointment,
+            details: SavedDetails(name: name.trimmingCharacters(in: .whitespaces), preferredTime: .mornings),
+            voice: .indianEnglish)
         setup.request = request.trimmingCharacters(in: .whitespacesAndNewlines)
-        setup.delegation = nil  // the brief is created next, with this request
-        setup.voice = .indianEnglish
-        onCall(setupWithDetails(setup))
-    }
-
-    private func setupWithDetails(_ setup: CallSetup) -> CallSetup {
-        var setup = setup
         setup.sharedDetails = details
-        return setup
+        let trimmedCallback = callback.trimmingCharacters(in: .whitespaces)
+        if !trimmedCallback.isEmpty { setup.sharedDetails.append(Detail(label: "Callback number", value: trimmedCallback)) }
+        onCall(setup)
     }
 }
 

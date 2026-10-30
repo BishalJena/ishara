@@ -36,8 +36,8 @@ struct AppServices {
     /// One line on Home and Get ready saying which call CALL and Start place.
     var modeDescription: String {
         switch options.driver {
-        case .fake: "Demo mode: a scripted call on this phone. Nothing is dialled."
-        case .live: "Live call through the Ishara backend."
+        case .fake: "Test mode: a scripted call on this phone. Nothing is dialled."
+        case .live: ""
         }
     }
 

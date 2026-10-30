@@ -16,7 +16,7 @@ enum EdgeCaseLaunch {
 
     /// Recent calls in memory for this launch only, so calls saved by earlier runs never
     /// show on Home. Every UI test launch starts with it.
-    static let freshHistory = ["-IsharaCallHistory", "memory", "-IsharaFlow", "classic"]
+    static let freshHistory = ["-IsharaCallHistory", "memory", "-IsharaFlow", "classic", "-IsharaDriver", "fake"]
 }
 
 /// The local demo backend's pid, for the opt-in tests that stop it mid-call. Skips the test
