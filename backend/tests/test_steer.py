@@ -605,3 +605,26 @@ def test_while_the_user_types_the_receptionist_keeps_hearing_varied_cover_lines(
         settled = len(f.bolna.injected)
         time.sleep(0.5)
         assert len(f.bolna.injected) == settled, "the cover stops once the user sends"
+
+
+def test_a_goodbye_while_the_user_types_closes_after_their_line_is_said(steer) -> None:
+    from app.delegate import CLOSE_LINE
+
+    f = steer(cover_first_s=30.0)
+    call_id = start_steer(f)
+    with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
+        assert f.receive(ws)["type"] == "status"
+        f.live(call_id)
+        f.speak_last(call_id)
+        assert f.listen_turn(call_id, "We have Wednesday at 10:30. Does that work?").startswith(
+            "Yes, "
+        )
+        ws.send_json({"type": "hold", "turn_id": "none", "composing": True})
+        # They wrap up while the user is still typing: only a cover line for now.
+        assert f.listen_turn(call_id, "alright that is booked see you then bye") in FILLERS
+        ws.send_json({"type": "say", "text": "thanks, see you wednesday"})
+        f.drain_until(ws, "spoken")
+        assert f.speak_last(call_id) == "Thanks, see you wednesday."
+        # Once the user's line is heard, Ishara closes.
+        f.drain_until(ws, "caption")
+        assert f.speak_last(call_id) == CLOSE_LINE

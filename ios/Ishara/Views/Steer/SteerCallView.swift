@@ -148,7 +148,10 @@ struct SteerCallView: View {
     private var captions: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 16) {
+                // Not lazy: a call has a few dozen lines, and a LazyVStack whose rows change
+                // height while it scrolls to the bottom can loop in layout and hang the app
+                // (seen at the end of a call in the simulator).
+                VStack(alignment: .leading, spacing: 16) {
                     ForEach(CoverLines.rows(model.captions), id: \.index) { row in
                         let index = row.index, caption = row.caption
                         let isLatest = index == model.captions.count - 1

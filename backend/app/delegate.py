@@ -192,6 +192,15 @@ def _says_goodbye(text: str) -> bool:
     return _FAREWELL.search(_normalise(text)) is not None
 
 
+def wraps_up(state: DelegateState, heard: str) -> bool:
+    """The receptionist settles the call: it's booked, or a goodbye after we accepted a
+    time ("okay thank you bye"). The agent closes on it."""
+    accepted = any(x.agent.startswith("Yes, ") for x in state.exchanges) or bool(
+        state.agent_answers
+    )
+    return _confirms(heard) or (_says_goodbye(heard) and accepted)
+
+
 def _confirms(text: str) -> bool:
     """The receptionist says it is booked ("fully booked" and "not confirmed" are not)."""
     words = _NOT_BOOKED.sub(" ", _NO_SLOT.sub(" ", _normalise(text)))
@@ -389,6 +398,8 @@ class DelegateState:
     last_filler: str | None = None
     last_filler_at: float | None = None  # manager clock
     held_text: str | None = None  # an agent line the user held; spoken if they back out
+    # The receptionist wrapped up while the user was typing: close once their line is said.
+    close_after_user: bool = False
     asked_for_another_time: bool = False
 
     def transcript_text(self) -> str:
@@ -613,10 +624,7 @@ class RuleBrain:
         brief = state.brief
         if not state.opened:
             return Decision(self.opening(state), kind="open")
-        if _confirms(heard):
-            return Decision(CLOSE_LINE, done=True, kind="close")
-        # "Okay, thank you, bye" after we accepted a time: the booking stands, close too.
-        if _says_goodbye(heard) and any(x.agent.startswith("Yes, ") for x in state.exchanges):
+        if wraps_up(state, heard):
             return Decision(CLOSE_LINE, done=True, kind="close")
         if (detail := _shareable(heard, brief.details)) is not None:
             return Decision(f"{detail.label.strip()} is {detail.value.strip()}.", kind="share")

@@ -38,6 +38,7 @@ from app.contacts import parse_contacts
 from app.delegate import (
     ASK_TIMEOUT_S,
     CALLBACK_LINE,
+    CLOSE_LINE,
     Brain,
     Decision,
     DelegateState,
@@ -45,6 +46,7 @@ from app.delegate import (
     brief_from,
     build_brief,
     build_notes,
+    wraps_up,
 )
 from app.deps import get_ledger, get_settings_dep
 from app.ports import BolnaClient, BolnaError, CallLedger, ClaimedReply, Composer
@@ -509,7 +511,10 @@ class CallManager(CallLedger):
             # about the last one: one decision at a time, so one line and at most one ask.
             return None
         if delegate.steer and delegate.composing:
-            # The user is typing or signing their own reply: only cover the pause.
+            # The user is typing or signing their own reply: only cover the pause. If the
+            # receptionist wraps up meanwhile, their line is still said, then the call closes.
+            if wraps_up(delegate, heard):
+                delegate.close_after_user = True
             return self._filler_if_due(session, delegate)
         delegate.deciding = True
         try:
@@ -871,6 +876,23 @@ class CallManager(CallLedger):
                     await self._send_agent_line(session, spoken_text)
             await self._send(session, SpokenMessage(turn_id=turn_id))
         await self._publish(session, before)
+        delegate = session.delegate
+        if (
+            turn_id.startswith(SAY_TURN_PREFIX)
+            and isinstance(delegate, DelegateState)
+            and delegate.close_after_user
+            and not session.finished
+        ):
+            # They had wrapped up while the user typed: now that the user's line has been
+            # heard, close and hang up.
+            delegate.close_after_user = False
+            self._spawn(self._close_after_user(session, delegate))
+
+    async def _close_after_user(self, session: CallSession, delegate: DelegateState) -> None:
+        await self._speak_line(
+            session, CLOSE_LINE, f"{RESUME_TURN_PREFIX}close-{uuid.uuid4().hex[:6]}"
+        )
+        self._finish_delegate(session, delegate, "done")
 
     # ---- helpers ----
 
