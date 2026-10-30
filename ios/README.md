@@ -1,5 +1,11 @@
 # Ishara iOS app
 
+The person-facing app for **accessible, independently directed phone conversations**.
+Captions make incoming speech readable; the person controls replies or steers an approved
+agent brief. Signing is one input option in the product direction, alongside typing and
+buttons. This build implements signs and tap choices; general typed replies and camera-free
+entry are planned. See the [product overview](../README.md) and [pitch](../PITCH.md).
+
 SwiftUI demo app (iOS 17+, iPhone, portrait). Two ways to call: **CALL** (sign each reply,
 approve it with SEND) and **CALL FOR ME** (approve a brief once; the agent makes the call and
 brings back notes, decision D9). Screens: Home, Get ready, Call, Brief, Notes

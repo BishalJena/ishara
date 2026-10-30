@@ -1,104 +1,87 @@
-# Slide outline
+# Ishara — six-slide pitch outline
 
-Six sections, one to three slides each. Pairs with the [demo script](SCRIPT.md); the
-[submission text](SUBMISSION.md) uses the same claims. Wording marked **(exact)** is the
-pitch line from the [handoff](../handoffs/2026-10-26-ready-made-asl-recognizer.md#rules-for-this-track)
-and must be said as written.
+Updated 30 October 2026 · [Pitch](../../PITCH.md) · [Market model](../../MARKET.md) · [Submission](SUBMISSION.md)
 
-## 1. Problem
+One idea per slide. Show the app and the person during the live segment. The current build
+demonstrates signs and tap choices; general typed replies are next.
 
-- Many everyday services are booked by phone, like a clinic's appointment line.
-- A Deaf person who signs has no easy way to make that voice call on their own. Human
-  sign-language relay services exist in India ([ledger W04](../CLAIM-LEDGER.md)), but they
-  need an interpreter on the line.
-- Visual: a clinic's "call to book" line next to a signer with no way in.
-- This is the team's framing; we have no user research or Deaf participant input behind it yet.
+## 1. “Call us” should not mean “find someone who can call for you”
 
-## 2. What it does
+**Visual:** an appointment line's “Call to book” instruction and someone coordinating
+with a helper. This is an illustrative scenario, not a participant testimonial.
 
-- **Live mode:** you sign each reply, Ishara drafts a sentence, and **nothing is spoken until
-  you tap SEND**. You read the receptionist's words as captions.
-- **Call for me:** you sign what you need (e.g. TOMORROW), approve a short brief
-  **once**, and the call agent makes the call. When a decision is yours (a time is offered),
-  it says "One moment, please." and asks you: sign or tap **yes / no / wait** (or a time
-  word such as **tomorrow** when they ask "what time?"). No answer in
-  10 s, or you're not watching: it says it will call back, never decides for you.
-- Afterwards: call notes with the outcome, what was offered, what you answered, and the
-  transcript.
-- **Calls come from a Bolna number, not your own number.** Before every call the app says
-  "Calls are placed from Ishara's calling number, not your own number."; say out loud that
-  this number is Bolna's.
-- Visuals: [Home](img/01-home.png), [brief](img/04-brief.png), [AskCard](img/05-ask-card.png),
-  [notes](img/07-notes.png).
+**Say:** “When a service requires a voice call, someone who cannot reliably hear the reply
+may need another person available to help. An everyday task becomes a coordination problem,
+and someone else enters the conversation.”
 
-## 3. How it works
+## 2. Phone calls, made accessible
 
-```
-iPhone (SwiftUI)                         Backend (FastAPI, Heroku)            Bolna (voice agent)
-camera → MediaPipe Holistic landmarks    chips → draft: Groq + validator,     Plivo phone line
-→ ASL Signs model (LiteRT, on device)    template fallback                    Deepgram hears
-→ word chips → SEND / yes·no·wait  ◀WS▶  call + turn state, single-use   ◀─▶ Sarvam voice speaks
-captions · notes                         approvals; Bolna's custom LLM        our backend decides
-                                         Call for me: brief, rule brain,      what it says
-                                         check_line on every agent line
+```mermaid
+flowchart LR
+    R["Service speaks"] --> C["Read captions"]
+    C --> P["Person chooses the reply"]
+    P --> A["Agent speaks"]
+    A --> R
 ```
 
-- Recognition: **(exact)** *"a published, signer-independent ASL model trained on public data
-  from 21 Deaf signers"*: the Kaggle ASL Signs 1st-place model, used as is (no training, no
-  fine-tuning). Full 250-way softmax over every sign; only the eight rehearsed words can
-  become a chip, at p ≥ 0.65 (per-word 0.45–0.6) with margin ≥ 0.3; "Did you mean …?" from
-  0.35 up to that cut-off (counts only when tapped); every other sign, however confident, is
-  `?`. Cut-offs are provisional until the iPhone clips.
-- Chip words: hello, thankyou, yes, no, now, please, tomorrow, wait (wait is a candidate).
-  MORNING is pending the iPhone test: the model learned a one-handed form of it.
-- Voice: Bolna places the call from its default number; our backend is Bolna's custom LLM,
-  so apart from its fixed welcome (the disclosure) and goodbye, Bolna says what the backend
-  returns; approved text goes in through Bolna's event injection. Real Bolna calls for live
-  mode and Call for me (attended and unattended) passed on 28 Oct.
-- Partners: Bolna (agent, call, events, call summary), Sarvam Bulbul v4 Flash (voice),
-  Deepgram nova-3 (speech-to-text), Plivo (phone line), Groq `openai/gpt-oss-120b` (draft
-  wording).
+**Say:** “Ishara makes the conversation readable and lets the person direct the reply.
+The business answers its existing phone. It needs no new app.”
 
-## 4. Safety
+## 3. The person stays in the conversation
 
-- **(exact)** *"nothing is spoken on a call without the user's approval"*: SEND in live mode;
-  one approval of the brief plus each yes/no in Call for me.
-- Approvals are single use and tied to a turn; unsure signs (`?`), stale drafts, a dropped
-  connection and an ended call stay silent. A reply that wasn't confirmed shows "Not
-  delivered — tap SEND again"; nothing is resent on its own.
-- The LLM may reword but not add facts: a validator rejects missing meanings and any invented
-  day, time, number or name; templates are the fallback. Every Call-for-me agent line passes
-  `check_line` (no invented numbers, times, names or bookings).
-- Calls only to allowlisted, consenting numbers; synthetic details in the demo.
-- The call opens with a disclosure: "Hello, I'm calling for a Deaf caller who is using
-  Ishara, a sign-language app. Their replies may take a few seconds."
-- Visuals: [`?` chip](img/11-live-unsure.png), [wrong chip removed before SEND](img/13-live-wrong-chip.png),
-  [STOP](img/14-live-speaking-stop.png), [not delivered](img/15-live-not-delivered.png).
+**Visual:** CALL and CALL FOR ME, then the actual live screen.
 
-## 5. Honest limits
+- Live call: review each draft and SEND it.
+- Call for me: approve the brief; answer when a decision comes back.
+- Product direction: type, sign or tap. Current build: signs and existing buttons.
 
-Say all of these.
+**Demo:** “What time would you like?” → caption → sign or tap TOMORROW → spoken preference.
+Show the incoming question and outgoing audio. Use a confirmed delegated-booking ending
+only after the confirmation/hangup bug is corrected and verified. The live SEND flow can
+instead demonstrate an explicit receptionist confirmation without that delegated hangup.
 
-- **(exact)** *"the presenter is hearing and learned the signs from Lifeprint"*.
-- **(exact)** *"ISL is the goal and is blocked by data, which is the problem we want to solve"*.
-  Public ISL data has about 16 clips per word and none for yes/no/sorry, so the demo is pure
-  ASL; ISL signs are not mixed in.
-- **(exact)** *"no Deaf-user validation yet"*. No Deaf participant has tested the design.
-- A small rehearsed vocabulary, one sign at a time with hands down between signs. Not
-  continuous signing, not general translation.
-- **Calls come from a Bolna number, not the user's own number.**
-- What is measured so far is small: 6 of 11 Lifeprint clips and four of the presenter's signs
-  on the first try, on a Mac; on 142 public dictionary clips, 0 wrong chips with chips limited
-  to the rehearsed words (the cut-offs were fitted on those same clips, so this is
-  optimistic). YES and HELLO from public signers are often missed. The thresholds are
-  provisional until the phone-clip check.
-- **Pending on 28 Oct (update before the deck is final):** iPhone install, live camera and
-  speed; the phone-clip thresholds; MORNING on the iPhone. If any of these are still pending on
-  demo day, say so on this slide.
+## 4. A large need, a focused starting point
 
-## 6. What's next
+| Reference | What it says |
+|---|---|
+| 70M+ Deaf people globally | UN, citing WFD |
+| 430M people requiring rehabilitation for disabling hearing loss | WHO, March 2026; overlaps the first population |
+| $210M/year illustrative TAM scenario | 3.5M eligible accounts at $5/month; eligibility and price are assumptions |
 
-- ISL: collect consented, signer-diverse ISL data with Deaf partners, then the same open-set
-  design.
-- Test with Deaf users before anything else is built.
-- Own-number calls (Path A: Apple's Add Audio in Calls), Hindi, more words.
+**Say:** “The need is large. Our first task is one accessible appointment call. We must
+earn repeat use and validate affordability. Our scenarios are transparent assumptions,
+not our user base.” Put [sources and model](../../MARKET.md) beside the figures.
+
+## 5. A route to sustainable access
+
+**Visual:** people → individual or sponsored accounts → existing phone lines.
+
+**Say:** “Start with recurring service calls. Test distribution through Deaf-led
+organizations and accessibility programs, and individual or sponsored accounts with
+metered calling. The business case depends on independent completion and cost per task.”
+
+Captioned calls and text relay already exist. The hypothesis is that approved delegation
+and accessible mid-call steering reduce effort. No comparative advantage, paying users
+or partners have been established.
+
+## 6. Your conversation. Your control.
+
+**Visual:** the actual question, the person's choice and the corresponding spoken reply.
+For a booking claim, show the receptionist's actual confirmation.
+
+**Say:** “The prototype uses a small ASL vocabulary and tap choices. I am hearing and
+learned these signs from Lifeprint; we have no Deaf-participant validation yet. Calls
+come from a Bolna number. Next are participant-led evaluation, typing, reliability,
+and separate ISL evaluation. Our goal is independent access to the services people need.”
+
+Close: **“Ishara: phone calls, made accessible.”**
+
+## Delivery notes
+
+- Put citations and assumptions beside numbers, not only in speaker notes.
+- Do not describe Deaf people as unable to speak or assume everyone signs.
+- Label teammate rehearsals, synthetic details, simulator footage and saved-video input.
+- Acceptance is not confirmation; text handoff is not completed audio playback.
+- Architecture in one sentence: “Bolna carries the call; Ishara connects captions,
+  person-controlled replies and an approved brief.”
+- Finalize device and recognition claims from the recorded build before submission.

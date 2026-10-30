@@ -1,5 +1,11 @@
 # Ishara backend
 
+The call bridge behind Ishara's [accessible calling experience](../README.md): make incoming
+speech readable, relay person-approved replies, and coordinate a delegated brief with
+accessible mid-call decisions. Signing is an input path, not a condition of the product's
+purpose. See [PITCH.md](../PITCH.md) for the current positioning and [MARKET.md](../MARKET.md)
+for the sourced opportunity and revenue assumptions.
+
 FastAPI service for Path B ([PLAN.md §3](../PLAN.md#3-architecture)): app sessions, the Groq
 composer, Bolna's custom-LLM endpoint, and the "Call for me" mode (decision D9: briefs, the
 delegated agent, call notes). Python 3.11, managed with `uv`.

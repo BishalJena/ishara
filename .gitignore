@@ -1,5 +1,8 @@
 # Shared project context (README.md, AGENTS.md, PLAN.md and docs/) is committed.
 
+# Local presenter script; public positioning lives in PITCH.md.
+/demo.md
+
 # Local environment and secrets
 .env
 .env.*

@@ -1,4 +1,9 @@
-# Demo script (3 minutes)
+# Historical demo script — 28 October 2026
+
+> Retained as an earlier rehearsal. Use [PITCH.md](../../PITCH.md), the current
+> [slides](SLIDES.md) and [submission copy](SUBMISSION.md) for public positioning.
+> Its acceptance-only Booked ending is not receptionist confirmation and must not
+> be used as proof of a completed booking.
 
 Written 28 October 2026 for the 31 October submission. Two parts:
 **(a) Call for me, attended** (about 2 minutes) and **(b) a short live-mode exchange**
