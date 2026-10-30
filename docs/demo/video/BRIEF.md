@@ -27,7 +27,7 @@ the words may not change without reason.
    Don't sum populations. Label the revenue scenario as an assumption.
 3. **Honest claims only.** Nothing beyond what the app does (SCRIPT.md, "Rules this film keeps").
    ASL today, not ISL. No "first", "only", "revolutionary".
-4. **Fictional people and data.** Aarav Sharma, Priya, City Care Clinic, Dr. Kavita Rao, the
+4. **Fictional people and data.** Aarav Sharma, Rohan, City Care Clinic, Dr. Kavita Rao, the
    health history PDF: all synthetic. No real phone numbers except the fictional one in the script.
 5. **Accessible film.** Burned-in captions for every spoken line and VO; captions never cover
    the app's own captions. Contrast ≥ 4.5:1. No flashing above 3 Hz.
@@ -61,7 +61,7 @@ the words may not change without reason.
 ## Sound
 
 - **Phone audio for the demo:** an Indian ring-back tone (400 Hz, 25 Hz modulated, 0.4 s on,
-  0.2 s off, 0.4 s on, 2 s off) ×2; Priya's lines band-limited like a phone line (300–3400 Hz);
+  0.2 s off, 0.4 s on, 2 s off) ×2; Rohan's lines band-limited like a phone line (300–3400 Hz);
   Ishara's lines clean (the product's Sarvam voice, Indian English). Each line starts on the
   frame its caption appears in the app recording.
 - **Score:** a quiet, warm pad that swells under section 4 (Ishara) and resolves at the close.
@@ -74,10 +74,10 @@ the words may not change without reason.
 |---|---|
 | 1. Film call | `FakeCallDriver` plays the film's call when the app is launched with `-IsharaDriver fake -IsharaFlow steer -IsharaFilm 1` (the steer call screen, the real `TurnStore` rules, timed receptionist lines) |
 | 2. Record the app | `FilmRecordingUITests` drives the app exactly as in SCRIPT.md §5 while `xcrun simctl io <sim> recordVideo` records the screen; it writes `film-timeline.json` (when each line and tap happened) to sync audio and callouts |
-| 3. Voices | One audio file per spoken line (Priya, Ishara), named by line id; phone-band filter on Priya |
-| 4. Compose | Remotion project in `video/`: one composition `IsharaFilm`, one component per section, the app recording in an iPhone frame via `<OffthreadVideo>`, audio from the timeline |
-| 5. Sign insert | The founder's THANK YOU clip is composited into the sign panel's camera cut-out (position from the timeline) |
-| 6. Render | `npx remotion render IsharaFilm out/ishara-film.mp4` (H.264, 1080p30, AAC) |
+| 3. Voices | `cd video && python3 scripts/make_audio.py` (macOS voices; `--voices sarvam` for the product's own voice): one file per spoken line, the ring-back and a placeholder score in `public/audio/`, timed from the timeline; phone-band filter on Rohan |
+| 4. Compose | Remotion project in `video/` (`ln -f raw/app.mp4 public/app.mp4`): one composition `IsharaFilm`, one component per section, the app recording in an iPhone frame via `<OffthreadVideo>`; `src/demo/plan.ts` holds the cut and maps every voice and callout through it |
+| 5. Sign insert | `python3 scripts/track_sign_card.py` tracks the camera card; the founder's THANK YOU clip goes in `public/sign.mp4` and `SIGN_CLIP = true` in `src/sections/Demo.tsx` |
+| 6. Render | `npm run render` → `out/ishara-film.mp4` (H.264, 1080p30, AAC) |
 
 ## Deliverables
 

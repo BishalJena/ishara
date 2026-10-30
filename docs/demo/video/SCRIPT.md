@@ -18,7 +18,7 @@ Never add the population figures together, and never call Ishara the first acces
 | Who | In the film |
 |---|---|
 | **Aarav Sharma** | Deaf, uses Ishara. Hands appear signing in the sign cut-out (the founder's clip) |
-| **Priya** | Receptionist at **City Care Clinic**, Bengaluru (voice only) |
+| **Rohan** | Receptionist at **City Care Clinic**, Bengaluru (voice only) |
 | **Dr. Kavita Rao** | Aarav's doctor (named only) |
 | **Ishara's voice** | The calling agent (Indian English, the product's own voice) |
 
@@ -95,7 +95,7 @@ Captions from the app stay readable; never cover them.
 | Time | In the app | Phone audio | Callout |
 |---|---|---|---|
 | 1:22 | Call screen, "Calling…", the timer waits | Indian ring tone ×2 | |
-| 1:27 | Connected; timer starts | **Priya:** "Good morning, City Care Clinic, Priya speaking." | **Every word, captioned live.** |
+| 1:27 | Connected; timer starts | **Rohan:** "Good morning, City Care Clinic, Rohan speaking." | **Every word, captioned live.** |
 | 1:30 | Ishara's lines appear as captions | **Ishara:** "Hello, I'm calling for a Deaf caller who is using Ishara, a sign-language app. Their replies may take a few seconds." | **Ishara says who it is. Always.** |
 | 1:35 | | **Ishara:** "I'm calling on behalf of Aarav Sharma. They'd like to book a follow-up with Dr. Kavita Rao for their blood pressure, this week, mornings if possible." | **Ishara retells your request, in your words.** |
 
@@ -103,22 +103,22 @@ Captions from the app stay readable; never cover them.
 
 | Time | In the app | Phone audio | Callout |
 |---|---|---|---|
-| 1:38 | Caption | **Priya:** "Of course. Is Aarav already registered with us?" | |
+| 1:38 | Caption | **Rohan:** "Of course. Is Aarav already registered with us?" | |
 | 1:41 | **Proposal bar fills:** "Yes, they are. Their patient ID is CCC-20417." · "Ishara says in 4 s · tap to edit" | (bar runs out) **Ishara:** that line | **Ishara answers. Do nothing, and it carries on.** · small tag: *from Health history.pdf* |
-| 1:46 | Caption; facts strip pins **4 pm · Wednesday** | **Priya:** "Dr. Rao's earliest is Wednesday at 4 pm." | |
+| 1:46 | Caption; facts strip pins **4 pm · Wednesday** | **Rohan:** "Dr. Rao's earliest is Wednesday at 4 pm." | |
 | 1:48 | Proposal bar: "Sorry, 4 pm doesn't work for them. Is there anything in the morning?" | **Ishara:** that line | **It keeps to what you asked: mornings.** |
-| 1:52 | Caption; facts strip adds **10:30 am · Thursday**; **one-tap replies** appear under the bar: *Yes, 10:30 am works* · *10:30 am doesn't work, anything else?* | **Priya:** "Let me see… I have Thursday at 10:30 in the morning." | **Replies drawn from what they just said.** |
+| 1:52 | Caption; facts strip adds **10:30 am · Thursday**; **one-tap replies** appear under the bar: *Yes, 10:30 am works* · *10:30 am doesn't work, anything else?* | **Rohan:** "Let me see… I have Thursday at 10:30 in the morning." | **Replies drawn from what they just said.** |
 | 1:55 | Aarav taps **Yes, 10:30 am works**. Blue preview fills: "Yes, Thursday at 10:30 works perfectly." with "You typed: Yes, 10:30 am works" | **Ishara:** "Yes, Thursday at 10:30 works perfectly." | **You step in. Ishara polishes it. You see it before it's said.** |
 
 ### 5d. The details, and a sign (1:58–2:12)
 
 | Time | In the app | Phone audio | Callout |
 |---|---|---|---|
-| 1:58 | Caption | **Priya:** "Lovely. Any allergies or regular medicines Dr. Rao should know about?" | |
+| 1:58 | Caption | **Rohan:** "Lovely. Any allergies or regular medicines Dr. Rao should know about?" | |
 | 2:01 | Proposal bar: "They're allergic to penicillin, and they take amlodipine 5 mg once a day." | **Ishara:** that line | **Quoted from the PDF. Never guessed.** |
-| 2:05 | Caption | **Priya:** "Noted. You're booked for Thursday at 10:30 with Dr. Rao. Please bring your recent reports." | |
+| 2:05 | Caption | **Rohan:** "Noted. You're booked for Thursday at 10:30 with Dr. Rao. Please bring your recent reports." | |
 | 2:07 | Aarav taps the **hand**. The sign panel opens: camera cut-out (**founder's THANK YOU clip composited here**), chip **THANK YOU** lands, "Ishara will say: *Thank you so much for your help.*", taps **Send** | **Ishara:** "Thank you so much for your help." | **Or sign it. Recognised on the iPhone.** |
-| 2:10 | Caption | **Priya:** "You're welcome, Aarav. See you on Thursday!" · call ends | |
+| 2:10 | Caption | **Rohan:** "You're welcome, Aarav. See you on Thursday!" · call ends | |
 
 ### 5e. The gist (2:12–2:20)
 

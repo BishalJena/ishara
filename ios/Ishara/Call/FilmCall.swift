@@ -2,11 +2,11 @@ import CallSession
 import Foundation
 
 /// The call in the launch film (docs/demo/video/SCRIPT.md §5), played by `FakeCallDriver`
-/// with `-IsharaFilm 1`: City Care Clinic, a receptionist called Priya, and the lines Ishara
+/// with `-IsharaFilm 1`: City Care Clinic, a receptionist called Rohan, and the lines Ishara
 /// says under the steer rules. Everyone and everything in it is fictional. Each line is
 /// paced by how long it takes to say, so the film's voices can be laid on exactly.
 enum FilmCall {
-    static let greeting = "Good morning, City Care Clinic, Priya speaking."
+    static let greeting = "Good morning, City Care Clinic, Rohan speaking."
     static let request = "Book a follow-up with Dr. Kavita Rao for my blood pressure, this week, mornings if possible."
 
     static func opening(name: String) -> String {
