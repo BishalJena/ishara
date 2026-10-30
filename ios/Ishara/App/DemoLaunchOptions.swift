@@ -63,6 +63,8 @@ struct DemoLaunchOptions {
     /// Speed up (below 1) or slow down the simulated timers: the Get ready
     /// checklist and the fake call.
     var fakeTimeScale = 1.0
+    /// `-IsharaFilm 1`: the fake steer call plays the launch film's call (`FilmCall`).
+    var film = false
     /// Open straight on a prepared screen state for screenshots.
     var fixture: DemoFixture?
     /// Simulator only: replay the sign videos in this folder on the Mac instead of the
@@ -103,6 +105,7 @@ struct DemoLaunchOptions {
         case "memory": .memory
         case let path?: .folder(URL(fileURLWithPath: path, isDirectory: true))
         }
+        options.film = defaults.bool(forKey: "IsharaFilm")
         let scale = defaults.double(forKey: "IsharaFakeTimeScale")
         if scale > 0 {
             options.fakeTimeScale = scale
@@ -126,7 +129,8 @@ struct DemoLaunchOptions {
             interruptedStages: fakeInterrupt ? [0] : [],
             connectionDrop: fakeConnectionDrop,
             openTimeQuestion: fakeOpenQuestion,
-            bolnaSummaryDelay: fakeBolnaSummaryDelay
+            bolnaSummaryDelay: fakeBolnaSummaryDelay,
+            film: film
         )
     }
 }

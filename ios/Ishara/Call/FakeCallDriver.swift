@@ -26,6 +26,8 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         /// Seconds after a delegated call ends until its notes carry Bolna's own summary, as
         /// when its final `completed` webhook lands; nil leaves the summary out.
         var bolnaSummaryDelay: Double?
+        /// A steer call plays the launch film's call (`FilmCall`) instead of the test script.
+        var film = false
     }
 
     /// How the delegated call's open "when?" question is answered.
@@ -124,6 +126,11 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         guard let delegation = setup.delegation else {
             return CallNotes(callID: "demo-call", mode: .live, ready: isOver, transcript: transcript)
         }
+        if options.film, delegation.mode == .steer {
+            return FilmCall.notes(
+                name: setup.details.name, ready: isOver, transcript: transcript, userLines: steerSaid,
+                steppedIn: steerSteppedIn)
+        }
         var notes = DelegatedDemo.notes(
             goal: delegation.brief.goal, name: setup.details.name, brief: delegation.brief.text,
             transcript: transcript, answers: answers, ready: isOver)
@@ -152,7 +159,8 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         case let .chips(turnID, signs):
             chipsRevision += 1
             let revision = chipsRevision
-            let draft = DemoScript.draft(for: signs)
+            var draft = DemoScript.draft(for: signs)
+            if options.film, let text = FilmCall.signedDraft(for: signs) { draft = (text, .llm) }
             schedule(after: 0.5) { driver in
                 // Like the backend's draft_is_current: never a draft for chips that have since
                 // changed. Drafts due at almost the same moment can arrive in either order.
@@ -207,6 +215,10 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     /// Disclosure and opening, then a receptionist who offers the wrong time first, then a
     /// fitting one, then confirms. Each agent line is proposed while the app is in front.
     private func playSteer(_ setup: CallSetup, _ delegation: Delegation) {
+        if options.film {
+            playFilm(setup)
+            return
+        }
         let when = delegation.brief.constraints.first { $0.hasPrefix("preferred time: ") }
             .map { String($0.dropFirst("preferred time: ".count)) }
         let opening = DelegatedDemo.opening(name: setup.details.name, goal: delegation.brief.goal, when: when)
@@ -221,9 +233,67 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         }
     }
 
+    // MARK: Film call
+
+    /// Two rings, Priya answers, Ishara discloses itself and states the request, then the
+    /// receptionist's turns. Each line waits for the one before it to have been said.
+    private func playFilm(_ setup: CallSetup) {
+        let opening = FilmCall.opening(name: setup.details.name)
+        let greetingAt = 5.5
+        let disclosureAt = greetingAt + FilmCall.speech(FilmCall.greeting) + 0.6
+        let openingAt = disclosureAt + FilmCall.speech(DemoScript.disclosure) + 0.4
+        schedule(after: 0.8) { $0.deliver(.status(.ringing)) }
+        schedule(after: greetingAt - 0.4) { $0.deliver(.status(.inCall)) }
+        schedule(after: greetingAt) { $0.say(.receptionist, FilmCall.greeting) }
+        schedule(after: disclosureAt) { $0.say(.agent, DemoScript.disclosure) }
+        schedule(after: openingAt) { driver in
+            driver.say(.agent, opening)
+            driver.schedule(after: FilmCall.speech(opening) + 0.8) { $0.filmNext() }
+        }
+    }
+
+    /// The user typed, tapped a reply or started signing since the receptionist's last line:
+    /// Ishara's scheduled reply to it is dropped, and the user's line moves the call on.
+    private var filmUserStepped = false
+
+    private func filmNext() {
+        guard !isOver, steerStep < FilmCall.turns.count else { return }
+        let step = steerStep
+        steerStep += 1
+        filmUserStepped = false
+        let (heard, reply) = FilmCall.turns[step]
+        if step == FilmCall.bookedTurn { steerBooked = true }
+        say(.receptionist, heard)
+        let afterHeard = FilmCall.speech(heard) + 0.6
+        guard let reply else {
+            // Her goodbye: the voice's goodbye node, then the line drops.
+            schedule(after: afterHeard) { driver in
+                driver.say(.agent, DemoScript.goodbye)
+                driver.schedule(after: FilmCall.speech(DemoScript.goodbye) + 0.4) { $0.hangUp() }
+            }
+            return
+        }
+        schedule(after: afterHeard) { driver in
+            guard !driver.filmUserStepped else { return }
+            let then: () -> Void = { [weak driver] in
+                driver?.schedule(after: FilmCall.speech(reply) + 0.8) { $0.filmNext() }
+            }
+            guard driver.isPresent, !driver.isComposing else {
+                driver.say(.agent, reply)
+                then()
+                return
+            }
+            driver.propose(reply, origin: .agent, then: then)
+        }
+    }
+
     /// The receptionist's next turn and the agent's rule-bound answer to it.
     private func steerNext() {
         guard !isOver else { return }
+        if options.film {
+            filmNext()
+            return
+        }
         let step = steerStep
         steerStep += 1
         switch step {
@@ -283,14 +353,24 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     private func hold(turnID: TurnID, composing: Bool) {
         if composing {
             isComposing = true
+            if options.film {
+                filmUserStepped = true
+                // The film signs THANK YOU after the booking: the camera sees it shortly after
+                // the sign panel opens.
+                if steerStep == FilmCall.bookedTurn + 1 {
+                    schedule(after: 1.6) { $0.recognition?.sign(.sign(.thankyou)) }
+                }
+            }
             if let pending = pendingProposal, pending.turnID == turnID {
                 if pending.origin == .agent { heldLine = { [weak self] in self?.say(.agent, pending.text); pending.then() } }
                 settleProposal(spoken: false)
             }
-            // The agent covers the pause with a rotating filler.
+            // Like the backend: a rotating cover line if the user is still composing after 2 s.
             let filler = Self.fillers[fillerIndex % Self.fillers.count]
             fillerIndex += 1
-            schedule(after: 1) { $0.say(.agent, filler) }
+            schedule(after: 2) { driver in
+                if driver.isComposing { driver.say(.agent, filler) }
+            }
             return
         }
         isComposing = false
@@ -301,6 +381,9 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
     }
 
     private func sayTyped(_ text: String) {
+        // Like the backend: the user's line replaces the agent's proposed one.
+        if let pending = pendingProposal, pending.origin == .agent { settleProposal(spoken: false) }
+        filmUserStepped = true
         isComposing = false
         heldLine = nil
         steerSteppedIn += 1
@@ -309,9 +392,16 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         let questionWords: Set<String> = ["can", "could", "would", "will", "is", "are", "do", "does", "what", "when", "where", "how", "why", "any"]
         let isQuestion = questionWords.contains(tidy.split(separator: " ").first.map { $0.lowercased() } ?? "")
         let ending = tidy.hasSuffix(".") || tidy.hasSuffix("?") ? "" : (isQuestion ? "?" : ".")
-        let polished = tidy.prefix(1).uppercased() + tidy.dropFirst() + ending
+        var polished = tidy.prefix(1).uppercased() + tidy.dropFirst() + ending
+        if options.film, let film = FilmCall.polished(tidy) { polished = film }
+        let spoken = polished
         let continuation: () -> Void = { [weak self] in
-            self?.schedule(after: 2) { driver in
+            guard let self else { return }
+            if self.options.film {
+                self.schedule(after: FilmCall.speech(spoken) + 0.8) { $0.filmNext() }
+                return
+            }
+            self.schedule(after: 2) { driver in
                 driver.say(.receptionist, "Of course. Let me check that for you.")
                 driver.schedule(after: 2) { $0.steerNext() }
             }
@@ -369,7 +459,11 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         speakingTask = nil
         deliver(delivered ? .spoken(turnID: turnID) : .notDelivered(turnID: turnID, reason: reason))
         deliver(.status(.inCall))
-        if delivered {
+        guard delivered else { return }
+        if setup?.isSteer == true {
+            // A signed line on a steer call: the receptionist answers it.
+            schedule(after: 0.8) { $0.steerNext() }
+        } else {
             schedule(after: 2) { $0.playNextStage() }
         }
     }
@@ -555,6 +649,7 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
 
     private func deliver(_ message: ServerMessage) {
         guard !isOver, !isDisconnected else { return }
+        if options.film { FilmCall.log(message) }
         store?.receive(message)
     }
 

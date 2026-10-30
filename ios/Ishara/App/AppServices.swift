@@ -36,7 +36,7 @@ struct AppServices {
     /// One line on Home and Get ready saying which call CALL and Start place.
     var modeDescription: String {
         switch options.driver {
-        case .fake: "Test mode: a scripted call on this phone. Nothing is dialled."
+        case .fake: options.film ? "" : "Test mode: a scripted call on this phone. Nothing is dialled."
         case .live: ""
         }
     }

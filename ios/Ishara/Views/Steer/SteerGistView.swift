@@ -83,6 +83,7 @@ struct SteerGistView: View {
         switch notes.steppedIn {
         case 0: "Ishara handled the whole call from what you wrote."
         case 1: "You stepped in once; Ishara handled the rest."
+        case 2: "You stepped in twice; Ishara handled the rest."
         default: "You stepped in \(notes.steppedIn) times; Ishara handled the rest."
         }
     }

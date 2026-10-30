@@ -49,8 +49,10 @@ struct DraftDisplay: Equatable, Sendable {
 }
 
 extension Chip {
-    /// Text on the chip: the sign's word, or "?" for an unsure sign.
+    /// The sign's word ("thankyou"), or "?" for an unsure sign.
     var label: String { sign?.rawValue ?? "?" }
+    /// What the chip shows: the word as written ("thank you").
+    var title: String { label == "thankyou" ? "thank you" : label }
 }
 
 extension QuickReply {

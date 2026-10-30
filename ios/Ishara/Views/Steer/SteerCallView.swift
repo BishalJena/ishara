@@ -259,7 +259,8 @@ struct SteerCallView: View {
             if isSigning {
                 signingPanel
             } else if !model.isCallOver {
-                if model.proposal == nil, !typing, case .live = model.phase {
+                // Under Ishara's proposed line too (design G2): tapping one replaces it.
+                if model.proposal?.origin != .user, !typing, case .live = model.phase {
                     quickReplies
                 }
                 typingBar
@@ -556,9 +557,13 @@ enum CallFacts {
     static func extract(from lines: [String]) -> [Fact] {
         var seen: [Fact] = []
         for line in lines.map(digitsForSpokenTimes) {
+            // "10:30 am" is one fact, not also "10:30": a match inside an earlier one is skipped.
+            var taken: [NSRange] = []
             for (pattern, symbol) in patterns {
                 guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { continue }
                 for match in regex.matches(in: line, range: NSRange(line.startIndex..., in: line)) {
+                    guard !taken.contains(where: { NSIntersectionRange($0, match.range).length > 0 }) else { continue }
+                    taken.append(match.range)
                     guard let range = Range(match.range, in: line) else { continue }
                     let fact = Fact(text: String(line[range]), symbol: symbol)
                     if !seen.contains(fact) { seen.append(fact) }
@@ -576,7 +581,8 @@ enum QuickSteerReply {
         let line = (lastLine ?? "").lowercased()
         var replies: [String] = []
         let times = CallFacts.extract(from: [lastLine ?? ""]).filter { $0.symbol != "indianrupeesign.circle" }
-        if let time = times.last {
+        // A clock time is the offer ("Thursday at 10:30 am" → 10:30 am); else the day.
+        if let time = times.last(where: { $0.symbol == "clock" }) ?? times.last {
             replies += ["Yes, \(time.text) works", "\(time.text) doesn't work, anything else?"]
         } else if line.contains("?") {
             replies += ["Yes", "No"]

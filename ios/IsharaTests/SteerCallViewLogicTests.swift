@@ -32,6 +32,12 @@ final class SteerCallViewLogicTests: XCTestCase {
         XCTAssertEqual(Set(facts), ["11 am", "wednesday"])
     }
 
+    func testAClockTimeIsOneFactAndTheOfferInQuickReplies() {
+        let facts = CallFacts.extract(from: ["Let me see. I have Thursday at 10:30 am."]).map(\.text)
+        XCTAssertEqual(facts, ["10:30 am", "Thursday"])
+        XCTAssertEqual(QuickSteerReply.suggestions(for: "Let me see. I have Thursday at 10:30 am.").first, "Yes, 10:30 am works")
+    }
+
     func testANumberShowsSpacedWithAPersonGlyph() {
         XCTAssertEqual(Contact.display("+919337473802"), "+91 93374 73802")
         XCTAssertEqual(Contact.indian("9337473802")?.name, "+91 93374 73802")
