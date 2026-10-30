@@ -16,6 +16,22 @@ struct Contact: Identifiable, Hashable, Sendable {
         guard e164.range(of: #"^\+[1-9]\d{6,14}$"#, options: .regularExpression) != nil else { return nil }
         return Contact(id: "number", name: name?.isEmpty == false ? name! : e164, phoneNumber: e164)
     }
+
+    /// An Indian number from its 10 national digits (the app is India-only, so +91 is implied).
+    static func indian(_ digits: String, name: String? = nil) -> Contact? {
+        let digits = digits.filter(\.isNumber)
+        guard digits.count == 10, let first = digits.first, first != "0", first != "1" else { return nil }
+        return number("+91" + digits, name: name)
+    }
+
+    /// The 10 national digits of a number typed or picked in any common Indian form:
+    /// "+91 98450 12345", "098450 12345", "9845012345".
+    static func indianDigits(from raw: String) -> String {
+        var digits = raw.filter(\.isNumber)
+        if digits.count == 12, digits.hasPrefix("91") { digits.removeFirst(2) }
+        if digits.count == 11, digits.hasPrefix("0") { digits.removeFirst() }
+        return String(digits.prefix(10))
+    }
 }
 
 extension CallPurpose {

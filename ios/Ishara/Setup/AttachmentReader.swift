@@ -12,6 +12,12 @@ struct Attachment: Identifiable, Equatable {
     let thumbnail: UIImage?
     var details: [Detail]
     var problem: String?
+
+    /// What gets added to the request box, so the user sees exactly what was read.
+    var sentence: String {
+        guard !details.isEmpty else { return "" }
+        return "From \(name): " + details.map { "\($0.label.lowercased()) \($0.value)" }.joined(separator: ", ") + "."
+    }
 }
 
 enum AttachmentReader {
@@ -57,23 +63,47 @@ enum AttachmentReader {
     }
 }
 
-/// Finds the fields a receptionist tends to ask for: "Label: value" lines, and dates, policy
-/// or member numbers and phone numbers near a word that names them. Deterministic on purpose:
-/// what it finds is shown as chips the user can drop, never sent unseen.
+/// Finds the fields a receptionist tends to ask for, in what the user typed ("my policy
+/// number is AH-4821") and in a card or letter ("Policy No: AH-4821"): "Label: value" lines,
+/// label-then-value clauses, and dates, policy or member numbers and phone numbers near a
+/// word that names them. Deterministic on purpose: what it finds is shown as chips the user
+/// can keep private, never sent unseen.
 enum DetailExtractor {
     private static let knownLabels: [(pattern: String, label: String)] = [
-        (#"(?i)\b(date of birth|dob|birth date|born)\b"#, "Date of birth"),
+        (#"(?i)\b(date of birth|dob|birth date|born on|born)\b"#, "Date of birth"),
         (#"(?i)\b(policy (?:no|number|#)?|policy)\b"#, "Policy number"),
         (#"(?i)\b(member(?:ship)? (?:no|number|id)|member id)\b"#, "Member ID"),
-        (#"(?i)\b(insurer|insurance|provider|plan)\b"#, "Insurer"),
-        (#"(?i)\b(patient(?: name)?|name|insured|holder)\b"#, "Name on the card"),
+        (#"(?i)\b(insurance (?:no|number|id)|insurer|insurance|provider|plan)\b"#, "Insurer"),
+        (#"(?i)\b(patient(?: name)?|name|insured|holder)\b"#, "Name"),
         (#"(?i)\b(group (?:no|number)|group)\b"#, "Group number"),
         (#"(?i)\b(valid (?:till|until|thru|through)|expiry|expires|exp)\b"#, "Valid until"),
-        (#"(?i)\b(phone|mobile|tel|contact)\b"#, "Phone"),
+        (#"(?i)\b(callback(?: number)?|phone|mobile|tel|contact)\b"#, "Phone"),
         (#"(?i)\b(address)\b"#, "Address"),
     ]
+    private static let textLabels: Set<String> = ["Name", "Insurer", "Address"]
+    private static let connector = #"^\s*(?:is|was|are|be|number|no\.?|#|:|-|=|of)?\s*(?:is|:|-|=)?\s*"#
 
     static func extract(from text: String) -> [Detail] {
+        var found = fromLines(text)
+        // Free text: "my date of birth is 12/03/1994, policy number AH-4821 and ..."
+        for clause in text.split(whereSeparator: { ".;\n".contains($0) }) {
+            let clause = String(clause)
+            var hits: [(at: String.Index, label: String, value: String)] = []
+            for (pattern, label) in knownLabels where !found.contains(where: { $0.label == label }) {
+                guard let hit = clause.range(of: pattern, options: .regularExpression) else { continue }
+                var rest = String(clause[hit.upperBound...])
+                if let skip = rest.range(of: connector, options: .regularExpression) { rest = String(rest[skip.upperBound...]) }
+                let value = rest.components(separatedBy: ",").first.map { String($0.split(separator: " and ").first ?? "") } ?? ""
+                guard value.contains(where: \.isNumber) || textLabels.contains(label) else { continue }
+                hits.append((hit.lowerBound, label, value))
+            }
+            // In reading order, so the chips follow the text.
+            for hit in hits.sorted(by: { $0.at < $1.at }) { add(label: hit.label, value: hit.value, to: &found) }
+        }
+        return Array(found.prefix(8))
+    }
+
+    private static func fromLines(_ text: String) -> [Detail] {
         var found: [Detail] = []
         let lines = text.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespaces) }
         for (index, line) in lines.enumerated() {
@@ -89,12 +119,13 @@ enum DetailExtractor {
                 add(label: label, value: lines[index + 1], to: &found)
                 continue
             }
-            // A date, long number or phone number after a label word on the same line.
-            if let label = canonical(line), let value = trailingValue(in: line) {
+            // A short card line: a date, long number or phone number after a label word.
+            // Long sentences are left to the free-text pass, which keeps reading order.
+            if line.split(separator: " ").count <= 8, let label = canonical(line), let value = trailingValue(in: line) {
                 add(label: label, value: value, to: &found)
             }
         }
-        return Array(found.prefix(8))
+        return found
     }
 
     private static func canonical(_ label: String) -> String? {
@@ -117,7 +148,8 @@ enum DetailExtractor {
 
     private static func add(label: String, value: String, to found: inout [Detail]) {
         let value = value.trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
-        guard (1...80).contains(value.count), !found.contains(where: { $0.label == label }) else { return }
+        guard (1...60).contains(value.count), value.split(separator: " ").count <= 6,
+              !found.contains(where: { $0.label == label }) else { return }
         found.append(Detail(label: label, value: value))
     }
 }

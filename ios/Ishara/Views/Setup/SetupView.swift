@@ -27,15 +27,20 @@ struct SetupView: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var attachments: [Attachment] = []
     @State private var reading = 0
-    @State private var details: [Detail] = []
-    @State private var newDetailLabel = ""
-    @State private var newDetailValue = ""
+    /// Details the user tapped to keep private, by label.
+    @State private var privateLabels: Set<String> = []
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var focus: Field?
 
-    private enum Field { case number, request, detailLabel, detailValue }
+    private enum Field { case number, request }
 
-    private var typedContact: Contact? { Contact.number(number, name: pickedName) }
-    private var usesNumber: Bool { !number.trimmingCharacters(in: .whitespaces).isEmpty }
+    private var typedContact: Contact? { Contact.indian(number, name: pickedName) }
+    private var usesNumber: Bool { !number.isEmpty }
+
+    /// What Ishara noticed in the request (and in anything attached, which is written into
+    /// the request too), so there's one place the user reads and edits.
+    private var inferred: [Detail] { DetailExtractor.extract(from: request) }
+    private var shared: [Detail] { inferred.filter { !privateLabels.contains($0.label) } }
 
     /// People called before from this phone, newest first, one chip each.
     private var recentPeople: [Contact] {
@@ -49,7 +54,7 @@ struct SetupView: View {
     private var problem: String? {
         if let setupProblem { return setupProblem }
         if !usesNumber { return "Enter a number, or pick someone." }
-        if typedContact == nil { return "Enter the number with its country code, like +91 98450 12345." }
+        if typedContact == nil { return "Enter the 10-digit number." }
         if request.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "Say what the call is about." }
         return nil
     }
@@ -90,7 +95,7 @@ struct SetupView: View {
             .sheet(isPresented: $showsContacts) {
                 ContactPicker { pickedName, pickedNumber in
                     self.pickedName = pickedName
-                    number = pickedNumber
+                    number = Contact.indianDigits(from: pickedNumber)
                 }
                 .ignoresSafeArea()
             }
@@ -123,10 +128,26 @@ struct SetupView: View {
         reading += 1
         let attachment = await AttachmentReader.read(data: data, name: name)
         reading -= 1
-        attachments.append(attachment)
-        for detail in attachment.details where !details.contains(where: { $0.label == detail.label }) && details.count < 12 {
-            details.append(detail)
+        withAnimation(motion) {
+            attachments.append(attachment)
+            if !attachment.sentence.isEmpty {
+                request = request.trimmingCharacters(in: .whitespacesAndNewlines) + (request.isEmpty ? "" : "\n") + attachment.sentence
+            }
         }
+    }
+
+    private func remove(_ attachment: Attachment) {
+        withAnimation(motion) {
+            attachments.removeAll { $0.id == attachment.id }
+            request = request.replacingOccurrences(of: attachment.sentence, with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+    }
+
+    /// A settled spring (no bounce) for things that appear because of what the user did;
+    /// a plain fade with Reduce Motion on.
+    private var motion: Animation { reduceMotion ? .easeOut(duration: 0.2) : .spring(duration: 0.4, bounce: 0) }
+    private var appear: AnyTransition {
+        reduceMotion ? .opacity : .scale(scale: 0.85, anchor: .leading).combined(with: .opacity)
     }
 
     private var topBar: some View {
@@ -180,10 +201,18 @@ struct SetupView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 10) {
                 Text("To").font(.headline).foregroundStyle(.secondary)
-                TextField("Number, with country code", text: $number)
-                    .keyboardType(.phonePad)
+                Text("+91").font(.body.monospacedDigit()).foregroundStyle(usesNumber ? .primary : .secondary)
+                    .accessibilityHidden(true)
+                TextField("10-digit number", text: $number)
+                    .keyboardType(.numberPad)
                     .textContentType(.telephoneNumber)
+                    .font(.body.monospacedDigit())
                     .focused($focus, equals: .number)
+                    .onChange(of: number) { _, raw in
+                        let digits = raw.count > 10 ? Contact.indianDigits(from: raw) : raw.filter(\.isNumber)
+                        if digits != raw { number = digits }
+                    }
+                    .accessibilityLabel("Number, +91")
                     .accessibilityIdentifier("setup.number")
                 if usesNumber {
                     if !pickedName.isEmpty { Text(pickedName).font(.subheadline.weight(.semibold)).lineLimit(1) }
@@ -197,7 +226,7 @@ struct SetupView: View {
                     HStack(spacing: 8) {
                         ForEach(recentPeople) { person in
                             Button {
-                                number = person.phoneNumber ?? ""
+                                number = Contact.indianDigits(from: person.phoneNumber ?? "")
                                 pickedName = person.name == person.phoneNumber ? "" : person.name
                             } label: {
                                 Label(person.name, systemImage: "clock.arrow.circlepath")
@@ -213,15 +242,17 @@ struct SetupView: View {
             }
             Divider()
 
-            TextField("What should Ishara do? e.g. Book a check-up next week, mornings only.", text: $request, axis: .vertical)
-                .lineLimit(3...6)
+            TextField("What should Ishara do? e.g. Book a check-up next week, mornings only. My policy number is …", text: $request, axis: .vertical)
+                .lineLimit(3...8)
                 .font(.title3.weight(.medium))
                 .focused($focus, equals: .request)
                 .accessibilityIdentifier("setup.request")
 
             if !attachments.isEmpty || reading > 0 { attachmentsRow }
 
-            detailsSection
+            if !inferred.isEmpty { noticedSection }
+            // The section itself slides in with the first detail and out with the last.
+            Color.clear.frame(height: 0).animation(motion, value: inferred.isEmpty)
 
             if let problem {
                 Label(problem, systemImage: "info.circle")
@@ -275,12 +306,10 @@ struct SetupView: View {
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button("Remove", systemImage: "xmark.circle.fill") {
-                        details.removeAll { attachment.details.contains($0) }
-                        attachments.removeAll { $0.id == attachment.id }
-                    }
-                    .labelStyle(.iconOnly).foregroundStyle(.secondary)
+                    Button("Remove", systemImage: "xmark.circle.fill") { remove(attachment) }
+                        .labelStyle(.iconOnly).foregroundStyle(.secondary)
                 }
+                .transition(appear)
             }
             if reading > 0 {
                 Label("Reading on this iPhone…", systemImage: "doc.text.magnifyingglass")
@@ -289,50 +318,43 @@ struct SetupView: View {
         }
     }
 
-    private var detailsSection: some View {
+    /// The details Ishara noticed in the request, as chips that spring in as they're typed.
+    /// Tap one to keep it private (it stays in the text; Ishara just won't say it).
+    private var noticedSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Ishara may share")
+            Label("Ishara may share", systemImage: "sparkles")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
             FlowLayout(spacing: 8) {
-                ForEach(details, id: \.self) { detail in
+                ForEach(inferred, id: \.label) { detail in
+                    let isPrivate = privateLabels.contains(detail.label)
                     Button {
-                        details.removeAll { $0 == detail }
+                        withAnimation(motion) {
+                            if isPrivate { privateLabels.remove(detail.label) } else { privateLabels.insert(detail.label) }
+                        }
                     } label: {
-                        Label("\(detail.label): \(detail.value)", systemImage: "xmark")
-                            .labelStyle(.trailingIcon)
-                            .font(.footnote.weight(.semibold))
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 10)
-                            .background(Color.primary, in: Capsule())
-                            .foregroundStyle(Color(.systemBackground))
+                        HStack(spacing: 4) {
+                            Text(detail.label).foregroundStyle(isPrivate ? .secondary : Color(.systemBackground).opacity(0.7))
+                            Text(detail.value).strikethrough(isPrivate)
+                            if isPrivate { Image(systemName: "eye.slash").imageScale(.small) }
+                        }
+                        .font(.footnote.weight(.semibold))
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 10)
+                        .background(isPrivate ? Color(.tertiarySystemBackground) : Color.primary, in: Capsule())
+                        .foregroundStyle(isPrivate ? Color.secondary : Color(.systemBackground))
                     }
-                    .accessibilityLabel("Remove \(detail.label)")
+                    .accessibilityLabel("\(detail.label), \(detail.value)\(isPrivate ? ", kept private" : "")")
+                    .accessibilityHint(isPrivate ? "Double-tap to let Ishara share it" : "Double-tap to keep it private")
+                    .transition(appear)
                 }
             }
-            HStack(spacing: 8) {
-                TextField("Detail, e.g. Date of birth", text: $newDetailLabel)
-                    .focused($focus, equals: .detailLabel)
-                TextField("Value", text: $newDetailValue)
-                    .focused($focus, equals: .detailValue)
-                    .onSubmit(addDetail)
-                Button("Add", systemImage: "plus", action: addDetail)
-                    .labelStyle(.iconOnly)
-                    .disabled(newDetailLabel.trimmingCharacters(in: .whitespaces).isEmpty || newDetailValue.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
-            .font(.footnote)
-            .textFieldStyle(.roundedBorder)
+            Text("Tap a detail to keep it private.")
+                .font(.caption2).foregroundStyle(.tertiary)
         }
-    }
-
-    private func addDetail() {
-        let label = newDetailLabel.trimmingCharacters(in: .whitespaces)
-        let value = newDetailValue.trimmingCharacters(in: .whitespaces)
-        guard !label.isEmpty, !value.isEmpty, details.count < 12 else { return }
-        details.append(Detail(label: label, value: value))
-        newDetailLabel = ""
-        newDetailValue = ""
-        focus = nil
+        .animation(motion, value: inferred.map(\.label))
+        .sensoryFeedback(.selection, trigger: inferred.count)
+        .transition(appear)
     }
 
     private func call() {
@@ -347,9 +369,10 @@ struct SetupView: View {
             details: SavedDetails(name: name.trimmingCharacters(in: .whitespaces), preferredTime: .mornings),
             voice: .indianEnglish)
         setup.request = request.trimmingCharacters(in: .whitespacesAndNewlines)
-        setup.sharedDetails = details
-        let trimmedCallback = callback.trimmingCharacters(in: .whitespaces)
-        if !trimmedCallback.isEmpty { setup.sharedDetails.append(Detail(label: "Callback number", value: trimmedCallback)) }
+        setup.sharedDetails = shared
+        if callback.count == 10, !shared.contains(where: { $0.label == "Phone" }) {
+            setup.sharedDetails.append(Detail(label: "Callback number", value: "+91 " + callback))
+        }
         onCall(setup)
     }
 }

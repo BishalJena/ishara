@@ -18,7 +18,7 @@ final class SteerCallUITests: XCTestCase {
         let number = app.textFields["setup.number"].firstMatch
         XCTAssertTrue(number.waitForExistence(timeout: 5))
         number.tap()
-        number.typeText("+919876543210")
+        number.typeText("9876543210")
         let request = app.textViews["setup.request"].firstMatch.exists
             ? app.textViews["setup.request"].firstMatch : app.textFields["setup.request"].firstMatch
         XCTAssertTrue(request.waitForExistence(timeout: 5))

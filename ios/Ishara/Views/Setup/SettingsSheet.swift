@@ -15,7 +15,15 @@ struct SettingsSheet: View {
                 Section {
                     TextField("Your name", text: $name).textContentType(.name)
                         .accessibilityIdentifier("settings.name")
-                    TextField("Callback number (optional)", text: $callback).keyboardType(.phonePad)
+                    HStack(spacing: 6) {
+                        Text("+91").foregroundStyle(.secondary)
+                        TextField("Callback number (optional)", text: $callback)
+                            .keyboardType(.numberPad)
+                            .onChange(of: callback) { _, raw in
+                                let digits = raw.count > 10 ? Contact.indianDigits(from: raw) : raw.filter(\.isNumber)
+                                if digits != raw { callback = digits }
+                            }
+                    }
                 } header: {
                     Text("About you")
                 } footer: {
