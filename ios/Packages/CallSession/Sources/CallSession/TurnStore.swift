@@ -142,6 +142,30 @@ public struct OpenQuestion: Equatable, Sendable {
     }
 }
 
+/// Steer call: a line about to be spoken, shown in the filling Send bar. `windowS` counts
+/// from `shownAt`; when it runs out the backend speaks the line unless the user held it.
+public struct Proposal: Equatable, Sendable {
+    public let turnID: TurnID
+    public let text: String
+    public let windowS: Double
+    public let origin: ProposalOrigin
+    public let shownAt: Date
+
+    public init(turnID: TurnID, text: String, windowS: Double, origin: ProposalOrigin, shownAt: Date) {
+        self.turnID = turnID
+        self.text = text
+        self.windowS = windowS
+        self.origin = origin
+        self.shownAt = shownAt
+    }
+
+    /// 0...1 of the window elapsed at `now`.
+    public func progress(at now: Date) -> Double {
+        guard windowS > 0 else { return 1 }
+        return min(1, max(0, now.timeIntervalSince(shownAt) / windowS))
+    }
+}
+
 @MainActor
 @Observable
 public final class TurnStore {
@@ -163,6 +187,14 @@ public final class TurnStore {
     public private(set) var notice: String?
     /// D9 attended call: the agent's open question, until it is answered or times out.
     public private(set) var openQuestion: OpenQuestion?
+    /// Steer call: the line in the filling Send bar, until its window ends.
+    public private(set) var proposal: Proposal?
+    /// Steer call: the user is typing or signing, so the agent only covers the pause.
+    public private(set) var isComposing = false
+    /// Steer call: what the receptionist asked for that the request didn't carry.
+    public private(set) var followUps: [String] = []
+    /// Steer call: how many lines the user typed or signed during the call.
+    public private(set) var steppedIn = 0
 
     private let sink: any OutgoingMessageSink
     private let makeTurnID: () -> TurnID
@@ -331,9 +363,72 @@ public final class TurnStore {
         case let .askResolved(askID, spoken, source):
             if openQuestion?.askID == askID { openQuestion = nil }
             captions.append(Caption(text: spoken, at: Date(), speaker: source == "user" ? .user : .agent))
+        case let .proposal(turnID, text, windowS, origin):
+            proposal = Proposal(turnID: turnID, text: text, windowS: windowS, origin: origin, shownAt: Date())
+        case let .proposalResolved(turnID, _):
+            if proposal?.turnID == turnID { proposal = nil }
+        case let .followUp(text):
+            followUps.append(text)
         case .unknown:
             break
         }
+    }
+
+    // MARK: Steer call
+
+    /// Tells the backend whether the call screen is in front on an unlocked phone. Away,
+    /// the agent speaks without proposing; the shown proposal is spoken straight away.
+    public func setPresent(_ present: Bool) {
+        guard state != .ended else { return }
+        sink.send(.presence(present: present))
+        if !present, let proposal, proposal.origin == .agent { self.proposal = nil }
+    }
+
+    /// "Send now": the proposed line is spoken without waiting for its window.
+    public func approveProposal() {
+        guard state != .ended, let proposal else { return }
+        sink.send(.approve(turnID: proposal.turnID, text: proposal.text))
+        self.proposal = nil
+    }
+
+    /// The user started typing or signing: the proposed agent line is dropped and the agent
+    /// covers the pause until `say`, a signed SEND, or `stopComposing`.
+    public func startComposing() {
+        guard acceptsInput, !isComposing else { return }
+        isComposing = true
+        let turnID = proposal?.turnID ?? currentTurnID
+        if proposal?.origin == .agent { proposal = nil }
+        sink.send(.hold(turnID: turnID, composing: true))
+    }
+
+    /// The user backed out without sending: the agent's held line is spoken after all.
+    public func stopComposing() {
+        guard isComposing else { return }
+        isComposing = false
+        sink.send(.hold(turnID: proposal?.turnID ?? currentTurnID, composing: false))
+    }
+
+    /// A typed line. The backend polishes it, previews it (as a `proposal` of origin
+    /// `user`) and speaks it. Returns false when the call can't carry it.
+    @discardableResult
+    public func say(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard acceptsInput, !trimmed.isEmpty, trimmed.count <= ProtocolLimits.maxSpokenCharacters else {
+            return false
+        }
+        lastError = nil
+        isComposing = false
+        steppedIn += 1
+        sink.send(.say(text: trimmed))
+        return true
+    }
+
+    /// Edit the previewed typed line instead of letting it be spoken.
+    public func holdPreview() {
+        guard let proposal, proposal.origin == .user else { return }
+        sink.send(.hold(turnID: proposal.turnID, composing: true))
+        isComposing = true
+        self.proposal = nil
     }
 
     // MARK: Delegated call (D9)

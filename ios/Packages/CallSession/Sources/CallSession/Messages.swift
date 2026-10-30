@@ -33,22 +33,30 @@ public enum DraftSource: String, Codable, CaseIterable, Sendable {
 public enum CallMode: String, Codable, CaseIterable, Sendable {
     case live
     case delegated
+    /// The agent runs the call from the typed request; the user may step in at any moment
+    /// by typing or signing. With the call screen in front, each agent line is proposed
+    /// first and spoken when its window runs out; away, lines are spoken at once.
+    case steer
 }
 
-/// Body of `POST /calls` (`StartCallRequest`). A delegated call needs `briefID`; `attended`
-/// lets the agent ask the user yes/no/wait or "when?" (time word) questions during the call.
+/// Body of `POST /calls` (`StartCallRequest`). Exactly one of `contactID` and `phoneNumber`:
+/// a pasted number is dialled only when the backend's allowlist holds it. A delegated or
+/// steer call needs `briefID`; `attended` lets a delegated agent ask the user yes/no/wait or
+/// "when?" (time word) questions during the call.
 public struct StartCallRequest: Codable, Equatable, Sendable {
-    public var contactID: String
+    public var contactID: String?
+    public var phoneNumber: String?
     public var purpose: CallPurpose
     public var mode: CallMode
     public var briefID: String?
     public var attended: Bool
 
     public init(
-        contactID: String, purpose: CallPurpose, mode: CallMode = .live, briefID: String? = nil,
-        attended: Bool = false
+        contactID: String? = nil, phoneNumber: String? = nil, purpose: CallPurpose,
+        mode: CallMode = .live, briefID: String? = nil, attended: Bool = false
     ) {
         self.contactID = contactID
+        self.phoneNumber = phoneNumber
         self.purpose = purpose
         self.mode = mode
         self.briefID = briefID
@@ -57,6 +65,7 @@ public struct StartCallRequest: Codable, Equatable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case contactID = "contact_id"
+        case phoneNumber = "phone_number"
         case purpose, mode, attended
         case briefID = "brief_id"
     }
@@ -89,29 +98,46 @@ public struct CallStart: Codable, Equatable, Sendable {
 
 // MARK: - Delegated calls (D9)
 
+/// One fact the user approved for sharing ("Date of birth" → "12 March 1998"). The agent
+/// says it only when the receptionist asks for something its label names.
+public struct Detail: Codable, Equatable, Hashable, Sendable {
+    public var label: String
+    public var value: String
+
+    public init(label: String, value: String) {
+        self.label = label
+        self.value = value
+    }
+}
+
 /// What the agent may share about the caller; nothing else is ever said.
 public struct Profile: Codable, Equatable, Sendable {
     public var name: String
     public var callback: String?
     public var notes: String?
+    public var details: [Detail]
 
-    public init(name: String, callback: String? = nil, notes: String? = nil) {
+    public init(name: String, callback: String? = nil, notes: String? = nil, details: [Detail] = []) {
         self.name = name
         self.callback = callback
         self.notes = notes
+        self.details = details
     }
 }
 
-/// Body of `POST /briefs`.
+/// Body of `POST /briefs`. `request` is what the user typed the call is about (steer calls);
+/// its days and parts of day are the only times the agent may agree to.
 public struct BriefRequest: Codable, Equatable, Sendable {
     public var purpose: CallPurpose
     public var chips: [Sign]
     public var profile: Profile
+    public var request: String?
 
-    public init(purpose: CallPurpose, chips: [Sign], profile: Profile) {
+    public init(purpose: CallPurpose, chips: [Sign], profile: Profile, request: String? = nil) {
         self.purpose = purpose
         self.chips = chips
         self.profile = profile
+        self.request = request
     }
 }
 
@@ -177,11 +203,15 @@ public struct CallNotes: Codable, Equatable, Sendable {
     public var openQuestions: [String]
     public var transcript: [TranscriptEntry]
     public var bolnaSummary: String?
+    /// Steer calls: what the receptionist asked for that the request didn't carry, and how
+    /// many times the user stepped in. Older backends omit both.
+    public var followUps: [String]
+    public var steppedIn: Int
 
     public init(
         callID: String, mode: CallMode, ready: Bool, brief: String? = nil, outcome: String? = nil,
         summary: [String] = [], openQuestions: [String] = [], transcript: [TranscriptEntry] = [],
-        bolnaSummary: String? = nil
+        bolnaSummary: String? = nil, followUps: [String] = [], steppedIn: Int = 0
     ) {
         self.callID = callID
         self.mode = mode
@@ -192,6 +222,8 @@ public struct CallNotes: Codable, Equatable, Sendable {
         self.openQuestions = openQuestions
         self.transcript = transcript
         self.bolnaSummary = bolnaSummary
+        self.followUps = followUps
+        self.steppedIn = steppedIn
     }
 
     enum CodingKeys: String, CodingKey {
@@ -199,7 +231,40 @@ public struct CallNotes: Codable, Equatable, Sendable {
         case mode, ready, brief, outcome, summary, transcript
         case openQuestions = "open_questions"
         case bolnaSummary = "bolna_summary"
+        case followUps = "follow_ups"
+        case steppedIn = "stepped_in"
     }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        callID = try container.decode(String.self, forKey: .callID)
+        mode = try container.decode(CallMode.self, forKey: .mode)
+        ready = try container.decode(Bool.self, forKey: .ready)
+        brief = try container.decodeIfPresent(String.self, forKey: .brief)
+        outcome = try container.decodeIfPresent(String.self, forKey: .outcome)
+        summary = try container.decodeIfPresent([String].self, forKey: .summary) ?? []
+        openQuestions = try container.decodeIfPresent([String].self, forKey: .openQuestions) ?? []
+        transcript = try container.decodeIfPresent([TranscriptEntry].self, forKey: .transcript) ?? []
+        bolnaSummary = try container.decodeIfPresent(String.self, forKey: .bolnaSummary)
+        followUps = try container.decodeIfPresent([String].self, forKey: .followUps) ?? []
+        steppedIn = try container.decodeIfPresent(Int.self, forKey: .steppedIn) ?? 0
+    }
+}
+
+// MARK: - Steer calls
+
+/// Who wrote a proposed line: the agent (spoken when its window runs out) or the user (the
+/// polished form of what they typed, previewed briefly).
+public enum ProposalOrigin: String, Codable, Sendable {
+    case agent
+    case user
+}
+
+/// How a proposal's window ended.
+public enum ProposalOutcome: String, Codable, Sendable {
+    case spoken
+    case held
+    case cancelled
 }
 
 // MARK: - App -> backend (WebSocket)
@@ -216,6 +281,13 @@ public enum AppMessage: Equatable, Sendable {
     case end
     /// Answer the agent's open question on an attended delegated call (D9).
     case answer(askID: String, choice: AskChoice)
+    /// Steer: whether the call screen is in front on an unlocked phone.
+    case presence(present: Bool)
+    /// Steer: the user started composing (`composing` true), dropping the proposed line, or
+    /// backed out (`false`), so the held line is spoken after all.
+    case hold(turnID: TurnID, composing: Bool)
+    /// Steer: a line the user typed, to be polished, previewed and spoken.
+    case say(text: String)
 }
 
 extension AppMessage: Encodable {
@@ -226,11 +298,23 @@ extension AppMessage: Encodable {
         case text
         case askID = "ask_id"
         case choice
+        case present
+        case composing
     }
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
+        case let .presence(present):
+            try container.encode("presence", forKey: .type)
+            try container.encode(present, forKey: .present)
+        case let .hold(turnID, composing):
+            try container.encode("hold", forKey: .type)
+            try container.encode(turnID, forKey: .turnID)
+            try container.encode(composing, forKey: .composing)
+        case let .say(text):
+            try container.encode("say", forKey: .type)
+            try container.encode(text, forKey: .text)
         case let .chips(turnID, chips):
             try container.encode("chips", forKey: .type)
             try container.encode(turnID, forKey: .turnID)
@@ -270,6 +354,13 @@ public enum ServerMessage: Equatable, Sendable {
     case ask(askID: String, question: String, options: [AskOption], fallback: String, timeoutS: Double)
     /// The question closed: what the agent said, and whether the user or the timeout decided.
     case askResolved(askID: String, spoken: String, source: String)
+    /// Steer: a line about to be spoken, with the seconds the user has to step in.
+    case proposal(turnID: TurnID, text: String, windowS: Double, origin: ProposalOrigin)
+    /// Steer: the proposal's window ended.
+    case proposalResolved(turnID: TurnID, outcome: ProposalOutcome)
+    /// Steer: the receptionist asked for something the request didn't carry; the agent
+    /// deferred it and the notes will list it.
+    case followUp(text: String)
     /// A message type this app version doesn't know. Ignored rather than treated as a failure,
     /// so a newer backend can't crash an older app.
     case unknown(type: String)
@@ -293,12 +384,27 @@ extension ServerMessage: Decodable {
         case fallback
         case timeoutS = "timeout_s"
         case spoken
+        case windowS = "window_s"
+        case origin
+        case outcome
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let type = try container.decode(String.self, forKey: .type)
         switch type {
+        case "proposal":
+            self = .proposal(
+                turnID: try container.decode(TurnID.self, forKey: .turnID),
+                text: try container.decode(String.self, forKey: .text),
+                windowS: try container.decode(Double.self, forKey: .windowS),
+                origin: try container.decodeIfPresent(ProposalOrigin.self, forKey: .origin) ?? .agent)
+        case "proposal_resolved":
+            self = .proposalResolved(
+                turnID: try container.decode(TurnID.self, forKey: .turnID),
+                outcome: try container.decode(ProposalOutcome.self, forKey: .outcome))
+        case "follow_up":
+            self = .followUp(text: try container.decode(String.self, forKey: .text))
         case "status":
             self = .status(try container.decode(CallState.self, forKey: .state))
         case "caption":
