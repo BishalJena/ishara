@@ -47,6 +47,7 @@ async def test_start_call_posts_contact_and_purpose_with_bearer() -> None:
     assert seen[0].headers["authorization"] == "Bearer tok"
     assert json.loads(seen[0].content) == {
         "contact_id": "clinic",
+        "phone_number": None,
         "purpose": "doctor_appointment",
         "mode": "live",
         "brief_id": None,

@@ -29,6 +29,11 @@ class Composer(Protocol):
         provider failures; falls back to the template instead."""
         ...
 
+    async def polish(self, typed: str, last_caption: str | None) -> str:
+        """Steer calls: the line the user typed, reworded but given no new facts; the
+        tidied original when the LLM can't be used."""
+        ...
+
 
 class BolnaError(Exception):
     """Every BolnaClient failure (network, HTTP status, bad response, missing agent id).

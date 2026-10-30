@@ -18,11 +18,21 @@ from app.groq_client import GroqClient, GroqError
 from app.ports import Composer
 from app.protocol import ComposeRequest, Draft, DraftSource, Purpose
 from app.templates import compose_template
-from app.validator import validate
+from app.validator import tidy, validate, validate_polish
 
 logger = logging.getLogger(__name__)
 
 LLM_TIMEOUT_S = 1.5
+POLISH_PROMPT = """\
+You tidy the exact words a Deaf caller typed to say on a phone call to a receptionist.
+Rules:
+- Keep the caller's meaning and every fact exactly; fix only grammar, spelling and flow.
+- Add nothing: no days, dates, times, numbers, names, reasons or booking confirmations.
+- Speak as the caller, in the first person, politely, in one or two short sentences, at most
+  25 words.
+- Output only the sentence: no quotes, labels, markdown or explanations.
+Example: typed "can we do 11 instead"; receptionist said "We have Tuesday at 4 pm."
+Output: Could we make it 11 o'clock instead, please?"""
 PURPOSE_TEXT: dict[Purpose, str] = {
     "doctor_appointment": "asking a clinic for a doctor's appointment",
 }
@@ -60,6 +70,9 @@ class TemplateComposer:
     async def compose(self, request: ComposeRequest) -> Draft:
         return _template_draft(request)
 
+    async def polish(self, typed: str, last_caption: str | None) -> str:
+        return tidy(typed)
+
 
 class GroqComposer:
     def __init__(self, client: GroqClient | None, timeout_s: float = LLM_TIMEOUT_S) -> None:
@@ -71,6 +84,32 @@ class GroqComposer:
         if text is None:
             return _template_draft(request)
         return Draft(turn_id=request.turn_id, text=text, source=DraftSource.LLM)
+
+    async def polish(self, typed: str, last_caption: str | None) -> str:
+        """The typed line reworded by the LLM and checked for added facts; the tidied
+        original when the LLM is slow, fails or adds something."""
+        fallback = tidy(typed)
+        if self.client is None:
+            return fallback
+        message = json.dumps({"typed": typed, "receptionist_last_said": last_caption})
+        try:
+            raw = await asyncio.wait_for(
+                self.client.complete(POLISH_PROMPT, message), self.timeout_s
+            )
+        except TimeoutError:
+            logger.warning("polish: LLM slower than %.1f s, speaking as typed", self.timeout_s)
+            return fallback
+        except GroqError as exc:
+            logger.warning("polish: LLM failed (%s), speaking as typed", exc)
+            return fallback
+        text = raw.strip().strip('"')
+        reasons = validate_polish(text, typed, last_caption)
+        if reasons:
+            logger.info(
+                "polish: LLM rewording rejected (%s), speaking as typed", "; ".join(reasons)
+            )
+            return fallback
+        return text
 
     async def _llm_text(self, client: GroqClient, request: ComposeRequest) -> str | None:
         """A validated LLM sentence, or None when the template should be used."""

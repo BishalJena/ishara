@@ -247,6 +247,44 @@ def _meta_text(draft: str) -> list[str]:
     return [f"meta text: {label}" for pattern, label in _META if pattern.search(draft)]
 
 
+def validate_polish(candidate: str, typed: str, last_caption: str | None) -> list[str]:
+    """Reasons a polished rewording of `typed` must not be spoken: it may reuse the
+    user's own facts and the receptionist's last words, but add none of its own, flip
+    no answer, claim no booking and carry no meta text."""
+    text = candidate.strip()
+    if not text:
+        return ["empty"]
+    reasons: list[str] = []
+    if len(text) > MAX_SPOKEN_CHARS:
+        reasons.append(f"too long: {len(text)} characters")
+    if len(text.split()) > MAX_WORDS:
+        reasons.append(f"too many words: {len(text.split())}")
+    known = f"{typed} {last_caption or ''}"
+    normalised, typed_normalised = _normalise(text), _normalise(typed)
+    if _REFUSAL.search(normalised) and not _REFUSAL.search(typed_normalised):
+        reasons.append("adds a refusal the user did not type")
+    if _AGREEMENT.search(normalised) and not _AGREEMENT.search(typed_normalised):
+        reasons.append("adds agreement the user did not type")
+    for fact in sorted(temporal_facts(text) - temporal_facts(known)):
+        kind, value = fact.split(":", 1)
+        reasons.append(f"invented {'day' if kind == 'day' else 'time of day'}: {value}")
+    reasons += _invented_numbers(text, known)
+    reasons += _invented_names(text, known)
+    reasons += _booking_claims(normalised, _normalise(known))
+    reasons += _meta_text(text)
+    return reasons
+
+
+def tidy(typed: str) -> str:
+    """The typed line as spoken when no LLM polishes it: trimmed, one space between
+    words, a capital to start and a full stop to end."""
+    text = " ".join(typed.split())
+    if not text:
+        return text
+    text = text[0].upper() + text[1:]
+    return text if text.endswith((".", "!", "?")) else text + "."
+
+
 def validate(draft_text: str, request: ComposeRequest) -> list[str]:
     """Reasons to reject `draft_text` for `request`; empty means it may be shown."""
     draft = draft_text.strip()

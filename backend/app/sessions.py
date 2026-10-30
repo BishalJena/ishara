@@ -88,6 +88,8 @@ class CallSession:
     # custom-LLM endpoint consults instead of staying silent in the listen node.
     mode: CallMode = "live"
     delegate: object | None = None
+    # Steer calls: the app said its call screen is in front (app/protocol PresenceMessage).
+    present: bool = False
     transcript: list[TranscriptEntry] = field(default_factory=list)
     bolna_summary: str | None = None
     # Line state from Bolna and captions; never SPEAKING (that is derived from in_flight).
