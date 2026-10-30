@@ -1,8 +1,13 @@
 import AVFoundation
 
 /// Front-camera frames at 30 fps, 1280×720 (the Mac pilot capture settings),
-/// rotated upright for portrait and **not** mirrored: MediaPipe rejects mirrored
-/// input and the reference recordings are unmirrored.
+/// rotated upright and **not** mirrored: MediaPipe rejects mirrored input and the
+/// reference recordings are unmirrored.
+///
+/// The rotation comes from `AVCaptureDevice.RotationCoordinator`, read once when the
+/// camera is configured, so recognition never sees the picture turn mid-call. A fixed
+/// angle is wrong on some cameras: 90° is upright on earlier iPhones, but the iPhone 17
+/// front camera's sensor is mounted differently and needs 0°.
 ///
 /// The app must obtain camera permission before calling `frames()`. When the
 /// consumer falls behind, only the newest frames are kept.
@@ -71,7 +76,9 @@ public final class CameraFrameSource: NSObject, FrameSource, @unchecked Sendable
 
         try lockFrameRate(of: device)
         if let connection = output.connection(with: .video) {
-            if connection.isVideoRotationAngleSupported(90) { connection.videoRotationAngle = 90 }
+            let angle = AVCaptureDevice.RotationCoordinator(device: device, previewLayer: nil)
+                .videoRotationAngleForHorizonLevelCapture
+            if connection.isVideoRotationAngleSupported(angle) { connection.videoRotationAngle = angle }
             if connection.isVideoMirroringSupported {
                 connection.automaticallyAdjustsVideoMirroring = false
                 connection.isVideoMirrored = false
