@@ -135,8 +135,8 @@ final class ActiveCallViewModel {
     var record: CallRecord? {
         guard isCallOver, store != nil else { return nil }
         return CallRecord(
-            id: recordID, date: placedAt, contactName: setup.contact.name, mode: isDelegated ? .delegated : .live,
-            captions: captions.map(CallRecord.Line.init), notes: nil)
+            id: recordID, date: placedAt, contactName: setup.contact.name, contactNumber: setup.contact.phoneNumber,
+            mode: isDelegated ? .delegated : .live, captions: captions.map(CallRecord.Line.init), notes: nil)
     }
 
     var connectedAt: Date? { store?.connectedAt }

@@ -15,6 +15,10 @@ final class SteerCallUITests: XCTestCase {
     }
 
     func testIsharaRunsTheCallAndTheUserStepsInByTyping() throws {
+        let number = app.textFields["setup.number"].firstMatch
+        XCTAssertTrue(number.waitForExistence(timeout: 5))
+        number.tap()
+        number.typeText("+919876543210")
         let request = app.textViews["setup.request"].firstMatch.exists
             ? app.textViews["setup.request"].firstMatch : app.textFields["setup.request"].firstMatch
         XCTAssertTrue(request.waitForExistence(timeout: 5))

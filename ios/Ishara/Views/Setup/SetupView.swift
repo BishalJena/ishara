@@ -1,8 +1,10 @@
 import CallSession
+import PhotosUI
 import SwiftUI
 
-/// Home for steer calls: who to call (a saved contact, or a typed or pasted number), what
-/// the call is about, and the details Ishara may share. One tap places the call; Ishara
+/// Home for steer calls: who to call (a typed or pasted number, a contact, or someone called
+/// before), what the call is about, and the details Ishara may share, typed or read from an
+/// attached photo or PDF on this phone. One tap places the call; Ishara
 /// runs it and the user steps in whenever they like.
 struct SetupView: View {
     let modeDescription: String
@@ -11,14 +13,20 @@ struct SetupView: View {
     let history: CallHistory?
     let onCall: (CallSetup) -> Void
 
-    @State private var contact: Contact = .cityClinic
     @State private var number = ""
     @State private var pickedName = ""
     @State private var request = ""
     @AppStorage("ishara.name") private var name = ""
     @AppStorage("ishara.callback") private var callback = ""
     @State private var showsSettings = false
+    @State private var callAfterSettings = false
     @State private var showsContacts = false
+    @State private var showsPhotoPicker = false
+    @State private var showsFilePicker = false
+    @State private var showsAttachMenu = false
+    @State private var photoItem: PhotosPickerItem?
+    @State private var attachments: [Attachment] = []
+    @State private var reading = 0
     @State private var details: [Detail] = []
     @State private var newDetailLabel = ""
     @State private var newDetailValue = ""
@@ -29,11 +37,20 @@ struct SetupView: View {
     private var typedContact: Contact? { Contact.number(number, name: pickedName) }
     private var usesNumber: Bool { !number.trimmingCharacters(in: .whitespaces).isEmpty }
 
+    /// People called before from this phone, newest first, one chip each.
+    private var recentPeople: [Contact] {
+        var seen = Set<String>()
+        return (history?.records ?? []).compactMap { record -> Contact? in
+            guard let number = record.contactNumber, seen.insert(number).inserted else { return nil }
+            return Contact.number(number, name: record.contactName == number ? nil : record.contactName)
+        }
+    }
+
     private var problem: String? {
         if let setupProblem { return setupProblem }
-        if usesNumber, typedContact == nil { return "Enter the number with its country code, like +91 98450 12345." }
+        if !usesNumber { return "Enter a number, or pick someone." }
+        if typedContact == nil { return "Enter the number with its country code, like +91 98450 12345." }
         if request.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "Say what the call is about." }
-        if name.trimmingCharacters(in: .whitespaces).isEmpty { return "Add your name so Ishara can introduce you." }
         return nil
     }
 
@@ -65,7 +82,11 @@ struct SetupView: View {
                 // UI tests start with a clean store and no way to type into Settings first.
                 if name.isEmpty, let preset = ProcessInfo.processInfo.environment["ISHARA_UITEST_NAME"] { name = preset }
             }
-            .sheet(isPresented: $showsSettings) { SettingsSheet() }
+            .sheet(isPresented: $showsSettings, onDismiss: {
+                guard callAfterSettings else { return }
+                callAfterSettings = false
+                if !name.trimmingCharacters(in: .whitespaces).isEmpty { call() }
+            }) { SettingsSheet(reason: callAfterSettings ? "Ishara introduces you by name on the call. Add it once; it stays on this phone." : nil) }
             .sheet(isPresented: $showsContacts) {
                 ContactPicker { pickedName, pickedNumber in
                     self.pickedName = pickedName
@@ -73,6 +94,38 @@ struct SetupView: View {
                 }
                 .ignoresSafeArea()
             }
+            .confirmationDialog("Attach", isPresented: $showsAttachMenu) {
+                Button("Photo") { showsPhotoPicker = true }
+                Button("File or PDF") { showsFilePicker = true }
+            } message: {
+                Text("Read on this iPhone. Only the details you keep are shared on the call.")
+            }
+            .photosPicker(isPresented: $showsPhotoPicker, selection: $photoItem, matching: .images)
+            .onChange(of: photoItem) { _, item in
+                guard let item else { return }
+                photoItem = nil
+                Task {
+                    if let data = try? await item.loadTransferable(type: Data.self) { await attach(data, name: "Photo") }
+                }
+            }
+            .fileImporter(isPresented: $showsFilePicker, allowedContentTypes: [.pdf, .image]) { result in
+                guard case let .success(url) = result else { return }
+                Task {
+                    let accessed = url.startAccessingSecurityScopedResource()
+                    defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+                    if let data = try? Data(contentsOf: url) { await attach(data, name: url.lastPathComponent) }
+                }
+            }
+        }
+    }
+
+    private func attach(_ data: Data, name: String) async {
+        reading += 1
+        let attachment = await AttachmentReader.read(data: data, name: name)
+        reading -= 1
+        attachments.append(attachment)
+        for detail in attachment.details where !details.contains(where: { $0.label == detail.label }) && details.count < 12 {
+            details.append(detail)
         }
     }
 
@@ -127,29 +180,36 @@ struct SetupView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 10) {
                 Text("To").font(.headline).foregroundStyle(.secondary)
-                TextField("Number or contact", text: $number)
+                TextField("Number, with country code", text: $number)
                     .keyboardType(.phonePad)
                     .textContentType(.telephoneNumber)
                     .focused($focus, equals: .number)
                     .accessibilityIdentifier("setup.number")
-                if !usesNumber {
-                    Menu {
-                        ForEach(Contact.demoContacts) { saved in
-                            Button(saved.name) { contact = saved }
-                        }
-                    } label: {
-                        Label(contact.name, systemImage: "person.crop.circle")
-                            .labelStyle(.titleAndIcon)
-                            .font(.subheadline.weight(.semibold))
-                    }
-                    .accessibilityIdentifier("setup.contact")
-                }
                 if usesNumber {
                     if !pickedName.isEmpty { Text(pickedName).font(.subheadline.weight(.semibold)).lineLimit(1) }
                     Button("Clear", systemImage: "xmark.circle.fill") { number = ""; pickedName = "" }
                         .labelStyle(.iconOnly)
                         .foregroundStyle(.secondary)
                 }
+            }
+            if !usesNumber, !recentPeople.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(recentPeople) { person in
+                            Button {
+                                number = person.phoneNumber ?? ""
+                                pickedName = person.name == person.phoneNumber ? "" : person.name
+                            } label: {
+                                Label(person.name, systemImage: "clock.arrow.circlepath")
+                                    .font(.footnote.weight(.semibold))
+                                    .padding(.vertical, 6).padding(.horizontal, 10)
+                                    .background(Color(.tertiarySystemBackground), in: Capsule())
+                            }
+                            .tint(.primary)
+                        }
+                    }
+                }
+                .accessibilityIdentifier("setup.recentPeople")
             }
             Divider()
 
@@ -159,12 +219,7 @@ struct SetupView: View {
                 .focused($focus, equals: .request)
                 .accessibilityIdentifier("setup.request")
 
-            HStack {
-                Text("Your name").font(.subheadline).foregroundStyle(.secondary)
-                TextField("Name", text: $name)
-                    .textContentType(.name)
-                    .accessibilityIdentifier("setup.name")
-            }
+            if !attachments.isEmpty || reading > 0 { attachmentsRow }
 
             detailsSection
 
@@ -175,17 +230,18 @@ struct SetupView: View {
                     .accessibilityIdentifier("setup.problem")
             }
             HStack(alignment: .center, spacing: 8) {
-                PasteButton(payloadType: String.self) { strings in
-                    if let first = strings.first { number = first }
+                Button { showsAttachMenu = true } label: {
+                    Image(systemName: "paperclip").frame(width: 22, height: 22)
                 }
-                .labelStyle(.iconOnly)
-                .buttonBorderShape(.circle)
-                .tint(.primary)
+                .buttonStyle(.bordered).buttonBorderShape(.circle).tint(.primary)
+                .accessibilityLabel("Attach a photo or file")
+                .accessibilityIdentifier("setup.attach")
                 Button { showsContacts = true } label: {
-                    Image(systemName: "person.crop.rectangle.stack").frame(width: 22, height: 22)
+                    Image(systemName: "person.crop.circle").frame(width: 22, height: 22)
                 }
                 .buttonStyle(.bordered).buttonBorderShape(.circle).tint(.primary)
                 .accessibilityLabel("Contacts")
+                .accessibilityIdentifier("setup.contacts")
                 Spacer()
                 Button(action: call) {
                     Label("Call", systemImage: "phone.fill")
@@ -201,6 +257,36 @@ struct SetupView: View {
         }
         .padding(16)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+    }
+
+    private var attachmentsRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(attachments) { attachment in
+                HStack(spacing: 10) {
+                    if let thumbnail = attachment.thumbnail {
+                        Image(uiImage: thumbnail).resizable().scaledToFill()
+                            .frame(width: 36, height: 36).clipShape(RoundedRectangle(cornerRadius: 8))
+                    } else {
+                        Image(systemName: "doc").frame(width: 36, height: 36)
+                    }
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(attachment.name).font(.subheadline.weight(.semibold)).lineLimit(1)
+                        Text(attachment.problem ?? "Read on this iPhone · \(attachment.details.count) detail\(attachment.details.count == 1 ? "" : "s") found")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Remove", systemImage: "xmark.circle.fill") {
+                        details.removeAll { attachment.details.contains($0) }
+                        attachments.removeAll { $0.id == attachment.id }
+                    }
+                    .labelStyle(.iconOnly).foregroundStyle(.secondary)
+                }
+            }
+            if reading > 0 {
+                Label("Reading on this iPhone…", systemImage: "doc.text.magnifyingglass")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
     }
 
     private var detailsSection: some View {
@@ -250,8 +336,12 @@ struct SetupView: View {
     }
 
     private func call() {
-        guard problem == nil else { return }
-        let who = typedContact ?? contact
+        guard problem == nil, let who = typedContact else { return }
+        if name.trimmingCharacters(in: .whitespaces).isEmpty {
+            callAfterSettings = true
+            showsSettings = true
+            return
+        }
         var setup = CallSetup(
             contact: who, purpose: .doctorAppointment,
             details: SavedDetails(name: name.trimmingCharacters(in: .whitespaces), preferredTime: .mornings),
