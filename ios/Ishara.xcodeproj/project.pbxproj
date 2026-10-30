@@ -41,6 +41,7 @@
 		4B605F0D6660C37B8531AF40 /* GetReadyModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46B0F9D990D5ED01BCB7F089 /* GetReadyModel.swift */; };
 		4C20B441A7FF29DEFE51B5E3 /* RecognitionReplayUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8A4B247BCA2EC732004F032 /* RecognitionReplayUITests.swift */; };
 		4F6ABD80D3FCA8147C6FC7D8 /* SteerCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1648DE460A4173B18F947500 /* SteerCallView.swift */; };
+		58B4C0DAED4FDB03A9664F14 /* SteerCallUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AA05B719087D4AA02CB64AB /* SteerCallUITests.swift */; };
 		5C8AF2A3140FDFE9BB77C743 /* IsharaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB52AD1F79B3B09A39BA112C /* IsharaApp.swift */; };
 		5FD694CDA77F519FE5B471AE /* PickOneAndDelegatedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DBD1B91D837D8E004E0C43A /* PickOneAndDelegatedTests.swift */; };
 		65E32F73BA0AFF8B22724D89 /* HumanReceptionist.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F9340008F890C6DF39207B2 /* HumanReceptionist.swift */; };
@@ -192,6 +193,7 @@
 		982A950789AC5BBB3D7DF110 /* CallModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallModels.swift; sourceTree = "<group>"; };
 		99CC2502989932D0AFF84EAA /* CallRecordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallRecordingTests.swift; sourceTree = "<group>"; };
 		9A69CBC3EDAA16516D54C2FE /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		9AA05B719087D4AA02CB64AB /* SteerCallUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SteerCallUITests.swift; sourceTree = "<group>"; };
 		9BFA99DED8B4501938E63F2B /* DemoCallUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoCallUITests.swift; sourceTree = "<group>"; };
 		9DECB91C17E6E316E96B18B5 /* DemoScriptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoScriptTests.swift; sourceTree = "<group>"; };
 		A1BDBCC4C1231FE765495C66 /* BriefAndNotesModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BriefAndNotesModelTests.swift; sourceTree = "<group>"; };
@@ -437,6 +439,7 @@
 				9BFA99DED8B4501938E63F2B /* DemoCallUITests.swift */,
 				119019D37BE4AA99EEA7FCED /* LocalBackendCallUITests.swift */,
 				D8A4B247BCA2EC732004F032 /* RecognitionReplayUITests.swift */,
+				9AA05B719087D4AA02CB64AB /* SteerCallUITests.swift */,
 				22A840A9DFA4B4868196C9A1 /* VideoToSpeechUITests.swift */,
 				DE57DC8EAFBC1D95253B6E5F /* Support */,
 			);
@@ -679,6 +682,7 @@
 				3827DE18263F960E2AD78CAE /* LocalBackendLog.swift in Sources */,
 				4C20B441A7FF29DEFE51B5E3 /* RecognitionReplayUITests.swift in Sources */,
 				F99F4D80EDB23CE77C0CF3EA /* ReplayClips.swift in Sources */,
+				58B4C0DAED4FDB03A9664F14 /* SteerCallUITests.swift in Sources */,
 				2538AF91871C1961772C98C0 /* VideoToSpeechUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -786,7 +790,7 @@
 		};
 		7CF04723B07381FB3529A877 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			productRef = "TEMP_7DFAE4DF-6889-4202-AA4A-6E781FEB5D36" /* RecognitionCore */;
+			productRef = "TEMP_742D9B46-358F-432A-A81F-DD1C40F77A1C" /* RecognitionCore */;
 		};
 		8D836E1255E12A899A4CDAF7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -795,11 +799,11 @@
 		};
 		ACA055A004290D6378457E19 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			productRef = "TEMP_FE150F93-2010-4340-A061-5B009FC43209" /* SignPipeline */;
+			productRef = "TEMP_432071F2-A528-4025-B491-A2B7B283B7BC" /* SignPipeline */;
 		};
 		BF8921BFD98D75F37B982C09 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			productRef = "TEMP_2F51D744-3EE3-4686-9462-4CDC74AE03CE" /* CallSession */;
+			productRef = "TEMP_1E799E1A-181D-4CFE-A2B7-4ECCEA8937EB" /* CallSession */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1138,17 +1142,17 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = SignPipelineMediaPipe;
 		};
-		"TEMP_2F51D744-3EE3-4686-9462-4CDC74AE03CE" /* CallSession */ = {
+		"TEMP_1E799E1A-181D-4CFE-A2B7-4ECCEA8937EB" /* CallSession */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = CallSession;
 		};
-		"TEMP_7DFAE4DF-6889-4202-AA4A-6E781FEB5D36" /* RecognitionCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = RecognitionCore;
-		};
-		"TEMP_FE150F93-2010-4340-A061-5B009FC43209" /* SignPipeline */ = {
+		"TEMP_432071F2-A528-4025-B491-A2B7B283B7BC" /* SignPipeline */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SignPipeline;
+		};
+		"TEMP_742D9B46-358F-432A-A81F-DD1C40F77A1C" /* RecognitionCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RecognitionCore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

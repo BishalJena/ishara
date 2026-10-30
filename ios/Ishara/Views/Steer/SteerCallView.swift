@@ -302,8 +302,10 @@ struct ProposalBar: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
                 .onTapGesture(perform: onEdit)
+                .accessibilityElement(children: .ignore)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityLabel(proposal.origin == .agent ? "Ishara will say \(proposal.text). Tap to edit." : "Saying \(proposal.text). Tap to edit.")
+                .accessibilityIdentifier("steer.proposal")
                 Button(action: proposal.origin == .agent ? onSendNow : onEdit) {
                     Image(systemName: proposal.origin == .agent ? "arrow.up" : "pencil")
                         .font(.headline).frame(width: 36, height: 36)
@@ -323,7 +325,6 @@ struct ProposalBar: View {
             )
             .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
-        .accessibilityIdentifier("steer.proposal")
     }
 
     private var tint: Color { proposal.origin == .agent ? .purple : .blue }
