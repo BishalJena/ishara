@@ -19,12 +19,13 @@ struct RecentCallView: View {
             if let notes = record.notes {
                 NotesSections(notes: notes, contactName: record.contactName)
             } else {
+                Section("Call summary") { CallSummaryContent(notes: nil) }
                 Section {
                     OutcomeLabel(text: record.outcomeText, systemImage: "info.circle")
                 } header: {
                     Text("Call with \(record.contactName)")
                 }
-                Section("Captions") {
+                Section("Transcript") {
                     if record.captions.isEmpty {
                         Text("No captions in this call.").foregroundStyle(.secondary)
                     }

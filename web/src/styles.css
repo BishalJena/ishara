@@ -20,3 +20,14 @@
 .backend-details > summary {list-style:none; cursor:pointer}
 .backend-details > summary::-webkit-details-marker {display:none}
 .backend-details[open] > summary {margin-bottom:18px}
+
+.notes-summary-text {white-space:pre-line; overflow-wrap:anywhere; font-size:17px!important; line-height:1.55!important}
+.notes-primary .summary-source {font-size:12px; color:var(--muted); margin-top:12px}
+.notes-primary .notes-outcome {border-top:1px solid var(--line,#e5e5eb); padding-top:14px; margin-top:16px}
+.notes-primary .notes-outcome h1 {font-size:16px; letter-spacing:0; line-height:1.4}
+.notes-primary .notes-handled {font-size:12px; color:var(--muted); margin-top:8px}
+.notes-details summary {display:flex; justify-content:space-between; align-items:center; cursor:pointer; list-style:none}
+.notes-details summary::-webkit-details-marker {display:none}
+.notes-details summary h2 {margin:0}
+.notes-details[open] summary {margin-bottom:18px}
+.notes-transcript > .secondary {margin-top:16px}

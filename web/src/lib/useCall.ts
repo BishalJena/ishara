@@ -11,6 +11,7 @@ export function useCall() {
   const [setup, setSetup] = useState<Setup | null>(null);
   const [notes, setNotes] = useState<Notes | null>(null);
   const [notesProblem, setNotesProblem] = useState('');
+  const [notesPending, setNotesPending] = useState(false);
   const [starting, setStarting] = useState(false);
   const [demo, setDemo] = useState(true);
   const [callId, setCallId] = useState<string | null>(null);
@@ -113,16 +114,18 @@ export function useCall() {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let attempts = 0;
+    setNotesPending(!demo);
     const poll = async () => {
       try {
         const latest = await transport.current?.notes();
         if (cancelled || !latest) return;
         setNotes(latest); setNotesProblem('');
-        if (!demo && attempts++ < 30 && !latest.bolna_summary) timer = setTimeout(poll, 2000);
-      } catch { if (!cancelled) { setNotesProblem('The call ended, but its notes could not be loaded. Your captions are still shown below.'); if (attempts++ < 5) timer = setTimeout(poll, 2000); } }
+        if (!demo && attempts++ < 30 && (!latest.ready || (!latest.bolna_summary?.trim() && latest.outcome !== 'no_answer'))) timer = setTimeout(poll, 2000);
+        else setNotesPending(false);
+      } catch { if (!cancelled) { setNotesProblem('The call ended, but its notes could not be loaded. Your captions are still shown below.'); if (attempts++ < 5) timer = setTimeout(poll, 2000); else setNotesPending(false); } }
     };
     void poll();
-    return () => { cancelled = true; clearTimeout(timer); };
+    return () => { cancelled = true; clearTimeout(timer); setNotesPending(false); };
   }, [callId, view.state, demo]);
 
   useEffect(() => {
@@ -145,7 +148,7 @@ export function useCall() {
   const reset = useCallback(() => {
     generation.current++; transport.current?.close(); transport.current = null;
     active.current = false; composing.current = false;
-    setSetup(null); setCallId(null); setNotes(null); setNotesProblem(''); setView(freshCall());
+    setSetup(null); setCallId(null); setNotes(null); setNotesProblem(''); setNotesPending(false); setView(freshCall());
   }, []);
-  return {view, setup, notes, notesProblem, retryNotes, starting, demo, callId, start, send, say, hold, reset};
+  return {view, setup, notes, notesProblem, notesPending, retryNotes, starting, demo, callId, start, send, say, hold, reset};
 }

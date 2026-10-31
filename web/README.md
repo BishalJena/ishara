@@ -32,6 +32,12 @@ notes but does not erase them. The backend also keeps a private recovery copy of
 completed notes for 24 hours after the last update; authenticated history can
 restore these after a service restart.
 
+Completed calls and saved calls lead with the automatic summary, followed by the
+outcome, follow-ups and transcript. If the provider summary is late or missing,
+the screen labels the recorded details clearly and keeps the transcript available.
+Refresh call notes retrieves the existing backend record without redialing or
+requesting another AI summary; refreshed notes are saved back to browser history.
+
 ## Development
 
 From `web/`:
@@ -81,7 +87,7 @@ MediaPipe initialization with uncertain fake-camera footage, including a stalled
 video-playback regression after resizing. It does not establish
 real telephone audio delivery, signer accuracy, or Deaf participant validation.
 
-Home shows backend reachability and offers a fresh check. An unavailable check
+Settings shows backend reachability and offers a fresh check. An unavailable check
 can be a network problem; it does not establish the server's power state. Hosting
 accounts, production URLs and operator-specific tooling are configured separately
 and are not part of this repository.

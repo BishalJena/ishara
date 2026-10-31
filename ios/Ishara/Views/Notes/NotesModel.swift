@@ -15,6 +15,7 @@ final class NotesModel {
     private(set) var notes: CallNotes?
     private(set) var failure: String?
     private(set) var isLoading = false
+    private(set) var isPolling = false
 
     @ObservationIgnored private let driver: any CallDriver
     @ObservationIgnored private let onNotes: (CallNotes) -> Void
@@ -35,7 +36,8 @@ final class NotesModel {
     }
 
     /// Nothing more is expected: the call ended and Bolna's summary (if any) is in.
-    var isComplete: Bool { notes.map { $0.ready && $0.bolnaSummary != nil } ?? false }
+    var isComplete: Bool { notes.map { $0.ready && ($0.automaticSummary != nil || $0.outcome == "no_answer") } ?? false }
+    var awaitingSummary: Bool { (isPolling || isLoading) && notes?.automaticSummary == nil && notes?.outcome != "no_answer" }
 
     /// Starts `run()` once, owned by this model rather than a screen, so it goes on after the
     /// notes screen closes. Later calls hand back the same task.
@@ -53,6 +55,8 @@ final class NotesModel {
 
     /// Loads the notes, then refreshes until they are complete or the attempts run out.
     func run() async {
+        isPolling = true
+        defer { isPolling = false }
         for attempt in 0...Self.maxRefreshes {
             await refresh()
             guard !isComplete, attempt < Self.maxRefreshes else { return }
@@ -89,5 +93,13 @@ final class NotesModel {
         case "done": "Finished"
         default: "Not confirmed: read the transcript"
         }
+    }
+}
+
+// Blank provider fields are not a completed automatic summary.
+extension CallNotes {
+    var automaticSummary: String? {
+        guard let text = bolnaSummary?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return nil }
+        return text
     }
 }

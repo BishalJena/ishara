@@ -116,6 +116,20 @@ final class NotesModelTests: XCTestCase {
         XCTAssertTrue(model.isComplete)
     }
 
+    func testBlankSummaryKeepsPollingAndMissingSummaryStopsShowingAsPending() async {
+        let driver = StubCallDriver()
+        driver.notesResults = [.success(notes(ready: true, bolna: " \n")),
+                               .success(notes(ready: true, bolna: "Booked for 10:30."))]
+        let model = NotesModel(contactName: "City Clinic", driver: driver, sleep: { _ in })
+        await model.run()
+        XCTAssertEqual(driver.notesCalls, 2)
+        XCTAssertEqual(model.notes?.automaticSummary, "Booked for 10:30.")
+        XCTAssertFalse(model.awaitingSummary)
+        let unavailable = NotesModel(contactName: "City Clinic", driver: StubCallDriver(), sleep: { _ in throw CancellationError() })
+        await unavailable.run()
+        XCTAssertFalse(unavailable.awaitingSummary, "The screen must not promise a summary after polling stops")
+    }
+
     func testStopsAfterTheLastRefreshWithoutBolnasSummary() async {
         let driver = StubCallDriver()
         driver.notesResults = [.success(notes(ready: true))]
