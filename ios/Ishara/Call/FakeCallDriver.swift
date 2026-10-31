@@ -263,7 +263,8 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
 
     private func propose(_ text: String, origin: ProposalOrigin, then: @escaping () -> Void) {
         let turnID = TurnID("steer-\(UUID().uuidString.prefix(8))")!
-        let window = (origin == .agent ? min(8, 3.5 + 0.25 * Double(text.split(separator: " ").count)) : 1.5)
+        // Like the backend: Ishara's line waits a fixed 2 s; the user's preview 1.5 s.
+        let window = origin == .agent ? 2.0 : 1.5
         pendingProposal = PendingProposal(turnID: turnID, text: text, origin: origin, then: then)
         deliver(.proposal(turnID: turnID, text: text, windowS: window, origin: origin))
         proposalTask = schedule(after: window) { $0.settleProposal(spoken: true) }

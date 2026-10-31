@@ -441,9 +441,9 @@ def test_something_not_provided_is_deferred_and_noted(steer) -> None:
     assert any("insurance" in q for q in notes["open_questions"])
 
 
-def test_the_window_grows_with_the_words_to_read() -> None:
-    assert steer_window_s("Yes.") == 3.75
-    assert steer_window_s(" ".join(["word"] * 40)) == 8.0
+def test_the_window_is_two_seconds_whatever_the_length() -> None:
+    assert steer_window_s("Yes.") == 2.0
+    assert steer_window_s(" ".join(["word"] * 40)) == 2.0
 
 
 def every(f: Flow, ws, timeout: float = 0.3) -> list[dict]:

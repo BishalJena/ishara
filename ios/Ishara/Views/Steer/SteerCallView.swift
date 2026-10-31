@@ -15,6 +15,8 @@ struct SteerCallView: View {
     /// What the user last sent, shown under its polished preview.
     @State private var lastTyped = ""
     @State private var isSigning = false
+    /// Lines sent from signs, so each "You" line keeps the icon of how it was made.
+    @State private var signedLines: Set<String> = []
     @FocusState private var typing: Bool
 
     var body: some View {
@@ -156,7 +158,7 @@ struct SteerCallView: View {
                         let index = row.index, caption = row.caption
                         let isLatest = index == model.captions.count - 1
                         VStack(alignment: .leading, spacing: 4) {
-                            Label(speakerName(caption.speaker), systemImage: speakerSymbol(caption.speaker))
+                            Label(speakerName(caption.speaker), systemImage: speakerSymbol(caption))
                                 .font(.caption.weight(.bold))
                                 .foregroundStyle(caption.speaker == .receptionist ? .secondary : speakerColor(caption.speaker))
                             Text(caption.text)
@@ -197,11 +199,11 @@ struct SteerCallView: View {
         }
     }
 
-    private func speakerSymbol(_ speaker: Caption.Speaker) -> String {
-        switch speaker {
+    private func speakerSymbol(_ caption: Caption) -> String {
+        switch caption.speaker {
         case .receptionist: "person.wave.2"
         case .agent: "sparkles"
-        case .user: isSigning ? "hand.raised.fill" : "keyboard"
+        case .user: signedLines.contains(caption.text) ? "hand.raised.fill" : "keyboard"
         }
     }
 
@@ -242,8 +244,9 @@ struct SteerCallView: View {
                     proposal: proposal,
                     onSendNow: { model.approveProposal() },
                     onEdit: {
+                        // Either way the line drops into the field, ready to change.
+                        typed = proposal.text
                         if proposal.origin == .user {
-                            typed = proposal.text
                             model.editPreview()
                         } else {
                             model.beginSteppingIn()
@@ -368,6 +371,7 @@ struct SteerCallView: View {
                 .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
             Button {
+                if let draft = model.draft { signedLines.insert(draft.text) }
                 model.send()
             } label: {
                 Label("Send", systemImage: "arrow.up").font(.headline).frame(maxWidth: .infinity)

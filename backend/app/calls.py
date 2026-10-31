@@ -95,11 +95,10 @@ NO_CONFIRMATION = "no_confirmation"
 BOLNA_UNREACHABLE = "bolna_unreachable"
 
 # Steer calls: how long a proposed agent line waits for the present user before it is
-# spoken (grows with the words to read), how long a polished typed line is previewed,
-# and the least time between two filler lines while the user composes.
-STEER_WINDOW_BASE_S = 3.5
-STEER_WINDOW_PER_WORD_S = 0.25
-STEER_WINDOW_MAX_S = 8.0
+# spoken (a fixed 2 s: long enough to tap Edit, short enough not to stall the call; founder,
+# 31 Oct), how long a polished typed line is previewed, and the least time between two
+# filler lines while the user composes.
+STEER_WINDOW_S = 2.0
 USER_PREVIEW_S = 1.5
 FILLER_GAP_S = 6.0
 # How soon after the user starts typing or signing the first cover line is said, if the
@@ -187,9 +186,8 @@ class _Proposal:
 
 
 def steer_window_s(text: str) -> float:
-    """The window a proposed agent line waits: longer lines take longer to read."""
-    words = len(text.split())
-    return min(STEER_WINDOW_MAX_S, STEER_WINDOW_BASE_S + STEER_WINDOW_PER_WORD_S * words)
+    """The window a proposed agent line waits before it is spoken, whatever its length."""
+    return STEER_WINDOW_S
 
 
 _Snapshot = tuple[CallState, Turn | None]
