@@ -9,10 +9,15 @@ Type what the call is about. Ishara phones the clinic, office or shop, speaks fo
 shows you every word, live. Do nothing, and it handles the call. Type or sign at any
 moment, and you steer it. The business just answers its ordinary phone.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/demo-dark.gif">
+  <img src="docs/media/demo-light.gif" alt="Ishara on the iPhone: typing a request to a clinic with a PDF attached, Ishara calling and introducing itself, turning down a 4 pm slot, the user tapping Ishara's line to add their own words, Ishara answering an allergy question from the PDF, the user signing THANK YOU, and the gist. Beside the phone, the part of the system at work lights up: the app, the Ishara backend, Bolna or the clinic.">
+</picture>
+
 **Live:** the iPhone app runs against the Ishara backend on Heroku, and every call is a real
 phone call, placed through Bolna (Deepgram listens, Sarvam speaks, Plivo connects).
 
-[The pitch](PITCH.md) · [Market and business model](MARKET.md) · [How a call works](#one-call-your-way) · [Architecture](#architecture) · [Run it](#run-it) · [Deploy](#deploy)
+[The opportunity](#the-opportunity) · [How a call works](#one-call-your-way) · [Architecture](#architecture) · [Run it](#run-it) · [Deploy](#deploy) · [Pitch](PITCH.md) · [Market model](MARKET.md)
 
 ## Why Ishara
 
@@ -36,9 +41,50 @@ didn't ask for).
 
 The populations overlap; don't add them up.
 
+## The opportunity
+
+**The cost of an accessible call is collapsing.** A human relay minute costs dollars; an AI
+voice agent minute costs cents. That turns accessible calling from a subsidy into a product.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/cost-dark.svg">
+  <img src="docs/media/cost-light.svg" alt="One 10-minute call: $40.70 to $80.60 through a human video relay, $0.60 through an AI voice agent. Up to 99% less, every minute.">
+</picture>
+
+| What | Figure | Source |
+|---|---|---|
+| US phone relay for Deaf callers, funded per year | **$1.48 billion** | [FCC, 2025–26](https://www.fcc.gov/consumer-governmental-affairs/fcc-releases-2025-26-trs-fund-contribution-factors-order) |
+| A human video relay minute | **$4.07–$8.06** | [FCC DA 24-620](https://docs.fcc.gov/public/attachments/DA-24-620A1.txt) |
+| An AI voice agent minute | **from $0.06**, before telephony | [Bolna pricing](https://www.bolna.ai/pricing) |
+| Certified ISL interpreters for 50 lakh Deaf people in India | **fewer than 300** | [ISLRTC](https://islrtc.nic.in/about-department/about-islrtc/) |
+
+**The market model** ([MARKET.md](MARKET.md) has the formulas, ranges and assumptions):
+
+| | Accounts | Revenue a year |
+|---|---:|---:|
+| **TAM**: 5% of 70M Deaf people worldwide, at $5 a month | 3.5 million | **$210M** |
+| **SAM**: India first, at ₹199 a month | 100,000 | **₹23.88 crore** |
+| **SOM**: the first paid or sponsored accounts | 1,000–10,000 | **₹23.88 lakh – ₹2.39 crore** |
+
+Eligibility shares and prices are planning assumptions; the lower and higher cases are in
+MARKET.md.
+
+**Why now.** AI voice agents reached cents a minute; Indian voices (Sarvam) and fast
+transcription (Deepgram) arrived on one platform (Bolna); and LLMs can phrase a call
+naturally while a fact-checker keeps them to what the person actually said.
+
+**How it reaches people.** India first, where interpreters are scarcest: through Deaf-led
+organisations, accessibility programmes and employers, with individual subscriptions and
+sponsored accounts for people whose calls an employer, NGO or programme covers.
+
 ## One call, your way
 
 There is one flow. Ishara does the work by default; you take over whenever you want.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/steps-dark.svg">
+  <img src="docs/media/steps-light.svg" alt="One call in six steps, lit one after another: type the request; Ishara calls; read every word; Ishara handles it; step in any time; the gist.">
+</picture>
 
 1. **Before the call.** Enter the number (the +91 is already there; pick from Contacts or a
    recent person), say what the call is about in your own words, and attach anything they
@@ -64,62 +110,7 @@ There is one flow. Ishara does the work by default; you take over whenever you w
    from the call), which answers came from Ishara and which from you, any follow-ups and
    the full transcript. **Call again** or **Done**.
 
-### A call, turn by turn
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor You
-    participant App as Ishara app
-    participant API as Ishara backend
-    participant Bolna as Bolna (Deepgram, Sarvam, Plivo)
-    participant Clinic as Clinic phone
-    You->>App: Number, request, health-history PDF
-    App->>API: Brief with the request and the document text
-    API->>API: Phrase the opening from the request (fact-checked)
-    API->>Bolna: Place the call
-    Bolna->>Clinic: Rings from Ishara's calling number
-    Bolna->>Clinic: "Hello, I'm calling for a Deaf caller who is using Ishara..."
-    Clinic-->>Bolna: "City Care Clinic, how can I help?"
-    Bolna->>API: Transcript of what they said
-    API-->>App: Caption
-    API->>Bolna: The request, in Ishara's words
-    Clinic-->>Bolna: "Dr. Rao's earliest is Wednesday at 4 pm."
-    API-->>App: Ishara's next line, with a 2-second bar
-    Note over You,App: You do nothing
-    API->>Bolna: "Sorry, 4 pm doesn't work. Anything in the morning?"
-    Clinic-->>Bolna: "I have Thursday at 10:30."
-    API-->>App: Ishara's next line, with a 2-second bar
-    You->>App: Tap it and add "I'll bring my BP readings"
-    App->>API: Your words
-    API-->>App: Polished line, previewed for 1.5 s
-    API->>Bolna: "Yes, Thursday at 10:30 works. I'll bring my latest BP readings."
-    Clinic-->>Bolna: "Any allergies Dr. Rao should know about?"
-    API->>API: Look it up in your PDF, quote only verified text
-    API->>Bolna: "They're allergic to penicillin."
-    You->>App: Sign THANK YOU
-    API->>Bolna: "Thank you so much for your help."
-    Bolna-->>API: Call ended
-    API-->>App: The gist: agreed, quoted, follow-ups, transcript
-```
-
-### Who speaks when
-
-Every line Ishara says is one of these, and nothing else:
-
-```mermaid
-stateDiagram-v2
-    direction LR
-    [*] --> Proposed: the other side speaks
-    Proposed --> Said: 2 s pass, you did nothing
-    Proposed --> Composing: you tap the line, type or sign
-    Composing --> Covering: you're still composing
-    Covering --> Composing: "One moment, please"
-    Composing --> Preview: you send
-    Preview --> Said: 1.5 s, polished, no new facts
-    Preview --> Composing: you tap to change it
-    Said --> [*]
-```
+### What Ishara will and won't say
 
 | Ishara may say | Ishara never says |
 |---|---|
@@ -183,21 +174,6 @@ are **hello, thank you, yes, no, now, please, tomorrow** and **wait**. Measureme
 
 Indian Sign Language is a separate language with its own grammar; it comes next, built
 with Deaf partners and ISL data.
-
-## The business
-
-A phone call is cheap; a human relay minute is not. AI voice agents change the cost of
-making every call accessible:
-
-| | Cost per minute | Source |
-|---|---|---|
-| Human video relay (US) | **$4.07–$8.06** | [FCC DA 24-620](https://docs.fcc.gov/public/attachments/DA-24-620A1.txt) |
-| AI voice agent (Bolna) | **from $0.06**, before telephony | [Bolna pricing](https://www.bolna.ai/pricing) |
-
-In the US alone, phone relay for Deaf callers is funded at **$1.48 billion a year**
-([FCC, 2025–26](https://www.fcc.gov/consumer-governmental-affairs/fcc-releases-2025-26-trs-fund-contribution-factors-order)).
-Ishara starts in India, where interpreters are scarcest, with a subscription for everyday
-calls. [MARKET.md](MARKET.md) has the TAM/SAM/SOM model, pricing, costs and assumptions.
 
 ## Run it
 
