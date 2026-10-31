@@ -53,6 +53,12 @@ times and fees belong in the ordinary summary details.
 
 Internal structured output records actions and evidence. It is not a spoken
 answer template, a fixed number of questions, or a clinic-specific workflow.
+Invalid preference handoffs and stale offer provenance get at most one repair
+within the original inference deadline. Exhausted invalid provenance cannot invent
+a missing caller question; genuine unknown facts and explicit constraint decisions
+retain their handoffs. Fully proven goals close only when no receiver question
+remains.
+
 Reasoning about relevance and unfamiliar conversation still depends on the
 model; strict JSON alone does not establish semantic correctness.
 
@@ -80,7 +86,7 @@ is introduced.
 
 ## Verification
 
-The final local backend run passed **1,557 tests**, with formatting and Ruff
+The final local backend run passed **1,566 tests**, with formatting and Ruff
 checks passing. The web passed 7 unit and 14 browser tests plus its production
 build. Native verification passed 242 unit tests and four focused UI regressions;
 one optional recognition parity test was skipped. Android requires the repository

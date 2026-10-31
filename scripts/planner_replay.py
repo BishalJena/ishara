@@ -695,6 +695,32 @@ def rejection_for(
     return None
 
 
+def verified_close_correction(
+    step: Step,
+    selected: str | None,
+    state: DelegateState,
+    runtime_success: bool,
+    model_rejection: str | None,
+) -> str | None:
+    """Report a stale model action separately from a correctly proven runtime close."""
+    if (
+        step.expected not in {"done", "closed"}
+        or selected is None
+        or not runtime_success
+        or model_rejection not in {"unexpected_action", "action_guard", "unexpected_model_request"}
+        or not state.planner.completed
+    ):
+        return None
+    for goal in state.planner.goals:
+        proof = goal.evidence
+        if proof is None or not any(
+            turn.source_id == proof.source_id and proof.text in turn.text
+            for turn in state.planner.receiver
+        ):
+            return None
+    return "closed_from_verified_resolutions"
+
+
 def prepare_capture(directory: Path | None) -> Path | None:
     if directory is None:
         return None
@@ -727,6 +753,7 @@ async def run(
     logging.disable(logging.CRITICAL)
     client = ReplayClient(SecretStr(key), model, live=live, capture_dir=capture_dir)
     failures = 0
+    corrected_actions = 0
     print(
         json.dumps(
             {
@@ -787,7 +814,15 @@ async def run(
                     state,
                     resolution_review=client.resolution_review,
                 )
-                passed = check(step, decision, state) and rejected is None
+                runtime_success = check(step, decision, state)
+                model_rejection = rejected
+                correction = verified_close_correction(
+                    step, client.last_action, state, runtime_success, model_rejection
+                )
+                if correction:
+                    rejected = None
+                    corrected_actions += 1
+                passed = runtime_success and rejected is None
                 failures += not passed
                 print(
                     json.dumps(
@@ -796,8 +831,11 @@ async def run(
                             "step": index + 1,
                             "pass": passed,
                             "action": client.last_action or "rules",
-                            "model_quality": step.provider_expected or client.resolution_review,
+                            "model_quality": (step.provider_expected or client.resolution_review)
+                            and correction is None,
                             "resolution_review": client.resolution_review,
+                            "model_rejection": model_rejection,
+                            "action_correction": correction,
                             "status": "follow_up"
                             if decision.follow_up
                             else "done"
@@ -821,6 +859,7 @@ async def run(
                 "pass": failures == 0,
                 "failed_steps": failures,
                 "model_requests": client.requests,
+                "corrected_model_actions": corrected_actions,
                 "evidence": "live_synthetic" if live else "mock_contract_only",
             }
         )
@@ -866,7 +905,20 @@ def _http_step_passed(step: Step, spoken: str, state: DelegateState) -> bool:
             == 1
         )
     if step.expected in {"done", "closed"}:
-        return state.planner.completed and state.outcome == "done" and not state.follow_ups
+        evidence = state.planner.goals[step.goal_index].evidence
+        return (
+            state.planner.completed
+            and state.outcome == "done"
+            and not state.follow_ups
+            and (
+                step.expected == "closed"
+                or (
+                    evidence is not None
+                    and evidence.source_id == state.planner.receiver[-1].source_id
+                    and evidence.text in step.heard
+                )
+            )
+        )
     if step.expected == "unavailable":
         return state.outcome == "unclear" and state.follow_ups == [step.heard]
     if step.expected == "wait":
@@ -906,6 +958,7 @@ async def run_http(
 
         client = ReplayClient(SecretStr(key), model, live=live, capture_dir=capture_dir)
         failures = 0
+        corrected_actions = 0
         print(
             json.dumps(
                 {
@@ -959,6 +1012,7 @@ async def run_http(
                         client.last_action = client.rejection = None
                         client.resolution_review = False
                         client.diagnostic = {}
+                        correction = model_rejection = None
                         if interval_seconds:
                             flow.client.portal.call(asyncio.sleep, interval_seconds)
                         try:
@@ -982,7 +1036,15 @@ async def run_http(
                                 and client.last_action not in expected_actions(step)
                             ):
                                 rejected = "unexpected_action"
-                            passed = _http_step_passed(step, spoken, state) and rejected is None
+                            runtime_success = _http_step_passed(step, spoken, state)
+                            model_rejection = rejected
+                            correction = verified_close_correction(
+                                step, client.last_action, state, runtime_success, model_rejection
+                            )
+                            if correction:
+                                rejected = None
+                                corrected_actions += 1
+                            passed = runtime_success and rejected is None
                             if not passed and rejected is None:
                                 rejected = "http_outcome"
                         except Exception as error:  # noqa: BLE001 - retain no raw provider details
@@ -996,9 +1058,13 @@ async def run_http(
                                     "step": index + 1,
                                     "pass": passed,
                                     "action": client.last_action or "rules",
-                                    "model_quality": step.provider_expected
-                                    or client.resolution_review,
+                                    "model_quality": (
+                                        step.provider_expected or client.resolution_review
+                                    )
+                                    and correction is None,
                                     "resolution_review": client.resolution_review,
+                                    "model_rejection": model_rejection,
+                                    "action_correction": correction,
                                     "rejection": rejected,
                                     "diagnostic": client.diagnostic,
                                 }
@@ -1035,6 +1101,7 @@ async def run_http(
                     "pass": failures == 0,
                     "failed_steps": failures,
                     "model_requests": client.requests,
+                    "corrected_model_actions": corrected_actions,
                     "evidence": "live_synthetic_http" if live else "mock_http_contract_only",
                 }
             )
