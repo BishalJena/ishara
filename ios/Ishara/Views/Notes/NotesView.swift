@@ -106,7 +106,7 @@ struct CallSummaryContent: View {
         VStack(alignment: .leading, spacing: 12) {
             if let summary = notes?.automaticSummary {
                 Text(summary).accessibilityIdentifier("notes.bolnaSummary")
-                Text("Automatic summary · read the transcript for exact words.")
+                Text("Automatic summary · may be inaccurate. Read the transcript for exact words.")
                     .font(.caption).foregroundStyle(.secondary)
             } else {
                 Text(availability).font(.subheadline).foregroundStyle(.secondary)

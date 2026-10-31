@@ -278,11 +278,11 @@ final class DelegatedEdgeCaseUITests: XCTestCase {
     func testNotesMarkTheAutomaticSummaryAsFallibleAndShowTheTranscript() {
         launch(EdgeCaseLaunch.fixture("notes"))
         app.waitFor(app.element("notes.outcome"), labelContains: "Booked")
+        XCTAssertTrue(app.scrolledToText(containing: "The caller booked a doctor's appointment").exists)
+        XCTAssertTrue(app.scrolledToText(containing: "Automatic summary · may be inaccurate.").exists,
+                      "the automatic summary isn't marked as possibly wrong")
         XCTAssertTrue(app.scrolledToText(containing: "They said, Great, you're booked for 10:30 tomorrow morning.").exists,
                       "the transcript is missing")
-        XCTAssertTrue(app.scrolledToText(containing: "The caller booked a doctor's appointment").exists)
-        XCTAssertTrue(app.scrolledToText(containing: "It can be wrong; the transcript is what was said.").exists,
-                      "the automatic summary isn't marked as possibly wrong")
     }
 
     // MARK: Everywhere
