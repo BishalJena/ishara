@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-"""Phone-free synthetic steer replay. Defaults to mocked provider responses.
+"""Phone-free general and clinical replays. Defaults to mocked provider responses.
 
+Use --suite clinical for document questions and autonomous booking, or --http for
+those fixtures through real local HTTP routes and saved notes with fake telephony.
+Use --suite autonomy (with or without --http) for routine choices and explicit limits.
 Run with backend/.venv/bin/python scripts/planner_replay.py. --live spends provider
 credits and requires task authorization before execution. It reads only GROQ_API_KEY
 and GROQ_MODEL, sends synthetic fixtures, and makes at most twelve model requests.
@@ -10,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -26,6 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 from app.delegate import Brain, DelegateState, Exchange, brief_from, build_brief
 from app.groq_client import GroqClient, GroqError
 from app.protocol import BriefRequest, Profile
+from app.steer_planner import ResolutionReview
 
 MAX_REQUESTS = 12
 DEFAULT_MODEL = "openai/gpt-oss-120b"
@@ -60,6 +65,11 @@ class Step:
     focus: tuple[str, ...] = ()
     resolve: bool = False
     provider_expected: bool = True
+    answer_spans: tuple[str, ...] = ()
+    required: tuple[str, ...] = ()
+    resolution_quote: str | None = None
+    option: str | None = None
+    choices: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -67,7 +77,7 @@ class Scenario:
     name: str
     goal: str
     steps: tuple[Step, ...]
-    document: bool = False
+    document: bool | str = False
     caller_available: bool = True
 
 
@@ -97,13 +107,12 @@ SCENARIOS = (
     Scenario(
         "document_repeat",
         PASSPORT_GOAL,
-        (Step("Which category is printed on the form?", "answer", "answer_question"),)
-        * 2,
+        (Step("Which category is printed on the form?", "answer", "answer_question"),) * 2,
         document=True,
     ),
     Scenario(
-        "fee_consent",
-        "Ask what a drain inspection costs.",
+        "explicit_fee_limit",
+        "Ask what a drain inspection costs. My maximum budget is 20 credits.",
         (
             Step(
                 "The inspection fee is 40 credits. Do you accept the charge?",
@@ -122,9 +131,7 @@ SCENARIOS = (
                 "accept",
                 "accept_offer",
             ),
-            Step(
-                "Your replacement passport order has been registered.", "done", "finish"
-            ),
+            Step("Your replacement passport order has been registered.", "done", "finish"),
         ),
         caller_available=False,
     ),
@@ -161,6 +168,220 @@ SCENARIOS = (
 )
 
 
+# Same inline label/value formatting emitted by native PDFKit; all identities are synthetic.
+CLINICAL_REPORT = """Demonstration Clinic
+Patient health summary
+Patient
+Name: Synthetic Caller
+Patient ID: DEMO-2714
+Date of birth: 14 March 1994
+Doctor: Dr. Nisha Shah, General Medicine
+Clinical summary
+Condition: Hypertension (diagnosed 2023)
+Allergies: Penicillin
+Medication: Amlodipine 5 mg, once a day
+Last visit: 12 August 2026 · BP 138/88 mmHg
+Plan: Review blood pressure in 3 months; bring recent reports
+Synthetic record for a product demonstration. Not a real patient."""
+CLINICAL_GOAL = "Book an appointment with the doctor in the attached health report."
+CLINICAL_SCENARIOS = (
+    Scenario(
+        "clinical_unattended_booking",
+        CLINICAL_GOAL,
+        (
+            Step(
+                "Does the patient have any allergy and what was the BP at their last checkup?",
+                "answer",
+                "answer_question",
+                answer_spans=(
+                    "Allergies: Penicillin",
+                    "Last visit: 12 August 2026 · BP 138/88 mmHg",
+                ),
+                required=("Penicillin", "138/88"),
+            ),
+            Step(
+                "Is the patient registered and what is their patient ID?",
+                "answer",
+                "answer_question",
+                answer_spans=("Patient ID: DEMO-2714",),
+                required=("DEMO-2714",),
+            ),
+            Step(
+                "What is the doctor's name?",
+                "answer",
+                "answer_question",
+                answer_spans=("Doctor: Dr. Nisha Shah, General Medicine",),
+                required=("Nisha Shah",),
+            ),
+            Step(
+                "I can book an appointment with Dr. Nisha Shah. Shall I proceed?",
+                "accept",
+                "accept_offer",
+            ),
+            Step("Your appointment with Dr. Nisha Shah has been booked.", "done", "finish"),
+        ),
+        document=CLINICAL_REPORT,
+        caller_available=False,
+    ),
+    Scenario(
+        "clinical_repeated_allergy",
+        CLINICAL_GOAL,
+        tuple(
+            Step(
+                question,
+                "answer",
+                "answer_question",
+                answer_spans=("Allergies: Penicillin",),
+                required=("Penicillin",),
+            )
+            for question in (
+                "What allergy does the patient have?",
+                "Sorry, could you repeat the patient's allergy?",
+            )
+        ),
+        document=CLINICAL_REPORT,
+        caller_available=False,
+    ),
+    Scenario(
+        "clinical_unknown_address",
+        CLINICAL_GOAL,
+        (Step("What is the patient's home address?", "unavailable", "need_caller"),),
+        document=CLINICAL_REPORT,
+        caller_available=False,
+    ),
+    Scenario(
+        "clinical_four_facts",
+        CLINICAL_GOAL,
+        (
+            Step(
+                "Please give the patient's ID, allergies, date of birth and medication.",
+                "answer",
+                "answer_question",
+                answer_spans=(
+                    "Patient ID: DEMO-2714",
+                    "Allergies: Penicillin",
+                    "Date of birth: 14 March 1994",
+                    "Medication: Amlodipine 5 mg, once a day",
+                ),
+                required=("DEMO-2714", "Penicillin", "14 March 1994", "Amlodipine", "5 mg"),
+            ),
+        ),
+        document=CLINICAL_REPORT,
+        caller_available=False,
+    ),
+    Scenario(
+        "clinical_acknowledgement",
+        CLINICAL_GOAL,
+        (Step("Okay.", "wait", "wait", provider_expected=False),),
+        document=CLINICAL_REPORT,
+        caller_available=False,
+    ),
+    Scenario(
+        "clinical_unknown_allergy_without_document",
+        CLINICAL_GOAL,
+        (Step("Does the patient have any allergies?", "unavailable", "need_caller"),),
+        caller_available=False,
+    ),
+)
+
+
+AUTONOMY_SCENARIOS = (
+    Scenario(
+        "autonomy_routine_time_and_fee",
+        "Book with Dr. Rao.",
+        (
+            Step(
+                "We have Monday at 9 pm. Is that okay?",
+                "accept_rules",
+                "accept_offer",
+                provider_expected=False,
+            ),
+            Step("The clinic treatment is ₹800. Shall we proceed?", "accept", "accept_offer"),
+            Step("You are booked with Dr. Rao for Monday at 9 pm.", "done", "finish"),
+        ),
+        caller_available=False,
+    ),
+    Scenario(
+        "autonomy_passport_booklet_choice",
+        "Order a replacement passport after losing it abroad.",
+        (
+            Step(
+                "Do you want a 32-pager or a 64-pager?",
+                "choice",
+                "choose_option",
+                option="32-pager",
+                choices=("32", "64"),
+            ),
+            Step(
+                "Your replacement passport order for the selected booklet has been registered.",
+                "done",
+                "finish",
+            ),
+        ),
+        caller_available=False,
+    ),
+    Scenario(
+        "autonomy_explicit_booklet_preference",
+        "Order a replacement passport with a 64-page booklet.",
+        (
+            Step(
+                "We offer a 32-page booklet and a 64-page booklet. "
+                "Which passport booklet would you like?",
+                "choice",
+                "choose_option",
+                option="64-page booklet",
+                choices=("32", "64"),
+                required=("64",),
+            ),
+            Step(
+                "Your replacement passport order for the selected booklet has been registered.",
+                "done",
+                "finish",
+            ),
+        ),
+        caller_available=False,
+    ),
+    Scenario(
+        "autonomy_explicit_budget_limit",
+        "Arrange a plumber visit to repair the kitchen pipe. Spend at most 500 rupees.",
+        (
+            Step(
+                "I can book a plumber visit to repair the kitchen pipe for 800 rupees. "
+                "Shall I proceed?",
+                "unavailable",
+                "need_caller",
+                provider_expected=False,
+            ),
+        ),
+        caller_available=False,
+    ),
+    Scenario(
+        "autonomy_unknown_personal_identifier",
+        "Order a replacement passport after losing it abroad.",
+        (Step("What is the applicant's national identity number?", "unavailable", "need_caller"),),
+        caller_available=False,
+    ),
+    Scenario(
+        "autonomy_confirmation_and_final_question",
+        "Arrange a plumber visit to repair the leak.",
+        (
+            Step(
+                "Your plumber visit to repair the leak is booked. How will they get inside?",
+                "answer",
+                "answer_question",
+                resolve=True,
+                answer_spans=("Access instructions: Use the side gate",),
+                required=("Use the side gate",),
+                resolution_quote="Your plumber visit to repair the leak is booked.",
+            ),
+            Step("Thank you.", "closed", "finish", provider_expected=False),
+        ),
+        document="Access instructions: Use the side gate",
+        caller_available=False,
+    ),
+)
+
+
 def value_type(value: object) -> str:
     if value is None:
         return "null"
@@ -174,19 +395,16 @@ def value_type(value: object) -> str:
 
 
 class ReplayClient(GroqClient):
-    def __init__(
-        self, key: SecretStr, model: str, *, live: bool, capture_dir: Path | None = None
-    ):
+    def __init__(self, key: SecretStr, model: str, *, live: bool, capture_dir: Path | None = None):
         self.requests = 0
         self.step: Step | None = None
         self.last_action: str | None = None
+        self.resolution_review = False
         self.rejection: str | None = None
         self.diagnostic: dict = {}
         self.capture_dir = capture_dir
         self._capture_key = key
-        super().__init__(
-            key, model, transport=None if live else httpx.MockTransport(self.mock)
-        )
+        super().__init__(key, model, transport=None if live else httpx.MockTransport(self.mock))
         self._http.event_hooks["response"] = [self.inspect_response]
 
     async def inspect_response(self, response: httpx.Response) -> None:
@@ -214,11 +432,7 @@ class ReplayClient(GroqClient):
         if not isinstance(envelope, dict):
             return
         choices = envelope.get("choices")
-        if (
-            not isinstance(choices, list)
-            or not choices
-            or not isinstance(choices[0], dict)
-        ):
+        if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
             return
         choice = choices[0]
         finish = choice.get("finish_reason")
@@ -250,6 +464,9 @@ class ReplayClient(GroqClient):
         return await super()._request(body)
 
     async def complete_structured(self, system, user, response_model):
+        if response_model is ResolutionReview:
+            self.resolution_review = True
+            self.diagnostic["response_kind"] = "resolution_review"
         try:
             selected = await super().complete_structured(system, user, response_model)
         except asyncio.CancelledError:
@@ -262,7 +479,8 @@ class ReplayClient(GroqClient):
             if getattr(error, "status_code", None) is not None:
                 self.diagnostic["http_status"] = error.status_code
             raise
-        self.last_action = selected.action.kind
+        if not isinstance(selected, ResolutionReview):
+            self.last_action = selected.action.kind
         return selected
 
     def mock(self, request: httpx.Request) -> httpx.Response:
@@ -271,27 +489,55 @@ class ReplayClient(GroqClient):
         assert payload["response_format"]["json_schema"]["strict"] is True
         prompt = json.loads(payload["messages"][1]["content"])
         step = self.step
-        selected = action(step.proposal)
-        if step.proposal == "finish" or step.resolve:
-            current = prompt["current_receiver_turn"]
-            selected["resolutions"] = [
-                {
-                    "goal_id": prompt["goals"][step.goal_index]["goal_id"],
-                    "source_id": current["source_id"],
-                    "quote": current["text"],
-                }
-            ]
-        if step.proposal == "answer_question":
-            selected["action"].update(source_id="document:0", quote=DOCUMENT_QUOTE)
-        elif step.proposal == "accept_offer":
-            current = prompt["current_receiver_turn"]
-            selected["action"].update(
-                goal_id=prompt["goals"][step.goal_index]["goal_id"],
-                source_id=current["source_id"],
-                quote=current["text"],
-            )
-        elif step.proposal == "ask_operator":
-            selected["action"]["question"] = step.question
+        properties = payload["response_format"]["json_schema"]["schema"]["properties"]
+        if set(properties) == {"resolutions"}:
+            receiver = prompt["receiver"]
+            # Quote the supplied proof clause, excluding a following receiver question.
+            quote = re.split(
+                r"(?<=[.!])\s+(?=(?:what|which|how|can|could|would|do|is|are)\b)",
+                receiver["text"],
+                maxsplit=1,
+                flags=re.I,
+            )[0]
+            selected = {
+                "resolutions": [
+                    {"goal_id": goal["goal_id"], "source_id": receiver["source_id"], "quote": quote}
+                    for goal in prompt["goals"]
+                ]
+            }
+        else:
+            selected = action(step.proposal)
+            if step.proposal == "finish" or step.resolve:
+                current = prompt["current_receiver_turn"]
+                selected["resolutions"] = [
+                    {
+                        "goal_id": prompt["goals"][step.goal_index]["goal_id"],
+                        "source_id": current["source_id"],
+                        "quote": step.resolution_quote or current["text"],
+                    }
+                ]
+            if step.proposal == "answer_question":
+                selected["action"].update(
+                    spans=[
+                        {"source_id": "document:0", "quote": quote}
+                        for quote in (step.answer_spans or (DOCUMENT_QUOTE,))
+                    ]
+                )
+            elif step.proposal in {"accept_offer", "choose_option"}:
+                current = prompt["current_receiver_turn"]
+                selected["action"].update(
+                    goal_id=prompt["goals"][step.goal_index]["goal_id"],
+                    source_id=current["source_id"],
+                    quote=current["text"],
+                )
+                if step.proposal == "choose_option":
+                    selected["action"]["option"] = step.option
+            elif step.proposal == "ask_operator":
+                selected["action"]["question"] = step.question
+            if step.proposal in {"answer_question", "need_caller"}:
+                selected["action"]["question_id"] = next(
+                    reversed(prompt["pending_receiver_questions"]), "not-a-pending-question"
+                )
         return httpx.Response(
             200,
             json={
@@ -308,7 +554,12 @@ class ReplayClient(GroqClient):
 def state_for(scenario: Scenario) -> DelegateState:
     profile = Profile(
         name="Synthetic Caller",
-        documents=[{"name": "Synthetic form", "text": DOCUMENT_TEXT}]
+        documents=[
+            {
+                "name": "Synthetic form",
+                "text": scenario.document if isinstance(scenario.document, str) else DOCUMENT_TEXT,
+            }
+        ]
         if scenario.document
         else [],
     )
@@ -324,16 +575,20 @@ def state_for(scenario: Scenario) -> DelegateState:
 
 def check(step: Step, decision, state: DelegateState) -> bool:
     if step.expected == "need_caller":
-        return (
-            decision.follow_up == step.heard
-            and not decision.done
-            and "40" not in decision.say
-        )
+        return decision.follow_up == step.heard and not decision.done and "40" not in decision.say
     if step.expected == "unavailable":
         return (
             decision.follow_up == step.heard
             and decision.done
             and not decision.callback
+            and not state.planner.completed
+        )
+    if step.expected == "accept_rules":
+        return (
+            decision.kind == "accept"
+            and not decision.done
+            and decision.follow_up is None
+            and not state.planner.pending
             and not state.planner.completed
         )
     if step.expected == "accept":
@@ -344,11 +599,39 @@ def check(step: Step, decision, state: DelegateState) -> bool:
             and decision.follow_up is None
             and state.planner.goals[step.goal_index].evidence is None
         )
+    if step.expected == "wait":
+        return not decision.done and decision.follow_up is None and not state.planner.completed
     if step.expected == "answer":
         return (
-            decision.say in DOCUMENT_ANSWERS
+            (
+                all(value in decision.say for value in step.required)
+                if step.required
+                else decision.say in DOCUMENT_ANSWERS
+            )
             and not decision.done
             and decision.follow_up is None
+        )
+    if step.expected == "closed":
+        return (
+            decision.done
+            and not decision.callback
+            and decision.follow_up is None
+            and state.planner.completed
+            and all(goal.evidence for goal in state.planner.goals)
+        )
+    if step.expected == "choice":
+        return (
+            decision.source == "llm"
+            and not decision.done
+            and decision.follow_up is None
+            and not state.planner.pending
+            and not state.planner.completed
+            and all(value in decision.say for value in step.required)
+            and sum(
+                bool(re.search(r"\b" + re.escape(option) + r"\b", decision.say))
+                for option in step.choices
+            )
+            == 1
         )
     if step.expected == "done":
         evidence = state.planner.goals[step.goal_index].evidence
@@ -373,10 +656,28 @@ def check(step: Step, decision, state: DelegateState) -> bool:
     return False
 
 
+def expected_actions(step: Step) -> frozenset[str]:
+    # A supplied preference is already a caller fact. An unspecified operational
+    # choice needs ChooseOption rather than pretending the caller supplied it.
+    actions = {step.proposal}
+    if step.expected == "choice" and step.required:
+        actions.add("answer_question")
+    return frozenset(actions)
+
+
 def rejection_for(
-    step: Step, decision, selected: str | None, state: DelegateState
+    step: Step,
+    decision,
+    selected: str | None,
+    state: DelegateState,
+    *,
+    resolution_review: bool = False,
 ) -> str | None:
-    if step.provider_expected and selected != step.proposal:
+    if resolution_review and step.expected != "closed":
+        return "unexpected_resolution_review"
+    if not step.provider_expected and selected is not None:
+        return "unexpected_model_request"
+    if step.provider_expected and selected not in expected_actions(step):
         return "unexpected_action"
     if (
         (selected == "answer_question" and decision.kind != "share")
@@ -406,8 +707,14 @@ def prepare_capture(directory: Path | None) -> Path | None:
 
 
 async def run(
-    live: bool, capture_dir: Path | None = None, interval_seconds: float = 0
+    live: bool,
+    capture_dir: Path | None = None,
+    interval_seconds: float = 0,
+    *,
+    suite: str = "general",
 ) -> int:
+    if suite not in {"general", "clinical", "autonomy"}:
+        raise ValueError("Unknown replay suite.")
     if not 0 <= interval_seconds <= 30:
         raise ValueError("Interval must be between 0 and 30 seconds.")
     key = os.environ.get("GROQ_API_KEY") if live else "synthetic-key"
@@ -424,6 +731,7 @@ async def run(
         json.dumps(
             {
                 "mode": "live" if live else "mock",
+                "suite": suite,
                 "request_cap": MAX_REQUESTS,
                 "telephony": False,
                 "private_capture": capture_dir is not None,
@@ -432,11 +740,18 @@ async def run(
         )
     )
     try:
-        for scenario in SCENARIOS:
+        for scenario in (
+            AUTONOMY_SCENARIOS
+            if suite == "autonomy"
+            else CLINICAL_SCENARIOS
+            if suite == "clinical"
+            else SCENARIOS
+        ):
             state = state_for(scenario)
             for index, step in enumerate(scenario.steps):
                 client.step = step
                 client.last_action = client.rejection = None
+                client.resolution_review = False
                 client.diagnostic = {}
                 if interval_seconds:
                     await asyncio.sleep(interval_seconds)
@@ -452,7 +767,8 @@ async def run(
                                 "step": index + 1,
                                 "pass": False,
                                 "action": client.last_action or "rules",
-                                "model_quality": step.provider_expected,
+                                "model_quality": step.provider_expected or client.resolution_review,
+                                "resolution_review": client.resolution_review,
                                 "status": "error",
                                 "closed": False,
                                 "rejection": "application_error",
@@ -465,7 +781,11 @@ async def run(
                     )
                     continue
                 rejected = client.rejection or rejection_for(
-                    step, decision, client.last_action, state
+                    step,
+                    decision,
+                    client.last_action,
+                    state,
+                    resolution_review=client.resolution_review,
                 )
                 passed = check(step, decision, state) and rejected is None
                 failures += not passed
@@ -476,7 +796,8 @@ async def run(
                             "step": index + 1,
                             "pass": passed,
                             "action": client.last_action or "rules",
-                            "model_quality": step.provider_expected,
+                            "model_quality": step.provider_expected or client.resolution_review,
+                            "resolution_review": client.resolution_review,
                             "status": "follow_up"
                             if decision.follow_up
                             else "done"
@@ -507,6 +828,225 @@ async def run(
     return 1 if failures else 0
 
 
+def _http_step_passed(step: Step, spoken: str, state: DelegateState) -> bool:
+    if step.expected == "answer":
+        return (
+            bool(step.required)
+            and all(value in spoken for value in step.required)
+            and not state.follow_ups
+            and state.outcome is None
+        )
+    if step.expected == "accept_rules":
+        return (
+            bool(spoken)
+            and state.outcome is None
+            and bool(state.agent_answers)
+            and not state.follow_ups
+            and not state.planner.pending
+            and not state.planner.completed
+        )
+    if step.expected == "accept":
+        return (
+            bool(spoken)
+            and state.outcome is None
+            and state.planner.goals[step.goal_index].accepted_offer is not None
+            and not state.planner.completed
+        )
+    if step.expected == "choice":
+        return (
+            state.outcome is None
+            and not state.follow_ups
+            and not state.planner.pending
+            and not state.planner.completed
+            and all(value in spoken for value in step.required)
+            and sum(
+                bool(re.search(r"\b" + re.escape(option) + r"\b", spoken))
+                for option in step.choices
+            )
+            == 1
+        )
+    if step.expected in {"done", "closed"}:
+        return state.planner.completed and state.outcome == "done" and not state.follow_ups
+    if step.expected == "unavailable":
+        return state.outcome == "unclear" and state.follow_ups == [step.heard]
+    if step.expected == "wait":
+        return state.outcome is None and not state.follow_ups and not state.planner.completed
+    return False
+
+
+async def run_http(
+    live: bool,
+    capture_dir: Path | None = None,
+    interval_seconds: float = 0,
+    *,
+    suite: str = "clinical",
+) -> int:
+    """Exercise real FastAPI/custom-LLM routes with the repository's fake telephony.
+
+    Requires backend development dependencies. Only Groq can use a real transport;
+    credentials, calls, webhook events and contact allowlisting are all synthetic.
+    """
+    if suite not in {"clinical", "autonomy"}:
+        raise ValueError("Unknown HTTP replay suite.")
+    if not 0 <= interval_seconds <= 30:
+        raise ValueError("Interval must be between 0 and 30 seconds.")
+    key = os.environ.get("GROQ_API_KEY") if live else "synthetic-key"
+    if not key:
+        print(json.dumps({"mode": "live", "pass": False, "rejection": "missing_key"}))
+        return 2
+    model = os.environ.get("GROQ_MODEL", DEFAULT_MODEL) if live else DEFAULT_MODEL
+    capture_dir = prepare_capture(capture_dir)
+    previous_logging_disable = logging.root.manager.disable
+    logging.disable(logging.CRITICAL)
+
+    def replay() -> int:
+        # This is deliberately the same HTTP driver used by integration tests; no
+        # production telephony or environment-backed Settings object is constructed.
+        from tests.test_delegate import AUTH, build_flow
+
+        client = ReplayClient(SecretStr(key), model, live=live, capture_dir=capture_dir)
+        failures = 0
+        print(
+            json.dumps(
+                {
+                    "mode": "live" if live else "mock",
+                    "suite": suite,
+                    "request_cap": MAX_REQUESTS,
+                    "telephony": False,
+                    "transport": "local_http",
+                    "private_capture": capture_dir is not None,
+                    "interval_seconds": interval_seconds,
+                }
+            )
+        )
+        with contextlib.ExitStack() as stack:
+            flow = build_flow(stack, brain=Brain(client))
+            try:
+                for scenario in AUTONOMY_SCENARIOS if suite == "autonomy" else CLINICAL_SCENARIOS:
+                    request = state_for(scenario).brief
+                    profile = {
+                        "name": request.name,
+                        "documents": [
+                            {"name": item.name, "text": item.text} for item in request.documents
+                        ],
+                    }
+                    brief = flow.client.post(
+                        "/briefs",
+                        json={"purpose": "general", "profile": profile, "request": scenario.goal},
+                        headers=AUTH,
+                    )
+                    if brief.status_code != 200:
+                        raise ValueError("Synthetic brief could not be created.")
+                    started = flow.client.post(
+                        "/calls",
+                        json={
+                            "contact_id": "clinic",
+                            "purpose": "general",
+                            "mode": "steer",
+                            "brief_id": brief.json()["brief_id"],
+                        },
+                        headers=AUTH,
+                    )
+                    if started.status_code != 200:
+                        raise ValueError("Synthetic call could not be created.")
+                    call_id = started.json()["call_id"]
+                    flow.live(call_id)
+                    flow.speak_last(call_id)
+                    state = flow.manager._sessions[call_id].delegate
+                    state.opened = True
+                    for index, step in enumerate(scenario.steps):
+                        client.step = step
+                        client.last_action = client.rejection = None
+                        client.resolution_review = False
+                        client.diagnostic = {}
+                        if interval_seconds:
+                            flow.client.portal.call(asyncio.sleep, interval_seconds)
+                        try:
+                            spoken = flow.listen_turn(call_id, step.heard)
+                            rejected = client.rejection
+                            if (
+                                not rejected
+                                and client.resolution_review
+                                and step.expected != "closed"
+                            ):
+                                rejected = "unexpected_resolution_review"
+                            if (
+                                not rejected
+                                and not step.provider_expected
+                                and client.last_action is not None
+                            ):
+                                rejected = "unexpected_model_request"
+                            if (
+                                not rejected
+                                and step.provider_expected
+                                and client.last_action not in expected_actions(step)
+                            ):
+                                rejected = "unexpected_action"
+                            passed = _http_step_passed(step, spoken, state) and rejected is None
+                            if not passed and rejected is None:
+                                rejected = "http_outcome"
+                        except Exception as error:  # noqa: BLE001 - retain no raw provider details
+                            passed, rejected = False, "application_error"
+                            client.diagnostic["error_type"] = type(error).__name__
+                        failures += not passed
+                        print(
+                            json.dumps(
+                                {
+                                    "case": scenario.name,
+                                    "step": index + 1,
+                                    "pass": passed,
+                                    "action": client.last_action or "rules",
+                                    "model_quality": step.provider_expected
+                                    or client.resolution_review,
+                                    "resolution_review": client.resolution_review,
+                                    "rejection": rejected,
+                                    "diagnostic": client.diagnostic,
+                                }
+                            )
+                        )
+                    flow.finish()
+                    notes = flow.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
+                    expected_done = scenario.steps[-1].expected in {"done", "closed"}
+                    notes_passed = notes["ready"] and (
+                        notes["outcome"] == "done" and not notes["follow_ups"]
+                        if expected_done
+                        else notes["outcome"] != "done"
+                    )
+                    if scenario.steps[-1].expected == "unavailable":
+                        notes_passed = notes_passed and notes["follow_ups"] == [
+                            scenario.steps[-1].heard
+                        ]
+                    failures += not notes_passed
+                    print(
+                        json.dumps(
+                            {
+                                "case": scenario.name,
+                                "stage": "notes",
+                                "pass": bool(notes_passed),
+                                "outcome": notes["outcome"],
+                            }
+                        )
+                    )
+            finally:
+                flow.client.portal.call(client.aclose)
+        print(
+            json.dumps(
+                {
+                    "pass": failures == 0,
+                    "failed_steps": failures,
+                    "model_requests": client.requests,
+                    "evidence": "live_synthetic_http" if live else "mock_http_contract_only",
+                }
+            )
+        )
+        return 1 if failures else 0
+
+    try:
+        return await asyncio.to_thread(replay)
+    finally:
+        logging.disable(previous_logging_disable)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group()
@@ -523,17 +1063,45 @@ def main() -> int:
     parser.add_argument(
         "--capture-dir",
         type=Path,
-        help="Create a new private directory outside the repository for synthetic provider response bodies. No request or headers are captured.",
+        help=(
+            "Create a new private directory outside the repository for synthetic provider "
+            "response bodies. No request or headers are captured."
+        ),
     )
     parser.add_argument(
         "--interval-seconds",
         type=float,
         default=0,
-        help="Pause 0 to 30 seconds before each replay step, outside the production response deadline.",
+        help=(
+            "Pause 0 to 30 seconds before each replay step, "
+            "outside the production response deadline."
+        ),
+    )
+    parser.add_argument(
+        "--suite",
+        choices=("general", "clinical", "autonomy"),
+        default="general",
+        help="Run general, clinical-document, or autonomous operational-choice fixtures.",
+    )
+    parser.add_argument(
+        "--http",
+        action="store_true",
+        help="Run clinical fixtures through local HTTP, fake telephony, and saved notes.",
     )
     args = parser.parse_args()
     try:
-        return asyncio.run(run(args.live, args.capture_dir, args.interval_seconds))
+        if args.http:
+            return asyncio.run(
+                run_http(
+                    args.live,
+                    args.capture_dir,
+                    args.interval_seconds,
+                    suite="autonomy" if args.suite == "autonomy" else "clinical",
+                )
+            )
+        return asyncio.run(
+            run(args.live, args.capture_dir, args.interval_seconds, suite=args.suite)
+        )
     except (ValueError, FileExistsError, PermissionError) as error:
         parser.exit(2, f"configuration_error: {type(error).__name__}\n")
 

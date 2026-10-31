@@ -261,7 +261,7 @@ private fun Header(model: ActiveCallViewModel, onShowNotes: () -> Unit) {
             )
         }
         if (model.isCallOver) {
-            CapsuleButton("Gist", Icons.AutoMirrored.Filled.ListAlt, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary, "steer.gist", onShowNotes)
+            CapsuleButton("Call summary", Icons.AutoMirrored.Filled.ListAlt, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary, "steer.gist", onShowNotes)
         } else {
             CapsuleButton("End", Icons.Filled.CallEnd, colors.red, Color.White, "steer.end", model::end)
         }

@@ -59,7 +59,7 @@ object OngoingCallNotifications {
         return builder.build()
     }
 
-    /** "Call ended · open Ishara for the gist", for a call that ended while the app was away. */
+    /** "Call ended · open Ishara for the summary", for a call that ended while the app was away. */
     fun ended(context: Context, state: OngoingCallState): Notification =
         base(context, state)
             .setContentText(OngoingCallState.ENDED_OUTCOME)

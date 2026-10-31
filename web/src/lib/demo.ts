@@ -86,6 +86,7 @@ export class DemoCall {
   }
   async notes(): Promise<Notes> {
     return {call_id: 'demo', ready: this.finished, outcome: this.booked ? 'booked' : 'callback',
+      presentation: {version: 1, status: 'ready', title: 'Book a clinic check-up', overview: this.booked ? 'The scripted clinic booked the appointment.' : 'The scripted call ended with a follow-up needed.', key_points: this.booked ? ['Tomorrow morning at 10:30.'] : [], next_step: this.booked ? null : 'Call the clinic back.'},
       brief: this.setup.request, summary: [this.booked ? 'The scripted clinic offered 10:30 tomorrow morning.' : 'The scripted call ended with a request to call back.'],
       follow_ups: [], open_questions: [], stepped_in: this.steppedIn,
       transcript: this.captions.map(({speaker, text, at}) => ({speaker: speaker as 'agent' | 'receptionist', text, at}))};

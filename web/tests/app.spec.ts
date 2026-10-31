@@ -167,28 +167,41 @@ test('typing holds the actual pending agent proposal before sending a reviewed r
 });
 
 
-test('saved calls lead with the automatic summary and refresh without losing the transcript', async ({page}) => {
-  const notes = {call_id: 'saved-fixture', ready: true, outcome: 'booked', summary: ['The clinic confirmed the appointment.'], follow_ups: [], open_questions: [], stepped_in: 0, transcript: [{speaker: 'receptionist', text: 'Your appointment is confirmed for tomorrow at 10:30.', at: 1}]};
-  await page.addInitScript(record => localStorage.setItem('ishara.calls', JSON.stringify([record])), {id: 'saved-fixture', contact: 'City Clinic', request: 'Book a check-up tomorrow morning.', at: Date.now(), demo: false, notes});
+test('saved calls refresh into the same concise presentation, persist it and keep transcript secondary', async ({page}) => {
+  const notes = {call_id: 'saved-fixture', ready: true, outcome: 'unclear', summary: ['They offered: tomorrow.', 'You answered: yes.'], follow_ups: [], open_questions: [], stepped_in: 0, transcript: [{speaker: 'receptionist', text: 'Please provide your registration ID first.', at: 1}]};
+  await page.addInitScript(record => { if (!localStorage.getItem('ishara.calls')) localStorage.setItem('ishara.calls', JSON.stringify([record])); }, {id: 'saved-fixture', contact: 'City Clinic', request: 'Book a check-up tomorrow morning.', at: 1, demo: false, notes});
   await page.route('**/web/session', route => route.fulfill({json: {authenticated: true}}));
   await page.route('**/web/contacts', route => route.fulfill({json: {contacts: []}}));
   await page.route('**/calls/recent', route => route.fulfill({json: {calls: []}}));
   let refreshes = 0;
-  await page.route('**/calls/saved-fixture/notes', route => { refreshes++; return route.fulfill({json: {...notes, bolna_summary: 'The clinic booked a check-up tomorrow at 10:30.'}}); });
+  const presentation = {version: 1, status: 'ready', title: 'Appointment with Dr. Rao', overview: 'The clinic needs a registration ID before booking.', key_points: ['No appointment was confirmed.', 'Tomorrow morning was discussed.'], next_step: 'Provide the registration ID.'};
+  await page.route('**/calls/saved-fixture/notes', route => { refreshes++; return route.fulfill({json: {...notes, bolna_summary: 'The clinic booked a check-up tomorrow at 10:30.', presentation}}); });
   await page.goto('/');
+  await expect(page.locator('.recent-row')).toContainText('Book a check-up tomorrow morning');
   await page.locator('.recent-row').first().click();
   const summary = page.locator('.notes-primary');
   await expect(summary.getByRole('heading', {name: 'Call summary', exact: true})).toBeVisible();
-  await expect(summary.getByText('An automatic summary is not available for this call.')).toBeVisible();
-  await page.getByRole('button', {name: 'Refresh call notes'}).click();
-  await expect(summary.getByText('The clinic booked a check-up tomorrow at 10:30.')).toBeVisible();
+  await expect(summary.getByRole('heading', {name: presentation.title, exact: true})).toBeVisible();
+  await expect(summary.getByText(presentation.overview)).toBeVisible();
+  await expect(summary.getByText(presentation.next_step)).toBeVisible();
+  await expect(summary.getByText('Outcome not confirmed')).toBeVisible();
+  await expect(summary).not.toContainText('They offered:');
+  await expect(summary).not.toContainText('The clinic booked');
+  await expect(page.getByText(/may be inaccurate|handled the call from|read the transcript for exact words/i)).toHaveCount(0);
   expect(await summary.evaluate(e => Boolean(e.compareDocumentPosition(document.querySelector('.notes-transcript')!) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
+  await expect(page.getByText('Please provide your registration ID first.', {exact: true})).not.toBeVisible();
   await page.getByText('Transcript', {exact: true}).click();
-  await expect(page.getByText('Your appointment is confirmed for tomorrow at 10:30.', {exact: true})).toBeVisible();
+  await expect(page.getByText('Please provide your registration ID first.', {exact: true})).toBeVisible();
   expect(refreshes).toBe(1);
+  await page.screenshot({path: '/tmp/ishara-summary-web-desktop.png', fullPage: true});
+  await page.setViewportSize({width: 390, height: 844});
+  await page.screenshot({path: '/tmp/ishara-summary-web-mobile.png', fullPage: true});
   await page.getByRole('button', {name: 'Make another call'}).click();
+  await expect(page.locator('.recent-row')).toContainText(presentation.title);
+  await page.reload();
+  await expect(page.locator('.recent-row')).toContainText(presentation.title);
   await page.locator('.recent-row').first().click();
-  await expect(page.locator('.notes-primary').getByText('The clinic booked a check-up tomorrow at 10:30.')).toBeVisible();
+  await expect(page.locator('.notes-primary').getByText(presentation.overview)).toBeVisible();
 });
 
 

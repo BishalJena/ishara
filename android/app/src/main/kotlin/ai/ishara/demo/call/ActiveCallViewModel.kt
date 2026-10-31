@@ -222,8 +222,9 @@ class ActiveCallViewModel(
                 date = placedAt,
                 contactName = setup.contact.name,
                 contactNumber = setup.contact.phoneNumber,
-                mode = if (isDelegated) CallMode.DELEGATED else CallMode.LIVE,
+                mode = if (isSteer) CallMode.STEER else if (isDelegated) CallMode.DELEGATED else CallMode.LIVE,
                 captions = captions.map(CallRecord::Line),
+                request = setup.request,
             )
         }
 

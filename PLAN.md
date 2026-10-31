@@ -628,3 +628,25 @@ a preview; Edit sentence preserves it into typing, with SEND still required.
 Reject out-of-frame clips before invoking the model, show the classification
 state and log inference duration. Real iPhone latency still requires measurement;
 no claim of faster general inference or continuous sign translation is made.
+
+
+## Conversation and summary correction — 6 November
+
+Receiver questions may combine several facts and people, change direction or
+add necessary questions while wrapping up. Internal source references support
+validation; they do not prescribe a spoken response or a fixed questionnaire.
+Completion considers the supplied goal, accumulated receiver evidence and
+unanswered questions on either side. The appointment example must not narrow
+the general-purpose relay.
+
+An omitted time, spending cap or routine service preference leaves Ishara free to
+choose an offered option that advances the request. It should accept a stated
+service fee when no spending limit was supplied and choose reasonable ordinary
+options without live intervention. Explicit constraints remain binding. This
+authority does not invent unknown personal facts. The summary surfaces selected
+options, times and fees as useful call details.
+
+Recent calls use short task titles. Ended and saved calls lead with a glanceable
+call summary, useful details and any next step, followed by an expandable
+transcript. Remove the automatic-summary accuracy disclaimer. Preserve actual
+missing information even when model summarization is unavailable.

@@ -482,6 +482,13 @@ class _ScriptedGroq:
         }
         if kind == "finish":
             relevant["blocked"] = flat["blocked"]
+        if kind in {"answer_question", "need_caller"}:
+            pending = json.loads(user)["pending_receiver_questions"]
+            relevant["question_id"] = next(reversed(pending), "receiver:0")
+        if kind == "answer_question":
+            relevant["spans"] = [
+                {"source_id": relevant.pop("source_id"), "quote": relevant.pop("quote")}
+            ]
         return response_model.model_validate(
             {
                 "action": {"kind": kind, **relevant},

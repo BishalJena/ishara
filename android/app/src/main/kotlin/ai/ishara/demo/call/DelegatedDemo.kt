@@ -121,7 +121,7 @@ object DelegatedDemo {
                 answers.any { it.startsWith("No") } -> outcome = "declined"
                 else -> {
                     outcome = "unclear"
-                    open += "Nothing was confirmed. Read the transcript and decide the next step."
+                    open += "The outcome was not confirmed."
                 }
             }
         }

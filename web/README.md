@@ -100,3 +100,9 @@ Settings shows backend reachability and offers a fresh check. An unavailable che
 can be a network problem; it does not establish the server's power state. Hosting
 accounts, production URLs and operator-specific tooling are configured separately
 and are not part of this repository.
+
+Ended and saved calls display the backend's versioned `presentation`: a task title,
+short outcome, up to three details and an optional next step. Transcript and detailed
+notes remain expandable below it. Clients refresh while presentation is pending;
+provider summary availability does not stop that refresh. Refreshing never starts
+another summary inference request. Legacy saved records retain a readable fallback.

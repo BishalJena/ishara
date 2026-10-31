@@ -3,6 +3,8 @@ package ai.ishara.demo.ui.steer
 import ai.ishara.demo.core.call.CallNotes
 import ai.ishara.demo.core.call.CaptionSpeaker
 import ai.ishara.demo.ui.notes.NotesModel
+import ai.ishara.demo.ui.notes.CallSummaryContent
+import ai.ishara.demo.ui.notes.NotesDisclosure
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -23,8 +25,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
-import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.automirrored.filled.PhoneCallback
 import androidx.compose.material.icons.automirrored.filled.PhoneForwarded
@@ -32,7 +32,6 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.PhoneDisabled
 import androidx.compose.material.icons.filled.Refresh
@@ -66,9 +65,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 /**
- * The gist after a steer call (port of iOS `SteerGistView`): the outcome in one line, what was
- * decided and shared, the follow-ups the receptionist asked for, how much the user stepped in,
- * and the transcript. Every detail comes from the backend's notes, which quote the transcript.
+ * The canonical call summary, next step and expandable transcript after a steer call.
  * [model] is already polling.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -78,7 +75,7 @@ fun SteerGistScreen(model: NotesModel, onDone: () -> Unit, onCallAgain: () -> Un
     val scope = rememberCoroutineScope()
     Column(Modifier.fillMaxSize().background(colors.groupedBackground)) {
         CenterAlignedTopAppBar(
-            title = { Text("Call with ${model.contactName}", style = SteerType.headline, maxLines = 1) },
+            title = { Text("Call summary", style = SteerType.headline, maxLines = 1) },
             actions = {
                 IconButton(
                     onClick = { scope.launch { model.refresh() } },
@@ -104,15 +101,17 @@ fun SteerGistScreen(model: NotesModel, onDone: () -> Unit, onCallAgain: () -> Un
             val failure = model.failure
             when {
                 notes != null -> {
+                    Card("Call summary", Icons.Filled.FormatQuote) { CallSummaryContent(notes) }
                     Outcome(notes)
-                    if (notes.summary.isNotEmpty()) Summary(notes.summary)
-                    if (notes.followUps.isNotEmpty()) FollowUps(notes.followUps)
-                    notes.bolnaSummary?.let { bolna ->
-                        Card("Call summary", Icons.Filled.FormatQuote) {
-                            Text(bolna, style = SteerType.body, color = colors.primary, modifier = Modifier.testTag("notes.bolnaSummary"))
+                    val attention = (notes.followUps + notes.openQuestions).distinct()
+                    if (notes.presentation?.status != "ready" && attention.isNotEmpty()) FollowUps(attention)
+                    Transcript(notes, model.contactName)
+                    if (notes.brief != null || notes.summary.isNotEmpty()) {
+                        NotesDisclosure("Call details", "notes.detailsToggle") {
+                            notes.brief?.let { Text(it, style = SteerType.body) }
+                            notes.summary.forEach { Text(it, style = SteerType.body) }
                         }
                     }
-                    Transcript(notes, model.contactName)
                 }
                 failure != null -> Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -177,7 +176,6 @@ private fun Outcome(notes: CallNotes) {
                 color = if (booked) colors.green else colors.primary,
             )
         }
-        Text(steppedInText(notes.steppedIn), style = SteerType.subheadline, color = colors.secondary, modifier = Modifier.testTag("notes.steppedIn"))
     }
 }
 
@@ -186,32 +184,6 @@ private fun outcomeIcon(outcome: String?): ImageVector = when (outcome) {
     "no_answer" -> Icons.Filled.PhoneDisabled
     "callback" -> Icons.AutoMirrored.Filled.PhoneCallback
     else -> Icons.Filled.Info
-}
-
-/** iOS `SteerGistView.steppedInText`. */
-fun steppedInText(steppedIn: Int): String = when (steppedIn) {
-    0 -> "Ishara handled the whole call from what you wrote."
-    1 -> "You stepped in once; Ishara handled the rest."
-    2 -> "You stepped in twice; Ishara handled the rest."
-    else -> "You stepped in $steppedIn times; Ishara handled the rest."
-}
-
-@Composable
-private fun Summary(lines: List<String>) {
-    val colors = steerColors()
-    Card("The gist", Icons.AutoMirrored.Filled.FormatListBulleted, Modifier.testTag("notes.summary")) {
-        lines.forEach { line ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(
-                    if (line.startsWith("You")) Icons.Filled.Keyboard else Icons.AutoMirrored.Filled.Chat,
-                    contentDescription = null,
-                    tint = colors.secondary,
-                    modifier = Modifier.padding(top = 3.dp).size(14.dp),
-                )
-                Text(line, style = SteerType.body, color = colors.primary)
-            }
-        }
-    }
 }
 
 @Composable
@@ -237,11 +209,6 @@ private fun FollowUps(followUps: List<String>) {
         followUps.forEach { asked ->
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("They asked: \u201C$asked\u201D", style = SteerType.subheadline, fontWeight = FontWeight.SemiBold, color = colors.primary)
-                Text(
-                    "Ishara said you'd send it afterwards. It never guesses a detail you didn't give.",
-                    style = SteerType.footnote,
-                    color = colors.secondary,
-                )
             }
         }
     }

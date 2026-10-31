@@ -8,6 +8,9 @@ import ai.ishara.demo.core.call.BriefRequest
 import ai.ishara.demo.core.call.CallCore
 import ai.ishara.demo.core.call.CallMode
 import ai.ishara.demo.core.call.CallNotes
+import ai.ishara.demo.core.call.CallPresentation
+import ai.ishara.demo.core.call.requestTitle
+import ai.ishara.demo.core.call.summaryOverview
 import ai.ishara.demo.core.call.CallState
 import ai.ishara.demo.core.call.CallStore
 import ai.ishara.demo.core.call.CaptionSpeaker
@@ -194,6 +197,16 @@ class FakeCallDriver(
         val endedAt = endedAt
         if (delay != null && endedAt != null && now() - endedAt >= delay * options.timeScale) {
             notes = notes.copy(bolnaSummary = DelegatedDemo.automaticSummary(delegation.brief.goal, setup.details.name))
+        }
+        if (isOver) {
+            notes = notes.copy(presentation = CallPresentation(
+                status = if (delay == null || notes.bolnaSummary != null) "ready" else "pending",
+                title = requestTitle(setup.request ?: delegation.brief.goal),
+                overview = notes.summaryOverview,
+                keyPoints = if (notes.outcome == "booked") listOf("Tomorrow at 10:30.", "Bring an ID.") else emptyList(),
+                nextStep = notes.followUps.firstOrNull()?.let { "Follow up about: $it" }
+                    ?: if (notes.outcome == "callback") "Call back when you have the requested details." else null,
+            ))
         }
         return notes
     }

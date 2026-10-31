@@ -11,18 +11,21 @@ struct HomeView: View {
     /// D9: the agent makes the call from a brief the user signs and approves.
     let onCallForMe: ((CallSetup) -> Void)?
     let history: CallHistory?
+    let onRefreshRecentCall: ((CallRecord) async -> Void)?
 
     init(
         setup: CallSetup = .demo,
         modeDescription: String,
         setupProblem: String? = nil,
         history: CallHistory? = nil,
+        onRefreshRecentCall: ((CallRecord) async -> Void)? = nil,
         onCall: @escaping (CallSetup) -> Void,
         onCallForMe: ((CallSetup) -> Void)? = nil
     ) {
         _setup = State(initialValue: setup)
         self.modeDescription = modeDescription
         self.setupProblem = setupProblem
+        self.onRefreshRecentCall = onRefreshRecentCall
         self.onCall = onCall
         self.onCallForMe = onCallForMe
         self.history = history
@@ -73,7 +76,7 @@ struct HomeView: View {
                     }
                 }
 
-                if let history { RecentCallsSection(history: history) }
+                if let history { RecentCallsSection(history: history, onRefresh: onRefreshRecentCall) }
             }
             .navigationTitle("Ishara")
             .safeAreaInset(edge: .bottom) {

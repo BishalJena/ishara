@@ -102,8 +102,8 @@ class SteerCallUiTest {
 
         // The call runs to its end on its own and goes on to the gist by itself.
         ui.waitFor("notes.outcome", "Booked", timeoutMs = 60_000)
-        compose.onNodeWithTag("notes.steppedIn").assertTextContains("You stepped in once; Ishara handled the rest.")
-        ui.waitFor("notes.followUps", "Can I get the date of birth?")
+        ui.waitFor("notes.summaryOverview", "The appointment was booked.")
+        ui.waitFor("notes.nextStep", "Can I get the date of birth?")
         ui.shot("07-gist")
         compose.onNodeWithTag("notes.transcriptToggle").performScrollTo().performClick()
         ui.waitFor("notes.transcript", "We have 4 pm tomorrow")
@@ -286,7 +286,7 @@ class SteerCallUiTest {
         assertTrue("the ongoing notification goes with the call", waitUntil { activeNotification(OngoingCallNotifications.ONGOING_ID) == null })
         var ended: Notification? = null
         assertTrue(waitUntil { activeNotification(OngoingCallNotifications.ENDED_ID)?.also { ended = it } != null })
-        assertEquals("Call ended · open Ishara for the gist", ended!!.extras.getCharSequence(Notification.EXTRA_TEXT)?.toString())
+        assertEquals("Call ended · open Ishara for the summary", ended!!.extras.getCharSequence(Notification.EXTRA_TEXT)?.toString())
         assertTrue("it can be swiped away", ended.flags and Notification.FLAG_ONGOING_EVENT == 0)
         assertTrue(ended.actions.isNullOrEmpty())
 

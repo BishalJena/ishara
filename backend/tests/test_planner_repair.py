@@ -84,7 +84,14 @@ class StructuredInference:
         self.fields = {"action": {"kind": action, **fields}, "resolutions": resolutions}
 
     async def complete_structured(self, system, user, response_model):
-        return response_model.model_validate(self.fields)
+        fields = json.loads(json.dumps(self.fields))
+        action = fields["action"]
+        if action["kind"] in {"answer_question", "need_caller"}:
+            pending = json.loads(user)["pending_receiver_questions"]
+            action.setdefault("question_id", next(reversed(pending), "receiver:0"))
+        if action["kind"] == "answer_question":
+            action["spans"] = [{"source_id": action.pop("source_id"), "quote": action.pop("quote")}]
+        return response_model.model_validate(fields)
 
 
 async def test_an_old_yes_cannot_authorize_an_identically_worded_new_question():
@@ -400,12 +407,12 @@ async def test_late_unscoped_correction_cannot_leave_stale_done_notes():
         (
             "Cancel my membership. My previous fee was 50 credits.",
             "The cancellation fee is 40 credits. Shall I proceed?",
-            False,
+            True,
         ),
         (
             "Cancel my membership. Do not pay a fee of 50 credits.",
             "The cancellation fee is 40 credits. Shall I proceed?",
-            False,
+            True,
         ),
         (
             "Cancel my membership with a budget up to 50 credits.",

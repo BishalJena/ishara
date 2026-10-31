@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import logging
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path
@@ -20,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app import calls, custom_llm, tts, web
 from app.bolna_client import HttpBolnaClient
+from app.call_presentation import build_presenter
 from app.calls import CallManager
 from app.composer import build_composer
 from app.config import Settings, get_settings
@@ -39,7 +41,15 @@ def create_app(
     ledger: CallLedger | None = None,
     sarvam_transport: httpx.AsyncBaseTransport | None = None,
 ) -> FastAPI:
-    app = FastAPI(title="Ishara backend")
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        try:
+            yield
+        finally:
+            if close := getattr(app.state.ledger, "close", None):
+                await close()
+
+    app = FastAPI(title="Ishara backend", lifespan=lifespan)
     app.state.settings = settings or get_settings()
     app.state.composer = composer
     app.state.bolna = bolna
@@ -93,7 +103,13 @@ def build_app(settings: Settings) -> FastAPI:
     ledger = None
     if settings.bolna_api_key is not None:
         bolna = HttpBolnaClient(settings.bolna_api_key, settings.bolna_agent_id)
-        ledger = CallManager(settings, composer, bolna, brain=build_brain(settings))
+        ledger = CallManager(
+            settings,
+            composer,
+            bolna,
+            brain=build_brain(settings),
+            presenter=build_presenter(settings),
+        )
     return create_app(settings, composer=composer, bolna=bolna, ledger=ledger)
 
 

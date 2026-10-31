@@ -670,7 +670,7 @@ def test_out_of_brief_requests_get_the_callback_line_and_a_hang_up(flow, heard, 
 
 # ---- a promised callback in the notes, whatever words promised it ----
 
-CALLBACK_QUESTION = "The agent promised to call back. Decide on the offer and call again."
+CALLBACK_QUESTION = "A follow-up is needed. Decide on the offer and call again."
 RIYA = {"chips": ["tomorrow"], "profile": {"name": "Riya"}}
 RIYA_CALLBACK = "I will check with Riya and call you back to confirm."
 
@@ -979,6 +979,12 @@ async def test_the_llm_sees_the_mode_the_brief_recent_turns_and_answers() -> Non
     assert sent == {
         "mode": "UNATTENDED",
         "brief": delegate.brief.text,
+        "caller_goal": delegate.brief.goal,
+        "approved_caller_details": [
+            {"label": "Name", "value": delegate.brief.name},
+            {"label": "Callback", "value": delegate.brief.callback},
+        ],
+        "approved_documents": [],
         "conversation": [{"receptionist": f"line {i}", "you": f"reply {i}"} for i in range(2, 8)],
         "user_answers_so_far": delegate.answers,
         "receptionist_just_said": "Let me check the diary.",
@@ -1128,14 +1134,14 @@ def test_notes_list_only_the_receptionists_offers_and_cap_them() -> None:
             [],
             True,
             "callback",
-            ["The agent promised to call back. Decide on the offer and call again."],
+            ["A follow-up is needed. Decide on the offer and call again."],
         ),
         (
             [entry("receptionist", "Let me check the diary.")],
             [],
             False,
             "unclear",
-            ["Nothing was confirmed. Read the transcript and decide the next step."],
+            ["The full request was not confirmed."],
         ),
         ([], [], False, "no_answer", ["Nobody answered or nothing was heard."]),
         (
@@ -1164,7 +1170,7 @@ def test_notes_list_only_the_receptionists_offers_and_cap_them() -> None:
             ["Yes, 4 pm works.", "No, 4 pm doesn't work."],
             False,
             "unclear",
-            ["Nothing was confirmed. Read the transcript and decide the next step."],
+            ["The full request was not confirmed."],
         ),
     ],
 )

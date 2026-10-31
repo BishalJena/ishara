@@ -28,11 +28,21 @@ class NotesArchive:
         path = self._path(notes.call_id)
         if path is None or not notes.ready:
             return
+        contents = notes.model_dump_json()
+        original_time = None
+        try:
+            original_time = path.stat().st_mtime
+            if path.read_text() == contents:
+                return
+        except OSError:
+            pass
         with tempfile.NamedTemporaryFile(mode="w", dir=path.parent, delete=False) as file:
             temporary = Path(file.name)
-            file.write(notes.model_dump_json())
+            file.write(contents)
         try:
             os.replace(temporary, path)
+            if original_time is not None:
+                os.utime(path, (original_time, original_time))
         finally:
             temporary.unlink(missing_ok=True)
 
@@ -51,5 +61,17 @@ class NotesArchive:
     def recent(self, limit: int = 10) -> list[CallNotes]:
         if self.directory is None:
             return []
-        paths = sorted(self.directory.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
-        return [notes for p in paths if (notes := self.get(p.stem)) is not None][:limit]
+        records = []
+        for path in self.directory.glob("*.json"):
+            notes = self.get(path.stem)
+            if notes is not None:
+                try:
+                    first_at = min(
+                        (entry.at for entry in notes.transcript), default=path.stat().st_mtime
+                    )
+                except OSError:
+                    continue
+                records.append((first_at, notes))
+        return [notes for _, notes in sorted(records, key=lambda record: record[0], reverse=True)][
+            :limit
+        ]

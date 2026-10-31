@@ -123,7 +123,8 @@ private fun RecentCallRow(record: CallRecord, onOpen: (String) -> Unit) {
             modifier = Modifier.size(20.dp),
         )
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(record.contactName, style = SteerType.headline, color = colors.primary)
+            Text(record.displayTitle, style = SteerType.headline, color = colors.primary)
+            Text(record.contactName, style = SteerType.caption, color = colors.secondary)
             Text(record.outcomeText(), style = SteerType.subheadline, color = colors.primary)
             Text(recentCallDate(record.date, DateFormat.SHORT), style = SteerType.caption, color = colors.secondary)
         }

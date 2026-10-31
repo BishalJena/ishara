@@ -40,3 +40,25 @@ test('reconnected history restores both sides exactly once without restoring an 
   assert.deepEqual(state.captions.map(c => c.text), ['A question', 'An answer']);
   assert.equal(state.proposal, null);
 });
+
+import {callTitle, overview, requestTitle, summaryComplete} from './summary';
+import type {Notes, Record as CallRecord} from './types';
+test('canonical presentation controls the title and readiness without changing the outcome', () => {
+  const notes: Notes = {call_id: 'fixture', ready: true, outcome: 'unclear', summary: ['They offered a time.'], follow_ups: [], open_questions: [], stepped_in: 0, transcript: [], bolna_summary: 'The appointment was booked.', presentation: {version: 1, status: 'pending', title: 'Appointment with Dr. Rao', overview: 'Registration is still needed.', key_points: ['No booking confirmed.'], next_step: 'Provide the registration ID.'}};
+  const record: CallRecord = {id: 'fixture', contact: 'Synthetic recipient', request: 'Book an appointment.', at: 1, demo: false, notes};
+  assert.equal(summaryComplete(notes), false);
+  assert.equal(callTitle(record), 'Appointment with Dr. Rao');
+  assert.equal(overview(notes), 'Registration is still needed.');
+  assert.equal(notes.outcome, 'unclear');
+  assert.equal(summaryComplete({...notes, presentation: {...notes.presentation!, status: 'ready'}}), true);
+  assert.equal(callTitle({...record, notes: {...notes, presentation: undefined}, request: 'Please ask a plumber about a leaking pipe.'}), 'Ask a plumber about a leaking pipe');
+  assert.equal(overview({...notes, presentation: undefined}), 'The call ended without a confirmed outcome.');
+});
+
+test('legacy general brief title comes from its Request clause and preserves Dr. abbreviation', () => {
+  const brief = 'Call on behalf of Asha, who uses the Ishara app, to carry out their approved request. Request: Book an appointment with Dr. Rao. Preferred: tomorrow morning. Reason, if asked: a routine check-up. May share: supplied report. Will not agree to unrelated requests.';
+  assert.equal(requestTitle(brief), 'Book an appointment with Dr. Rao');
+  for (const context of ['Preferred: tomorrow.', 'Reason, if asked: a check-up.', 'May share: supplied report.', 'Will not agree to unrelated requests.']) {
+    assert.equal(requestTitle('Call on behalf of Asha, to carry out their approved request. Request: Book an appointment with Dr. Rao. ' + context), 'Book an appointment with Dr. Rao');
+  }
+});

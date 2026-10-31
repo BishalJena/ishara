@@ -2,6 +2,7 @@ package ai.ishara.demo.models
 
 import ai.ishara.demo.core.call.CallMode
 import ai.ishara.demo.core.call.CallNotes
+import ai.ishara.demo.core.call.CallPresentation
 import ai.ishara.demo.core.call.CaptionSpeaker
 import ai.ishara.demo.core.call.TranscriptEntry
 import org.junit.Assert.assertEquals
@@ -47,6 +48,25 @@ class CallHistoryTest {
     )
 
     private fun jsonFiles(): List<String> = folder.listFiles { file -> file.extension == "json" }.orEmpty().map { it.name }.sorted()
+
+    @Test
+    fun canonicalPresentationUpdateSurvivesRelaunchWithoutChangingRecipientOrOrder() {
+        val history = CallHistory(folder)
+        val call = record(5.0, notes = delegatedNotes()).copy(contactNumber = "synthetic-recipient", request = "Please book a check-up.")
+        history.save(call)
+        val newer = record(1.0)
+        history.save(newer)
+        val presentation = CallPresentation(title = "Appointment with Dr. Rao", overview = "Registration is still needed.",
+            keyPoints = listOf("No booking confirmed."), nextStep = "Provide the registration ID.")
+        history.update(call.id, delegatedNotes().copy(presentation = presentation))
+        val loaded = CallHistory(folder).records
+        assertEquals(newer.id, loaded.first().id)
+        assertEquals("Appointment with Dr. Rao", loaded.last().displayTitle)
+        assertEquals(call.date, loaded.last().date, 0.0)
+        assertEquals(call.contactNumber, loaded.last().contactNumber)
+        assertEquals(presentation, loaded.last().notes?.presentation)
+        assertEquals("callback", loaded.last().notes?.outcome)
+    }
 
     @Test
     fun savedCallsSurviveARelaunch() {

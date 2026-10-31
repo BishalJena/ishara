@@ -118,7 +118,7 @@ async def test_planner_uses_a_closed_strict_schema_and_separate_token_budget() -
 
     seen = []
     turn = {
-        "action": {"kind": "need_caller"},
+        "action": {"kind": "need_caller", "question_id": "receiver:0"},
         "resolutions": [],
     }
 
@@ -210,7 +210,7 @@ async def test_qwen_structured_planning_explicitly_hides_reasoning_and_uses_low_
 
     def handler(request):
         seen.append(json.loads(request.content))
-        turn = {"action": {"kind": "need_caller"}, "resolutions": []}
+        turn = {"action": {"kind": "need_caller", "question_id": "receiver:0"}, "resolutions": []}
         return httpx.Response(200, json=completion(json.dumps(turn)))
 
     client = client_for(handler, model="qwen/qwen3.8-27b")
@@ -249,7 +249,55 @@ def test_action_specific_requirements_are_visible_in_nested_json_schema():
 
     schema = PlannerTurn.model_json_schema()
     assert "anyOf" not in schema
-    assert len(schema["properties"]["action"]["anyOf"]) == 6
-    assert set(schema["$defs"]["AnswerQuestion"]["required"]) == {"kind", "source_id", "quote"}
+    assert len(schema["properties"]["action"]["anyOf"]) == 7
+    assert set(schema["$defs"]["AnswerQuestion"]["required"]) == {"kind", "question_id", "spans"}
     assert set(schema["$defs"]["Finish"]["required"]) == {"kind", "blocked"}
-    assert set(schema["$defs"]["NeedCaller"]["required"]) == {"kind"}
+    assert set(schema["$defs"]["NeedCaller"]["required"]) == {"kind", "question_id"}
+
+
+async def test_compact_provider_schema_keeps_named_fields_and_validation_constraints():
+    from pydantic import BaseModel, Field
+
+    class Record(BaseModel):
+        title: str = Field(min_length=2, max_length=40, description="A human-readable title")
+        description: str | None = Field(default=None, description="An optional explanation")
+
+    seen = []
+
+    def handler(request):
+        seen.append(json.loads(request.content))
+        return httpx.Response(200, json=completion('{"title":"A task","description":null}'))
+
+    client = client_for(handler)
+    try:
+        result = await client.complete_structured("Return a task record.", "Synthetic data", Record)
+    finally:
+        await client.aclose()
+    assert result.title == "A task" and result.description is None
+    schema = seen[0]["response_format"]["json_schema"]["schema"]
+    assert set(schema["properties"]) == {"title", "description"}
+    assert set(schema["required"]) == {"title", "description"}
+    assert schema["additionalProperties"] is False
+    assert schema["properties"]["title"] == {
+        "minLength": 2,
+        "maxLength": 40,
+        "type": "string",
+        "description": "A human-readable title",
+    }
+    assert schema["properties"]["description"]["description"] == "An optional explanation"
+    assert "title" not in schema
+
+
+@pytest.mark.parametrize(
+    "header,expected",
+    [("2", 2), ("120", 60), ("private-header", None), ("nan", None), ("-1", None)],
+)
+async def test_quota_retry_metadata_is_bounded_and_never_exposes_raw_headers(header, expected):
+    client = client_for(lambda _: httpx.Response(429, headers={"retry-after": header}))
+    try:
+        with pytest.raises(GroqError) as error:
+            await client.complete("system", "data")
+        assert error.value.retry_after_s == expected
+        assert str(error.value) == "HTTP 429"
+    finally:
+        await client.aclose()

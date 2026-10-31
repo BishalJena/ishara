@@ -60,7 +60,7 @@ struct SteerCallView: View {
                 typing = false
                 isSigning = false
                 model.endSigning()
-                activity.end(outcome: "Call ended · open Ishara for the gist")
+                activity.end(outcome: "Call ended · open Ishara for the summary")
             }
         }
         // A call that got through goes straight on to its gist after a beat, so the last
@@ -90,7 +90,7 @@ struct SteerCallView: View {
             }
             Spacer()
             if model.isCallOver {
-                Button("Gist", systemImage: "list.bullet.rectangle", action: onShowNotes)
+                Button("Call summary", systemImage: "list.bullet.rectangle", action: onShowNotes)
                     .buttonStyle(.borderedProminent).buttonBorderShape(.capsule)
                     .accessibilityIdentifier("steer.gist")
             } else {

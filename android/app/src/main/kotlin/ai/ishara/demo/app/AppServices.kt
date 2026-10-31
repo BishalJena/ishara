@@ -7,6 +7,12 @@ import ai.ishara.demo.call.LineSpeaker
 import ai.ishara.demo.call.LiveCallDriver
 import ai.ishara.demo.call.TestModeVoice
 import ai.ishara.demo.models.CallHistory
+import ai.ishara.demo.models.CallRecord
+import ai.ishara.demo.core.call.CallCore
+import ai.ishara.demo.core.call.summaryComplete
+import ai.ishara.demo.ui.notes.NotesModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import ai.ishara.demo.models.UserSettings
 import ai.ishara.demo.recognition.RecognitionController
 import ai.ishara.demo.recognition.ScriptedRecognitionController
@@ -90,6 +96,22 @@ class AppServices(
      */
     fun makeTestModeVoice(driver: CallDriver, captionsShown: Int): TestModeVoice? =
         if (driver is FakeCallDriver) TestModeVoice(testModeSpeaker(), captionsShown) else null
+
+    /** Read-only refresh of a saved call; never reconnects or dials it. */
+    suspend fun refreshRecentCall(record: CallRecord) {
+        if (options.driver != DemoLaunchOptions.Driver.LIVE) return
+        val config = config.getOrNull() ?: return
+        val callId = record.notes?.callId ?: return
+        CallCore.configureBackend(config.backend)
+        for (attempt in 0..NotesModel.MAX_REFRESHES) {
+            val notes = try { CallCore.notes(callId) }
+            catch (e: CancellationException) { throw e }
+            catch (_: Exception) { return }
+            history.update(record.id, notes)
+            if (notes.summaryComplete || attempt == NotesModel.MAX_REFRESHES) return
+            delay(NotesModel.REFRESH_INTERVAL)
+        }
+    }
 
     companion object {
         fun current(context: Context, options: DemoLaunchOptions, pipelineFactory: RecognitionPipelineFactory? = null): AppServices {

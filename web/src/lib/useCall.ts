@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {api} from './api';
+import {summaryComplete} from './summary';
 import {DemoCall} from './demo';
 import {freshCall, indianNumber, reduceEvent} from './state';
 import type {CallView, Event, Notes, Setup} from './types';
@@ -120,7 +121,7 @@ export function useCall() {
         const latest = await transport.current?.notes();
         if (cancelled || !latest) return;
         setNotes(latest); setNotesProblem('');
-        if (!demo && attempts++ < 30 && (!latest.ready || (!latest.bolna_summary?.trim() && latest.outcome !== 'no_answer'))) timer = setTimeout(poll, 2000);
+        if (!demo && attempts++ < 30 && !summaryComplete(latest)) timer = setTimeout(poll, 2000);
         else setNotesPending(false);
       } catch { if (!cancelled) { setNotesProblem('The call ended, but its notes could not be loaded. Your captions are still shown below.'); if (attempts++ < 5) timer = setTimeout(poll, 2000); else setNotesPending(false); } }
     };

@@ -26,6 +26,18 @@ def action(kind: str, **values: object) -> dict:
     return {"action": {"kind": kind, **values}, "resolutions": resolutions}
 
 
+def bind_question_action(prompt: dict, selected: dict) -> dict:
+    """Bind mock fixtures to the actual pending question, just as a provider must."""
+    chosen = selected["action"]
+    if chosen["kind"] not in {"answer_question", "need_caller"}:
+        return selected
+    pending = prompt["pending_receiver_questions"]
+    chosen.setdefault("question_id", next(reversed(pending), "not-a-pending-question"))
+    if chosen["kind"] == "answer_question" and "source_id" in chosen:
+        chosen["spans"] = [{"source_id": chosen.pop("source_id"), "quote": chosen.pop("quote")}]
+    return selected
+
+
 @dataclass
 class Provider:
     choose: Callable[[dict], dict | str]
@@ -37,7 +49,11 @@ class Provider:
         self.requests.append(body)
         prompt = json.loads(body["messages"][1]["content"])
         selected = self.choose(prompt)
-        content = selected if isinstance(selected, str) else json.dumps(selected)
+        content = (
+            selected
+            if isinstance(selected, str)
+            else json.dumps(bind_question_action(prompt, selected))
+        )
         return httpx.Response(
             200,
             json={
@@ -60,7 +76,7 @@ def state_for(request: str, **profile_values: object) -> DelegateState:
     )
 
 
-def start_general(f: Flow, request: str, **profile: object) -> str:
+def start_general(f: Flow, request: str, *, mode="steer", **profile: object) -> str:
     response = f.client.post(
         "/briefs",
         json={
@@ -76,7 +92,7 @@ def start_general(f: Flow, request: str, **profile: object) -> str:
         json={
             "contact_id": "clinic",
             "purpose": "general",
-            "mode": "steer",
+            "mode": mode,
             "brief_id": response.json()["brief_id"],
         },
         headers=AUTH,
@@ -161,7 +177,7 @@ async def test_current_provider_contract_requires_closed_schema_and_suppresses_r
         assert_closed_schema(schema)
         assert schema["type"] == "object"
         assert set(schema["properties"]) == {"action", "resolutions"}
-        assert len(schema["properties"]["action"]["anyOf"]) == 6
+        assert len(schema["properties"]["action"]["anyOf"]) == 7
         if model.startswith("openai/gpt-oss"):
             assert payload["include_reasoning"] is False
     finally:
@@ -232,6 +248,7 @@ async def test_approved_exact_answer_can_be_repeated_when_receiver_asks_again() 
     try:
         for _ in range(2):
             heard = "When was your passport issued?"
+            state.observe_receiver(heard)
             decision = await Brain(client).reply(state, heard)
             assert "17 June 2019" in decision.say
             assert decision.follow_up is None and not decision.done
@@ -716,7 +733,11 @@ async def test_replay_quality_rejects_safe_but_useless_actions_for_outstanding_g
             json={
                 "choices": [
                     {
-                        "message": {"content": json.dumps(action(wrong_action, **values))},
+                        "message": {
+                            "content": json.dumps(
+                                bind_question_action(prompt, action(wrong_action, **values))
+                            )
+                        },
                         "finish_reason": "stop",
                     }
                 ]
@@ -786,21 +807,29 @@ async def test_replay_document_oracle_accepts_complete_requested_field_only(quot
     run = replay["run"]
     scenario = next(s for s in replay["SCENARIOS"] if s.name == "document_repeat")
     run.__globals__["SCENARIOS"] = (scenario,)
-    replay["ReplayClient"].mock = lambda _self, _request: httpx.Response(
-        200,
-        json={
-            "choices": [
-                {
-                    "message": {
-                        "content": json.dumps(
-                            action("answer_question", source_id="document:0", quote=quote)
-                        )
-                    },
-                    "finish_reason": "stop",
-                }
-            ]
-        },
-    )
+
+    def selected_quote(_self, request):
+        prompt = json.loads(json.loads(request.content)["messages"][1]["content"])
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                bind_question_action(
+                                    prompt,
+                                    action("answer_question", source_id="document:0", quote=quote),
+                                )
+                            )
+                        },
+                        "finish_reason": "stop",
+                    }
+                ]
+            },
+        )
+
+    replay["ReplayClient"].mock = selected_quote
     assert await run(False) == (0 if passed else 1)
     rows = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
     assert all(row["pass"] is passed for row in rows[1:-1])
@@ -1039,7 +1068,7 @@ async def test_replay_reports_application_failure_without_raw_exception_details(
 def test_operation_permission_question_is_not_a_greeting():
     def choose(prompt):
         current = prompt["current_receiver_turn"]
-        assert current["requires_caller_answer"] is True
+        assert current["expects_reply"] is True
         return action(
             "accept_offer", goal_id="goal:0", source_id=current["source_id"], quote=current["text"]
         )
@@ -1061,3 +1090,946 @@ def test_operation_permission_question_is_not_a_greeting():
         state = f.manager._sessions[cid].delegate
         assert state.planner.goals[0].accepted_offer is not None
         assert not state.planner.completed and state.outcome is None
+
+
+# This is the inline label/value layout returned by PDFKit, with synthetic identities.
+CLINICAL_REPORT = """Demonstration Clinic
+Patient health summary
+Patient
+Name: Test Caller
+Patient ID: DEMO-2714
+Date of birth: 14 March 1994
+Doctor: Dr. Nisha Shah, General Medicine
+Clinical summary
+Condition: Hypertension (diagnosed 2023)
+Allergies: Penicillin
+Medication: Amlodipine 5 mg, once a day
+Last visit: 12 August 2026 · BP 138/88 mmHg
+Plan: Review blood pressure in 3 months; bring recent reports
+Synthetic record for a product demonstration. Not a real patient."""
+
+
+def start_clinical(f: Flow, *, mode="steer", attended=False, request=None) -> str:
+    response = f.client.post(
+        "/briefs",
+        json={
+            "purpose": "general",
+            "profile": {
+                "name": "Test Caller",
+                "documents": [{"name": "Synthetic health report", "text": CLINICAL_REPORT}],
+            },
+            "request": request or "Book an appointment with the doctor in the attached report.",
+        },
+        headers=AUTH,
+    )
+    assert response.status_code == 200, response.text
+    response = f.client.post(
+        "/calls",
+        json={
+            "contact_id": "clinic",
+            "purpose": "general",
+            "mode": mode,
+            "attended": attended,
+            "brief_id": response.json()["brief_id"],
+        },
+        headers=AUTH,
+    )
+    assert response.status_code == 200, response.text
+    call_id = response.json()["call_id"]
+    f.live(call_id)
+    f.speak_last(call_id)
+    f.manager._sessions[call_id].delegate.opened = True
+    return call_id
+
+
+@pytest.mark.parametrize(
+    ("heard", "quote", "required"),
+    [
+        ("What is the patient's registration number?", "Patient ID: DEMO-2714", ("DEMO-2714",)),
+        ("What is the doctor's name?", "Doctor: Dr. Nisha Shah, General Medicine", ("Nisha Shah",)),
+        (
+            "Can you tell me if they had any allergy or what was the blood pressure "
+            "at their last checkup?",
+            ("Allergies: Penicillin", "Last visit: 12 August 2026 · BP 138/88 mmHg"),
+            ("Penicillin", "138/88"),
+        ),
+    ],
+)
+@pytest.mark.parametrize("mode", ["steer", "delegated"])
+def test_pdfkit_clinical_facts_survive_real_http_path(mode, heard, quote, required):
+    provider = Provider(
+        lambda _: action(
+            "answer_question",
+            spans=[
+                {"source_id": "document:0", "quote": part}
+                for part in (quote if isinstance(quote, tuple) else (quote,))
+            ],
+        )
+    )
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_clinical(f, mode=mode)
+        spoken = f.listen_turn(call_id, heard)
+        assert all(value in spoken for value in required), spoken
+        delegate = f.manager._sessions[call_id].delegate
+        assert delegate.follow_ups == []
+        assert delegate.outcome is None
+        f.finish()
+        notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
+        assert notes["follow_ups"] == []
+        assert all(
+            any(value in entry["text"] for entry in notes["transcript"]) for value in required
+        )
+
+
+@pytest.mark.parametrize("proposal", ["wait", "need_caller"])
+def test_receiver_acknowledgement_does_not_end_unattended_clinical_call(proposal):
+    provider = Provider(lambda _: action(proposal))
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_clinical(f)
+        f.listen_turn(call_id, "Okay.")
+        delegate = f.manager._sessions[call_id].delegate
+        assert delegate.outcome is None
+        assert delegate.follow_ups == []
+        assert not delegate.planner.completed
+        assert provider.requests == []
+
+
+@pytest.mark.parametrize("mode", ["steer", "delegated"])
+@pytest.mark.parametrize("present", [True, False])
+def test_clinical_document_questions_booking_confirmation_and_notes(mode, present):
+    answers = (
+        (
+            "Does the patient have an allergy and what was the last BP?",
+            ("Allergies: Penicillin", "Last visit: 12 August 2026 · BP 138/88 mmHg"),
+        ),
+        ("Is the patient registered and what is their patient ID?", ("Patient ID: DEMO-2714",)),
+        ("What is the doctor's name?", ("Doctor: Dr. Nisha Shah, General Medicine",)),
+    )
+
+    def choose(prompt):
+        heard = prompt["current_receiver_turn"]["text"]
+        for question, parts in answers:
+            if heard == question:
+                return action(
+                    "answer_question",
+                    spans=[{"source_id": "document:0", "quote": part} for part in parts],
+                )
+        if heard.startswith("I can book"):
+            return accept_current_offer(prompt)
+        return action("finish", resolutions=[resolution(prompt)])
+
+    provider = Provider(choose)
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_clinical(f, mode=mode, attended=present)
+        if present and mode == "steer":
+            make_caller_present(f, call_id)
+        for question, parts in answers:
+            spoken = f.listen_turn(call_id, question)
+            assert all(part in spoken for part in parts), spoken
+        offered = "I can book an appointment with Dr. Nisha Shah. Shall I proceed?"
+        spoken = f.listen_turn(call_id, offered)
+        delegate = f.manager._sessions[call_id].delegate
+        assert spoken and delegate.outcome is None
+        assert not delegate.planner.completed
+        confirmed = "Your appointment with Dr. Nisha Shah has been booked."
+        f.listen_turn(call_id, confirmed)
+        assert delegate.planner.completed
+        f.finish()
+        notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
+        assert notes["outcome"] in {"done", "booked"}
+        assert notes["follow_ups"] == []
+        assert notes["stepped_in"] == 0
+        assert any(entry["text"] == confirmed for entry in notes["transcript"])
+
+
+@pytest.mark.parametrize("mode", ["steer", "delegated"])
+@pytest.mark.parametrize(
+    ("question", "quote", "forbidden"),
+    [
+        ("What is the doctor's name?", "Name: Test Caller", "Test Caller"),
+        (
+            "What is the patient's registration number?",
+            "Last visit: 12 August 2026 · BP 138/88 mmHg",
+            "138/88",
+        ),
+        ("What is the patient's address?", "Demonstration Clinic", "Demonstration Clinic"),
+    ],
+)
+def test_clinical_valid_quote_from_wrong_entity_or_field_cannot_answer(
+    mode, question, quote, forbidden
+):
+    provider = Provider(lambda _: action("answer_question", source_id="document:0", quote=quote))
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_clinical(f, mode=mode)
+        spoken = f.listen_turn(call_id, question)
+        assert forbidden not in spoken
+        delegate = f.manager._sessions[call_id].delegate
+        assert not delegate.planner.completed
+        assert delegate.follow_ups == [question]
+        f.finish()
+        notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
+        assert notes["outcome"] != "done"
+        assert notes["follow_ups"] == [question]
+
+
+def test_fragmented_registration_question_can_answer_pending_question_after_ack():
+    def choose(prompt):
+        if len(provider.requests) == 1:
+            return action("wait")
+        return action("answer_question", source_id="document:0", quote="Patient ID: DEMO-2714")
+
+    provider = Provider(choose)
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_clinical(f, attended=True)
+        make_caller_present(f, call_id)
+        f.listen_turn(call_id, "Is the patient registered at the clinic?")
+        spoken = f.listen_turn(call_id, "and if so tell me their registration number")
+        assert "DEMO-2714" in spoken, spoken
+        delegate = f.manager._sessions[call_id].delegate
+        assert delegate.follow_ups == []
+        assert delegate.planner.pending == {}
+
+
+async def test_clinical_replay_is_bounded_and_checks_meaning_not_only_valid_json(capsys):
+    import runpy
+    from pathlib import Path
+
+    replay = runpy.run_path(str(Path(__file__).resolve().parents[2] / "scripts/planner_replay.py"))
+    assert await replay["run"](False, suite="clinical") == 0
+    rows = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    assert rows[-1]["pass"] is True
+    assert rows[-1]["model_requests"] <= 12
+    assert rows[-1]["evidence"] == "mock_contract_only"
+    assert all(row["pass"] for row in rows[1:-1])
+    assert rows[-1]["model_requests"] == 10
+    quiet = next(row for row in rows if row.get("case") == "clinical_acknowledgement")
+    assert quiet["action"] == "rules" and quiet["model_quality"] is False
+    assert quiet["diagnostic"] == {}
+
+
+@pytest.mark.parametrize("quote", ["Allergies: Penicillin", "Patient ID: DEMO-2714"])
+async def test_clinical_replay_oracle_rejects_partial_compound_or_unrelated_answer(quote, capsys):
+    import runpy
+    from pathlib import Path
+
+    replay = runpy.run_path(str(Path(__file__).resolve().parents[2] / "scripts/planner_replay.py"))
+    original = replay["CLINICAL_SCENARIOS"][0]
+    replay["run"].__globals__["CLINICAL_SCENARIOS"] = (
+        replay["Scenario"](
+            original.name, original.goal, original.steps[:1], document=original.document
+        ),
+    )
+
+    def partial(_self, request):
+        prompt = json.loads(json.loads(request.content)["messages"][1]["content"])
+        selected = bind_question_action(
+            prompt, action("answer_question", source_id="document:0", quote=quote)
+        )
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": json.dumps(selected)}, "finish_reason": "stop"}]
+            },
+        )
+
+    replay["ReplayClient"].mock = partial
+    assert await replay["run"](False, suite="clinical") == 1
+    rows = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    assert rows[1]["pass"] is False
+    assert rows[1]["rejection"] in {"wrong_document_field", "action_guard"}
+
+
+@pytest.mark.parametrize("mode", ["steer", "delegated"])
+def test_one_document_fact_does_not_silently_resolve_a_compound_receiver_question(mode):
+    provider = Provider(
+        lambda _: action(
+            "answer_question", spans=[{"source_id": "document:0", "quote": "Allergies: Penicillin"}]
+        )
+    )
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_clinical(f, mode=mode)
+        question = "What are the patient's allergies and the blood pressure at their last checkup?"
+        f.listen_turn(call_id, question)
+        delegate = f.manager._sessions[call_id].delegate
+        assert not delegate.planner.completed
+        assert question in delegate.planner.pending.values() or question in delegate.follow_ups
+        f.finish()
+        notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
+        assert notes["outcome"] != "done"
+        assert question in notes["follow_ups"]
+
+
+def test_stale_answer_question_id_cannot_clear_new_clinical_question():
+    def choose(prompt):
+        if len(provider.requests) == 1:
+            return action("answer_question", source_id="document:0", quote="Patient ID: DEMO-2714")
+        return action(
+            "answer_question",
+            question_id=first_question_id,
+            spans=[{"source_id": "document:0", "quote": "Allergies: Penicillin"}],
+        )
+
+    provider = Provider(choose)
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_clinical(f, attended=True)
+        make_caller_present(f, call_id)
+        question = "What is the patient's registration number?"
+        assert "DEMO-2714" in f.listen_turn(call_id, question)
+        first_prompt = json.loads(provider.requests[0]["messages"][1]["content"])
+        first_question_id = next(iter(first_prompt["pending_receiver_questions"]))
+        allergy_question = "What allergy does the patient have?"
+        spoken = f.listen_turn(call_id, allergy_question)
+        assert "Penicillin" not in spoken
+        delegate = f.manager._sessions[call_id].delegate
+        assert allergy_question in delegate.planner.pending.values()
+        assert not delegate.planner.completed
+
+
+async def test_clinical_http_replay_checks_saved_notes_and_never_uses_telephony(capsys):
+    import runpy
+    from pathlib import Path
+
+    replay = runpy.run_path(str(Path(__file__).resolve().parents[2] / "scripts/planner_replay.py"))
+    assert await replay["run_http"](False) == 0
+    rows = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    assert rows[0]["telephony"] is False
+    assert rows[0]["transport"] == "local_http"
+    assert rows[-1]["evidence"] == "mock_http_contract_only"
+    assert rows[-1]["model_requests"] == 10
+    quiet = next(row for row in rows if row.get("case") == "clinical_acknowledgement")
+    assert quiet["action"] == "rules" and quiet["model_quality"] is False
+    assert quiet["diagnostic"] == {}
+    assert all(row["pass"] for row in rows[1:-1])
+    assert any(row.get("stage") == "notes" and row["outcome"] == "done" for row in rows)
+
+
+@pytest.mark.parametrize("failure", ["schema", "http", "budget"])
+async def test_clinical_http_replay_cannot_count_guarded_fallback_as_model_quality(failure, capsys):
+    import runpy
+    from pathlib import Path
+
+    replay = runpy.run_path(str(Path(__file__).resolve().parents[2] / "scripts/planner_replay.py"))
+    run = replay["run_http"]
+    original = replay["CLINICAL_SCENARIOS"][0]
+    run.__globals__["CLINICAL_SCENARIOS"] = (
+        replay["Scenario"](
+            original.name, original.goal, original.steps[:1], document=original.document
+        ),
+    )
+    if failure == "budget":
+        run.__globals__["MAX_REQUESTS"] = 0
+    elif failure == "schema":
+        replay["ReplayClient"].mock = lambda _self, _request: httpx.Response(
+            200, json={"choices": [{"message": {"content": "not json"}, "finish_reason": "stop"}]}
+        )
+    else:
+        replay["ReplayClient"].mock = lambda _self, _request: httpx.Response(
+            503, json={"error": "private provider response must not be logged"}
+        )
+    assert await run(False) == 1
+    output = capsys.readouterr().out
+    rows = [json.loads(line) for line in output.splitlines()]
+    assert rows[1]["pass"] is False
+    assert rows[1]["rejection"] == failure
+    assert "private provider response" not in output
+    assert rows[-1]["model_requests"] <= 12
+
+
+@pytest.mark.parametrize(
+    ("heard", "quote", "required"),
+    [
+        ("Is the patient allergic to anything?", "Allergies: Penicillin", "Penicillin"),
+        (
+            "Which tablets is the patient currently taking?",
+            "Medication: Amlodipine 5 mg, once a day",
+            "Amlodipine",
+        ),
+        (
+            "Who is the patient's treating consultant?",
+            "Doctor: Dr. Nisha Shah, General Medicine",
+            "Nisha Shah",
+        ),
+    ],
+)
+def test_clinical_question_paraphrases_preserve_grounded_model_answer(heard, quote, required):
+    provider = Provider(lambda _: action("answer_question", source_id="document:0", quote=quote))
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_clinical(f)
+        spoken = f.listen_turn(call_id, heard)
+        assert required in spoken, spoken
+        delegate = f.manager._sessions[call_id].delegate
+        assert delegate.follow_ups == []
+        assert delegate.outcome is None
+
+
+@pytest.mark.parametrize("mode", ["steer", "delegated"])
+def test_four_document_facts_are_delivered_in_one_http_turn_without_completing_booking(mode):
+    parts = (
+        "Patient ID: DEMO-2714",
+        "Allergies: Penicillin",
+        "Date of birth: 14 March 1994",
+        "Medication: Amlodipine 5 mg, once a day",
+    )
+    provider = Provider(
+        lambda _: action(
+            "answer_question", spans=[{"source_id": "document:0", "quote": part} for part in parts]
+        )
+    )
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_clinical(f, mode=mode)
+        spoken = f.listen_turn(
+            call_id, "Please give the patient's ID, allergies, date of birth and medication."
+        )
+        assert all(part in spoken for part in parts)
+        delegate = f.manager._sessions[call_id].delegate
+        assert delegate.follow_ups == [] and delegate.outcome is None
+        assert not delegate.planner.completed
+        f.finish()
+        notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
+        assert notes["outcome"] != "done"
+        assert notes["follow_ups"] == []
+
+
+@pytest.mark.parametrize("mode", ["steer", "delegated"])
+def test_http_booking_confirmation_answers_final_question_before_closing_and_saving_done(mode):
+    proof = "Your appointment with Dr. Nisha Shah has been booked."
+
+    def choose(prompt):
+        return action(
+            "answer_question",
+            source_id="document:0",
+            quote="Allergies: Penicillin",
+            resolutions=[resolution(prompt, quote=proof)],
+        )
+
+    provider = Provider(choose)
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_clinical(f, mode=mode)
+        heard = proof + " What allergies should we note?"
+        spoken = f.listen_turn(call_id, heard)
+        assert "Allergies: Penicillin" in spoken
+        delegate = f.manager._sessions[call_id].delegate
+        assert delegate.outcome is None and delegate.planner.completed
+        f.listen_turn(call_id, "Thank you.")
+        assert delegate.outcome == "done"
+        assert len(provider.requests) == 1
+        f.finish()
+        notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
+        assert notes["outcome"] == "done"
+        assert notes["follow_ups"] == []
+        assert any(entry["text"] == heard for entry in notes["transcript"])
+        assert any("Penicillin" in entry["text"] for entry in notes["transcript"])
+
+
+def test_http_question_followed_by_hold_still_delivers_known_document_answer():
+    provider = Provider(
+        lambda _: action("answer_question", source_id="document:0", quote="Allergies: Penicillin")
+    )
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_clinical(f)
+        spoken = f.listen_turn(call_id, "What allergy does the patient have? Please hold.")
+        assert "Penicillin" in spoken and len(provider.requests) == 1
+        delegate = f.manager._sessions[call_id].delegate
+        assert delegate.follow_ups == [] and delegate.outcome is None
+
+
+@pytest.mark.parametrize("mode", ["steer", "delegated"])
+def test_http_unconstrained_appointment_accepts_routine_fee_and_time_then_finishes(mode):
+    def choose(prompt):
+        if "Shall I book" in prompt["current_receiver_turn"]["text"]:
+            return accept_current_offer(prompt)
+        return action("finish", resolutions=[resolution(prompt)])
+
+    provider = Provider(choose)
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_clinical(f, mode=mode)
+        offered = (
+            "We can book an appointment with Dr. Nisha Shah on Monday at 9 pm "
+            "for 800 rupees. Shall I book it?"
+        )
+        spoken = f.listen_turn(call_id, offered)
+        delegate = f.manager._sessions[call_id].delegate
+        assert spoken and "caller's input" not in spoken
+        assert delegate.follow_ups == [] and delegate.outcome is None
+        assert not delegate.planner.completed
+        proof = (
+            "Your appointment with Dr. Nisha Shah on Monday at 9 pm for 800 rupees has been booked."
+        )
+        f.listen_turn(call_id, proof)
+        assert delegate.planner.completed
+        f.finish()
+        notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
+        assert notes["outcome"] == "done"
+        assert notes["follow_ups"] == [] and notes["stepped_in"] == 0
+        assert any(entry["text"] == proof for entry in notes["transcript"])
+
+
+@pytest.mark.parametrize("constraint", ["The maximum fee is 500 rupees.", "It must be on Tuesday."])
+def test_http_explicit_fee_or_day_limit_still_blocks_nonmatching_offer(constraint):
+    provider = Provider(accept_current_offer)
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_clinical(
+            f, request=("Book an appointment with the doctor in the attached report. " + constraint)
+        )
+        offered = (
+            "We can book an appointment with Dr. Nisha Shah on Monday at 9 pm "
+            "for 800 rupees. Shall I book it?"
+        )
+        spoken = f.listen_turn(call_id, offered)
+        delegate = f.manager._sessions[call_id].delegate
+        assert "Yes, please proceed" not in spoken
+        assert not delegate.planner.completed
+        assert delegate.agent_answers == []
+        assert delegate.planner.goals[0].accepted_offer is None
+        f.finish()
+        notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
+        assert notes["outcome"] != "done"
+
+
+def test_http_autonomy_does_not_invent_unknown_national_identity_number():
+    provider = Provider(lambda _: action("need_caller"))
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_general(f, "Order a replacement passport after losing it abroad.")
+        f.live(call_id)
+        f.speak_last(call_id)
+        f.manager._sessions[call_id].delegate.opened = True
+        question = "What is the applicant's national identity number?"
+        spoken = f.listen_turn(call_id, question)
+        delegate = f.manager._sessions[call_id].delegate
+        assert not any(character.isdigit() for character in spoken)
+        assert delegate.follow_ups == [question]
+        assert not delegate.planner.completed
+        f.finish()
+        notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
+        assert notes["outcome"] != "done" and notes["follow_ups"] == [question]
+
+
+def choose_current_option(prompt: dict, option: str) -> dict:
+    current = prompt["current_receiver_turn"]
+    return action(
+        "choose_option",
+        goal_id=prompt["goals"][0]["goal_id"],
+        source_id=current["source_id"],
+        quote=current["text"],
+        option=option,
+    )
+
+
+@pytest.mark.parametrize("mode", ["steer", "delegated"])
+def test_http_agent_selects_ordinary_booklet_then_waits_for_actual_confirmation(mode):
+    def choose(prompt):
+        if "32-pager" in prompt["current_receiver_turn"]["text"]:
+            return choose_current_option(prompt, "32-pager")
+        return action("finish", resolutions=[resolution(prompt)])
+
+    provider = Provider(choose)
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_general(
+            f, "Order a replacement passport after losing it abroad.", mode=mode
+        )
+        f.live(call_id)
+        f.speak_last(call_id)
+        f.manager._sessions[call_id].delegate.opened = True
+        offered = "Do you want a 32-pager or a 64-pager?"
+        spoken = f.listen_turn(call_id, offered)
+        assert "32" in spoken and "64" not in spoken
+        delegate = f.manager._sessions[call_id].delegate
+        assert delegate.outcome is None and delegate.follow_ups == []
+        assert not delegate.planner.completed
+        confirmation = "Your replacement passport order has been registered."
+        f.listen_turn(call_id, confirmation)
+        assert delegate.planner.completed
+        f.finish()
+        notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
+        assert notes["outcome"] == "done" and notes["follow_ups"] == []
+        assert notes["stepped_in"] == 0
+
+
+@pytest.mark.parametrize(
+    ("goal", "heard", "option"),
+    [
+        (
+            "Order a replacement passport after losing it abroad.",
+            "We offer a 32-page booklet or a 64-page booklet. Which would you like?",
+            "128-page booklet",
+        ),
+        (
+            "Order a replacement passport after losing it abroad.",
+            "Is the applicant's national identity number 12345 or 67890?",
+            "12345",
+        ),
+        (
+            "Order a replacement passport with a 64-page booklet.",
+            "We offer a 32-page booklet or a 64-page booklet. Which would you like?",
+            "32-page booklet",
+        ),
+    ],
+)
+def test_http_option_autonomy_cannot_invent_options_personal_facts_or_override_preference(
+    goal, heard, option
+):
+    provider = Provider(lambda prompt: choose_current_option(prompt, option))
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_general(f, goal)
+        f.live(call_id)
+        f.speak_last(call_id)
+        f.manager._sessions[call_id].delegate.opened = True
+        spoken = f.listen_turn(call_id, heard)
+        delegate = f.manager._sessions[call_id].delegate
+        assert option not in spoken
+        assert not delegate.planner.completed
+        assert delegate.planner.goals[0].accepted_offer is None
+        f.finish()
+        notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
+        assert notes["outcome"] != "done"
+
+
+@pytest.mark.parametrize("http", [False, True])
+async def test_autonomy_replay_is_bounded_and_checks_outcomes_instead_of_only_schema(http, capsys):
+    import runpy
+    from pathlib import Path
+
+    replay = runpy.run_path(str(Path(__file__).resolve().parents[2] / "scripts/planner_replay.py"))
+    run = replay["run_http"] if http else replay["run"]
+    assert await run(False, suite="autonomy") == 0
+    rows = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    assert rows[-1]["pass"] is True and rows[-1]["model_requests"] <= 12
+    assert all(row["pass"] for row in rows[1:-1])
+    assert rows[-1]["model_requests"] >= 7
+
+
+@pytest.mark.parametrize("mode", ["steer", "delegated"])
+def test_http_natural_slot_then_fee_turns_use_active_booking_context_without_extra_user_input(mode):
+    def choose(prompt):
+        heard = prompt["current_receiver_turn"]["text"]
+        if "booked" in heard:
+            return action("finish", resolutions=[resolution(prompt)])
+        return accept_current_offer(prompt)
+
+    provider = Provider(choose)
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_general(f, "Book with Dr. Rao.", mode=mode)
+        f.live(call_id)
+        f.speak_last(call_id)
+        f.manager._sessions[call_id].delegate.opened = True
+        for heard in (
+            "We have Monday at 9 pm. Is that okay?",
+            "The clinic treatment is ₹800. Shall we proceed?",
+        ):
+            spoken = f.listen_turn(call_id, heard)
+            delegate = f.manager._sessions[call_id].delegate
+            assert spoken and "caller's input" not in spoken, spoken
+            assert delegate.outcome is None and delegate.follow_ups == []
+            assert delegate.agent_answers
+            assert not delegate.planner.completed
+        proof = "You are booked with Dr. Rao for Monday at 9 pm."
+        f.listen_turn(call_id, proof)
+        assert delegate.planner.completed
+        f.finish()
+        notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
+        assert notes["outcome"] == "done" and notes["follow_ups"] == []
+        assert notes["stepped_in"] == 0
+
+
+@pytest.mark.parametrize("mode", ["steer", "delegated"])
+def test_http_natural_plumber_access_question_uses_document_and_finishes_after_answer(mode):
+    proof = "Your plumber visit to repair the leak is booked."
+    provider = Provider(
+        lambda prompt: action(
+            "answer_question",
+            source_id="document:0",
+            quote="Access instructions: Use the side gate",
+            resolutions=[resolution(prompt, quote=proof)],
+        )
+    )
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_general(
+            f,
+            "Arrange a plumber visit to repair the leak.",
+            mode=mode,
+            documents=[
+                {"name": "Visit instructions", "text": "Access instructions: Use the side gate"}
+            ],
+        )
+        f.live(call_id)
+        f.speak_last(call_id)
+        f.manager._sessions[call_id].delegate.opened = True
+        spoken = f.listen_turn(call_id, proof + " How will they get inside?")
+        assert "Use the side gate" in spoken, spoken
+        delegate = f.manager._sessions[call_id].delegate
+        assert delegate.follow_ups == [] and delegate.outcome is None
+        f.listen_turn(call_id, "Thank you.")
+        assert delegate.outcome == "done" and delegate.planner.completed
+        f.finish()
+        notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
+        assert notes["outcome"] == "done" and notes["follow_ups"] == []
+
+
+@pytest.mark.parametrize("http", [False, True])
+@pytest.mark.parametrize("explicit", [False, True])
+async def test_replay_choice_allows_answer_question_only_for_supplied_preference(
+    http, explicit, capsys
+):
+    import runpy
+    from pathlib import Path
+
+    replay = runpy.run_path(str(Path(__file__).resolve().parents[2] / "scripts/planner_replay.py"))
+    run = replay["run_http"] if http else replay["run"]
+    scenario_name = (
+        "autonomy_explicit_booklet_preference" if explicit else "autonomy_passport_booklet_choice"
+    )
+    scenario = next(item for item in replay["AUTONOMY_SCENARIOS"] if item.name == scenario_name)
+    run.__globals__["AUTONOMY_SCENARIOS"] = (scenario,)
+    original_mock = replay["ReplayClient"].mock
+
+    def answer_preference(client, request):
+        if client.step.expected != "choice":
+            return original_mock(client, request)
+        prompt = json.loads(json.loads(request.content)["messages"][1]["content"])
+        selected = bind_question_action(
+            prompt,
+            action(
+                "answer_question",
+                source_id="request",
+                quote="64-page booklet" if explicit else "32-pager",
+            ),
+        )
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": json.dumps(selected)}, "finish_reason": "stop"}]
+            },
+        )
+
+    replay["ReplayClient"].mock = answer_preference
+    assert await run(False, suite="autonomy") == (0 if explicit else 1)
+    rows = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    first = rows[1]
+    assert first["action"] == "answer_question"
+    assert first["pass"] is explicit
+    assert first["rejection"] == (None if explicit else "unexpected_action")
+    if explicit:
+        assert all(row["pass"] for row in rows[1:-1])
+        assert rows[-1]["pass"] is True
+        if http:
+            assert any(row.get("stage") == "notes" and row["outcome"] == "done" for row in rows)
+
+
+@pytest.mark.parametrize("http", [False, True])
+@pytest.mark.parametrize("valid_review", [False, True])
+async def test_replay_distinguishes_actionless_resolution_review_and_validates_actual_recovery(
+    http,
+    valid_review,
+    capsys,
+):
+    import runpy
+    from pathlib import Path
+
+    replay = runpy.run_path(str(Path(__file__).resolve().parents[2] / "scripts/planner_replay.py"))
+    run = replay["run_http"] if http else replay["run"]
+    scenario = next(
+        item
+        for item in replay["AUTONOMY_SCENARIOS"]
+        if item.name == "autonomy_confirmation_and_final_question"
+    )
+    run.__globals__["AUTONOMY_SCENARIOS"] = (scenario,)
+    original_mock = replay["ReplayClient"].mock
+    protocols = []
+
+    def omit_initial_proof(client, request):
+        body = json.loads(request.content)
+        properties = body["response_format"]["json_schema"]["schema"]["properties"]
+        is_review = set(properties) == {"resolutions"}
+        protocols.append("review" if is_review else "planner")
+        response = original_mock(client, request)
+        envelope = response.json()
+        selected = json.loads(envelope["choices"][0]["message"]["content"])
+        if not is_review:
+            selected["resolutions"] = []
+        elif not valid_review:
+            # A planner action is not a valid actionless evidence-review response.
+            selected["action"] = {"kind": "finish", "blocked": False}
+        envelope["choices"][0]["message"]["content"] = json.dumps(selected)
+        return httpx.Response(200, json=envelope)
+
+    replay["ReplayClient"].mock = omit_initial_proof
+    assert await run(False, suite="autonomy") == (0 if valid_review else 1)
+    rows = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    closing = next(row for row in rows if row.get("step") == 2)
+    assert closing["action"] == "rules"
+    assert closing["resolution_review"] is True
+    assert closing["model_quality"] is True
+    assert closing["pass"] is valid_review
+    assert closing["rejection"] == (None if valid_review else "schema")
+    assert protocols == ["planner", "review"]
+    assert rows[-1]["model_requests"] == 2
+    if http and valid_review:
+        assert any(row.get("stage") == "notes" and row["outcome"] == "done" for row in rows)
+
+
+@pytest.mark.parametrize("amount", ["₹1,800", "1,800 rupees", "$1,800.00"])
+def test_http_explicit_budget_rejects_grouped_currency_amounts(amount):
+    provider = Provider(accept_current_offer)
+    client = client_for(provider)
+    currency_limit = "$800" if amount.startswith("$") else "₹800"
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_general(
+            f, "Order a replacement passport. Pay at most " + currency_limit + "."
+        )
+        f.live(call_id)
+        f.speak_last(call_id)
+        f.manager._sessions[call_id].delegate.opened = True
+        offered = f"I can register the replacement passport order for {amount}. Shall I proceed?"
+        f.listen_turn(call_id, offered)
+        delegate = f.manager._sessions[call_id].delegate
+        assert delegate.agent_answers == []
+        assert not delegate.planner.completed
+        assert delegate.planner.goals[0].accepted_offer is None
+        f.finish()
+        notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
+        assert notes["outcome"] != "done"
+
+
+def test_http_option_substring_cannot_hide_full_current_turn_price_from_budget_guard():
+    def choose(prompt):
+        selected = choose_current_option(prompt, "32-pager")
+        selected["action"]["quote"] = "A 32-pager or 64-pager"
+        return selected
+
+    provider = Provider(choose)
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_general(f, "Order a replacement passport. Pay at most ₹800.")
+        f.live(call_id)
+        f.speak_last(call_id)
+        f.manager._sessions[call_id].delegate.opened = True
+        f.listen_turn(call_id, "A 32-pager or 64-pager costs ₹1800. Which booklet would you like?")
+        delegate = f.manager._sessions[call_id].delegate
+        assert delegate.agent_answers == []
+        assert not delegate.planner.completed
+        assert delegate.planner.goals[0].accepted_offer is None
+        f.finish()
+        notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
+        assert notes["outcome"] != "done"
+
+
+@pytest.mark.parametrize(
+    ("question", "option"),
+    [
+        ("Are you allergic to penicillin or latex?", "penicillin"),
+        ("Is the patient a new or existing customer?", "new"),
+    ],
+)
+def test_http_unknown_personal_facts_are_not_autonomous_operational_choices(question, option):
+    provider = Provider(lambda prompt: choose_current_option(prompt, option))
+    client = client_for(provider)
+    with contextlib.ExitStack() as stack:
+        f = build_flow(stack, brain=Brain(client))
+        call_id = start_general(f, "Book with Dr. Rao.")
+        f.live(call_id)
+        f.speak_last(call_id)
+        f.manager._sessions[call_id].delegate.opened = True
+        spoken = f.listen_turn(call_id, question)
+        delegate = f.manager._sessions[call_id].delegate
+        assert option not in spoken
+        assert delegate.agent_answers == []
+        assert not delegate.planner.completed
+        assert delegate.planner.goals[0].accepted_offer is None
+
+
+@pytest.mark.parametrize("http", [False, True])
+@pytest.mark.parametrize("request_cap", [1, 12])
+async def test_replay_semantic_choice_encoding_repair_uses_same_transport_budget(
+    http, request_cap, capsys
+):
+    import runpy
+    from pathlib import Path
+
+    replay = runpy.run_path(str(Path(__file__).resolve().parents[2] / "scripts/planner_replay.py"))
+    run = replay["run_http"] if http else replay["run"]
+    original = next(
+        item
+        for item in replay["AUTONOMY_SCENARIOS"]
+        if item.name == "autonomy_passport_booklet_choice"
+    )
+    scenario = replay["Scenario"](
+        original.name,
+        original.goal,
+        original.steps if request_cap == 12 else original.steps[:1],
+        caller_available=False,
+    )
+    run.__globals__["AUTONOMY_SCENARIOS"] = (scenario,)
+    run.__globals__["MAX_REQUESTS"] = request_cap
+    original_mock = replay["ReplayClient"].mock
+    feedback_seen = []
+
+    def wrong_encoding_then_repair(client, request):
+        prompt = json.loads(json.loads(request.content)["messages"][1]["content"])
+        feedback_seen.append("validation_feedback" in prompt)
+        response = original_mock(client, request)
+        if client.step.expected == "choice" and "validation_feedback" not in prompt:
+            selected = bind_question_action(
+                prompt,
+                action(
+                    "answer_question",
+                    source_id="request",
+                    quote="32-pager",
+                ),
+            )
+            envelope = response.json()
+            envelope["choices"][0]["message"]["content"] = json.dumps(selected)
+            return httpx.Response(200, json=envelope)
+        return response
+
+    replay["ReplayClient"].mock = wrong_encoding_then_repair
+    assert await run(False, suite="autonomy") == (0 if request_cap == 12 else 1)
+    rows = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    assert rows[-1]["model_requests"] == (3 if request_cap == 12 else 1)
+    assert rows[-1]["model_requests"] <= request_cap
+    if request_cap == 12:
+        assert feedback_seen == [False, True, False]
+        assert rows[1]["action"] == "choose_option" and rows[1]["pass"] is True
+        assert all(row["pass"] for row in rows[1:-1])
+        if http:
+            assert any(row.get("stage") == "notes" and row["outcome"] == "done" for row in rows)
+    else:
+        assert feedback_seen == [False]
+        assert rows[1]["pass"] is False and rows[1]["rejection"] == "budget"

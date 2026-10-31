@@ -85,6 +85,7 @@ final class DelegatedEdgeCaseUITests: XCTestCase {
         XCTAssertFalse(app.element("ask.question").exists, "the question stayed open after the answer")
         openNotes()
         XCTAssertTrue(app.buttons["notes.done"].waitForExistence(timeout: 10))
+        app.buttons["notes.transcript"].tap()
         XCTAssertTrue(app.scrolledToText(containing: "Agent (for you), \(shown)").exists,
                       "the notes transcript lacks the answer")
     }
@@ -105,7 +106,7 @@ final class DelegatedEdgeCaseUITests: XCTestCase {
         XCTAssertFalse(app.element("caption.you").exists, "a timed-out question spoke an answer for the user")
 
         openNotes()
-        app.waitFor(app.element("notes.outcome"), labelContains: "call back")
+        app.waitFor(app.element("notes.outcome"), labelContains: "Follow-up needed")
     }
 
     // MARK: Camera above the question (issue #88)
@@ -273,14 +274,21 @@ final class DelegatedEdgeCaseUITests: XCTestCase {
 
     // MARK: Notes
 
-    /// The call service's summary is marked as possibly wrong, and the transcript (what was
-    /// actually said) is shown with it.
-    func testNotesMarkTheAutomaticSummaryAsFallibleAndShowTheTranscript() {
+    /// The summary is glanceable and the transcript can be expanded below it.
+    func testNotesLeadWithSummaryAndKeepTranscriptSecondary() {
         launch(EdgeCaseLaunch.fixture("notes"))
         app.waitFor(app.element("notes.outcome"), labelContains: "Booked")
-        XCTAssertTrue(app.scrolledToText(containing: "The caller booked a doctor's appointment").exists)
-        XCTAssertTrue(app.scrolledToText(containing: "Automatic summary · may be inaccurate.").exists,
-                      "the automatic summary isn't marked as possibly wrong")
+        XCTAssertTrue(app.element("notes.summaryOverview").isHittable)
+        XCTAssertTrue(app.staticTexts["Book a clinic appointment"].exists)
+        XCTAssertTrue(app.staticTexts["The clinic confirmed the appointment."].exists)
+        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@", "may be inaccurate")).firstMatch.exists)
+        app.keepScreenshot("call-summary", in: self)
+        let transcript = app.buttons["notes.transcript"]
+        XCTAssertEqual(transcript.value as? String, "Collapsed")
+        XCTAssertGreaterThanOrEqual(transcript.frame.height, 44, "The disclosure needs a usable tap target")
+        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Great, you're booked for 10:30 tomorrow morning.")).firstMatch.exists)
+        transcript.tap()
+        XCTAssertEqual(transcript.value as? String, "Expanded")
         XCTAssertTrue(app.scrolledToText(containing: "They said, Great, you're booked for 10:30 tomorrow morning.").exists,
                       "the transcript is missing")
     }

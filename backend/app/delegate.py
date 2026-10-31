@@ -27,6 +27,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ValidationError, model_validator
 
+from app.approved_context import validate_answer
 from app.groq_client import GroqClient, GroqError
 from app.protocol import (
     MAX_CHIPS,
@@ -44,15 +45,23 @@ from app.protocol import (
 )
 from app.steer_planner import (
     PLANNER_PROMPT,
+    RESOLUTION_REVIEW_PROMPT,
     AcceptOffer,
     AnswerQuestion,
+    AnswerSpan,
     AskOperator,
+    ChooseOption,
     Finish,
+    GoalResolution,
     NeedCaller,
+    PendingEvidenceReview,
     PlannerMemory,
     PlannerTurn,
     ReceiverTurn,
+    ResolutionReview,
     Wait,
+    choice_objection,
+    choice_question_objection,
     goal_kind,
     normal,
     offer_matches_goal,
@@ -327,11 +336,11 @@ class Brief:
     @property
     def days(self) -> frozenset[str]:
         """Days the typed request pins the appointment to; empty means any day."""
-        if not self.request:
-            return frozenset()
         return (
             frozenset(
-                f.split(":", 1)[1] for f in temporal_facts(self.request) if f.startswith("day:")
+                f.split(":", 1)[1]
+                for f in temporal_facts(self.request or self.text)
+                if f.startswith("day:")
             )
             & _PIN_DAYS
         )
@@ -339,10 +348,10 @@ class Brief:
     @property
     def parts(self) -> frozenset[str]:
         """Parts of day the typed request allows; empty means any time."""
-        if not self.request:
-            return frozenset()
         return frozenset(
-            f.split(":", 1)[1] for f in temporal_facts(self.request) if f.startswith("part:")
+            f.split(":", 1)[1]
+            for f in temporal_facts(self.request or self.text)
+            if f.startswith("part:")
         )
 
 
@@ -376,6 +385,7 @@ def check_line(line: str, brief: Brief, transcript_text: str) -> list[str]:
     known = " ".join(
         [brief.text, brief.name, brief.callback or "", brief.notes or "", transcript_text]
         + [f"{d.label} {d.value}" for d in brief.details]
+        + [d.text for d in brief.documents]
     )
     reasons += _invented_numbers(text, known)
     reasons += _invented_names(text, known)
@@ -445,8 +455,22 @@ class DelegateState:
     planner: PlannerMemory = field(default_factory=PlannerMemory)
     revision: int = 0
     caller_available: bool = True
+    recent_agent_lines: list[str] = field(default_factory=list)
     caller_question_by_turn: dict[str, ReceiverTurn | None] = field(default_factory=dict)
     composing_question: ReceiverTurn | None = None
+
+    @property
+    def uses_planner(self) -> bool:
+        return self.steer or bool(self.brief.request or self.brief.documents)
+
+    @property
+    def agent_context(self) -> list[str]:
+        return self.recent_agent_lines[-2:] or [exchange.agent for exchange in self.exchanges[-2:]]
+
+    def record_agent_line(self, text: str) -> None:
+        if not self.recent_agent_lines or self.recent_agent_lines[-1] != text:
+            self.recent_agent_lines.append(text)
+            self.recent_agent_lines = self.recent_agent_lines[-2:]
 
     def observe_receiver(self, text: str) -> None:
         self.held_text = None
@@ -797,7 +821,9 @@ class RuleBrain:
                     return Decision(CALLBACK_LINE, done=True, callback=True, kind="close")
                 state.asked_for_another_time = True
                 return Decision(ANOTHER_TIME_LINE, kind="time")
-        if "name" in heard.lower():
+        if "name" in heard.lower() and not re.search(
+            r"\b(doctor|physician|clinician|company|business)\b", heard, re.I
+        ):
             return Decision(f"The name is {brief.name}.", kind="share")
         # Nothing to commit to. Say what the call is about when asked; ask for the times
         # only when the request is about a time; otherwise ask what happens next.
@@ -910,20 +936,15 @@ def _user_message(state: DelegateState, heard: str) -> str:
         "user_answers_so_far": state.answers,
         "receptionist_just_said": heard,
     }
-    if state.steer:
-        payload["caller_goal"] = state.brief.request or state.brief.goal
-        payload["approved_caller_details"] = (
-            [{"label": "Name", "value": state.brief.name}]
-            + (
-                [{"label": "Callback", "value": state.brief.callback}]
-                if state.brief.callback
-                else []
-            )
-            + [{"label": d.label, "value": d.value} for d in state.brief.details]
-        )
-        payload["approved_documents"] = [
-            {"name": d.name, "text": d.text[:6000]} for d in state.brief.documents
-        ]
+    payload["caller_goal"] = state.brief.request or state.brief.goal
+    payload["approved_caller_details"] = (
+        [{"label": "Name", "value": state.brief.name}]
+        + ([{"label": "Callback", "value": state.brief.callback}] if state.brief.callback else [])
+        + [{"label": d.label, "value": d.value} for d in state.brief.details]
+    )
+    payload["approved_documents"] = [
+        {"name": d.name, "text": d.text[:6000]} for d in state.brief.documents
+    ]
     return json.dumps(payload)
 
 
@@ -985,21 +1006,78 @@ def verified_lookup(found: _Lookup, documents: tuple[Document, ...]) -> Detail |
 
 
 def _receiver_needs_answer(heard: str) -> bool:
-    text = _normalise(heard)
-    return receiver_question(heard) and not (
-        _HOW_CAN_I_HELP.search(text)
-        or _ANYTHING_ELSE.search(text)
-        or re.fullmatch(
-            r"(?:can|could|would) you (?:please )?(?:hold|wait)(?: for .*)?[?!. ]*", text
+    for clause in re.findall(r"[^.!?]+[.!?]?", heard):
+        if not receiver_question(clause):
+            continue
+        text = _normalise(clause)
+        additional = re.search(
+            r"\b(?:and|also|but)\s+(?:what|which|when|where|who|why|how|do|does|did|"
+            r"is|are|have|has|can|could|would|will|may|please|tell|give)\b",
+            text,
         )
+        if (_HOW_CAN_I_HELP.search(text) or _ANYTHING_ELSE.search(text)) and not additional:
+            continue
+        if re.fullmatch(
+            r"(?:can|could|would) you (?:please )?(?:hold|wait)(?: for .*)?[?!. ]*", text
+        ):
+            continue
+        return True
+    return False
+
+
+def _quiet_receiver_turn(heard: str) -> bool:
+    if re.fullmatch(r"(?:okay|ok|right|sure|thank you|thanks|alright)[.! ,]*", heard.strip(), re.I):
+        return True
+    words = set(normal(heard).split())
+    holding_words = frozenset(
+        {
+            "one",
+            "moment",
+            "a",
+            "just",
+            "second",
+            "please",
+            "hold",
+            "wait",
+            "for",
+            "while",
+            "i",
+            "m",
+            "am",
+            "checking",
+            "check",
+            "look",
+            "looking",
+            "pull",
+            "pulling",
+            "up",
+            "let",
+            "me",
+            "that",
+            "this",
+            "the",
+            "records",
+            "record",
+            "file",
+            "details",
+            "diary",
+            "now",
+            "can",
+            "could",
+            "would",
+            "you",
+            "okay",
+            "ok",
+        }
     )
+    return bool(_OPERATOR_CHECKING.search(_normalise(heard))) and words <= holding_words
 
 
 def _steer_payload(state: DelegateState, heard: str) -> str:
     memory = state.planner
     sources = [
         {"source_id": "request", "text": state.brief.request or state.brief.goal},
-        {"source_id": "name", "text": state.brief.name},
+        {"source_id": "name", "label": "Caller name", "text": state.brief.name},
     ]
     if state.brief.notes:
         sources.append({"source_id": "notes", "text": state.brief.notes})
@@ -1016,25 +1094,42 @@ def _steer_payload(state: DelegateState, heard: str) -> str:
     sources.extend(asdict(reply) for reply in memory.replies)
     return json.dumps(
         {
-            "caller_goal": state.brief.request or state.brief.goal,
-            "goals": [asdict(g) for g in memory.goals],
-            "caller_available": state.caller_available,
-            "offer_terms": [asdict(t) for t in memory.offer_terms],
             "approved_sources": sources,
-            "receiver_turns": [asdict(t) for t in memory.receiver],
-            "pending_receiver_questions": memory.pending,
-            "conversation_roles": {
-                "caller": "The app user whose approved request and sources define the goal.",
-                "receiver": "The person answering the telephone, whose latest utterance follows.",
+            "caller_goal": state.brief.request or state.brief.goal,
+            "decision_authority": {
+                "omitted_preferences": "open",
+                "routine_service_fees": "authorized_within_explicit_constraints",
+                "current_terms_objection": offer_objection(
+                    " ".join(
+                        [state.brief.request or state.brief.goal] + [r.text for r in memory.replies]
+                    ),
+                    memory.offer_terms,
+                ),
             },
+            "goals": [
+                {
+                    "resolved": g.evidence is not None,
+                    **{
+                        key: value
+                        for key, value in asdict(g).items()
+                        if value is not None or key == "evidence"
+                    },
+                }
+                for g in memory.goals
+            ],
+            "offer_terms": [asdict(t) for t in memory.offer_terms],
+            "receiver_turns": [asdict(t) for t in memory.receiver[-3:-1]],
+            "user_answers_so_far": state.answers[-2:],
+            "last_agent_lines": state.agent_context,
+            "caller_available": state.caller_available,
+            "pending_receiver_questions": memory.pending,
             "current_receiver_turn": {
                 **asdict(memory.receiver[-1]),
-                "role": "receiver",
-                "requires_caller_answer": memory.receiver[-1].source_id in memory.pending,
+                "expects_reply": bool(memory.pending),
             },
-            "receptionist_just_said": heard,
-            "user_answers_so_far": state.answers,
-        }
+        },
+        separators=(",", ":"),
+        ensure_ascii=False,
     )
 
 
@@ -1047,12 +1142,152 @@ class Brain:
         self.timeout_s = timeout_s
         self.rules = RuleBrain()
 
-    def _need_caller(self, state: DelegateState, heard: str) -> Decision:
+    @staticmethod
+    def _merge_resolutions(
+        memory: PlannerMemory,
+        receiver: ReceiverTurn,
+        resolutions: list[GoalResolution],
+        allowed_ids: set[str] | tuple[str, ...],
+        question_context: str | None = None,
+    ) -> None:
+        for resolution in resolutions:
+            goal = next((g for g in memory.goals if g.goal_id == resolution.goal_id), None)
+            if (
+                goal is not None
+                and goal.goal_id in allowed_ids
+                and resolution.source_id == receiver.source_id
+                and resolution.quote in receiver.text
+                and not _receiver_needs_answer(resolution.quote)
+                and supports_resolution(goal, resolution.quote, question_context)
+            ):
+                goal.evidence = ReceiverTurn(receiver.source_id, resolution.quote)
+
+    async def _recover_resolution(self, state: DelegateState) -> None:
+        memory, structured = state.planner, getattr(self.client, "complete_structured", None)
+        candidate = memory.evidence_review
+        if (
+            candidate is None
+            or candidate.reviewed
+            or structured is None
+            or len(memory.receiver) < 2
+            or candidate.receiver.source_id != memory.receiver[-2].source_id
+        ):
+            return
+        goals = [g for g in memory.goals if g.goal_id in candidate.goal_ids and not g.evidence]
+        if not goals:
+            return
+        candidate.reviewed = True
+        payload = json.dumps(
+            {
+                "goals": [{"goal_id": g.goal_id, "text": g.text, "kind": g.kind} for g in goals],
+                "receiver": asdict(candidate.receiver),
+                "last_agent_lines": list(candidate.agent_lines),
+            },
+            separators=(",", ":"),
+        )
+        try:
+            review = await asyncio.wait_for(
+                structured(RESOLUTION_REVIEW_PROMPT, payload, ResolutionReview), self.timeout_s
+            )
+        except (TimeoutError, GroqError, ValidationError) as exc:
+            log.info(
+                "planner evidence review unavailable category=%s",
+                getattr(exc, "category", type(exc).__name__),
+            )
+            return
+        self._merge_resolutions(
+            memory,
+            candidate.receiver,
+            review.resolutions,
+            candidate.goal_ids,
+            candidate.agent_lines[-1] if candidate.agent_lines else None,
+        )
+
+    @staticmethod
+    def _repairable_encoding(state: DelegateState, heard: str, turn: PlannerTurn) -> bool:
+        memory, action = state.planner, turn.action
+        current = memory.receiver[-1]
+        if (
+            not any(g.kind == "external_action" and not g.evidence for g in memory.goals)
+            or any(source_id != current.source_id for source_id in memory.pending)
+            or choice_question_objection(heard)
+            or not re.search(
+                r"\b(prefer|want|choose|select|pick)\b|"
+                r"\b(?:would|do|could) you (?:please )?like\b",
+                heard,
+                re.I,
+            )
+        ):
+            return False
+        approved = " ".join(
+            [state.brief.request or state.brief.goal] + [r.text for r in memory.replies]
+        )
+        if offer_objection(approved, memory.offer_terms) in {
+            "unapproved_price",
+            "currency_mismatch",
+            "unrequested_service",
+        }:
+            return False
+        if isinstance(action, AnswerQuestion) and action.question_id in memory.pending:
+            sources = json.loads(_steer_payload(state, heard))["approved_sources"]
+            _, rejection = validate_answer(
+                sources, memory.pending[action.question_id], action.question_id, action.spans
+            )
+            return rejection == "source_span"
+        if isinstance(action, NeedCaller):
+            return action.question_id == current.source_id and action.question_id in memory.pending
+        return isinstance(action, ChooseOption) and (
+            action.source_id != current.source_id
+            or action.quote not in heard
+            or action.option not in action.quote
+        )
+
+    async def _plan_with_repair(self, state: DelegateState, heard: str) -> PlannerTurn:
+        structured = self.client.complete_structured
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + self.timeout_s
+        payload = json.loads(_steer_payload(state, heard))
+        for attempt in range(2):
+            remaining = deadline - loop.time()
+            if remaining <= 0:
+                raise TimeoutError
+            turn = await asyncio.wait_for(
+                structured(
+                    PLANNER_PROMPT,
+                    json.dumps(payload, separators=(",", ":"), ensure_ascii=False),
+                    PlannerTurn,
+                ),
+                remaining,
+            )
+            if attempt == 0 and self._repairable_encoding(state, heard, turn):
+                log.info("planner action rejected category=preference_provenance retry=1")
+                payload["validation_feedback"] = (
+                    "Invalid handoff or source/action encoding for an authorized offered "
+                    "preference. Omitted preferences are open, so choose a reasonable ordinary "
+                    "offered option instead of need_caller. A newly chosen "
+                    "default was not a caller fact. Use choose_option with the CURRENT receiver "
+                    "source and exact offered option; never fabricate a caller quote. Recompute "
+                    "current resolutions first and honor all explicit constraints."
+                )
+                continue
+            return turn
+        raise AssertionError("bounded planner attempt did not return")
+
+    def _need_caller(
+        self,
+        state: DelegateState,
+        heard: str,
+        question_id: str | None = None,
+        *,
+        decision: bool = False,
+    ) -> Decision:
         memory = state.planner
-        if not memory.current_question and memory.receiver:
+        if decision and not memory.current_question and memory.receiver:
             current = memory.receiver[-1]
             memory.pending[current.source_id] = current.text
-        question = memory.current_question or heard.strip()
+        question = memory.pending.get(question_id) if question_id else memory.current_question
+        if not question:
+            return Decision("")
         if not state.caller_available:
             return Decision(NEEDS_CALLER_CLOSE_LINE, done=True, kind="close", follow_up=question)
         return Decision(DEFER_LINE, kind="defer", follow_up=question)
@@ -1062,12 +1297,12 @@ class Brain:
             return self._need_caller(state, heard)
         if _says_goodbye(heard):
             return Decision(CLOSE_LINE, done=True, kind="close")
-        if _OPERATOR_CHECKING.search(_normalise(heard)):
-            return Decision(ACKNOWLEDGE_LINE)
-        if any(
-            goal.kind == "external_action" and not goal.evidence for goal in state.planner.goals
+        if _OPERATOR_CHECKING.search(_normalise(heard)) or re.fullmatch(
+            r"(?:okay|ok|right|yes|sure|thank you|thanks|alright)[.! ,]*", heard.strip(), re.I
         ):
-            return self._need_caller(state, heard)
+            return Decision("")
+        if any(g.kind == "external_action" and not g.evidence for g in state.planner.goals):
+            return Decision("")
         return Decision(CLARIFY_LINE)
 
     async def _reply_steer(self, state: DelegateState, heard: str, fallback: Decision) -> Decision:
@@ -1089,16 +1324,57 @@ class Brain:
             )
         if fallback.kind == "open":
             return fallback
+        if state.exchanges and re.fullmatch(
+            r"(?:sorry )?(?:which one|what was that|say that again|repeat that|"
+            r"(?:can|could|would) you (?:please )?(?:repeat that|say that again))",
+            normal(heard),
+        ):
+            previous = state.exchanges[-1].agent
+            choices = {
+                g.accepted_offer.text
+                for g in memory.goals
+                if g.accepted_offer and g.accepted_offer.text == previous
+            }
+            if len(choices) == 1:
+                memory.pending.pop(memory.receiver[-1].source_id, None)
+                return Decision(previous, kind="share")
+        if not memory.pending and _quiet_receiver_turn(heard):
+            if not memory.completed:
+                await self._recover_resolution(state)
+            return (
+                Decision(CLOSE_LINE, done=True, kind="close") if memory.completed else Decision("")
+            )
         approved = " ".join(
             [state.brief.request or state.brief.goal] + [r.text for r in memory.replies]
         )
         objection = offer_objection(approved, memory.offer_terms)
-        if objection and (
-            fallback.kind == "accept"
-            or re.search(r"\b(accept|agree|authorize|proceed|pay|charge|deposit)\b", heard, re.I)
+        if (
+            objection
+            and not re.search(r"\bor\b", heard, re.I)
+            and (
+                fallback.kind == "accept"
+                or re.search(
+                    r"\b(accept|agree|authorize|proceed|pay|charge|deposit)\b", heard, re.I
+                )
+            )
         ):
-            return self._need_caller(state, heard)
-        if fallback.kind in {"share", "accept", "decline", "time"}:
+            return self._need_caller(state, heard, decision=True)
+        if fallback.kind in {"accept", "decline", "time"} and not (
+            fallback.kind in {"accept", "time"}
+            and (
+                re.search(r"\bor\b", heard, re.I)
+                or (
+                    not memory.pending
+                    and callable(getattr(self.client, "complete_structured", None))
+                )
+            )
+        ):
+            if fallback.kind == "accept":
+                outstanding = [
+                    g for g in memory.goals if g.kind == "external_action" and not g.evidence
+                ]
+                if len(outstanding) == 1:
+                    outstanding[0].accepted_offer = memory.receiver[-1]
             memory.answer_question(heard)
             return fallback
         if _HOW_CAN_I_HELP.search(_normalise(heard)) and not _receiver_needs_answer(heard):
@@ -1107,12 +1383,29 @@ class Brain:
             return Decision(CLOSE_LINE, done=True, kind="close")
         structured = getattr(self.client, "complete_structured", None)
         if structured is None:
+            if fallback.kind == "share" and memory.current_question_turn:
+                sources = json.loads(_steer_payload(state, heard))["approved_sources"]
+                spans = [
+                    AnswerSpan(source_id=s["source_id"], quote=s["text"])
+                    for s in sources
+                    if s["source_id"] != "request"
+                    and not s["source_id"].startswith("document:")
+                    and s["text"]
+                    and s["text"] in fallback.say
+                ]
+                if spans and self._approved_answer(
+                    state,
+                    heard,
+                    AnswerQuestion(
+                        kind="answer_question",
+                        question_id=memory.current_question_turn.source_id,
+                        spans=spans,
+                    ),
+                ):
+                    return fallback
             return self._steer_recovery(state, heard)
         try:
-            turn = await asyncio.wait_for(
-                structured(PLANNER_PROMPT, _steer_payload(state, heard), PlannerTurn),
-                self.timeout_s,
-            )
+            turn = await self._plan_with_repair(state, heard)
         except (TimeoutError, GroqError, ValidationError) as exc:
             log.info(
                 "steer planner unavailable category=%s status=%s fields=%s",
@@ -1122,16 +1415,42 @@ class Brain:
             )
             return self._steer_recovery(state, heard)
         current = memory.receiver[-1]
-        for resolution in turn.resolutions:
-            goal = next((g for g in memory.goals if g.goal_id == resolution.goal_id), None)
-            if (
-                goal is not None
-                and resolution.source_id == current.source_id
-                and resolution.quote in heard
-                and not _receiver_needs_answer(heard)
-                and supports_resolution(goal, resolution.quote)
-            ):
-                goal.evidence = ReceiverTurn(current.source_id, resolution.quote)
+        log.info(
+            "planner decision mode=%s document_count=%d document_chars=%d action=%s",
+            state.mode,
+            len(state.brief.documents),
+            sum(len(d.text) for d in state.brief.documents),
+            turn.action.kind,
+        )
+        self._merge_resolutions(
+            memory,
+            current,
+            turn.resolutions,
+            {g.goal_id for g in memory.goals},
+            state.agent_context[-1] if state.agent_context else None,
+        )
+        # Receiver proof owns completion. A stale proposed offer cannot invent a
+        # missing caller question after every goal is resolved.
+        if memory.completed and not memory.current_question:
+            return Decision(CLOSE_LINE, done=True, source="llm", kind="close")
+        eligible = tuple(
+            g.goal_id
+            for g in memory.goals
+            if not g.evidence
+            and any(
+                not _receiver_needs_answer(clause)
+                and not _OPERATOR_CHECKING.search(_normalise(clause))
+                and supports_resolution(
+                    g, clause, state.agent_context[-1] if state.agent_context else None
+                )
+                for clause in re.findall(r"[^.!?]+[.!?]?", current.text)
+            )
+        )
+        memory.evidence_review = (
+            PendingEvidenceReview(current, eligible, agent_lines=tuple(state.agent_context))
+            if eligible
+            else None
+        )
         action = turn.domain_action()
         if isinstance(action, AcceptOffer):
             goal = next((g for g in memory.goals if g.goal_id == action.goal_id), None)
@@ -1142,14 +1461,17 @@ class Brain:
                 or action.source_id != current.source_id
                 or action.quote not in heard
                 or not re.search(
-                    r"\b(can|could|able|will|shall|would|want|proceed|go ahead)\b", heard, re.I
+                    r"\b(can|could|able|will|shall|would|want|proceed|go ahead|have|available|work|"
+                    r"fee|cost)\b",
+                    heard,
+                    re.I,
                 )
                 or objection
                 or not offer_matches_goal(goal, heard)
                 or not _offer_fits(heard, state.brief, _times_heard(heard).single)
                 or any(source_id != current.source_id for source_id in memory.pending)
             ):
-                return self._need_caller(state, heard)
+                return self._need_caller(state, heard, decision=True)
             preferred_clocks = _clock_times(state.brief.request or "")
             offered_clocks = _clock_times(heard)
             if (
@@ -1157,24 +1479,58 @@ class Brain:
                 and offered_clocks
                 and not (preferred_clocks.keys() & offered_clocks.keys())
             ):
-                return self._need_caller(state, heard)
+                return self._need_caller(state, heard, decision=True)
             goal.accepted_offer = ReceiverTurn(current.source_id, action.quote)
             memory.pending.pop(current.source_id, None)
             return Decision(ACCEPT_REQUEST_LINE, kind="accept", source="llm")
+        if isinstance(action, ChooseOption):
+            goal = next((g for g in memory.goals if g.goal_id == action.goal_id), None)
+            rejection = None
+            if (
+                goal is None
+                or goal.kind != "external_action"
+                or goal.evidence
+                or action.source_id != current.source_id
+                or action.quote not in heard
+                or any(source_id != current.source_id for source_id in memory.pending)
+            ):
+                rejection = "option_scope"
+            else:
+                rejection = choice_objection(
+                    approved,
+                    goal,
+                    action.quote,
+                    action.option,
+                    [t for t in memory.offer_terms if t.source_id != current.source_id],
+                    complete_offer=heard,
+                )
+                if not rejection and not _offer_fits(
+                    action.option, state.brief, _times_heard(action.option).single
+                ):
+                    rejection = "explicit_time"
+            if rejection:
+                log.info("planner choice rejected category=%s", rejection)
+                return self._need_caller(state, heard, decision=True)
+            assert goal is not None
+            goal.accepted_offer = ReceiverTurn(current.source_id, action.option)
+            memory.pending.pop(current.source_id, None)
+            return Decision(action.option, kind="accept", source="llm")
         if isinstance(action, AnswerQuestion):
-            if current.source_id not in memory.pending:
+            if action.question_id not in memory.pending:
+                log.info("planner answer rejected category=question_binding")
                 return self._steer_recovery(state, heard)
-            return self._approved_answer(state, heard, action) or self._need_caller(state, heard)
-        if current.source_id in memory.pending:
-            return self._need_caller(state, heard)
+            return self._approved_answer(state, heard, action) or self._need_caller(
+                state, heard, action.question_id
+            )
         if isinstance(action, NeedCaller):
+            if action.question_id not in memory.pending:
+                log.info("planner action rejected category=missing_question")
+                return self._steer_recovery(state, heard)
+            return self._need_caller(state, heard, action.question_id)
+        if memory.current_question:
             return self._need_caller(state, heard)
         if isinstance(action, Wait):
-            return (
-                Decision(ACKNOWLEDGE_LINE, source="llm")
-                if _OPERATOR_CHECKING.search(_normalise(heard))
-                else self._steer_recovery(state, heard)
-            )
+            return Decision("", source="llm")
         if isinstance(action, Finish):
             blocked = re.search(
                 r"\b(cannot|can't|unable|missing|not possible|call back)\b", heard, re.I
@@ -1216,52 +1572,41 @@ class Brain:
     def _approved_answer(
         self, state: DelegateState, heard: str, action: AnswerQuestion
     ) -> Decision | None:
+        question = state.planner.pending.get(action.question_id)
+        if question is None:
+            return None
         payload = json.loads(_steer_payload(state, heard))
-        source = next(
-            (s for s in payload["approved_sources"] if s["source_id"] == action.source_id), None
+        line, rejection = validate_answer(
+            payload["approved_sources"], question, action.question_id, action.spans
         )
-        if source is None:
+        if rejection:
+            log.info("planner answer rejected category=%s", rejection)
             return None
-        if action.source_id.startswith("caller:"):
-            question = state.planner.current_question_turn
-            if question is None or source.get("question_id") != question.source_id:
-                return None
-        if action.source_id.startswith("document:"):
-            detail = verified_lookup(
-                _Lookup(label="The supplied detail", value=action.quote), state.brief.documents
-            )
-            if detail is None or _normalised_text(detail.value) not in _normalised_text(
-                source["text"]
-            ):
-                return None
-            requested_lines = [
-                source_line
-                for source_line in source["text"].splitlines()
-                if ":" in source_line
-                and set(normal(source_line.split(":", 1)[0]).split()) & set(normal(heard).split())
-            ]
-            if requested_lines and not any(
-                _normalised_text(detail.value) in _normalised_text(source_line)
-                for source_line in requested_lines
-            ):
-                return None
-            line = action.quote if action.quote in source["text"] else detail.value
-        else:
-            if action.quote not in source["text"] or not action.quote.strip():
-                return None
-            line = action.quote.strip()
-        if (
-            len(line) > 400
-            or len(line.split()) > MAX_WORDS
-            or (not action.source_id.startswith("document:") and _meta_text(line))
-        ):
-            return None
-        state.planner.answer_question(heard)
+        assert line is not None
+        state.planner.pending.pop(action.question_id, None)
+        state.follow_ups = [
+            q
+            for q in state.follow_ups
+            if not (normal(q) == normal(question) or normal(question).startswith(normal(q) + " "))
+        ]
         return Decision(line, source="llm", kind="share")
 
     async def reply(self, state: DelegateState, heard: str) -> Decision:
-        fallback = self.rules.decide(state, heard)
-        if state.steer:
+        fallback = (
+            self.rules.decide_steer(state, heard)
+            if state.steer or (state.uses_planner and not state.attended)
+            else self.rules.decide(state, heard)
+        )
+        if state.uses_planner and state.attended and not state.steer and fallback.ask is not None:
+            return fallback
+        if (
+            state.attended
+            and not state.steer
+            and re.search(r"\b(?:what was that|say (?:that|it) again|repeat that)\b", heard, re.I)
+        ):
+            state.planner.answer_question(heard)
+            return fallback
+        if state.uses_planner:
             return await self._reply_steer(state, heard, fallback)
         if self.client is None:
             return fallback
@@ -1362,7 +1707,7 @@ def build_notes(
     for line in confirmations[:2]:
         summary.append(f'They confirmed: "{line.strip()}"')
     outcome = outcome_of(entries, answers, promised_callback) if ready else None
-    if ready and mode == "steer" and brief.request:
+    if ready and (mode == "steer" or brief.request or brief.documents):
         heard_anything = any(e.speaker == "receptionist" for e in entries)
         outcome = (
             ("done" if goal_completed else "callback" if promised_callback else "unclear")
@@ -1371,13 +1716,9 @@ def build_notes(
         )
     open_questions: list[str] = []
     if ready and outcome == "callback":
-        open_questions.append(
-            "The agent promised to call back. Decide on the offer and call again."
-        )
+        open_questions.append("A follow-up is needed. Decide on the offer and call again.")
     if ready and outcome == "unclear":
-        open_questions.append(
-            "Nothing was confirmed. Read the transcript and decide the next step."
-        )
+        open_questions.append("The full request was not confirmed.")
     if ready and outcome == "no_answer":
         open_questions.append("Nobody answered or nothing was heard.")
     for asked in follow_ups or []:

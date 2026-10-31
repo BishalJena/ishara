@@ -18,7 +18,7 @@ struct Attachment: Identifiable, Equatable {
     }
 
     var document: Document? {
-        problem == nil ? Document(name: name, text: text) : nil
+        problem == nil && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Document(name: name, text: text) : nil
     }
 }
 
@@ -46,17 +46,21 @@ enum AttachmentReader {
 
     private static func recognise(_ image: UIImage) async -> String {
         guard let cgImage = image.cgImage else { return "" }
+        let orientation = CGImagePropertyOrientation(image.imageOrientation)
         return await withCheckedContinuation { continuation in
-            let request = VNRecognizeTextRequest { request, _ in
-                let lines = (request.results as? [VNRecognizedTextObservation] ?? [])
-                    .compactMap { $0.topCandidates(1).first?.string }
-                continuation.resume(returning: lines.joined(separator: "\n"))
-            }
-            request.recognitionLevel = .accurate
-            request.usesLanguageCorrection = true
-            let handler = VNImageRequestHandler(cgImage: cgImage, orientation: .init(image.imageOrientation))
             DispatchQueue.global(qos: .userInitiated).async {
-                if (try? handler.perform([request])) == nil { continuation.resume(returning: "") }
+                // Vision objects stay on the worker that creates and performs them.
+                let request = VNRecognizeTextRequest()
+                request.recognitionLevel = .accurate
+                request.usesLanguageCorrection = true
+                let handler = VNImageRequestHandler(cgImage: cgImage, orientation: orientation)
+                do {
+                    try handler.perform([request])
+                    let lines = (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }
+                    continuation.resume(returning: lines.joined(separator: "\n"))
+                } catch {
+                    continuation.resume(returning: "")
+                }
             }
         }
     }
@@ -75,5 +79,16 @@ private extension CGImagePropertyOrientation {
         case .rightMirrored: self = .rightMirrored
         @unknown default: self = .up
         }
+    }
+}
+
+/// A selected document must finish reading or be removed before a call can start.
+extension Attachment {
+    static func callProblem(_ attachments: [Attachment], reading: Int) -> String? {
+        if reading > 0 { return "Reading your attachment… Wait before calling." }
+        if let failed = attachments.first(where: { $0.document == nil }) {
+            return "Couldn’t read \(failed.name). Remove it and attach a readable file before calling."
+        }
+        return nil
     }
 }

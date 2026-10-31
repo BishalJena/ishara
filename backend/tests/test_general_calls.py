@@ -40,6 +40,11 @@ class Planner:
         resolutions = reply.pop("resolutions", [])
         if kind == "finish":
             reply.setdefault("blocked", False)
+        if kind in {"answer_question", "need_caller"}:
+            pending = self.calls[-1]["pending_receiver_questions"]
+            reply.setdefault("question_id", next(reversed(pending), "receiver:0"))
+        if kind == "answer_question":
+            reply["spans"] = [{"source_id": reply.pop("source_id"), "quote": reply.pop("quote")}]
         return response_model.model_validate(
             {
                 "action": {"kind": kind, **reply},

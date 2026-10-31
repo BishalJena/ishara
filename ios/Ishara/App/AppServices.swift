@@ -77,6 +77,20 @@ struct AppServices {
         }
     }
 
+    func refreshRecentCall(_ record: CallRecord) async {
+        guard options.driver == .live, case .success(let config) = config,
+              let callID = record.backendCallID ?? record.notes?.callID else { return }
+        let client = BackendClient(config: config.backend)
+        for attempt in 0...NotesModel.maxRefreshes {
+            guard !Task.isCancelled else { return }
+            guard let notes = try? await client.notes(callID: callID) else { return }
+            history.update(record.id, notes: notes)
+            if notes.ready && (notes.presentation?.status == "ready" || notes.outcome == "no_answer") { return }
+            guard attempt < NotesModel.maxRefreshes else { return }
+            do { try await Task.sleep(for: NotesModel.refreshInterval) } catch { return }
+        }
+    }
+
     static var isSimulator: Bool {
         #if targetEnvironment(simulator)
         true
