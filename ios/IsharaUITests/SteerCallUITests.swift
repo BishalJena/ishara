@@ -60,6 +60,44 @@ final class SteerCallUITests: XCTestCase {
         XCTAssertTrue(leftover.isEmpty || leftover == "10-digit number", "the finished call's draft is cleared")
     }
 
+    func testSigningWordsStayCompactAndCarryIntoAnEditableSentence() throws {
+        let number = app.textFields["setup.number"].firstMatch
+        XCTAssertTrue(number.waitForExistence(timeout: 5))
+        number.tap()
+        number.typeText("9876543210")
+        let request = app.textViews["setup.request"].firstMatch.exists
+            ? app.textViews["setup.request"].firstMatch : app.textFields["setup.request"].firstMatch
+        request.tap()
+        request.typeText("Ask about a service request.")
+        app.buttons["setup.call"].tap()
+        let sign = app.buttons["steer.sign"]
+        XCTAssertTrue(sign.waitForExistence(timeout: 20))
+        let connected = NSPredicate(format: "enabled == true")
+        expectation(for: connected, evaluatedWith: sign)
+        waitForExpectations(timeout: 15)
+        sign.tap()
+        let words = app.buttons["steer.allSignWords"]
+        XCTAssertTrue(words.waitForExistence(timeout: 5))
+        words.tap()
+        app.buttons["signWord.hello"].tap()
+        app.buttons["signWord.hello"].tap()
+        app.buttons["signWord.please"].tap()
+        XCTAssertEqual(app.buttons.matching(identifier: "chip.hello").count, 1)
+        XCTAssertFalse(app.buttons["chip.unsure"].exists)
+        attach("signing-word-review")
+        let edit = app.buttons["steer.editSignedSentence"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 5))
+        edit.tap()
+        let field = app.textFields["steer.field"].firstMatch.exists
+            ? app.textFields["steer.field"].firstMatch : app.textViews["steer.field"].firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        let text = field.value as? String ?? ""
+        XCTAssertTrue(text.lowercased().contains("hello"))
+        XCTAssertTrue(text.lowercased().contains("please"))
+        attach("signing-edit-sentence")
+        app.buttons["steer.end"].tap()
+    }
+
     /// Real URLSession HTTP and WebSocket against the explicit fake-telephone server.
     /// The build must point to localhost with its test token; never a provider backend.
     func testNativeSteerCaptionsTypedReplyAndGistThroughLocalBackend() throws {

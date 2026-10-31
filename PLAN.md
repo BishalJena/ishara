@@ -607,3 +607,17 @@ user replies, quote requested document facts and end when the goal is resolved.
 Completion requires operator evidence; invented facts and unapproved commitments
 remain rejected. The outage fallback is bounded and must not loop on next steps.
 Calling restrictions and the unchanged ASL model/vocabulary still apply.
+
+
+## Signing interaction refinement — 6 November
+
+For the presentation, preserve the public ASL model, confidence cutoffs and
+segmentation timing. Improve the review flow: uncertain clips offer supported
+words from the original global top three, never renormalized vocabulary guesses;
+invalid framing/tracking and outside winners abstain. Misses do not create chips,
+consecutive duplicate detections do not flood the sentence, and an explicit
+manual eight-word palette provides a reliable fallback. Selected words compose
+a preview; Edit sentence preserves it into typing, with SEND still required.
+Reject out-of-frame clips before invoking the model, show the classification
+state and log inference duration. Real iPhone latency still requires measurement;
+no claim of faster general inference or continuous sign translation is made.

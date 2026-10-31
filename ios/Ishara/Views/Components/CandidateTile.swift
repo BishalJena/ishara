@@ -39,6 +39,37 @@ struct CandidateTile: View {
     }
 }
 
+/// Choices replace one another instead of accumulating uncertain chips. A tap only
+/// adds the selected word; the sentence still requires an explicit Send.
+struct SignChoiceRow: View {
+    let signs: [Sign]
+    let onSelect: (Sign) -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Choose a word").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                Spacer()
+                Button("Dismiss", action: onDismiss).font(.caption)
+                    .accessibilityIdentifier("signChoices.dismiss")
+            }
+            FlowLayout(spacing: 8) {
+                ForEach(signs, id: \.rawValue) { sign in
+                    Button(sign == .thankyou ? "Thank you" : sign.rawValue.capitalized) { onSelect(sign) }
+                        .font(.subheadline.weight(.semibold))
+                        .fixedSize(horizontal: true, vertical: false)
+                        .padding(.horizontal, 14).frame(minHeight: 44)
+                        .background(Color.green.opacity(0.12), in: Capsule())
+                        .buttonStyle(.plain).foregroundStyle(.green)
+                        .accessibilityIdentifier("signChoices.\(sign.rawValue)")
+                }
+            }
+        }
+        .accessibilityIdentifier("signChoices")
+    }
+}
+
 /// Shown after a `?` that happened because a hand left the picture during the sign.
 struct FramingHint: View {
     var body: some View {

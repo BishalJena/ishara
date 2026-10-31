@@ -72,7 +72,7 @@ test('camera loads the actual Holistic tracker and uncertain footage stays unsen
   await record.click();
   await expect(record).toBeEnabled({timeout: 15000});
   await expect(page.getByText(/Keep your shoulders and hands visible|Record one complete sign/)).toBeVisible({timeout: 30000});
-  await expect(page.getByRole('button', {name: /Use these words/})).toHaveCount(0);
+  await expect(page.getByRole('button', {name: /Edit sentence/})).toHaveCount(0);
   await page.screenshot({path: 'artifacts/camera-desktop.png', fullPage: true});
   await page.getByRole('button', {name: 'Turn off camera'}).click();
 });
@@ -213,4 +213,41 @@ test('live calls start with an empty general request instead of the scripted cli
   expect(purpose).toBe('general');
   // An intentional HTTP error is expected in this regression, unlike a page error.
   for (let i = dialogErrors.length - 1; i >= 0; i--) if (dialogErrors[i].includes('422')) dialogErrors.splice(i, 1);
+});
+
+
+test('signing word review deduplicates, preserves the request and never dials or speaks', async ({page}) => {
+  const providerWrites: string[] = [];
+  page.on('request', request => { if (request.method() === 'POST' && /\/(calls|briefs)$/.test(request.url())) providerWrites.push(request.url()); });
+  await unlock(page);
+  await page.locator('#request').fill('Please ask about the renewal.');
+  await page.getByRole('button', {name: 'Open signing'}).click();
+  await page.getByRole('button', {name: 'All 8 words · tap to choose'}).click();
+  const palette = page.getByRole('region', {name: 'Say it with a sign'}).getByLabel('Supported signing words');
+  await palette.getByRole('button', {name: 'hello', exact: true}).click();
+  await palette.getByRole('button', {name: 'hello', exact: true}).click();
+  await palette.getByRole('button', {name: 'please', exact: true}).click();
+  await expect(page.getByRole('button', {name: 'Remove hello', exact: true})).toHaveCount(1);
+  await expect(page.getByRole('button', {name: 'Remove please', exact: true})).toHaveCount(1);
+  await page.screenshot({path: 'artifacts/signing-word-review.png', fullPage: true});
+  await page.getByRole('button', {name: 'Edit sentence', exact: true}).click();
+  await expect(page.locator('#request')).toHaveValue('Please ask about the renewal. hello please');
+  expect(providerWrites).toEqual([]);
+});
+
+
+test('uncertain recognition offers three explicit choices without adding question marks', async ({page}) => {
+  await page.route('**/web/recognize', route => route.fulfill({json: {kind: 'unsure', suggestions: ['hello', 'yes', 'no'], reason: 'Choose a word'}}));
+  await unlock(page);
+  await page.getByRole('button', {name: 'Open signing'}).click();
+  await page.getByRole('button', {name: 'Enable camera'}).click();
+  await expect(page.getByRole('button', {name: 'Record one sign', exact: true})).toBeEnabled({timeout: 60000});
+  await page.getByRole('button', {name: 'Record one sign', exact: true}).click();
+  const choices = page.getByLabel('Sign suggestions');
+  await expect(choices.getByRole('button')).toHaveCount(3, {timeout: 20000});
+  await expect(page.getByRole('button', {name: /^Remove /})).toHaveCount(0);
+  await page.screenshot({path: 'artifacts/signing-three-choices.png', fullPage: true});
+  await choices.getByRole('button', {name: 'yes', exact: true}).click();
+  await expect(page.getByRole('button', {name: 'Remove yes', exact: true})).toBeVisible();
+  await expect(choices).toHaveCount(0);
 });

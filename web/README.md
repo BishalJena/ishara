@@ -24,6 +24,13 @@ Supported words: hello, thank you, yes, no, now, please, tomorrow, wait. Candida
 words require explicit confirmation; uncertain footage adds nothing. The words
 are added to the editable request or reply, never automatically spoken.
 
+Uncertain results offer up to three supported words from the original full-model
+ranking; each requires a tap. Out-of-vocabulary or badly framed results do not
+manufacture suggestions. All 8 words is an explicit tap-to-select fallback when
+recognition is slow or misses. Consecutive duplicate words are ignored, and only
+accepted words occupy the review row. Edit sentence carries these words into the
+editable request or reply; it never sends them by itself.
+
 This is experimental isolated-sign ASL recognition, not continuous translation.
 It uses the same published model, full 250-way ranking and provisional cutoffs
 as iOS. Browser/signer accuracy still needs rehearsal. Video stays in the browser;

@@ -82,6 +82,7 @@ final class BriefModel {
         switch result {
         case .sign(let sign): add(sign)
         case .candidate(let sign): candidate = sign
+        case .suggestions(let signs): candidate = signs.first
         case .unsure: lastSignUnsure = true
         case .handLeftFrame:
             lastSignUnsure = true

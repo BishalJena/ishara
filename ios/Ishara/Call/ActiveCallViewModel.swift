@@ -52,6 +52,10 @@ final class ActiveCallViewModel {
     /// D8 pick-one: the latest grey-zone sign, offered as "Did you mean …?" until the user
     /// taps it, dismisses it, or the next sign replaces it. Never a chip by itself.
     private(set) var candidate: Sign?
+    private(set) var signSuggestions: [Sign] = []
+    private(set) var signingHint: String?
+    private(set) var isReadingSign = false
+    static let supportedSigningWords: [Sign] = [.hello, .thankyou, .yes, .no, .now, .please, .tomorrow, .wait]
     /// The last sign couldn't be read because a hand left the picture.
     private(set) var showsFramingHint = false
     private var userEnded = false
@@ -231,6 +235,9 @@ final class ActiveCallViewModel {
         recognition.stop()
         cameraState = .watching
         candidate = nil
+        signSuggestions = []
+        signingHint = nil
+        isReadingSign = false
     }
 
     // MARK: Lifecycle
@@ -272,35 +279,55 @@ final class ActiveCallViewModel {
 
     func handle(_ event: RecognitionEvent) {
         guard !isEnded else { return }
+        if case .reading = event {
+            if watchesSigns { isReadingSign = true }
+            return
+        }
         guard case .result(let result) = event else {
             if case .camera(let state) = event { cameraState = state }
             return
         }
         guard watchesSigns else { return }
+        isReadingSign = false
         candidate = nil
+        signSuggestions = []
+        signingHint = nil
         showsFramingHint = false
         switch result {
         case .sign(let sign):
             accept(sign)
         case .candidate(let sign):
             candidate = sign
+            signSuggestions = [sign]
+        case .suggestions(let signs):
+            signSuggestions = Array(signs.filter { Self.supportedSigningWords.contains($0) }.prefix(3))
+            candidate = signSuggestions.first
         case .unsure:
-            addUnsure()
+            if isSteer { signingHint = "No clear match. Try again, or choose a word." }
+            else { addUnsure() }
         case .handLeftFrame:
             showsFramingHint = true
-            addUnsure()
+            if !isSteer { addUnsure() }
         }
     }
 
     /// The user tapped "Did you mean …?": the candidate counts as signed.
     func acceptCandidate() {
         guard let sign = candidate, !isEnded else { return }
-        candidate = nil
+        dismissCandidate()
+        accept(sign)
+    }
+
+    func selectSigningWord(_ sign: Sign) {
+        guard isSteer, isSigningActive, canSteer, Self.supportedSigningWords.contains(sign) else { return }
+        dismissCandidate()
+        signingHint = nil
         accept(sign)
     }
 
     func dismissCandidate() {
         candidate = nil
+        signSuggestions = []
     }
 
     private func accept(_ sign: Sign) {
@@ -309,8 +336,22 @@ final class ActiveCallViewModel {
         // On a delegated call nothing is composed; only answers reach the call. On a steer
         // call a sign is the user stepping in: the agent's proposed line is held first.
         guard !isDelegated || isSteer else { return }
+        // A held/repeated detection must not flood the sentence with the same word.
+        if isSteer, store?.chips.last?.sign == sign { return }
         if isSteer { store?.startComposing() }
         store?.add(.recognised(sign))
+    }
+
+    /// Preserve the composed sentence when the user switches to the keyboard.
+    /// Nothing is approved; the existing typed SEND flow handles the edited text.
+    func takeSigningTextForEditing() -> String {
+        let text = draft?.text ?? chips.compactMap(\.sign).map {
+            $0 == .thankyou ? "thank you" : $0.rawValue
+        }.joined(separator: " ")
+        endSigning()
+        clear()
+        beginSteppingIn()
+        return text
     }
 
     private func addUnsure() {

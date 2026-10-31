@@ -8,6 +8,8 @@ enum RecognitionResult: Equatable, Sendable {
     /// D8 grey zone: a vocabulary sign the model is fairly but not fully sure of. Shown as a
     /// "Did you mean …?" tile; it becomes a chip only when the user taps it.
     case candidate(Sign)
+    /// Up to three supported words from the full model ranking. Selection is required.
+    case suggestions([Sign])
     /// Something was signed but nothing matched well enough: a [?] chip, never spoken.
     case unsure
     /// Like `unsure`, because a hand left the picture during the sign or as it ended (even
@@ -38,6 +40,7 @@ extension RecognitionResult {
 /// What the call screen hears from recognition while the user signs.
 enum RecognitionEvent: Equatable, Sendable {
     case camera(CameraState)
+    case reading
     case result(RecognitionResult)
 }
 

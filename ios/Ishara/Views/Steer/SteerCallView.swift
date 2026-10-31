@@ -16,6 +16,7 @@ struct SteerCallView: View {
     /// What the user last sent, shown under its polished preview.
     @State private var lastTyped = ""
     @State private var isSigning = false
+    @State private var showingSignWords = false
     /// Lines sent from signs, so each "You" line keeps the icon of how it was made.
     @State private var signedLines: Set<String> = []
     @FocusState private var typing: Bool
@@ -302,6 +303,7 @@ struct SteerCallView: View {
         HStack(spacing: 8) {
             Button {
                 isSigning = true
+                showingSignWords = false
                 typing = false
                 model.beginSigning()
             } label: {
@@ -375,55 +377,120 @@ struct SteerCallView: View {
         if !model.recognition.getReady.allChecksPassed { return "Move back until your face, shoulders and both hands are visible." }
         if !model.recognition.getReady.isCalibrated { return "Rest both hands in view for two seconds to get ready." }
         if model.showsFramingHint || model.cameraState == .cantSee { return "Keep both hands inside the camera view, then try again." }
-        return "Sign one word, lower your hands, and review the word before Send."
+        if model.isReadingSign { return "Reading your sign…" }
+        if model.cameraState == .signing { return "Signing… lower your hands when finished." }
+        return model.signingHint ?? "Sign one word, then lower your hands."
+    }
+
+    private func editSigningSentence() {
+        let sentence = model.takeSigningTextForEditing()
+        if !sentence.isEmpty {
+            typed = typed.isEmpty ? sentence : typed + " " + sentence
+        }
+        isSigning = false
+        typing = true
     }
 
     private var signingPanel: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
                 CameraCard(camera: model.recognition.camera, state: model.cameraState, layout: .compact)
-                    .frame(width: 108, height: 192)
-                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .frame(width: 90, height: 160)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("Signs so far").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                        Text("Your reply").font(.subheadline.weight(.semibold))
                         Spacer()
-                        Button("Type", systemImage: "keyboard") {
-                            isSigning = false
-                            model.endSigning()
-                            model.clear()
-                            if typed.isEmpty { model.cancelSteppingIn() }
-                        }
-                        .font(.footnote.weight(.semibold))
-                        .accessibilityIdentifier("steer.type")
+                        Button("Type", systemImage: "keyboard", action: editSigningSentence)
+                            .font(.footnote.weight(.semibold))
+                            .accessibilityIdentifier("steer.type")
                     }
-                    Text(signingGuidance)
-                        .font(.caption).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityIdentifier("steer.signingGuidance")
+                    HStack(alignment: .top, spacing: 6) {
+                        if model.isReadingSign { ProgressView().controlSize(.small) }
+                        Text(signingGuidance).font(.caption).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .accessibilityIdentifier("steer.signingGuidance")
                     if model.recognition.camera?.permission == .denied,
                        let url = URL(string: UIApplication.openSettingsURLString) {
                         Link("Open camera settings", destination: url).font(.caption.weight(.semibold))
                     }
-                    if let notice = model.recognition.notice {
-                        Text(notice).font(.caption).foregroundStyle(.orange)
+                    Button(showingSignWords ? "Hide words" : "All 8 words", systemImage: "hand.raised") {
+                        showingSignWords.toggle()
                     }
-                    ChipRow(chips: model.chips, onRemove: model.removeChip)
-                    if let candidate = model.candidate {
-                        CandidateTile(sign: candidate, onAccept: model.acceptCandidate, onDismiss: model.dismissCandidate)
+                    .font(.footnote.weight(.semibold))
+                    .accessibilityIdentifier("steer.allSignWords")
+                    if let notice = model.recognition.notice {
+                        Text(notice).font(.caption2).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
-            if let draft = model.draft {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Ishara will say").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                    Text(draft.text).font(.body.weight(.medium))
+            if !model.signSuggestions.isEmpty {
+                SignChoiceRow(signs: model.signSuggestions, onSelect: model.selectSigningWord,
+                              onDismiss: model.dismissCandidate)
+            }
+            if showingSignWords {
+                Text("Supported words · tap to add").font(.caption).foregroundStyle(.secondary)
+                FlowLayout(spacing: 6) {
+                    ForEach(ActiveCallViewModel.supportedSigningWords, id: \.rawValue) { sign in
+                        Button(sign == .thankyou ? "Thank you" : sign.rawValue.capitalized) {
+                            model.selectSigningWord(sign)
+                        }
+                        .font(.footnote.weight(.semibold))
+                        .padding(.horizontal, 12).frame(minHeight: 44)
+                        .background(Color(.secondarySystemBackground), in: Capsule())
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("signWord.\(sign.rawValue)")
+                    }
+                }
+            }
+            if !model.chips.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(model.chips) { chip in
+                            Button { model.removeChip(chip) } label: {
+                                HStack(spacing: 6) {
+                                    Text(chip.title)
+                                    Image(systemName: "xmark").font(.caption2.weight(.semibold))
+                                }
+                                .font(.footnote.weight(.medium))
+                                .padding(.horizontal, 12).frame(minHeight: 44)
+                                .background(Color.green.opacity(0.12), in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Remove \(chip.title)")
+                            .accessibilityIdentifier("chip.\(chip.sign?.rawValue ?? "unsure")")
+                        }
+                    }
+                }
+                .accessibilityIdentifier("steer.selectedWords")
+            }
+            if model.draft != nil || !model.chips.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Ishara will say").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Edit sentence", action: editSigningSentence)
+                            .font(.caption.weight(.semibold))
+                            .accessibilityIdentifier("steer.editSignedSentence")
+                    }
+                    if let draft = model.draft {
+                        Text(draft.text).font(.body.weight(.medium)).fixedSize(horizontal: false, vertical: true)
+                    } else {
+                        HStack(spacing: 8) {
+                            ProgressView().controlSize(.small)
+                            Text("Preparing your sentence…").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 .padding(12).frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
             Button {
                 if let draft = model.draft { signedLines.insert(draft.text) }
+                model.dismissCandidate()
                 model.send()
             } label: {
                 Label("Send", systemImage: "arrow.up").font(.headline).frame(maxWidth: .infinity)
@@ -433,6 +500,7 @@ struct SteerCallView: View {
             .accessibilityIdentifier("steer.sendSigned")
         }
     }
+
 }
 
 /// The filling Send bar: the proposed line fills from left to right over its window and is

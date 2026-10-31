@@ -66,7 +66,7 @@ struct RecognitionAssets: Sendable {
                 return "The ASL recognition bundle is missing or invalid, so every sign will show [?]."
             }
             return bundle.provisional
-                ? "ASL recognition thresholds are provisional: not yet frozen on a labelled phone session."
+                ? "ASL preview · recognition is provisional. Review your words before sending."
                 : nil
         }
         if recognitionBundle == nil {

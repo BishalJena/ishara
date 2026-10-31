@@ -130,7 +130,7 @@ struct CameraCard: View {
             }
         }
         .aspectRatio(Self.frameAspect, contentMode: .fit)
-        .frame(height: previewHeight)
+        .frame(height: layout == .compact ? nil : previewHeight)
         .background(Color.black)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(alignment: .topTrailing) {

@@ -7,7 +7,7 @@ export type Setup = {number: string; contactName: string; request: string; profi
 export type Notes = {call_id: string; ready: boolean; outcome: string | null; brief?: string; summary: string[]; follow_ups: string[]; open_questions: string[]; transcript: {speaker: 'receptionist' | 'agent'; text: string; at: number}[]; bolna_summary?: string | null; stepped_in: number};
 export type Record = {id: string; contact: string; request: string; at: number; demo: boolean; notes: Notes};
 export type Event = {type: string; [key: string]: unknown};
-export type Recognition = {kind: 'chip' | 'candidate' | 'unsure'; gloss?: string; reason?: string; p?: number};
+export type Recognition = {kind: 'chip' | 'candidate' | 'unsure'; gloss?: string; reason?: string; p?: number; suggestions?: string[]};
 export type CallView = {
   state: CallState; online: boolean; captions: Caption[]; proposal: Proposal | null;
   held: boolean; problem: string; followUps: string[];
