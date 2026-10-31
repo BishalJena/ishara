@@ -27,7 +27,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ValidationError, model_validator
 
-from app.approved_context import validate_answer
+from app.approved_context import referenced_provider_target, retrieve_known_fields, validate_answer
 from app.groq_client import GroqClient, GroqError
 from app.protocol import (
     MAX_CHIPS,
@@ -52,6 +52,7 @@ from app.steer_planner import (
     AskOperator,
     ChooseOption,
     Finish,
+    Goal,
     GoalResolution,
     NeedCaller,
     PendingEvidenceReview,
@@ -63,6 +64,7 @@ from app.steer_planner import (
     choice_objection,
     choice_question_objection,
     goal_kind,
+    named_target_fits,
     normal,
     offer_matches_goal,
     offer_objection,
@@ -672,10 +674,24 @@ def _part_of(clock: str) -> str | None:
     return "night"
 
 
+def _target_fits(heard: str, brief: Brief) -> bool:
+    if not named_target_fits(brief.request or "", heard):
+        return False
+    referenced, target = referenced_provider_target(
+        brief.request or "",
+        [{"source_id": f"document:{i}", "text": doc.text} for i, doc in enumerate(brief.documents)],
+    )
+    return not referenced or bool(
+        target and named_target_fits("with " + target, heard, require_name=True)
+    )
+
+
 def _offer_fits(heard: str, brief: Brief, clock: str | None) -> bool:
     """Whether the time on offer is one the typed request allows: its day is one of the
     request's pinned days (or the request pins none) and its part of day is one of the
     request's parts (or it names none). A day the receptionist never said is no bar."""
+    if not _target_fits(heard, brief):
+        return False
     requested_clocks = _clock_times(brief.request or "")
     offered_clocks = _clock_times(heard)
     if (
@@ -1204,6 +1220,50 @@ class Brain:
         )
 
     @staticmethod
+    def _whole_request_operation(state: DelegateState, action: object) -> Goal | None:
+        if (
+            not isinstance(action, AnswerQuestion)
+            or len(action.spans) != 1
+            or action.spans[0].source_id != "request"
+        ):
+            return None
+        goals = [g for g in state.planner.goals if g.kind == "external_action" and not g.evidence]
+        if len(goals) != 1 or normal(action.spans[0].quote) != normal(goals[0].text):
+            return None
+        if re.search(
+            r"\b(not|never|no|unless|until|only|after|before|if|approve|approval|review|"
+            r"conditional|provided|pending|once|when|confirm|confirmation|consent|permission)\b"
+            r"|\bdon['’]?t\b",
+            goals[0].text,
+            re.I,
+        ):
+            return None
+        return goals[0]
+
+    @staticmethod
+    def _permission_question(text: str) -> bool:
+        return bool(
+            re.fullmatch(
+                r"(?:(?:okay|ok|so|then|and|now) )*"
+                r"(?:(?:shall|should|may|can|could) (?:i|we)|"
+                r"(?:would|do) you (?:like|want) (?:me|us) to) "
+                r"(?:please )?(?:proceed|go ahead)"
+                r"(?: (?:with|on) (?:this|that|it|the (?:request|order|booking)))?",
+                normal(text),
+            )
+        )
+
+    @staticmethod
+    def _operation_answer_on_permission(
+        state: DelegateState, heard: str, turn: PlannerTurn
+    ) -> bool:
+        return Brain._whole_request_operation(state, turn.action) is not None and any(
+            Brain._permission_question(clause)
+            for clause in re.findall(r"[^.!?]+[.!?]?", heard)
+            if _receiver_needs_answer(clause)
+        )
+
+    @staticmethod
     def _stale_offer_action(state: DelegateState, heard: str, turn: PlannerTurn) -> bool:
         action = turn.action
         return isinstance(action, (AcceptOffer, ChooseOption)) and (
@@ -1240,6 +1300,19 @@ class Brain:
             "unrequested_service",
         }:
             return False
+        if Brain._operation_answer_on_permission(state, heard, turn):
+            return (
+                isinstance(action, AnswerQuestion)
+                and action.question_id == current.source_id
+                and action.question_id in memory.pending
+                and not any(source_id != current.source_id for source_id in memory.pending)
+                and not re.search(r"\bor\b", heard, re.I)
+                and all(
+                    Brain._permission_question(clause)
+                    for clause in re.findall(r"[^.!?]+[.!?]?", heard)
+                    if _receiver_needs_answer(clause)
+                )
+            )
         if Brain._answer_rejection(state, heard, turn) in {
             "source_span",
             "answer_scope",
@@ -1294,7 +1367,13 @@ class Brain:
                     answer_rejection or "action_provenance",
                 )
                 payload["validation_feedback"] = (
-                    f"Invalid answer spans: {answer_rejection}. Select only exact relevant "
+                    "Wrong action kind: repeating the caller's whole operation is not factual QA. "
+                    "Evaluate the current proposal against the FULL request, supplied documents, "
+                    "named provider and every explicit constraint. Use accept_offer only if all "
+                    "fit; otherwise need_caller. Do not approve a different provider or infer "
+                    "consent from a request quote. Preserve any outstanding personal question."
+                    if self._operation_answer_on_permission(state, heard, turn)
+                    else f"Invalid answer spans: {answer_rejection}. Select only exact relevant "
                     "approved-source spans covering every requested fact. Omit unrelated headings, "
                     "wrong entities and historical values. Keep the pending question binding. "
                     "Never invent a fact or caller quote; use need_caller only if an essential "
@@ -1332,6 +1411,24 @@ class Brain:
         question = memory.pending.get(question_id) if question_id else memory.current_question
         if not question:
             return Decision("")
+        if not decision:
+            approved = " ".join(
+                [state.brief.request or state.brief.goal] + [r.text for r in memory.replies]
+            )
+            current_question = memory.current_question_turn
+            bound_id = question_id or (current_question.source_id if current_question else None)
+            if bound_id and not offer_objection(approved, memory.offer_terms):
+                sources = json.loads(_steer_payload(state, heard))["approved_sources"]
+                spans = retrieve_known_fields(sources, question, bound_id)
+                if spans:
+                    recovered = self._approved_answer(
+                        state,
+                        heard,
+                        AnswerQuestion(kind="answer_question", question_id=bound_id, spans=spans),
+                    )
+                    if recovered:
+                        log.info("planner handoff recovered category=known_fields")
+                        return replace(recovered, source="context")
         if not state.caller_available:
             return Decision(NEEDS_CALLER_CLOSE_LINE, done=True, kind="close", follow_up=question)
         return Decision(DEFER_LINE, kind="defer", follow_up=question)
@@ -1496,6 +1593,9 @@ class Brain:
             else None
         )
         action = turn.domain_action()
+        if self._operation_answer_on_permission(state, heard, turn):
+            log.info("planner action rejected category=operation_answer_kind")
+            return self._need_caller(state, heard, decision=True)
         if self._stale_offer_action(state, heard, turn) and not objection:
             log.info("planner action rejected category=stale_offer_provenance")
             return self._steer_recovery(state, heard)
@@ -1539,6 +1639,7 @@ class Brain:
                 or goal.evidence
                 or action.source_id != current.source_id
                 or action.quote not in heard
+                or not _target_fits(heard, state.brief)
                 or any(source_id != current.source_id for source_id in memory.pending)
             ):
                 rejection = "option_scope"

@@ -133,7 +133,8 @@ async def test_a_document_quote_must_match_the_requested_field():
     decision = await Brain(
         StructuredInference("answer_question", source_id="document:0", quote="lost")
     ).reply(current, question)
-    assert decision.follow_up == question and decision.say != "lost"
+    assert decision.say == "renewal" and decision.source == "context"
+    assert decision.follow_up is None and not current.planner.pending
 
 
 def test_bounded_caller_source_ids_are_never_reused():

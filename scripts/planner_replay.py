@@ -551,6 +551,17 @@ class ReplayClient(GroqClient):
         )
 
 
+class ReplayBrain(Brain):
+    """Observe the real decision source without changing HTTP call behavior."""
+
+    last_source: str | None = None
+
+    async def reply(self, state: DelegateState, heard: str):
+        decision = await super().reply(state, heard)
+        self.last_source = decision.source
+        return decision
+
+
 def state_for(scenario: Scenario) -> DelegateState:
     profile = Profile(
         name="Synthetic Caller",
@@ -695,6 +706,25 @@ def rejection_for(
     return None
 
 
+def verified_context_correction(
+    step: Step,
+    selected: str | None,
+    state: DelegateState,
+    runtime_success: bool,
+    model_rejection: str | None,
+    decision_source: str | None,
+) -> str | None:
+    if (
+        step.expected == "answer"
+        and decision_source == "context"
+        and runtime_success
+        and not state.planner.pending
+        and not state.follow_ups
+    ):
+        return "answered_from_verified_context"
+    return None
+
+
 def verified_close_correction(
     step: Step,
     selected: str | None,
@@ -816,10 +846,19 @@ async def run(
                 )
                 runtime_success = check(step, decision, state)
                 model_rejection = rejected
-                correction = verified_close_correction(
+                correction = verified_context_correction(
+                    step,
+                    client.last_action,
+                    state,
+                    runtime_success,
+                    model_rejection,
+                    decision.source,
+                ) or verified_close_correction(
                     step, client.last_action, state, runtime_success, model_rejection
                 )
                 if correction:
+                    if correction == "answered_from_verified_context" and model_rejection is None:
+                        model_rejection = "answer_rejected_by_validator"
                     rejected = None
                     corrected_actions += 1
                 passed = runtime_success and rejected is None
@@ -973,7 +1012,8 @@ async def run_http(
             )
         )
         with contextlib.ExitStack() as stack:
-            flow = build_flow(stack, brain=Brain(client))
+            brain = ReplayBrain(client)
+            flow = build_flow(stack, brain=brain)
             try:
                 for scenario in AUTONOMY_SCENARIOS if suite == "autonomy" else CLINICAL_SCENARIOS:
                     request = state_for(scenario).brief
@@ -1013,6 +1053,7 @@ async def run_http(
                         client.resolution_review = False
                         client.diagnostic = {}
                         correction = model_rejection = None
+                        brain.last_source = None
                         if interval_seconds:
                             flow.client.portal.call(asyncio.sleep, interval_seconds)
                         try:
@@ -1038,10 +1079,26 @@ async def run_http(
                                 rejected = "unexpected_action"
                             runtime_success = _http_step_passed(step, spoken, state)
                             model_rejection = rejected
-                            correction = verified_close_correction(
-                                step, client.last_action, state, runtime_success, model_rejection
+                            correction = verified_context_correction(
+                                step,
+                                client.last_action,
+                                state,
+                                runtime_success,
+                                model_rejection,
+                                brain.last_source,
+                            ) or verified_close_correction(
+                                step,
+                                client.last_action,
+                                state,
+                                runtime_success,
+                                model_rejection,
                             )
                             if correction:
+                                if (
+                                    correction == "answered_from_verified_context"
+                                    and model_rejection is None
+                                ):
+                                    model_rejection = "answer_rejected_by_validator"
                                 rejected = None
                                 corrected_actions += 1
                             passed = runtime_success and rejected is None

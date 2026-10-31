@@ -103,7 +103,8 @@ async def test_doctor_question_rejects_patient_profile_name():
 async def test_compound_answer_cannot_silently_drop_the_second_requested_field():
     question = "What are the allergies and patient ID?"
     reply = await Brain(Selected(["Penicillin"])).reply(state(present=True), question)
-    assert reply.kind == "defer" and reply.follow_up == question
+    assert reply.kind == "share" and reply.source == "context"
+    assert "Penicillin" in reply.say and "DEMO-20417" in reply.say
 
 
 async def test_split_label_and_value_document_is_supported():
@@ -299,7 +300,8 @@ async def test_two_named_service_people_remain_independent_required_facts():
     complete = await Brain(Selected(["Jordan", "Taylor"])).reply(state(text=document), question)
     partial = await Brain(Selected(["Jordan"])).reply(state(text=document), question)
     assert complete.kind == "share" and "Jordan" in complete.say and "Taylor" in complete.say
-    assert partial.kind != "share"
+    assert partial.kind == "share" and partial.source == "context"
+    assert "Jordan" in partial.say and "Taylor" in partial.say
 
 
 async def test_explicit_caller_and_service_names_cannot_silently_drop_the_caller():
@@ -307,7 +309,8 @@ async def test_explicit_caller_and_service_names_cannot_silently_drop_the_caller
     reply = await Brain(Selected(["Jordan"])).reply(
         state(text="Patient name: Avery Sample\nPlumber name: Jordan"), question
     )
-    assert reply.kind != "share"
+    assert reply.kind == "share" and reply.source == "context"
+    assert "Avery Sample" in reply.say and "Jordan" in reply.say
 
 
 async def test_an_unknown_service_person_cannot_borrow_the_profile_name():

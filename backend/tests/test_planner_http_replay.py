@@ -63,6 +63,15 @@ class Provider:
         )
 
 
+class RecordingBrain(Brain):
+    last_decision = None
+
+    async def reply(self, state, heard):
+        decision = await super().reply(state, heard)
+        self.last_decision = decision
+        return decision
+
+
 def client_for(provider: Callable) -> GroqClient:
     return GroqClient(SecretStr("synthetic-key"), MODEL, transport=httpx.MockTransport(provider))
 
@@ -639,7 +648,8 @@ async def test_document_paraphrase_cannot_be_spoken_as_an_exact_source_answer():
             ),
             "Which category is printed on the form?",
         )
-        assert decision.follow_up == "Which category is printed on the form?"
+        assert decision.follow_up is None and decision.source == "context"
+        assert "replacement (lost abroad)" in decision.say
         assert "renewal" not in decision.say and not decision.done
     finally:
         await client.aclose()
@@ -830,10 +840,17 @@ async def test_replay_document_oracle_accepts_complete_requested_field_only(quot
         )
 
     replay["ReplayClient"].mock = selected_quote
-    assert await run(False) == (0 if passed else 1)
+    recovered = quote in {"collection at counter", "Delivery method: collection at counter."}
+    runtime_passed = passed or recovered
+    assert await run(False) == (0 if runtime_passed else 1)
     rows = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
-    assert all(row["pass"] is passed for row in rows[1:-1])
-    if not passed:
+    assert all(row["pass"] is runtime_passed for row in rows[1:-1])
+    if recovered:
+        assert all(
+            row["action_correction"] == "answered_from_verified_context" for row in rows[1:-1]
+        )
+        assert all(row["model_quality"] is False for row in rows[1:-1])
+    elif not passed:
         assert all(
             row["rejection"] in {"wrong_document_field", "action_guard"} for row in rows[1:-1]
         )
@@ -1273,11 +1290,16 @@ def test_clinical_valid_quote_from_wrong_entity_or_field_cannot_answer(
         assert forbidden not in spoken
         delegate = f.manager._sessions[call_id].delegate
         assert not delegate.planner.completed
-        assert delegate.follow_ups == [question]
+        recovered = "registration number" in question
+        if recovered:
+            assert "DEMO-2714" in spoken and delegate.follow_ups == []
+            assert delegate.planner.pending == {}
+        else:
+            assert delegate.follow_ups == [question]
         f.finish()
         notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
         assert notes["outcome"] != "done"
-        assert notes["follow_ups"] == [question]
+        assert notes["follow_ups"] == ([] if recovered else [question])
 
 
 def test_fragmented_registration_question_can_answer_pending_question_after_ack():
@@ -1343,10 +1365,10 @@ async def test_clinical_replay_oracle_rejects_partial_compound_or_unrelated_answ
         )
 
     replay["ReplayClient"].mock = partial
-    assert await replay["run"](False, suite="clinical") == 1
+    assert await replay["run"](False, suite="clinical") == 0
     rows = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
-    assert rows[1]["pass"] is False
-    assert rows[1]["rejection"] in {"wrong_document_field", "action_guard"}
+    assert rows[1]["pass"] is True and rows[1]["model_quality"] is False
+    assert rows[1]["action_correction"] == "answered_from_verified_context"
 
 
 @pytest.mark.parametrize("mode", ["steer", "delegated"])
@@ -1357,18 +1379,21 @@ def test_one_document_fact_does_not_silently_resolve_a_compound_receiver_questio
         )
     )
     client = client_for(provider)
+    brain = RecordingBrain(client)
     with contextlib.ExitStack() as stack:
-        f = build_flow(stack, brain=Brain(client))
+        f = build_flow(stack, brain=brain)
         call_id = start_clinical(f, mode=mode)
         question = "What are the patient's allergies and the blood pressure at their last checkup?"
-        f.listen_turn(call_id, question)
+        spoken = f.listen_turn(call_id, question)
+        assert "Penicillin" in spoken and "138/88" in spoken and "Amlodipine" not in spoken
+        assert brain.last_decision.source == "context"
         delegate = f.manager._sessions[call_id].delegate
         assert not delegate.planner.completed
-        assert question in delegate.planner.pending.values() or question in delegate.follow_ups
+        assert delegate.planner.pending == {} and delegate.follow_ups == []
         f.finish()
         notes = f.client.get(f"/calls/{call_id}/notes", headers=AUTH).json()
         assert notes["outcome"] != "done"
-        assert question in notes["follow_ups"]
+        assert notes["follow_ups"] == []
 
 
 def test_stale_answer_question_id_cannot_clear_new_clinical_question():
@@ -1378,13 +1403,16 @@ def test_stale_answer_question_id_cannot_clear_new_clinical_question():
         return action(
             "answer_question",
             question_id=first_question_id,
-            spans=[{"source_id": "document:0", "quote": "Allergies: Penicillin"}],
+            spans=[
+                {"source_id": "document:0", "quote": "Doctor: Dr. Nisha Shah, General Medicine"}
+            ],
         )
 
     provider = Provider(choose)
     client = client_for(provider)
+    brain = RecordingBrain(client)
     with contextlib.ExitStack() as stack:
-        f = build_flow(stack, brain=Brain(client))
+        f = build_flow(stack, brain=brain)
         call_id = start_clinical(f, attended=True)
         make_caller_present(f, call_id)
         question = "What is the patient's registration number?"
@@ -1393,9 +1421,10 @@ def test_stale_answer_question_id_cannot_clear_new_clinical_question():
         first_question_id = next(iter(first_prompt["pending_receiver_questions"]))
         allergy_question = "What allergy does the patient have?"
         spoken = f.listen_turn(call_id, allergy_question)
-        assert "Penicillin" not in spoken
+        assert "Penicillin" in spoken and "Nisha Shah" not in spoken
+        assert brain.last_decision.source == "context"
         delegate = f.manager._sessions[call_id].delegate
-        assert allergy_question in delegate.planner.pending.values()
+        assert delegate.planner.pending == {} and delegate.follow_ups == []
         assert not delegate.planner.completed
 
 
@@ -1440,11 +1469,13 @@ async def test_clinical_http_replay_cannot_count_guarded_fallback_as_model_quali
         replay["ReplayClient"].mock = lambda _self, _request: httpx.Response(
             503, json={"error": "private provider response must not be logged"}
         )
-    assert await run(False) == 1
+    assert await run(False) == 0
     output = capsys.readouterr().out
     rows = [json.loads(line) for line in output.splitlines()]
-    assert rows[1]["pass"] is False
-    assert rows[1]["rejection"] == failure
+    assert rows[1]["pass"] is True and rows[1]["model_quality"] is False
+    assert rows[1]["rejection"] is None
+    assert rows[1]["model_rejection"] == failure
+    assert rows[1]["action_correction"] == "answered_from_verified_context"
     assert "private provider response" not in output
     assert rows[-1]["model_requests"] <= 12
 
@@ -2082,3 +2113,137 @@ async def test_replay_separates_verified_runtime_close_from_stale_model_action(
         assert closing["rejection"] == "unexpected_action"
     assert rows[-1]["corrected_model_actions"] == int(valid)
     assert rows[-1]["model_requests"] == 2
+
+
+@pytest.mark.parametrize("http", [False, True])
+@pytest.mark.parametrize("field", ["compound", "identifier", "unknown"])
+async def test_replay_known_context_correction_preserves_facts_and_unknown_abstention(
+    http, field, capsys
+):
+    import runpy
+    from pathlib import Path
+
+    replay = runpy.run_path(str(Path(__file__).resolve().parents[2] / "scripts/planner_replay.py"))
+    run = replay["run_http"] if http else replay["run"]
+    base = replay["CLINICAL_SCENARIOS"][0]
+    if field == "compound":
+        step = base.steps[0]
+    elif field == "identifier":
+        step = replay["Step"](
+            "What is the patient's registration number?",
+            "answer",
+            "answer_question",
+            required=("DEMO-2714",),
+        )
+    else:
+        step = replay["Step"](
+            "What is the patient's national identity number?", "unavailable", "need_caller"
+        )
+    scenario = replay["Scenario"](
+        "context_recovery", base.goal, (step,), document=base.document, caller_available=False
+    )
+    run.__globals__["CLINICAL_SCENARIOS"] = (scenario,)
+
+    def defer_to_caller(_client, request):
+        prompt = json.loads(json.loads(request.content)["messages"][1]["content"])
+        selected = bind_question_action(prompt, action("need_caller"))
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": json.dumps(selected)}, "finish_reason": "stop"}]
+            },
+        )
+
+    replay["ReplayClient"].mock = defer_to_caller
+    assert await run(False, suite="clinical") == 0
+    rows = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    response = rows[1]
+    assert response["action"] == "need_caller"
+    assert response["pass"] is True
+    known = field != "unknown"
+    assert response["action_correction"] == ("answered_from_verified_context" if known else None)
+    assert response["model_quality"] is (not known)
+    assert response["model_rejection"] == ("unexpected_action" if known else None)
+    assert rows[-1]["corrected_model_actions"] == int(known)
+    assert rows[-1]["model_requests"] == 1
+
+
+@pytest.mark.parametrize("http", [False, True])
+@pytest.mark.parametrize("case", ["repaired", "exhausted", "over_budget"])
+async def test_replay_request_quote_requires_bounded_action_repair_and_authority(
+    http, case, capsys
+):
+    import runpy
+    from pathlib import Path
+
+    replay = runpy.run_path(str(Path(__file__).resolve().parents[2] / "scripts/planner_replay.py"))
+    run = replay["run_http"] if http else replay["run"]
+    base = replay["CLINICAL_SCENARIOS"][0]
+    if case != "over_budget":
+        scenario = replay["Scenario"](
+            "request_approval",
+            base.goal,
+            base.steps[3:] if case == "repaired" else base.steps[3:4],
+            document=base.document,
+            caller_available=False,
+        )
+    else:
+        scenario = replay["Scenario"](
+            "request_approval_over_budget",
+            base.goal + " Pay at most 500 rupees.",
+            (
+                replay["Step"](
+                    "I can book the appointment for 800 rupees. Shall I proceed?",
+                    "accept",
+                    "accept_offer",
+                ),
+            ),
+            document=base.document,
+            caller_available=False,
+        )
+    run.__globals__["CLINICAL_SCENARIOS"] = (scenario,)
+    original_mock = replay["ReplayClient"].mock
+    attempts = []
+
+    def request_quote_then_real_approval(client, request):
+        if client.step.expected != "accept":
+            return original_mock(client, request)
+        prompt = json.loads(json.loads(request.content)["messages"][1]["content"])
+        feedback = prompt.get("validation_feedback", "")
+        attempts.append(bool(feedback))
+        if feedback and case == "repaired":
+            assert "Wrong action kind" in feedback
+            return original_mock(client, request)
+        selected = bind_question_action(
+            prompt,
+            action(
+                "answer_question",
+                source_id="request",
+                quote=prompt["caller_goal"],
+            ),
+        )
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": json.dumps(selected)}, "finish_reason": "stop"}]
+            },
+        )
+
+    replay["ReplayClient"].mock = request_quote_then_real_approval
+    assert await run(False, suite="clinical") == (0 if case == "repaired" else 1)
+    rows = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    accepted = rows[1]
+    assert accepted["action_correction"] is None
+    assert rows[-1]["corrected_model_actions"] == 0
+    if case == "repaired":
+        assert attempts == [False, True]
+        assert accepted["action"] == "accept_offer"
+        assert accepted["pass"] is True and accepted["model_quality"] is True
+        assert accepted["model_rejection"] is None
+        assert rows[-1]["model_requests"] == 3
+        if http:
+            assert any(row.get("stage") == "notes" and row["outcome"] == "done" for row in rows)
+    else:
+        assert accepted["pass"] is False
+        assert attempts == ([False, True] if case == "exhausted" else [])
+        assert rows[-1]["model_requests"] == (2 if case == "exhausted" else 0)
