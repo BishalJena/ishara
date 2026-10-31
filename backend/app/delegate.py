@@ -1211,13 +1211,26 @@ class Brain:
         )
 
     @staticmethod
+    def _answer_rejection(state: DelegateState, heard: str, turn: PlannerTurn) -> str | None:
+        action = turn.action
+        if (
+            not isinstance(action, AnswerQuestion)
+            or action.question_id not in state.planner.pending
+        ):
+            return None
+        sources = json.loads(_steer_payload(state, heard))["approved_sources"]
+        _, rejection = validate_answer(
+            sources,
+            state.planner.pending[action.question_id],
+            action.question_id,
+            action.spans,
+        )
+        return rejection
+
+    @staticmethod
     def _repairable_encoding(state: DelegateState, heard: str, turn: PlannerTurn) -> bool:
         memory, action = state.planner, turn.action
         current = memory.receiver[-1]
-        if not any(g.kind == "external_action" and not g.evidence for g in memory.goals) or any(
-            source_id != current.source_id for source_id in memory.pending
-        ):
-            return False
         approved = " ".join(
             [state.brief.request or state.brief.goal] + [r.text for r in memory.replies]
         )
@@ -1226,6 +1239,19 @@ class Brain:
             "currency_mismatch",
             "unrequested_service",
         }:
+            return False
+        if Brain._answer_rejection(state, heard, turn) in {
+            "source_span",
+            "answer_scope",
+            "requested_field",
+            "entity_scope",
+            "historical_field",
+            "answer_size",
+        }:
+            return True
+        if not any(g.kind == "external_action" and not g.evidence for g in memory.goals) or any(
+            source_id != current.source_id for source_id in memory.pending
+        ):
             return False
         if Brain._stale_offer_action(state, heard, turn):
             return True
@@ -1236,12 +1262,6 @@ class Brain:
             re.I,
         ):
             return False
-        if isinstance(action, AnswerQuestion) and action.question_id in memory.pending:
-            sources = json.loads(_steer_payload(state, heard))["approved_sources"]
-            _, rejection = validate_answer(
-                sources, memory.pending[action.question_id], action.question_id, action.spans
-            )
-            return rejection == "source_span"
         if isinstance(action, NeedCaller):
             return action.question_id == current.source_id and action.question_id in memory.pending
         return isinstance(action, ChooseOption) and (
@@ -1268,9 +1288,19 @@ class Brain:
                 remaining,
             )
             if attempt == 0 and self._repairable_encoding(state, heard, turn):
-                log.info("planner action rejected category=preference_provenance retry=1")
+                answer_rejection = self._answer_rejection(state, heard, turn)
+                log.info(
+                    "planner action rejected category=%s retry=1",
+                    answer_rejection or "action_provenance",
+                )
                 payload["validation_feedback"] = (
-                    "Invalid stale offer action: its source/quote is not the CURRENT receiver "
+                    f"Invalid answer spans: {answer_rejection}. Select only exact relevant "
+                    "approved-source spans covering every requested fact. Omit unrelated headings, "
+                    "wrong entities and historical values. Keep the pending question binding. "
+                    "Never invent a fact or caller quote; use need_caller only if an essential "
+                    "requested fact is genuinely absent. Recompute current resolutions first."
+                    if answer_rejection
+                    else "Invalid stale offer action: its source/quote is not the CURRENT receiver "
                     "turn. Prior accepted choices are already handled. Read the current turn "
                     "and collect its exact assertions in resolutions before selecting an action. "
                     "Use only current receiver provenance for new offers/completion; answer any "
