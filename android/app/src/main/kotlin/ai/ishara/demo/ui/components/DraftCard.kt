@@ -18,30 +18,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 /** The sentence that SEND would speak, with a badge saying who wrote it. */
 @Composable
@@ -58,7 +52,7 @@ fun DraftCard(draft: DraftDisplay?, modifier: Modifier = Modifier, isComposing: 
             // The text stays readable to tests (and TalkBack reads the one description).
             .semantics(mergeDescendants = true) { contentDescription = description }
             .testTag("call.draft")
-            .padding(16.dp),
+            .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -114,7 +108,7 @@ fun QuickReplyBar(onChoose: (QuickReply) -> Unit, modifier: Modifier = Modifier,
         val density = LocalDensity.current
         val needed = with(density) {
             QuickReply.entries.sumOf { reply ->
-                measurer.measure(reply.label, IsharaType.body, softWrap = false).size.width + QUICK_REPLY_PADDING.roundToPx() * 2
+                measurer.measure(reply.label, QUICK_REPLY_STYLE, softWrap = false).size.width + QUICK_REPLY_PADDING.roundToPx() * 2
             } + spacing.roundToPx() * (QuickReply.entries.size - 1)
         }
         val fits = needed <= constraints.maxWidth
@@ -130,7 +124,8 @@ fun QuickReplyBar(onChoose: (QuickReply) -> Unit, modifier: Modifier = Modifier,
     }
 }
 
-private val QUICK_REPLY_PADDING = 16.dp
+private val QUICK_REPLY_PADDING = 12.dp
+private val QUICK_REPLY_STYLE = IsharaType.subheadline.copy(fontSize = 14.sp, fontWeight = FontWeight.Medium)
 
 @Composable
 private fun QuickReplyButtons(onChoose: (QuickReply) -> Unit, enabled: Boolean, modifier: Modifier) {
@@ -138,44 +133,8 @@ private fun QuickReplyButtons(onChoose: (QuickReply) -> Unit, enabled: Boolean, 
         BorderedButton(
             onClick = { onChoose(reply) },
             enabled = enabled,
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = QUICK_REPLY_PADDING, vertical = 12.dp),
-            modifier = modifier.heightIn(min = 50.dp).testTag("quickReply.${reply.wire}"),
-        ) { Text(reply.label, style = IsharaType.body, maxLines = 1, softWrap = false) }
-    }
-}
-
-/**
- * The large full-width buttons (CALL, Start call, SEND, STOP) the user must be able to hit
- * with the phone propped an arm away. Disabled, they turn grey like iOS `BigActionButtonStyle`.
- */
-@Composable
-fun BigActionButton(
-    text: String,
-    tint: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    foreground: Color = Color.White,
-    icon: ImageVector? = null,
-    fillWidth: Boolean = true,
-) {
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        shape = RoundedCornerShape(16.dp),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = tint,
-            contentColor = foreground,
-            disabledContainerColor = IsharaColors.Gray.copy(alpha = 0.25f),
-            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        ),
-        modifier = modifier.then(if (fillWidth) Modifier.fillMaxWidth() else Modifier).heightIn(min = 64.dp),
-    ) {
-        if (icon != null) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp).clearAndSetSemantics {})
-            Spacer(Modifier.width(10.dp))
-        }
-        Text(text, style = IsharaType.title2.copy(fontWeight = FontWeight.Bold), textAlign = TextAlign.Center)
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = QUICK_REPLY_PADDING, vertical = 8.dp),
+            modifier = modifier.heightIn(min = 40.dp).testTag("quickReply.${reply.wire}"),
+        ) { Text(reply.label, style = QUICK_REPLY_STYLE, maxLines = 1, softWrap = false) }
     }
 }

@@ -1,8 +1,11 @@
 package ai.ishara.demo.app
 
+import ai.ishara.demo.call.AndroidLineSpeaker
 import ai.ishara.demo.call.CallDriver
 import ai.ishara.demo.call.FakeCallDriver
+import ai.ishara.demo.call.LineSpeaker
 import ai.ishara.demo.call.LiveCallDriver
+import ai.ishara.demo.call.TestModeVoice
 import ai.ishara.demo.models.CallHistory
 import ai.ishara.demo.models.UserSettings
 import ai.ishara.demo.recognition.RecognitionController
@@ -13,6 +16,15 @@ import android.os.Build
 /** Builds the camera recognizer (MediaPipe + the ASL Signs model) for a run. */
 fun interface RecognitionPipelineFactory {
     fun create(options: DemoLaunchOptions, runsInEmulator: Boolean): RecognitionController
+}
+
+/** Reads nothing; the default where no phone voice is wanted (JVM tests). */
+private object SilentSpeaker : LineSpeaker {
+    override fun speak(text: String) = Unit
+
+    override fun stop() = Unit
+
+    override fun shutdown() = Unit
 }
 
 /**
@@ -30,6 +42,8 @@ class AppServices(
     /** The camera pipeline, once it is built into the app; scripted recognition stands in until then. */
     private val pipelineFactory: RecognitionPipelineFactory? = null,
     private val liveDriver: (AppConfig) -> CallDriver = { LiveCallDriver.live(it) },
+    /** The phone's voice for test mode; asked for only when a fake call runs. */
+    private val testModeSpeaker: () -> LineSpeaker = { SilentSpeaker },
 ) {
     /** Why a live call can't be placed; null when it can (or when the fake call is in use). */
     val setupProblem: String?
@@ -69,6 +83,14 @@ class AppServices(
         )
     }
 
+    /**
+     * Reads the scripted call aloud in test mode, where no phone line carries the voice. A real
+     * call is never voiced on the phone: the receptionist hears it on the line and the user reads
+     * the captions. [captionsShown] are already on screen and not read again.
+     */
+    fun makeTestModeVoice(driver: CallDriver, captionsShown: Int): TestModeVoice? =
+        if (driver is FakeCallDriver) TestModeVoice(testModeSpeaker(), captionsShown) else null
+
     companion object {
         fun current(context: Context, options: DemoLaunchOptions, pipelineFactory: RecognitionPipelineFactory? = null): AppServices {
             val history = when (val location = options.callHistory) {
@@ -85,6 +107,7 @@ class AppServices(
                 settings = settings,
                 runsInEmulator = isEmulator,
                 pipelineFactory = pipelineFactory,
+                testModeSpeaker = { AndroidLineSpeaker(context) },
             )
         }
 

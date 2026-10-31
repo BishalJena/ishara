@@ -7,6 +7,7 @@ import ai.ishara.demo.models.Contact
 import ai.ishara.demo.models.SetupDraft
 import ai.ishara.demo.models.UserSettings
 import ai.ishara.demo.ui.components.InitialsAvatar
+import ai.ishara.demo.ui.components.IsharaButtons
 import ai.ishara.demo.ui.home.outcomeText
 import ai.ishara.demo.ui.home.recentCallDate
 import android.Manifest
@@ -35,6 +36,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -268,9 +270,9 @@ private fun Composer(draft: SetupDraft, history: CallHistory, setupProblem: Stri
                         draft.number = ""
                         draft.pickedName = ""
                     },
-                    modifier = Modifier.size(24.dp).testTag("setup.clear"),
+                    modifier = Modifier.size(40.dp).testTag("setup.clear"),
                 ) {
-                    Icon(Icons.Filled.Cancel, contentDescription = "Clear", tint = colors.secondary)
+                    Icon(Icons.Filled.Cancel, contentDescription = "Clear", tint = colors.secondary, modifier = Modifier.size(20.dp))
                 }
             }
         }
@@ -345,12 +347,12 @@ private fun Composer(draft: SetupDraft, history: CallHistory, setupProblem: Stri
                     disabledContainerColor = colors.tertiary.copy(alpha = 0.18f),
                     disabledContentColor = colors.tertiary,
                 ),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-                modifier = Modifier.testTag("setup.call"),
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 10.dp),
+                modifier = Modifier.heightIn(min = IsharaButtons.Height).testTag("setup.call"),
             ) {
-                Icon(Icons.Filled.Call, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("Call", style = SteerType.headline)
+                Icon(Icons.Filled.Call, contentDescription = null, modifier = Modifier.size(IsharaButtons.IconSize))
+                Spacer(Modifier.width(8.dp))
+                Text("Call", style = IsharaButtons.Label)
             }
         }
     }

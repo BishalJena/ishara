@@ -188,6 +188,19 @@ ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest   # on the
   call starts. Android asks for permissions only from an Activity, so the screens ask.
 - No contacts permission: the picker hands back just the picked number.
 - Only `arm64-v8a`, so no x86_64 emulators. The SignCLIP / Core ML fallback recognizer isn't ported.
+- **Test mode reads the call aloud.** With the fake call (Home says "Test mode"), the phone reads
+  Ishara's side of it with Android's on-device TextToSpeech: the agent's own lines and your replies
+  once the call has spoken them, each once. Never a draft, a preview or the receptionist; it stops
+  when the call ends or you leave the call screen. A real call is never voiced on the phone (the
+  receptionist hears it on the line, you read the captions).
+- **Call screens:** while you may sign, the classic call, Brief and the steer signing panel show
+  the live mirrored video (`ui/components/CameraVideoCard.kt`) with the shoulders, wrists and rest
+  line on it and the camera state in a chip on the video (green watching, amber signing, red can't
+  see you, which also outlines it). On the call and Brief it is a 3:4 card on the left (40 % of
+  the width, 30 % at accessibility text sizes) with the chips beside it; the steer panel keeps its
+  96 × 128 tile with just the dot. The emulator shows a placeholder in the same card. Once a call
+  ends the transcript fills the screen. Screenshots with a sample-clip frame standing in for the
+  camera: run `CameraVideoScreenshots` with `-e cameraScreenshots true` (see the class).
 
 ## Things to know
 
@@ -198,10 +211,12 @@ ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest   # on the
 - The Swift runtime is linked dynamically (`--static-swift-stdlib` failed to link with 6.4.2), so
   the APK carries about 70 MB of `.so` files; ICU alone is 40 MB.
 - AndroidX libraries newer than core 1.18 / Compose BOM 2026.06 need compileSdk 37; the app stays on 36.
-- The classic screens are ports of the SwiftUI views, which stay the spec (layout order, strings,
-  colours). SF Symbols become Material icons from `material-icons-extended` (the BOM's 1.7.8). UI tests
-  for the classic and Call for me flows live in `androidTest/.../ui/classic` (they mirror
-  `ios/IsharaUITests`); `CallLayoutUiTest` sets the system font scale to 2.0 and restores it.
+- The classic screens are ports of the SwiftUI views, which stay the spec for strings and flow;
+  sizes follow Material 3. Buttons come in tiers (`ui/components/IsharaButton.kt`: one primary per
+  screen, then tonal, text, destructive for Stop, icon), all with 48 dp targets. SF Symbols
+  become Material icons from `material-icons-extended` (the BOM's 1.7.8). UI tests for the classic
+  and Call for me flows live in `androidTest/.../ui/classic` (they mirror `ios/IsharaUITests`);
+  `CallLayoutUiTest` sets the system font scale to 2.0 and restores it.
   OkHttp 5.5 needs 37 too, so OkHttp and mockwebserver3 stay on 5.4.
 
 ## Recognition

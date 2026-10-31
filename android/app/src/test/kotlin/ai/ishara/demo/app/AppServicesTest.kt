@@ -4,6 +4,8 @@ import ai.ishara.demo.BuildConfig
 import ai.ishara.demo.call.CallDriver
 import ai.ishara.demo.call.DelegatedDemo
 import ai.ishara.demo.call.FakeCallDriver
+import ai.ishara.demo.call.LineSpeaker
+import ai.ishara.demo.call.TestModeVoice
 import ai.ishara.demo.core.call.BackendConfig
 import ai.ishara.demo.core.call.Brief
 import ai.ishara.demo.core.call.CallMode
@@ -203,5 +205,30 @@ class AppServicesTest {
         val driver: CallDriver = scripted.makeDriver(recognition)
         assertTrue(driver is FakeCallDriver)
         assertFalse(recognition.replayOptions.isNotEmpty())
+    }
+
+    @Test
+    fun onlyTheFakeCallIsReadAloudOnThePhone() {
+        var speakersMade = 0
+        val services = AppServices(
+            DemoLaunchOptions(driver = DemoLaunchOptions.Driver.LIVE),
+            config,
+            liveDriver = { liveDriver },
+            testModeSpeaker = {
+                speakersMade += 1
+                object : LineSpeaker {
+                    override fun speak(text: String) = Unit
+
+                    override fun stop() = Unit
+
+                    override fun shutdown() = Unit
+                }
+            },
+        )
+
+        assertNull("a real call is never voiced on the phone", services.makeTestModeVoice(services.makeDriver(StubRecognition()), captionsShown = 0))
+        assertEquals("no speaker for a real call", 0, speakersMade)
+        assertTrue(services.makeTestModeVoice(FakeCallDriver(), captionsShown = 0) is TestModeVoice)
+        assertEquals(1, speakersMade)
     }
 }

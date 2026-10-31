@@ -22,6 +22,7 @@ import ai.ishara.demo.core.call.Sign
 import ai.ishara.demo.core.call.TranscriptEntry
 import ai.ishara.demo.models.CallSetup
 import ai.ishara.demo.recognition.CameraState
+import ai.ishara.demo.recognition.RecognitionController
 import ai.ishara.demo.recognition.RecognitionEvent
 import ai.ishara.demo.recognition.ScriptedRecognitionController
 import ai.ishara.demo.ui.notes.NotesModel
@@ -71,12 +72,15 @@ fun DemoFixture.makeNotes(): NotesModel? {
     return NotesModel(contactName = setup.contact.name, driver = driver)
 }
 
-/** Builds the call screen state by replaying PLAN §1 messages into a real TurnStore. Main thread only. */
-suspend fun DemoFixture.makeActiveCall(): ActiveCallViewModel? {
+/**
+ * Builds the call screen state by replaying PLAN §1 messages into a real TurnStore. Tests pass
+ * a [recognition] with a stand-in camera. Main thread only.
+ */
+suspend fun DemoFixture.makeActiveCall(recognition: RecognitionController = ScriptedRecognitionController()): ActiveCallViewModel? {
     if (this == DemoFixture.HOME || this == DemoFixture.GET_READY || this == DemoFixture.NOTES) return null
     val driver = FixtureCallDriver()
     val store = driver.store
-    val model = ActiveCallViewModel(CallSetup.demo, driver, ScriptedRecognitionController())
+    val model = ActiveCallViewModel(CallSetup.demo, driver, recognition)
     model.attach(store)
     fun now() = System.currentTimeMillis() / 1000.0
 

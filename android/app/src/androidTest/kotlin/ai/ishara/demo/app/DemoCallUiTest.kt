@@ -77,7 +77,8 @@ class DemoCallUiTest {
         // Turn 2 brings the planned wrong chip; End wipes it and sends nothing more.
         waitFor("chip.afternoon")
         compose.onNodeWithTag("call.end").performClick()
-        waitFor("call.endedPanel", "You ended the call")
+        waitFor("call.status", "Call ended")
+        waitFor("call.endedPanel")
         waitFor("caption.agent", "Goodbye.")
         compose.onNodeWithTag("call.backHome").performClick()
         waitFor("home.call")

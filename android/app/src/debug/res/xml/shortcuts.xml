@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="test_classic"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_test_classic_short"
+        android:shortcutLongLabel="@string/shortcut_test_classic_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="ai.ishara.demo"
+            android:targetClass="ai.ishara.demo.MainActivity">
+            <extra android:name="IsharaFlow" android:value="classic" />
+            <extra android:name="IsharaDriver" android:value="fake" />
+            <extra android:name="IsharaRecognition" android:value="pipeline" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="test_steer"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_test_steer_short"
+        android:shortcutLongLabel="@string/shortcut_test_steer_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="ai.ishara.demo"
+            android:targetClass="ai.ishara.demo.MainActivity">
+            <extra android:name="IsharaFlow" android:value="steer" />
+            <extra android:name="IsharaDriver" android:value="fake" />
+            <extra android:name="IsharaRecognition" android:value="pipeline" />
+        </intent>
+    </shortcut>
+</shortcuts>
