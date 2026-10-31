@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 /// A text WebSocket. `connect` returns the incoming frames; the stream finishes when the
 /// socket closes for any reason, which callers treat as "disconnected".

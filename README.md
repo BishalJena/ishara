@@ -140,6 +140,14 @@ SwiftUI, iOS 17+, built with XcodeGen. Swift packages keep the rules testable on
 | Live Activity (`IsharaWidgets`) | The call on the lock screen and in the Dynamic Island, with End |
 | Gist | What was agreed, who answered what, follow-ups and the transcript, stored with Recent calls |
 
+### The Android app (`android/`)
+
+The same app for Android in Kotlin and Jetpack Compose. `CallSession` and `RecognitionCore`
+are the same Swift code, compiled unchanged for Android and called over JNI, so both apps
+follow the same turn rules and the same open-set sign rule. Recognition runs on the phone
+(MediaPipe and LiteRT), and calls come from Ishara's calling number, a Bolna number, as on
+iOS. Setup and differences from iOS: [android/README.md](android/README.md).
+
 ### The Ishara backend (`backend/`)
 
 FastAPI on Heroku: one dyno, one uvicorn worker, because each call's state lives in memory.
@@ -178,7 +186,7 @@ with Deaf partners and ISL data.
 ## Run it
 
 ```sh
-scripts/verify.sh            # backend, packages, app tests, scripts; --keep-going shows every failure
+scripts/verify.sh            # backend, packages, iOS and Android app tests, scripts; --keep-going shows every failure
 ```
 
 **The iPhone app** ([details](ios/README.md))
@@ -193,6 +201,13 @@ open ios/Ishara.xcodeproj
 ```
 
 The sign models go in `ios/Ishara/LocalAssets/` ([what and where](ios/Ishara/LocalAssets/README.md)).
+
+**The Android app** ([details](android/README.md): JDK 17, the Android SDK and NDK r30, Swift 6.4.2 with the Swift SDK for Android)
+
+```sh
+cd android
+./gradlew :app:assembleDebug :app:installDebug   # the same LocalAssets models, if present
+```
 
 **The backend on your Mac** ([details](backend/README.md))
 
@@ -241,6 +256,7 @@ anyone redeploying it; the full runbook, with Heroku's limits, is [backend/HEROK
 | Path | What's there |
 |---|---|
 | `ios/` | The app, its Swift packages (`CallSession`, `RecognitionCore`, `SignPipeline*`), the Live Activity widget and the tests |
+| `android/` | The Android app (Kotlin, Compose), its JNI bridge to the shared Swift packages and the tests |
 | `backend/` | The FastAPI service, the Bolna agent definition, deploy scripts and about 1,200 tests |
 | `spikes/recognition/` | The Mac recognition bridge and tooling around the sign models |
 | `spikes/asl_probe/` | The ASL model probe and the iPhone-vs-Mac parity check |

@@ -2,6 +2,9 @@
 
 Updated 24 October 2026, with these later additions:
 
+- **4 November:** the Android app (`android/`) has its own JVM, lint and device tests, and
+  `verify.sh` and CI build the shared Swift packages for Android ([Android app](#android-app)).
+  Latest run: JVM **237** passed, device **153** on the emulator.
 - **31 October:** the steer call has its own suites: `backend/tests/test_steer.py` (the
   2-second window, polishing, cover lines, deferrals, document lookup) and the
   `SteerCallUITests` UI test (type a request, Ishara runs the call, the user steps in by
@@ -20,8 +23,9 @@ they disagree, PLAN wins. Owners: **[You]** founder (and the iPhone), **[Mate]**
 **[Build]** engineering, **CI** GitHub Actions on every push and PR.
 
 Rule of thumb: everything that can run without a phone call, a camera or a person runs
-in `scripts/verify.sh`, and CI runs all of it except the iOS app tests (Swift packages
-only when `ios/**` changed). Paid calls, recording sessions and the device are human
+in `scripts/verify.sh`, and CI runs all of it except the iOS app tests and the Android
+device tests (Swift packages only when `ios/**` changed, the Android job only when the app or
+the Swift it shares changed). Paid calls, recording sessions and the device are human
 runs with written, dated results.
 
 ```
@@ -142,6 +146,33 @@ xcodebuild -project ios/Ishara.xcodeproj -scheme Ishara \
 - **Not in CI.** `verify.sh` runs it (it boots the simulator first). Run it before
   merging anything under `ios/`.
 - Regenerate the project after editing `ios/project.yml`: `xcodegen generate --spec ios/project.yml`.
+
+### Android app
+
+The Android port: JVM tests, lint and the debug build, then the device tests on an emulator
+(fake backend in-process, nothing dialled). Setup (JDK 17, Android SDK, NDK r30, Swift 6.4.2
+with the Swift SDK for Android): [android/README.md](../android/README.md#setup-from-zero-macos).
+
+```sh
+cd android
+./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest
+# one class: add -Pandroid.testInstrumentationRunnerArguments.class=ai.ishara.demo.ui.steer.SteerCallUiTest
+# the shared Swift on its own (what CI checks first):
+swift build --package-path ios/Packages/CallSession --swift-sdk aarch64-unknown-linux-android28 \
+  --scratch-path android/build/swift-packages/CallSession          # same for RecognitionCore
+```
+
+- **Pass:** `BUILD SUCCESSFUL`; reports in `android/app/build/reports/`. Device tests that need
+  the models, `SampleSigns` clips or MediaPipe's test photo skip without them.
+- `verify.sh` has three categories: `shared swift for android`, `android app (tests, lint,
+  build)` and `android device tests`. The device tests run on `ANDROID_SERIAL` when set,
+  otherwise on the first running emulator, and are `SKIPPED` with neither: they install the
+  app, so a plugged-in phone is never picked by itself.
+- CI's `android` job (Ubuntu) builds the two shared packages for Android, then runs the JVM
+  tests, lint and build; no models, no device tests.
+- The full device run takes about 8 minutes. `DelegatedCallUiTest.editingAfterPreparingHidesTheBriefUntilRebuilt`
+  failed once in a full run on 4 November and passed twice on its own: re-run before treating it as a regression.
 
 ### App ↔ local backend end to end
 
@@ -547,9 +578,10 @@ Evidence so far:
 ## 9. Before merging
 
 1. `scripts/verify.sh --keep-going` ends with `verify: OK`, with no `SKIPPED` for a part
-   you changed (iOS changes need the app category to PASS: CI doesn't run it).
-2. CI is green on the PR (`backend`, `spikes-light`, `scripts`, and `swift-packages`
-   when `ios/**` changed).
+   you changed (iOS changes need the app category to PASS and Android changes the device
+   tests category: CI runs neither).
+2. CI is green on the PR (`backend`, `spikes-light`, `scripts`, `swift-packages`
+   when `ios/**` changed, and `android` when the Android app or its shared Swift changed).
 3. The branch is up to date with `main` (`git fetch origin && git merge origin/main`),
    and checks were re-run after the update.
 4. A changed safety rule has a test that fails without it; for a backend safety module,
