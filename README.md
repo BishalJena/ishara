@@ -205,8 +205,8 @@ uv run python -m scripts.local_demo --host 0.0.0.0   # development server: Bolna
 
 ## Deploy
 
-Everything a teammate needs to put the backend live and connect Bolna. The full runbook,
-with Heroku's limits, is [backend/HEROKU.md](backend/HEROKU.md).
+The backend is deployed on Heroku and Bolna points at it. This is how it was done, for
+anyone redeploying it; the full runbook, with Heroku's limits, is [backend/HEROKU.md](backend/HEROKU.md).
 
 1. **Configure.** Copy `.env.example` to `.env` at the repo root and fill in `APP_TOKEN`,
    `BOLNA_API_KEY`, `BOLNA_AGENT_ID`, `CUSTOM_LLM_TOKEN`, `BOLNA_WEBHOOK_SECRET`,
