@@ -36,7 +36,7 @@ const scoreVolume = (f: number) => {
 };
 
 export const Film: React.FC = () => (
-  <AbsoluteFill style={{background: '#000'}}>
+  <AbsoluteFill style={{background: '#FAFAF7'}}>
     {SECTIONS.map(({id, frames, component: Section}) => (
       <Sequence key={id} name={id} from={starts[id]} durationInFrames={frames}>
         <Section />

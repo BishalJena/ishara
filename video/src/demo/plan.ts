@@ -48,11 +48,11 @@ const resolvedAfter = (t: number) => after({t, kind: ''}, (x) => x.kind === 'res
 const callTap = T.ringing - 0.8;
 
 /**
- * The cut: Home at 1.6× (typing and attaching), then the call in real time, minus the
+ * The cut: Home at 2× (typing and attaching), then the call in real time, minus the
  * middle of two of Ishara's timed bars (the first one runs in full, to teach it).
  */
 export const segments: Seg[] = [
-  {from: appStart + 4.2, to: callTap + 0.3, rate: 1.6},
+  {from: appStart + 4.2, to: callTap + 0.3, rate: 2},
   {from: callTap + 0.3, to: T.p2 + 1.8, rate: 1},
   {from: resolvedAfter(T.p2) - 1.0, to: T.p4 + 1.8, rate: 1},
   {from: resolvedAfter(T.p4) - 1.0, to: T.ended + 9.5, rate: 1},

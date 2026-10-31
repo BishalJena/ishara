@@ -5,7 +5,8 @@
   "description": "Ishara launch film (docs/demo/video/SCRIPT.md), built with Remotion",
   "scripts": {
     "studio": "remotion studio src/index.ts",
-    "render": "remotion render src/index.ts IsharaFilm out/ishara-film.mp4 --codec h264 --crf 16"
+    "render": "remotion render src/index.ts IsharaFilm out/ishara-film-raw.mp4 --codec h264 --crf 18 --concurrency 6 && npm run master",
+    "master": "ffmpeg -y -v error -i out/ishara-film-raw.mp4 -c:v copy -af loudnorm=I=-16:TP=-1.5:LRA=11 -c:a aac -b:a 192k out/ishara-film.mp4"
   },
   "dependencies": {
     "@remotion/cli": "4.0.538",

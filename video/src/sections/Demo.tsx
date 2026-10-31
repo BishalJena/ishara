@@ -24,7 +24,7 @@ const callTap = T.ringing - 0.8;
 /** Callouts beside the phone, each from a moment in the recording until the next one. */
 const CALLOUTS: {t: number; title: string; sub?: string}[] = [
   {t: segments[0].from + 1.0, title: 'Type the number.', sub: '+91 is already there.'},
-  {t: segments[0].from + 8.3, title: 'Say what the call is about,', sub: 'in your own words.'},
+  {t: segments[0].from + 8.0, title: 'Say what the call is about,', sub: 'in your own words.'},
   {t: callTap - 10.8, title: 'Attach what they might ask for.', sub: 'A card, a letter, your health history.'},
   {t: callTap - 3.2, title: 'Read on this iPhone.', sub: 'Quoted on the call only when asked, word for word.'},
   {t: T.ringing, title: 'Ishara places the call.', sub: "From Ishara's number. Nothing to install at the clinic."},

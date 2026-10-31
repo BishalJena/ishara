@@ -215,7 +215,7 @@ export const Brand: React.FC = () => {
 
 // ---- 6. How it works ---------------------------------------------------------------------
 
-export const HOW = s(16);
+export const HOW = s(14);
 const Block: React.FC<{start: number; title: string; items: string[]; accent: string; active: number}> = ({start, title, items, accent, active}) => {
   const p = useRise(start);
   return (
@@ -257,7 +257,7 @@ export const How: React.FC = () => {
 
 // ---- 7. Why now, and how big ---------------------------------------------------------
 
-export const MARKET = s(17);
+export const MARKET = s(16);
 const Bar: React.FC<{start: number; label: string; value: string; width: number; color: string}> = ({start, label, value, width, color}) => {
   const frame = useCurrentFrame();
   const grow = interpolate(frame, [start, start + 30], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.out(Easing.cubic)});
