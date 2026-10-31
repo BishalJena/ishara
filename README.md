@@ -2,158 +2,279 @@
 
 ### Phone calls, made accessible. Your conversation. Your control.
 
-**Ishara helps Deaf and hard-of-hearing people handle phone-first services independently.**
-Read the other person's words as captions, communicate a reply, or approve a brief and let a
-voice agent carry the conversation while bringing decisions back to you. The business uses
-its existing phone; it needs no Ishara app or integration.
+[![CI](https://github.com/BishalJena/ishara/actions/workflows/ci.yml/badge.svg)](https://github.com/BishalJena/ishara/actions/workflows/ci.yml)
 
-[The pitch](PITCH.md) · [Market, TAM and business model](MARKET.md) · [Run the app](ios/README.md) · [Run the backend](backend/README.md)
+**Ishara makes phone calls for Deaf and hard-of-hearing people, and keeps them in charge.**
+Type what the call is about. Ishara phones the clinic, office or shop, speaks for you and
+shows you every word, live. Do nothing, and it handles the call. Type or sign at any
+moment, and you steer it. The business just answers its ordinary phone.
 
-## Why this matters
+**Live:** the iPhone app runs against the Ishara backend on Heroku, and every call is a real
+phone call, placed through Bolna (Deepgram listens, Sarvam speaks, Plivo connects).
 
-**“Call us” should not mean “find someone who can call for you.”**
+[The pitch](PITCH.md) · [Market and business model](MARKET.md) · [How a call works](#one-call-your-way) · [Architecture](#architecture) · [Run it](#run-it) · [Deploy](#deploy)
 
-Consider an appointment line that only takes bookings over the phone. For a person who
-cannot reliably hear the reply, a simple task can involve finding someone available to
-help, coordinating schedules, and sharing a personal conversation. Being able to type a
-message does not make the voice-only reply readable.
+## Why Ishara
 
-Ishara's purpose is independence: access when a task needs doing, privacy over the
-conversation, and control over what is said and agreed. Signing is one input option in that
-vision. People who prefer typing or buttons belong in the same experience.
+**"Call us" should not mean "find someone who can call for you."**
 
-```mermaid
-flowchart LR
-    A["Need an appointment"] --> B["The service says: call us"]
-    B --> C["Speech is difficult to access"]
-    C --> D["Find someone available to help"]
-    B --> E["Ishara: read captions and direct the call"]
-    E --> F["Handle the conversation yourself"]
-```
+Clinics, banks, offices and landlords still run on the phone. If you can't hear the other
+side, a two-minute call becomes a favour you ask of a family member: on their time, with
+your private details in someone else's ears. Typing doesn't fix it, because the person on
+the other end is still talking.
 
-## A large need, with a focused starting point
+Ishara gives that call back to the person it belongs to: **independence** (no one else
+needed), **privacy** (no one else listening) and **control** (nothing is agreed that you
+didn't ask for).
 
-| Scale of the need | Source and meaning |
+| The need | Source |
 |---|---|
-| **70M+ Deaf people worldwide** | UN, citing WFD. A global population estimate, not a customer count. [Source](https://www.un.org/observances/sign-languages-day) |
-| **430M people require rehabilitation for disabling hearing loss** | WHO, March 2026. A broader, overlapping population; do not add it to the 70M figure. [Source](https://www.who.int/news-room/fact-sheets/detail/deafness-and-hearing-loss) |
-| **5.07M people recorded with hearing disability in India** | Census **2011**, reproduced by PIB in 2015. Historical context, not a 2026 estimate. [Source](https://www.pib.gov.in/newsite/PrintRelease.aspx?lang=2&reg=48&relid=124291) |
+| **430 million** people live with disabling hearing loss | [WHO fact sheet](https://www.who.int/news-room/fact-sheets/detail/deafness-and-hearing-loss) |
+| **70 million+** Deaf people use a sign language | [United Nations, citing the World Federation of the Deaf](https://www.un.org/en/observances/sign-languages-day) |
+| **50 lakh** Deaf people in India (Census 2011: 5,071,007) | [ISLRTC](https://islrtc.nic.in/about-department/about-islrtc/), [PIB](https://www.pib.gov.in/newsite/PrintRelease.aspx?lang=2&reg=48&relid=124291) |
+| **Fewer than 300** certified Indian Sign Language interpreters, about one for every 17,000 Deaf people | [ISLRTC](https://islrtc.nic.in/about-department/about-islrtc/); the ratio of the two figures |
 
-Our initial use case is one administrative service call: arranging an appointment.
-The opportunity grows through repeated tasks on existing phone lines. The business case
-must establish recurring use, language coverage, affordability, and reliable call completion.
+The populations overlap; don't add them up.
 
-A global commercial scenario of **3.5M eligible accounts × $5/month = $210M/year** illustrates
-the potential scale. Both eligibility and price are assumptions, not measured demand:
-the account count assumes 5% of the 70M reference population fits and can access a future
-supported product. See [the full TAM/SAM/SOM model](MARKET.md) for sensitivity, India-first
-distribution, costs and what still needs validating.
+## One call, your way
 
-## Two ways to handle the conversation
+There is one flow. Ishara does the work by default; you take over whenever you want.
 
-| Live call | Call for me |
-|---|---|
-| Read captions and direct each reply. | Review a short brief and authorize the agent to pursue it. |
-| In the current build: sign → word chips → review the draft → **SEND**. Quick replies are also available. | Stay on the call to answer questions by supported signs or taps, or let the agent report back with a callback requirement. |
-| SEND approves the displayed sentence. | The brief authorizes the task; on-screen choices steer decisions during the call. |
+1. **Before the call.** Enter the number (the +91 is already there; pick from Contacts or a
+   recent person), say what the call is about in your own words, and attach anything they
+   might ask for: a photo of a card, a letter, a PDF of your health history. Attachments are
+   read on the phone (Apple Vision and PDFKit) and travel with your request.
+2. **Ishara calls.** The call comes from Ishara's calling number (a Bolna number), not
+   yours. Ishara introduces itself first, every time: *"Hello, I'm calling for a Deaf caller
+   who is using Ishara, a sign-language app. Their replies may take a few seconds."* Then it
+   states your request in its own words.
+3. **You read every word.** Both sides are captioned as they speak. Days, dates and times
+   collect in a strip at the top. On the lock screen and in the Dynamic Island, a Live
+   Activity shows the call and lets you end it.
+4. **Ishara handles each turn.** When the other side speaks, Ishara shows you its next line
+   with a **2-second bar**. Leave it, and the line is said. It accepts only offers that fit
+   your request, answers questions from what you gave it (quoting your documents word for
+   word, and only when asked), and defers anything else (*"I don't have that with me.
+   Could I send it to you afterwards?"*), saved as a follow-up for you.
+5. **Step in at any moment.** Tap Ishara's line and it drops into the text field to change.
+   Or type your own reply, or switch to signing. Ishara polishes your words without adding
+   facts, shows you the result for 1.5 seconds, then says it. While you compose, it keeps
+   the line warm ("One moment, please"), so the other side never hangs up on silence.
+6. **After the call.** The gist opens by itself: what you asked, what was agreed (quoted
+   from the call), which answers came from Ishara and which from you, any follow-ups and
+   the full transcript. **Call again** or **Done**.
 
-**Example: answering a question while the agent is on the line**
+### A call, turn by turn
 
 ```mermaid
 sequenceDiagram
-    participant P as Person using Ishara
-    participant I as Ishara app
-    participant A as Voice agent
-    participant R as Receptionist
-    P->>I: Approve an appointment brief
-    I->>A: Start the authorized call
-    A->>R: Explain the request
-    R->>A: What time would you like to come in?
-    A->>I: Caption the question and request an answer
-    A->>R: One moment, please.
-    P->>I: Sign TOMORROW or tap the option
-    I->>A: Communicate the chosen answer
-    A->>R: Tomorrow, please. What times are available?
+    autonumber
+    actor You
+    participant App as Ishara app
+    participant API as Ishara backend
+    participant Bolna as Bolna (Deepgram, Sarvam, Plivo)
+    participant Clinic as Clinic phone
+    You->>App: Number, request, health-history PDF
+    App->>API: Brief with the request and the document text
+    API->>API: Phrase the opening from the request (fact-checked)
+    API->>Bolna: Place the call
+    Bolna->>Clinic: Rings from Ishara's calling number
+    Bolna->>Clinic: "Hello, I'm calling for a Deaf caller who is using Ishara..."
+    Clinic-->>Bolna: "City Care Clinic, how can I help?"
+    Bolna->>API: Transcript of what they said
+    API-->>App: Caption
+    API->>Bolna: The request, in Ishara's words
+    Clinic-->>Bolna: "Dr. Rao's earliest is Wednesday at 4 pm."
+    API-->>App: Ishara's next line, with a 2-second bar
+    Note over You,App: You do nothing
+    API->>Bolna: "Sorry, 4 pm doesn't work. Anything in the morning?"
+    Clinic-->>Bolna: "I have Thursday at 10:30."
+    API-->>App: Ishara's next line, with a 2-second bar
+    You->>App: Tap it and add "I'll bring my BP readings"
+    App->>API: Your words
+    API-->>App: Polished line, previewed for 1.5 s
+    API->>Bolna: "Yes, Thursday at 10:30 works. I'll bring my latest BP readings."
+    Clinic-->>Bolna: "Any allergies Dr. Rao should know about?"
+    API->>API: Look it up in your PDF, quote only verified text
+    API->>Bolna: "They're allergic to penicillin."
+    You->>App: Sign THANK YOU
+    API->>Bolna: "Thank you so much for your help."
+    Bolna-->>API: Call ended
+    API-->>App: The gist: agreed, quoted, follow-ups, transcript
 ```
 
-The person stays inside the conversation. The agent handles the spoken exchange.
+### Who speaks when
 
-## Input choice: current build and next step
-
-| Capability | Status |
-|---|---|
-| Receptionist captions, live relay, delegated briefs and questions | Implemented |
-| Eight eligible ASL sign words, candidate suggestions, recognition abstention | Implemented; thresholds remain provisional |
-| Tappable quick replies, brief time preferences, delegated answer options | Implemented |
-| Recent calls on the phone and polling for late call summaries | Implemented |
-| General typed replies, arbitrary typed delegated answers, camera-free entry | **Planned**; not present in the current app |
-| Reliable receptionist-confirmed booking outcomes and audio-playback status | Need hardening; acceptance and text handoff are not proof of completion |
-
-The product direction is **type, sign, or tap, according to the person's preference**.
-The present demonstration uses signs and existing buttons. It does not demonstrate a
-general typed conversation yet.
-
-## How it works
+Every line Ishara says is one of these, and nothing else:
 
 ```mermaid
-flowchart LR
-    subgraph Phone["iPhone app"]
-        S["Camera: supported ASL signs"] --> C["Word chips"]
-        T["Existing tap choices"] --> U["Person reviews or chooses"]
-        C --> U
-    end
-    U --> B["Ishara backend: approvals, drafts, brief and call state"]
-    B --> V["Bolna: voice agent and phone line"]
-    V <-->|"Ordinary phone call"| R["Receptionist"]
-    V --> K["Speech transcription"]
-    K --> L["Captions on the person's phone"]
+stateDiagram-v2
+    direction LR
+    [*] --> Proposed: the other side speaks
+    Proposed --> Said: 2 s pass, you did nothing
+    Proposed --> Composing: you tap the line, type or sign
+    Composing --> Covering: you're still composing
+    Covering --> Composing: "One moment, please"
+    Composing --> Preview: you send
+    Preview --> Said: 1.5 s, polished, no new facts
+    Preview --> Composing: you tap to change it
+    Said --> [*]
 ```
 
-- **SwiftUI + MediaPipe + LiteRT:** recognition runs on the iPhone; the Mac bridge provides
-  a fallback. The ASL model is used as published, without our own training.
-- **FastAPI + Groq:** compose drafts with checks and deterministic fallback; coordinate
-  approved turns, delegated questions, captions and notes.
-- **Bolna + Deepgram + Sarvam + Plivo:** carry the call, transcribe speech and speak the
-  backend's replies. Calls currently originate from **a Bolna number**, not the person's own.
+| Ishara may say | Ishara never says |
+|---|---|
+| Your request, in its own words | A day, time, number or name you didn't give |
+| Yes to an offer that fits your request | Yes to anything outside it |
+| A fact from your documents, word for word, when asked | Anything from your documents unprompted |
+| Your typed or signed words, polished | A sign it isn't sure of |
+| A deferral, saved as a follow-up for you | A guess |
 
-## What has been demonstrated
+## Architecture
 
-The team recorded successful real Bolna calls on **28 October 2026**, covering live relay,
-attended delegation, an open time question and unattended delegation. These used the iOS
-simulator with sign videos as camera input and a consenting teammate as receptionist.
-They establish a rehearsed integration, not natural-conversation or Deaf-participant validation.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/architecture-dark.svg">
+  <img src="docs/media/architecture-light.svg" alt="Architecture: the Ishara app on the iPhone talks to the Ishara backend over a WebSocket. The backend is Bolna's custom LLM; Bolna (Deepgram, Sarvam Bulbul, Plivo) carries the phone call to the clinic. Requests travel right; the clinic's words travel back as captions.">
+</picture>
 
-The reviewed source revision is `83c8a33` (29 October). Physical iPhone camera, performance
-and final recognition thresholds remain unverified in the available evidence.
+### The iPhone app (`ios/`)
 
-The current vocabulary is **hello, thankyou, yes, no, now, please, tomorrow, wait**.
-MORNING is tap-only. This is isolated-sign recognition, with hands at rest between signs.
-ASL and Indian Sign Language are separate languages; ISL support requires suitable data,
-language-specific evaluation and work with Deaf partners. No Deaf participant has yet
-validated Ishara. Outcome labels, speech delivery indicators and restart recovery remain
-prototype limitations.
+SwiftUI, iOS 17+, built with XcodeGen. Swift packages keep the rules testable on their own:
 
-## Try it
+| Part | What it does |
+|---|---|
+| Home | +91 number field (any pasted or Contacts format becomes E.164), recent people, the request, attachments read by Vision and PDFKit |
+| Call screen | Captions, the facts strip, Ishara's proposal with its 2-second bar, the composer, the sign panel |
+| `CallSession` | `TurnStore`: the turn rules, so a stale or unconfirmed line is never sent |
+| `SignPipeline` (+ MediaPipe, LiteRT) | Camera frames → MediaPipe Holistic landmarks → start/stop detector → the ASL model → open-set rule → word chips |
+| Live Activity (`IsharaWidgets`) | The call on the lock screen and in the Dynamic Island, with End |
+| Gist | What was agreed, who answered what, follow-ups and the transcript, stored with Recent calls |
+
+### The Ishara backend (`backend/`)
+
+FastAPI on Heroku: one dyno, one uvicorn worker, because each call's state lives in memory.
+
+| Part | What it does |
+|---|---|
+| `POST /briefs`, `POST /calls`, `WS /calls/{id}/ws`, `GET /calls/{id}/notes` | The app's API: the request and documents, starting the call, live events both ways, the gist |
+| `POST /v1/chat/completions` | Bolna's custom LLM: every time the other side finishes speaking, Bolna asks the backend what to say |
+| `POST /bolna/webhook/{secret}` | Bolna's call status: ringing, connected, ended |
+| Delegate | Decides each turn: accept an offer that fits, answer from the brief, look it up in a document, or defer |
+| Composer | Groq `openai/gpt-oss-120b` phrases the opening and polishes your lines; a deterministic template takes over if Groq is slower than 1.5 s or unavailable |
+| Validator | Rejects any wording that drops your meaning or adds a day, time, number or name |
+| Document lookup | Quotes a document only when the value appears in it verbatim; otherwise Ishara defers |
+
+### The call (Bolna)
+
+A Bolna graph agent carries the call: **Deepgram** transcribes the other side, **Sarvam
+Bulbul** speaks Ishara's lines, and **Plivo** connects the phone line. The agent's LLM is the
+Ishara backend, so every word Ishara says comes from the rules above. The agent definition
+is generated and tested in [`backend/bolna/`](backend/bolna/README.md).
+
+### Signing: ASL today, Indian Sign Language next
+
+Recognition runs entirely on the iPhone. The model is the public
+[Kaggle ASL Signs 1st-place model](https://www.kaggle.com/competitions/asl-signs) (MIT code,
+250 signs, trained on about 94,000 clips from 21 Deaf signers under CC-BY 4.0), used as
+published through LiteRT. Ishara keeps the full 250-way decision and shows a word only when
+the model is confident (probability at or above the word's cut-off, and a clear margin over
+the runner-up); anything else stays a "?" and is never spoken. The signs in the app today
+are **hello, thank you, yes, no, now, please, tomorrow** and **wait**. Measurements:
+[docs/experiments/asl-model-probe.md](docs/experiments/asl-model-probe.md).
+
+Indian Sign Language is a separate language with its own grammar; it comes next, built
+with Deaf partners and ISL data.
+
+## The business
+
+A phone call is cheap; a human relay minute is not. AI voice agents change the cost of
+making every call accessible:
+
+| | Cost per minute | Source |
+|---|---|---|
+| Human video relay (US) | **$4.07–$8.06** | [FCC DA 24-620](https://docs.fcc.gov/public/attachments/DA-24-620A1.txt) |
+| AI voice agent (Bolna) | **from $0.06**, before telephony | [Bolna pricing](https://www.bolna.ai/pricing) |
+
+In the US alone, phone relay for Deaf callers is funded at **$1.48 billion a year**
+([FCC, 2025–26](https://www.fcc.gov/consumer-governmental-affairs/fcc-releases-2025-26-trs-fund-contribution-factors-order)).
+Ishara starts in India, where interpreters are scarcest, with a subscription for everyday
+calls. [MARKET.md](MARKET.md) has the TAM/SAM/SOM model, pricing, costs and assumptions.
+
+## Run it
 
 ```sh
-scripts/verify.sh
+scripts/verify.sh            # backend, packages, app tests, scripts; --keep-going shows every failure
 ```
 
-- [iOS setup](ios/README.md): the app defaults to a scripted call; nothing is dialled.
-- [Backend setup](backend/README.md): `uv run python -m scripts.local_demo` runs a local
-  scripted receptionist, with no paid API calls or telephony.
-- [Mac recognition bridge](spikes/recognition/README.md): `scripts/sign_lab.sh --free --model asl`.
+**The iPhone app** ([details](ios/README.md))
 
-Live calls need separately authorized use, an allowlisted consenting recipient and provider
-configuration. The trial account only dials verified numbers. Credentials, model files and
-private recordings are excluded from Git.
+```sh
+brew install xcodegen
+xcodegen generate --spec ios/project.yml
+cp ios/Ishara/Config/Secrets.example.xcconfig ios/Ishara/Config/Secrets.xcconfig
+# set ISHARA_BACKEND_URL (written https:/$()/your-app.herokuapp.com) and ISHARA_APP_TOKEN
+ios/Packages/SignPipelineLiteRT/Scripts/download_tflite_c.sh   # once
+open ios/Ishara.xcodeproj
+```
+
+The sign models go in `ios/Ishara/LocalAssets/` ([what and where](ios/Ishara/LocalAssets/README.md)).
+
+**The backend on your Mac** ([details](backend/README.md))
+
+```sh
+cd backend
+uv sync
+uv run uvicorn app.main:app --reload            # needs the keys in ../.env
+uv run python -m scripts.local_demo --host 0.0.0.0   # development server: Bolna and the receptionist simulated, no telephony, no paid APIs
+```
+
+## Deploy
+
+Everything a teammate needs to put the backend live and connect Bolna. The full runbook,
+with Heroku's limits, is [backend/HEROKU.md](backend/HEROKU.md).
+
+1. **Configure.** Copy `.env.example` to `.env` at the repo root and fill in `APP_TOKEN`,
+   `BOLNA_API_KEY`, `BOLNA_AGENT_ID`, `CUSTOM_LLM_TOKEN`, `BOLNA_WEBHOOK_SECRET`,
+   `GROQ_API_KEY`, `GROQ_MODEL`, `SARVAM_API_KEY`, `ALLOWED_RECIPIENTS` and
+   `PUBLIC_BASE_URL`. Keys live only in `.env` and Heroku config, never in Git or the app.
+2. **Deploy the backend** (Heroku CLI logged in, `APP` set to the app name):
+
+   ```sh
+   backend/scripts/heroku_config_push.sh --app "$APP" --yes   # sends the .env names, never prints values
+   backend/scripts/heroku_deploy.sh --app "$APP" --yes        # pushes backend/, waits for /health
+   heroku ps:type --app "$APP"                                # must be Basic or larger, never Eco
+   ```
+
+   Keep exactly one web dyno; the Procfile already pins one uvicorn worker.
+3. **Point Bolna at it.** With `PUBLIC_BASE_URL` set to the app's URL:
+
+   ```sh
+   cd backend
+   uv run python -m scripts.bolna_agent register-llm --yes   # the backend as Bolna's custom LLM
+   uv run python -m scripts.bolna_agent update --yes         # or `create --yes`, then put the new id in BOLNA_AGENT_ID
+   ```
+
+4. **Allow the numbers.** `ALLOWED_RECIPIENTS` lists who the backend may call, as
+   `contact_id=+E164` entries separated by commas; the app sends only the contact id or the
+   number the user typed. A Bolna trial account also dials only numbers verified in the
+   Bolna dashboard.
+5. **Check.** `curl https://<app>/health` must answer `status: ok` with no missing config.
+   Point the app's `Secrets.xcconfig` at the URL and place a call.
+
+## Repository map
+
+| Path | What's there |
+|---|---|
+| `ios/` | The app, its Swift packages (`CallSession`, `RecognitionCore`, `SignPipeline*`), the Live Activity widget and the tests |
+| `backend/` | The FastAPI service, the Bolna agent definition, deploy scripts and about 1,200 tests |
+| `spikes/recognition/` | The Mac recognition bridge and tooling around the sign models |
+| `spikes/asl_probe/` | The ASL model probe and the iPhone-vs-Mac parity check |
+| `ml/coreml/` | The SignCLIP conversion behind the fallback recognizer |
+| `docs/` | [Measurements](docs/experiments/), [sources](docs/CLAIM-LEDGER.md), [testing](docs/TESTING.md), [submission copy](docs/demo/SUBMISSION.md), [research](docs/research/README.md) and the [archive](docs/archive/README.md) |
 
 ## Read more
 
-- [Pitch and judge questions](PITCH.md)
-- [Market opportunity, assumptions and sources](MARKET.md)
-- [Public submission copy](docs/demo/SUBMISSION.md) and [slide outline](docs/demo/SLIDES.md)
-- [Engineering plan](PLAN.md) and [verification guide](docs/TESTING.md)
-
-The older material under `docs/research/`, `docs/archive/` and dated experiment records is
-background. The README, PITCH and MARKET files carry the current public positioning.
+- [The pitch and judge questions](PITCH.md)
+- [Market, TAM and business model](MARKET.md)
+- [Engineering plan and decisions](PLAN.md)
+- [How to test Ishara](docs/TESTING.md)
+- [Sources behind every claim](docs/CLAIM-LEDGER.md)
