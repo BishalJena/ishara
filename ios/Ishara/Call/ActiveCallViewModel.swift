@@ -55,6 +55,7 @@ final class ActiveCallViewModel {
     /// The last sign couldn't be read because a hand left the picture.
     private(set) var showsFramingHint = false
     private var userEnded = false
+    private var isStarting = false
     /// This call's id in Recent calls.
     let recordID = UUID()
     private let placedAt = Date()
@@ -102,6 +103,7 @@ final class ActiveCallViewModel {
     var isDelegated: Bool { setup.delegation != nil }
     /// The agent runs the call and the user may step in by typing or signing.
     var isSteer: Bool { setup.isSteer }
+    var canSteer: Bool { phase == .live }
     /// D9 attended: the user watches and answers the agent's questions by sign or tap
     /// (yes / no / wait, or a time word for an open "when?").
     var isAttended: Bool { setup.delegation?.attended ?? false }
@@ -126,7 +128,11 @@ final class ActiveCallViewModel {
     /// The user left the field empty and dismissed the keyboard.
     func cancelSteppingIn() { store?.stopComposing() }
     /// A typed line, to be polished, previewed and spoken.
-    func say(_ text: String) { store?.say(text) }
+    @discardableResult
+    func say(_ text: String) -> Bool {
+        guard canSteer else { return false }
+        return store?.say(text) ?? false
+    }
     /// Edit the previewed typed line instead of letting it be spoken.
     func editPreview() { store?.holdPreview() }
 
@@ -136,7 +142,7 @@ final class ActiveCallViewModel {
         guard isCallOver, store != nil else { return nil }
         return CallRecord(
             id: recordID, date: placedAt, contactName: setup.contact.name, contactNumber: setup.contact.phoneNumber,
-            mode: isDelegated ? .delegated : .live, captions: captions.map(CallRecord.Line.init), notes: nil)
+            backendCallID: driver.backendCallID, mode: isSteer ? .steer : isDelegated ? .delegated : .live, captions: captions.map(CallRecord.Line.init), notes: nil)
     }
 
     var connectedAt: Date? { store?.connectedAt }
@@ -215,7 +221,9 @@ final class ActiveCallViewModel {
     }
 
     func start() async {
-        guard store == nil, startFailure == nil else { return }
+        guard store == nil, startFailure == nil, !isStarting else { return }
+        isStarting = true
+        defer { isStarting = false }
         do {
             attach(try await driver.start(setup))
         } catch {
@@ -337,6 +345,7 @@ final class ActiveCallViewModel {
         case "stale_turn": "That reply was out of date, so it wasn't sent."
         case "already_approved": "That reply was already sent."
         case "busy_speaking": "Wait until the current reply has been spoken."
+        case "reply_not_sent": "Your reply wasn't sent. Wait for the current line to finish and check the connection before trying again."
         case "call_not_live": "The call isn't connected yet. Nothing was sent."
         case "call_ended": "The call has ended. Nothing will be sent."
         case "bad_message": "The backend didn't understand the app. Nothing was sent."

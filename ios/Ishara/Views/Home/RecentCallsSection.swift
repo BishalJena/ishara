@@ -28,7 +28,7 @@ struct RecentCallsSection: View {
             } header: {
                 Text("Recent calls")
             } footer: {
-                Text("Kept on this phone only. Swipe left on a call to delete it.")
+                Text("Saved on this phone. Completed notes also have a 24-hour backend recovery copy. Swipe left to remove the local copy.")
             }
         }
     }

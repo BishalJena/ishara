@@ -48,6 +48,19 @@ final class CallHistory {
         save(record)
     }
 
+    /// Recover only completed calls; never infer or restart an active call from history.
+    func recover(_ notes: [CallNotes]) {
+        for item in notes where item.ready {
+            if let existing = records.first(where: { $0.backendCallID == item.callID || $0.notes?.callID == item.callID }) {
+                update(existing.id, notes: item)
+                continue
+            }
+            let at = item.transcript.first.map { Date(timeIntervalSince1970: $0.at) } ?? Date()
+            let lines = item.transcript.map { CallRecord.Line(speaker: $0.speaker == .agent ? .agent : .receptionist, text: $0.text, at: Date(timeIntervalSince1970: $0.at)) }
+            save(CallRecord(id: UUID(), date: at, contactName: "Recovered call", backendCallID: item.callID, mode: item.mode, captions: lines, notes: item))
+        }
+    }
+
     func delete(_ id: UUID) {
         records.removeAll { $0.id == id }
         guard let folder else { return }

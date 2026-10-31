@@ -9,6 +9,7 @@ import Foundation
 protocol CallDriver: AnyObject {
     /// Asks for the call (`POST /calls` on the real backend). Throws when it can't be
     /// placed, for example a bad app token, a contact not on the allowlist or no network.
+    var backendCallID: String? { get }
     func start(_ setup: CallSetup) async throws -> TurnStore
 
     /// Lets go of the connection once the call screen goes away. Sends nothing.
@@ -26,9 +27,13 @@ protocol CallDriver: AnyObject {
     var onReconnectStopped: ((ReconnectStop) -> Void)? { get set }
 }
 
-enum CallDriverError: Error, Equatable {
+enum CallDriverError: Error, Equatable, LocalizedError {
     /// Notes were asked for before any call was placed.
     case noCall
+
+    var errorDescription: String? {
+        "The app has not recovered this call’s identity yet. Check the connection and refresh the notes."
+    }
 }
 
 /// Why a driver stopped reconnecting a dropped call socket.
@@ -38,4 +43,9 @@ enum ReconnectStop: Equatable {
     case refused(CallSocketClose)
     /// Every scheduled reconnect was tried.
     case attemptsUsedUp
+}
+
+
+extension CallDriver {
+    var backendCallID: String? { nil }
 }

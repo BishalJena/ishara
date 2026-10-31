@@ -75,7 +75,7 @@ final class BackendClientTests: XCTestCase {
 
         let requests = await transport.requests
         let request = try XCTUnwrap(requests.first)
-        XCTAssertEqual(request.url?.absoluteString, "wss://backend.example.test/calls/call_123/ws")
+        XCTAssertEqual(request.url?.absoluteString, "wss://backend.example.test/calls/call_123/ws?history=1")
         XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer test-token")
     }
 

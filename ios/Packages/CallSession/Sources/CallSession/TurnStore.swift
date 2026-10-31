@@ -313,6 +313,11 @@ public final class TurnStore {
     // MARK: Backend events
 
     public func receive(_ message: ServerMessage) {
+        if case .history(let entries) = message {
+            // Read-only recovery is valid even after an ended call's initial status.
+            captions = entries.map { Caption(text: $0.text, at: Date(timeIntervalSince1970: $0.at), speaker: $0.speaker == .agent ? .agent : .receptionist) }
+            return
+        }
         guard state != .ended else {
             // A failed hang-up still matters after End: the call may still be running.
             if case let .error(code, text) = message, code == ServerError.endFailed {
@@ -375,6 +380,8 @@ public final class TurnStore {
             }
         case let .followUp(text):
             followUps.append(text)
+        case .history:
+            break // applied before the ended-state guard
         case .unknown:
             break
         }
@@ -419,7 +426,7 @@ public final class TurnStore {
     @discardableResult
     public func say(_ text: String) -> Bool {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard acceptsInput, !trimmed.isEmpty, trimmed.count <= ProtocolLimits.maxSpokenCharacters else {
+        guard isLive, !trimmed.isEmpty, trimmed.count <= ProtocolLimits.maxSpokenCharacters else {
             return false
         }
         lastError = nil

@@ -29,6 +29,7 @@ struct SetupView: View {
     let setupProblem: String?
     let history: CallHistory?
     @Bindable var draft: SetupDraft
+    var serviceStatus: BackendServiceStatus? = nil
     let onCall: (CallSetup) -> Void
 
     private var number: String {
@@ -46,6 +47,7 @@ struct SetupView: View {
     }
     @AppStorage("ishara.name") private var name = ""
     @AppStorage("ishara.callback") private var callback = ""
+    @State private var showsBackendHelp = false
     @State private var settingsPrompt: SettingsPrompt?
     /// Set by the sheet's Call button; the call is placed once the sheet is gone.
     @State private var callAfterSettings = false
@@ -96,6 +98,16 @@ struct SetupView: View {
                         .accessibilityAddTraits(.isHeader)
 
                     composer
+                    if let serviceStatus {
+                        Button {
+                            showsBackendHelp = true
+                            Task { await serviceStatus.check() }
+                        } label: {
+                            Label(serviceStatus.message, systemImage: serviceStatus.online ? "checkmark.circle.fill" : "exclamationmark.circle")
+                                .font(.footnote).foregroundStyle(serviceStatus.online ? .green : .orange)
+                        }
+                        .accessibilityIdentifier("setup.backendStatus")
+                    }
 
                     Text("Ishara leads the call from what you wrote and never adds anything else. It calls from Ishara's number, not yours. \(modeDescription)")
                         .font(.footnote)
@@ -112,6 +124,19 @@ struct SetupView: View {
             .onAppear {
                 // UI tests start with a clean store and no way to type into Settings first.
                 if name.isEmpty, let preset = ProcessInfo.processInfo.environment["ISHARA_UITEST_NAME"] { name = preset }
+            }
+            .sheet(isPresented: $showsBackendHelp) {
+                NavigationStack {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 18) {
+                            Text(serviceStatus?.message ?? "Checking service…").font(.headline)
+                            Text("Check your connection and ask the demo operator to verify the backend service. A network failure can also make the service unreachable.")
+                            Text("Do not restart the backend during a call.").font(.footnote).foregroundStyle(.secondary)
+                            Button("Check again") { Task { await serviceStatus?.check() } }
+                        }.padding(24)
+                    }.navigationTitle("Backend status").navigationBarTitleDisplayMode(.inline)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showsBackendHelp = false } } }
+                }
             }
             .sheet(item: $settingsPrompt, onDismiss: {
                 guard callAfterSettings else { return }

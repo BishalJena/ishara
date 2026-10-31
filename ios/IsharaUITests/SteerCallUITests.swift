@@ -3,6 +3,7 @@ import XCTest
 /// The steer flow on the fake driver: type the request, Call, watch Ishara's proposed line
 /// fill and go out, step in by typing, see the typed line previewed and spoken, and
 /// reach the gist. Nothing is dialled.
+@MainActor
 final class SteerCallUITests: XCTestCase {
     private var app: XCUIApplication!
 
@@ -57,6 +58,37 @@ final class SteerCallUITests: XCTestCase {
         XCTAssertTrue(app.textFields["setup.number"].firstMatch.waitForExistence(timeout: 5), "Done goes back to Home")
         let leftover = app.textFields["setup.number"].firstMatch.value as? String ?? ""
         XCTAssertTrue(leftover.isEmpty || leftover == "10-digit number", "the finished call's draft is cleared")
+    }
+
+    /// Real URLSession HTTP and WebSocket against the explicit fake-telephone server.
+    /// The build must point to localhost with its test token; never a provider backend.
+    func testNativeSteerCaptionsTypedReplyAndGistThroughLocalBackend() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["ISHARA_LOCAL_BACKEND"] == "1")
+        app.terminate()
+        app.launchArguments = ["-IsharaCallHistory", "memory", "-IsharaFlow", "steer", "-IsharaDriver", "live", "-IsharaRecognition", "scripted"]
+        app.launch()
+        let number = app.textFields["setup.number"].firstMatch
+        XCTAssertTrue(number.waitForExistence(timeout: 5))
+        number.tap()
+        number.typeText("2" + String(repeating: "0", count: 9))
+        let request = app.textViews["setup.request"].firstMatch.exists
+            ? app.textViews["setup.request"].firstMatch : app.textFields["setup.request"].firstMatch
+        request.tap()
+        request.typeText("Book a check-up tomorrow morning.")
+        app.buttons["setup.call"].tap()
+        let receptionist = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "hello passport office")).firstMatch
+        XCTAssertTrue(receptionist.waitForExistence(timeout: 25), "real backend captions must reach the native screen")
+        let field = app.textFields["steer.field"].firstMatch.exists
+            ? app.textFields["steer.field"].firstMatch : app.textViews["steer.field"].firstMatch
+        field.tap()
+        field.typeText("Please wait a moment.")
+        app.buttons["steer.send"].tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Please wait a moment")).firstMatch.waitForExistence(timeout: 12))
+        let end = app.buttons["steer.end"]
+        if end.exists { end.tap() }
+        let outcome = app.staticTexts["notes.outcome"].firstMatch
+        XCTAssertTrue(outcome.waitForExistence(timeout: 15) || app.otherElements["notes.outcome"].waitForExistence(timeout: 2), "the gist must use the same placed call")
+        attach("native-backend-gist")
     }
 
     private func attach(_ name: String) {

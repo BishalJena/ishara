@@ -21,6 +21,7 @@ struct CallRecord: Codable, Equatable, Identifiable, Sendable {
     let contactName: String
     /// The number dialled, when the user typed or picked one, so Home can offer it again.
     var contactNumber: String? = nil
+    var backendCallID: String? = nil
     /// Live (the user signs every reply) or delegated (Call for me).
     let mode: CallMode
     var captions: [Line]
