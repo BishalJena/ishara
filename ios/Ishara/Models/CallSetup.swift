@@ -18,7 +18,7 @@ struct Contact: Identifiable, Hashable, Sendable {
         return Contact(id: "number", name: given.isEmpty || isNumberName(given) ? display(e164) : given, phoneNumber: e164)
     }
 
-    /// "+919337473802" as people write it: "+91 93374 73802".
+    /// "+919800012345" as people write it: "+91 98000 12345".
     static func display(_ e164: String) -> String {
         let digits = e164.filter(\.isNumber)
         guard e164.hasPrefix("+91"), digits.count == 12 else { return e164 }

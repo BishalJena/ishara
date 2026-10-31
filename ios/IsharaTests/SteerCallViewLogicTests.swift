@@ -39,10 +39,10 @@ final class SteerCallViewLogicTests: XCTestCase {
     }
 
     func testANumberShowsSpacedWithAPersonGlyph() {
-        XCTAssertEqual(Contact.display("+919337473802"), "+91 93374 73802")
-        XCTAssertEqual(Contact.indian("9337473802")?.name, "+91 93374 73802")
-        XCTAssertEqual(Contact.indian("9337473802", name: "Dr Mehta")?.name, "Dr Mehta")
-        XCTAssertEqual(InitialsAvatar.initials("+91 93374 73802"), "")
+        XCTAssertEqual(Contact.display("+919800012345"), "+91 98000 12345")
+        XCTAssertEqual(Contact.indian("9800012345")?.name, "+91 98000 12345")
+        XCTAssertEqual(Contact.indian("9800012345", name: "Dr Mehta")?.name, "Dr Mehta")
+        XCTAssertEqual(InitialsAvatar.initials("+91 98000 12345"), "")
         XCTAssertEqual(InitialsAvatar.initials("City Clinic"), "CC")
     }
 }
