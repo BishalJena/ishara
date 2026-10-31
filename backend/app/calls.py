@@ -297,6 +297,7 @@ class CallManager(CallLedger):
             follow_ups=list(delegate.follow_ups) if delegate else None,
             stepped_in=delegate.stepped_in if delegate else 0,
             agent_answers=list(delegate.agent_answers) if delegate else None,
+            goal_completed=delegate is not None and delegate.outcome == "done",
         )
 
     def _recipient(self, request: StartCallRequest) -> tuple[str, str]:
@@ -330,7 +331,10 @@ class CallManager(CallLedger):
                 steer=request.mode == "steer",
             )
         session = CallSession(
-            call_id=uuid.uuid4().hex, purpose=request.purpose, mode=request.mode, delegate=delegate
+            call_id=uuid.uuid4().hex,
+            purpose="general" if request.mode == "steer" else request.purpose,
+            mode=request.mode,
+            delegate=delegate,
         )
         self._sessions[session.call_id] = session
         if request.brief_id:
@@ -490,6 +494,8 @@ class CallManager(CallLedger):
             delegate.stepped_in += 1
         before = self._snapshot(session)
         turn = session.approve(message.turn_id, message.text)
+        if isinstance(delegate, DelegateState) and delegate.steer:
+            delegate.approved_user_turns.add(message.turn_id)
         # Publish first: it cancels the timer of an approval this new turn superseded.
         await self._publish(session, before)
         self._timers[session.call_id] = self._spawn(self._expire_later(session, turn.turn_id))
@@ -929,12 +935,14 @@ class CallManager(CallLedger):
             if spoken_text:
                 entry = self._note(session, "agent", spoken_text)
                 delegate = session.delegate
-                if turn_id.startswith(("ask-", SAY_TURN_PREFIX)) and isinstance(
-                    delegate, DelegateState
+                if isinstance(delegate, DelegateState) and (
+                    turn_id.startswith(("ask-", SAY_TURN_PREFIX))
+                    or turn_id in delegate.approved_user_turns
                 ):
                     # Only an answer the receptionist heard counts in the notes; one that
                     # was never delivered must not turn into "booked".
                     delegate.answers.append(spoken_text)
+                    delegate.approved_user_turns.discard(turn_id)
                 if turn_id == OPENING_TURN_ID or turn_id.startswith(
                     (COVER_TURN_PREFIX, RESUME_TURN_PREFIX)
                 ):

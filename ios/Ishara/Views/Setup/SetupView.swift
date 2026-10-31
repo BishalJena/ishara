@@ -260,7 +260,7 @@ struct SetupView: View {
             }
             Divider()
 
-            TextField("What should Ishara do? e.g. Book a check-up next week, mornings only.", text: $draft.request, axis: .vertical)
+            TextField("What should Ishara do? For example, ask about a passport renewal or arrange a plumber visit.", text: $draft.request, axis: .vertical)
                 .lineLimit(3...8)
                 .font(.title3.weight(.medium))
                 .focused($focus, equals: .request)
@@ -339,7 +339,7 @@ struct SetupView: View {
             return
         }
         var setup = CallSetup(
-            contact: who, purpose: .doctorAppointment,
+            contact: who, purpose: .general,
             details: SavedDetails(name: name.trimmingCharacters(in: .whitespaces), preferredTime: .mornings),
             voice: .indianEnglish)
         setup.request = request.trimmingCharacters(in: .whitespacesAndNewlines)

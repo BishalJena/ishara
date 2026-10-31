@@ -2,7 +2,7 @@ import {useState} from 'react';
 import type {Record as CallRecord} from '../lib/types';
 import {Icon} from './Icons';
 
-const outcomes: {[key: string]: string} = {booked: 'Appointment booked', declined: 'Offer declined', callback: 'A follow-up is needed', unclear: 'Review the conversation', no_answer: 'The call wasn’t answered'};
+const outcomes: {[key: string]: string} = {done: 'Request handled', booked: 'Appointment booked', declined: 'Offer declined', callback: 'A follow-up is needed', unclear: 'Review the conversation', no_answer: 'The call wasn’t answered'};
 export function NotesPanel({record, onDone, onRefresh, awaitingSummary = false}: {record: CallRecord; onDone: () => void; onRefresh?: (record: CallRecord) => Promise<void>; awaitingSummary?: boolean}) {
   const notes = record.notes;
   const automatic = notes.bolna_summary?.trim();
