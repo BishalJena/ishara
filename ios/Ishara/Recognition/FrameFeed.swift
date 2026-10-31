@@ -46,6 +46,8 @@ final class CameraFeed: FrameFeed {
     }
 
     func items() -> AsyncStream<FeedItem> {
+        live.isUnavailable = false
+        live.overlay = nil
         let (items, continuation) = AsyncStream<FeedItem>.makeStream(bufferingPolicy: .bufferingNewest(2))
         let source = source
         let access = access
@@ -53,6 +55,7 @@ final class CameraFeed: FrameFeed {
             if access.status() == .notDetermined {
                 await access.request()
             }
+            guard !Task.isCancelled else { continuation.finish(); return }
             let permission = CameraPermission(access.status())
             self?.live.permission = permission
             guard permission == .authorized else {
@@ -62,6 +65,7 @@ final class CameraFeed: FrameFeed {
             do {
                 for try await frame in source.frames() { continuation.yield(.frame(frame)) }
             } catch {
+                guard !Task.isCancelled else { continuation.finish(); return }
                 if error as? FrameSourceError == .cameraUnavailable {
                     self?.live.isUnavailable = true
                 }

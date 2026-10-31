@@ -46,6 +46,8 @@ enum CameraPlaceholder: Equatable {
 struct CameraCard: View {
     let camera: LiveCamera?
     let state: CameraState?
+    enum Layout { case standard, compact }
+    var layout: Layout = .standard
 
     @AppStorage("camera.showsBodyOverlay") private var showsOverlay = true
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -56,6 +58,7 @@ struct CameraCard: View {
     /// call screens keep it small (smaller still at accessibility text sizes) so chips
     /// and the draft stay in view.
     private var previewHeight: CGFloat {
+        if layout == .compact { return 192 }
         guard isCallScreen else { return 360 }
         return typeSize.isAccessibilitySize ? 120 : 170
     }
@@ -63,12 +66,31 @@ struct CameraCard: View {
     var body: some View {
         switch CameraCardContent.content(for: camera, isSimulator: AppServices.isSimulator) {
         case .live:
-            if let camera { live(camera) }
+            if let camera {
+                if layout == .compact {
+                    preview(camera).accessibilityIdentifier("camera.preview")
+                } else {
+                    live(camera)
+                }
+            }
         case .blocked(let permission):
-            CameraBlockedView(permission: permission, state: state)
+            if layout == .compact { compactUnavailable("Camera access is off", identifier: "camera.blocked") }
+            else { CameraBlockedView(permission: permission, state: state) }
         case .placeholder(let reason):
-            CameraPreviewPlaceholder(state: state, message: reason.message, minHeight: 240)
+            if layout == .compact { compactUnavailable(reason.message, identifier: "camera.placeholder") }
+            else { CameraPreviewPlaceholder(state: state, message: reason.message, minHeight: 240) }
         }
+    }
+
+    private func compactUnavailable(_ message: String, identifier: String) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: "video.slash").font(.title2)
+            Text(message).font(.caption).multilineTextAlignment(.center)
+        }
+        .foregroundStyle(.white).padding(8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(white: 0.15))
+        .accessibilityIdentifier(identifier)
     }
 
     /// The pill keeps its place at the top left of the card; on the call screens the

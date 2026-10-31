@@ -36,6 +36,11 @@ final class GetReadyModel {
     var isCalibrated: Bool { secondsAtRest + 0.001 >= Self.calibrationSeconds }
     var isReady: Bool { allChecksPassed && isCalibrated }
 
+    func reset() {
+        passedChecks = []
+        secondsAtRest = 0
+    }
+
     func pass(_ check: Check) {
         passedChecks.insert(check)
     }

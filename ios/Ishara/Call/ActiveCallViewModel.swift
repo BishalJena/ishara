@@ -56,6 +56,8 @@ final class ActiveCallViewModel {
     private(set) var showsFramingHint = false
     private var userEnded = false
     private var isStarting = false
+    private(set) var isSigningActive = false
+    @ObservationIgnored private var signingTask: Task<Void, Never>?
     /// This call's id in Recent calls.
     let recordID = UUID()
     private let placedAt = Date()
@@ -109,7 +111,7 @@ final class ActiveCallViewModel {
     var isAttended: Bool { setup.delegation?.attended ?? false }
     /// Signs matter on a live call, on an attended delegated call (to answer questions) and
     /// on a steer call (to step in).
-    var watchesSigns: Bool { !isDelegated || isAttended || isSteer }
+    var watchesSigns: Bool { isSteer ? isSigningActive : (!isDelegated || isAttended) }
 
     // MARK: Steer call
 
@@ -205,11 +207,41 @@ final class ActiveCallViewModel {
 
     var canUseQuickReplies: Bool { phase == .live && !isSpeaking }
 
+    /// Steer calls skip Get ready, so opening the sign panel owns capture and its
+    /// subscriber. Reopening creates a fresh stream; closing never sends hidden signs.
+    func beginSigning() {
+        guard isSteer, canSteer, !isSigningActive else { return }
+        isSigningActive = true
+        let events = recognition.signingEvents()
+        signingTask = Task { [weak self] in
+            for await event in events {
+                guard !Task.isCancelled else { return }
+                self?.handle(event)
+            }
+        }
+        recognition.start()
+        beginSteppingIn()
+    }
+
+    func endSigning() {
+        guard isSigningActive || signingTask != nil else { return }
+        isSigningActive = false
+        signingTask?.cancel()
+        signingTask = nil
+        recognition.stop()
+        cameraState = .watching
+        candidate = nil
+    }
+
     // MARK: Lifecycle
 
     /// Places the call, then turns recognition results into chips until the screen goes
     /// away (the calling task is cancelled).
     func run() async {
+        if isSteer {
+            await start()
+            return  // signing has its own restartable subscription
+        }
         // Subscribe before placing the call so no recognition event falls in between.
         let events = recognition.signingEvents()
         await withDiscardingTaskGroup { group in
@@ -289,7 +321,7 @@ final class ActiveCallViewModel {
     /// Called when the user leaves the screen. Nothing is sent.
     func leave() {
         driver.close()
-        recognition.stop()
+        if isSteer { endSigning() } else { recognition.stop() }
     }
 
     // MARK: User actions
@@ -322,6 +354,7 @@ final class ActiveCallViewModel {
     func end() {
         guard !isEnded else { return }
         userEnded = true
+        endSigning()
         store?.end()
         cameraState = .watching
         candidate = nil

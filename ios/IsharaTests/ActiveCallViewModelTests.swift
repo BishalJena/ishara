@@ -109,6 +109,32 @@ final class ActiveCallViewModelTests: XCTestCase {
         XCTAssertEqual(model.cameraState, .watching)
     }
 
+    func testSteerSigningStartsCaptureCanReopenAndIgnoresHiddenSigns() async {
+        let driver = StubCallDriver(initialState: .inCall)
+        let recognition = StubRecognition()
+        var setup = CallSetup.demo
+        setup.delegation = Delegation(brief: Brief(briefID: "test", text: "A general request", goal: "A task", constraints: []), attended: false, mode: .steer)
+        let model = ActiveCallViewModel(setup: setup, driver: driver, recognition: recognition)
+        await model.run()
+        XCTAssertEqual(recognition.startCount, 0, "A typed call does not open the camera")
+        model.beginSigning()
+        XCTAssertEqual(recognition.startCount, 1)
+        recognition.emit(.result(.sign(.hello)))
+        let first = await eventually { model.chips.map(\.label) == ["hello"] }; XCTAssertTrue(first)
+        model.endSigning()
+        model.clear()
+        recognition.emit(.result(.sign(.yes)))
+        try? await Task.sleep(for: .milliseconds(20))
+        XCTAssertTrue(model.chips.isEmpty, "A closed signing panel cannot add hidden words")
+        model.beginSigning()
+        recognition.emit(.result(.sign(.thankyou)))
+        let reopened = await eventually { model.chips.map(\.label) == ["thankyou"] }; XCTAssertTrue(reopened)
+        XCTAssertEqual(recognition.startCount, 2)
+        model.end()
+        XCTAssertEqual(recognition.stopCount, 2)
+        XCTAssertFalse(model.isSigningActive)
+    }
+
     // MARK: SEND availability
 
     func testSendIsDisabledWithoutDraft() {
