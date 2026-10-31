@@ -1,27 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="570" viewBox="0 0 1400 570" role="img">
-<title>One 10-minute call: $40.70 to $80.60 with a human relay, $0.60 with an AI voice agent</title>
-<style>text{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif}.zone{font-size:13px;font-weight:700;letter-spacing:.12em;fill:#59636E}.title{font-size:24px;font-weight:700;fill:#1F2328}.sub{font-size:14px;fill:#59636E}.row{font-size:16px;fill:#1F2328}.chip{font-size:12.5px;font-weight:600;fill:#59636E}.lab{font-size:12.5px;font-weight:700;fill:#59636E}@keyframes grow{0%{transform:scaleY(0)}14%{transform:scaleY(1)}94%{transform:scaleY(1);opacity:1}100%{transform:scaleY(1);opacity:0}}.g1{transform-box:fill-box;transform-origin:bottom;animation:grow 10.0s cubic-bezier(.2,.8,.2,1) infinite}@keyframes grow2{0%,12%{transform:scaleY(0)}26%{transform:scaleY(1)}94%{transform:scaleY(1);opacity:1}100%{transform:scaleY(1);opacity:0}}.g2{transform-box:fill-box;transform-origin:bottom;animation:grow2 10.0s cubic-bezier(.2,.8,.2,1) infinite}@keyframes show{0%,28%{opacity:0}34%,94%{opacity:1}100%{opacity:0}}.show{animation:show 10.0s ease-out infinite}.big{font-size:150px;font-weight:800;fill:#8B3DFF;letter-spacing:-6px}.val{font-size:22px;font-weight:700;fill:#1F2328}.axis{font-size:14px;fill:#59636E}.h2{font-size:28px;font-weight:700;fill:#1F2328}</style>
-<text class="h2" x="120" y="50">One 10-minute call</text>
-<line x1="130" y1="470.0" x2="820" y2="470.0" stroke="#1F2328" stroke-width="2"/>
-<text class="axis" x="118" y="475.0" text-anchor="end">$0</text>
-<line x1="130" y1="386.0" x2="820" y2="386.0" stroke="#D0D7DE" stroke-width="1"/>
-<text class="axis" x="118" y="391.0" text-anchor="end">$20</text>
-<line x1="130" y1="302.0" x2="820" y2="302.0" stroke="#D0D7DE" stroke-width="1"/>
-<text class="axis" x="118" y="307.0" text-anchor="end">$40</text>
-<line x1="130" y1="218.0" x2="820" y2="218.0" stroke="#D0D7DE" stroke-width="1"/>
-<text class="axis" x="118" y="223.0" text-anchor="end">$60</text>
-<line x1="130" y1="134.0" x2="820" y2="134.0" stroke="#D0D7DE" stroke-width="1"/>
-<text class="axis" x="118" y="139.0" text-anchor="end">$80</text>
-<rect class="g1" x="260" y="299.05999999999995" width="170" height="170.94000000000003" rx="8" fill="#8B3DFF"/>
-<rect class="g2" x="260" y="131.47999999999996" width="170" height="167.57999999999998" rx="8" fill="#8B3DFF" fill-opacity=".35"/>
-<rect class="g1" x="600" y="466" width="170" height="4" rx="2" fill="#8B3DFF"/>
-<text class="val show" x="345.0" y="117.47999999999996" text-anchor="middle">$40.70–$80.60</text>
-<text class="val show" x="685.0" y="450" text-anchor="middle" style="fill:#8B3DFF">$0.60</text>
-<text class="row" x="345.0" y="504" text-anchor="middle" style="font-weight:700">Human video relay</text>
-<text class="sub" x="345.0" y="526" text-anchor="middle">$4.07–$8.06 a minute</text>
-<text class="row" x="685.0" y="504" text-anchor="middle" style="font-weight:700">AI voice agent</text>
-<text class="sub" x="685.0" y="526" text-anchor="middle">from $0.06 a minute</text>
-<g class="show"><text class="big" x="900" y="270">99%</text>
-<text class="h2" x="906" y="320">less, every minute</text>
-<text class="sub" x="906" y="350">Up to: ($8.06 − $0.06) ÷ $8.06, before telephony</text></g>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="620" viewBox="0 0 1400 620" role="img">
+<title>One 10-minute call: $40.70 to $80.60 through a human video relay, $0.60 through an AI voice agent; up to 99% less, every minute</title>
+<style>text{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif}.t1{font-size:19px;font-weight:700;fill:#17141F}.t2{font-size:15px;font-weight:650;fill:#17141F}.s{font-size:13px;fill:#6B6680}.eye{font-size:12px;font-weight:700;letter-spacing:.14em;fill:#6B6680}@keyframes breathe{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.7)}}.breathe{transform-box:fill-box;transform-origin:center;animation:breathe 1.6s cubic-bezier(.77,0,.175,1) infinite}@keyframes grow{0%{transform:scaleY(0.02)}14%{transform:scaleY(1)}94%{transform:scaleY(1);opacity:1}100%{transform:scaleY(1);opacity:0}}.g1{transform-box:fill-box;transform-origin:bottom;animation:grow 10.0s cubic-bezier(.23,1,.32,1) infinite}@keyframes grow2{0%,12%{transform:scaleY(0.02)}26%{transform:scaleY(1)}94%{transform:scaleY(1);opacity:1}100%{transform:scaleY(1);opacity:0}}.g2{transform-box:fill-box;transform-origin:bottom;animation:grow2 10.0s cubic-bezier(.23,1,.32,1) infinite}@keyframes show{0%,28%{opacity:0}34%,94%{opacity:1}100%{opacity:0}}.show{animation:show 10.0s cubic-bezier(.23,1,.32,1) infinite}.big{font-size:150px;font-weight:800;fill:#7C3AED;letter-spacing:-6px}.val{font-size:22px;font-weight:700;fill:#17141F}.axis{font-size:14px;fill:#6B6680}.h2{font-size:28px;font-weight:700;fill:#17141F}@media (prefers-reduced-motion:reduce){.g1,.g2,.show{animation:none;opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){.mv{display:none}.breathe{animation:none}}</style>
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#F6F3FF"/></linearGradient>
+<pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.1" fill="#E4DEF3"/></pattern>
+<linearGradient id="mark" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B07BFF"/><stop offset=".55" stop-color="#8B3DFF"/><stop offset="1" stop-color="#5B16D6"/></linearGradient>
+<filter id="sh" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#2B1A66" flood-opacity="0.10"/></filter>
+<radialGradient id="halo"><stop offset="0" stop-color="#7C3AED" stop-opacity=".35"/><stop offset="1" stop-color="#7C3AED" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="1398" height="618" rx="28" fill="url(#bg)" stroke="#E7E2F5"/>
+<rect x="1" y="1" width="1398" height="618" rx="28" fill="url(#dots)"/>
+<text class="eye" x="44" y="54">THE COST OF ONE CALL</text>
+<text class="h2" x="120" y="110">One 10-minute call</text>
+<line x1="130" y1="500.0" x2="820" y2="500.0" stroke="#17141F" stroke-width="2"/>
+<text class="axis" x="118" y="505.0" text-anchor="end">$0</text>
+<line x1="130" y1="416.0" x2="820" y2="416.0" stroke="#E6E1F2" stroke-width="1"/>
+<text class="axis" x="118" y="421.0" text-anchor="end">$20</text>
+<line x1="130" y1="332.0" x2="820" y2="332.0" stroke="#E6E1F2" stroke-width="1"/>
+<text class="axis" x="118" y="337.0" text-anchor="end">$40</text>
+<line x1="130" y1="248.0" x2="820" y2="248.0" stroke="#E6E1F2" stroke-width="1"/>
+<text class="axis" x="118" y="253.0" text-anchor="end">$60</text>
+<line x1="130" y1="164.0" x2="820" y2="164.0" stroke="#E6E1F2" stroke-width="1"/>
+<text class="axis" x="118" y="169.0" text-anchor="end">$80</text>
+<rect class="g1" x="260" y="329.05999999999995" width="170" height="170.94000000000003" rx="8" fill="#7C3AED"/>
+<rect class="g2" x="260" y="161.47999999999996" width="170" height="167.57999999999998" rx="8" fill="#7C3AED" fill-opacity=".35"/>
+<rect class="g1" x="600" y="496" width="170" height="4" rx="2" fill="#7C3AED"/>
+<text class="val show" x="345.0" y="147.47999999999996" text-anchor="middle">$40.70–$80.60</text>
+<text class="val show" x="685.0" y="480" text-anchor="middle" style="fill:#7C3AED">$0.60</text>
+<text class="t2" x="345.0" y="534" text-anchor="middle">Human video relay</text>
+<text class="s" x="345.0" y="556" text-anchor="middle">$4.07–$8.06 a minute</text>
+<text class="t2" x="685.0" y="534" text-anchor="middle">AI voice agent</text>
+<text class="s" x="685.0" y="556" text-anchor="middle">from $0.06 a minute</text>
+<g class="show"><text class="big" x="900" y="300">99%</text>
+<text class="h2" x="906" y="350">less, every minute</text>
+<text class="s" x="906" y="380">Up to: ($8.06 − $0.06) ÷ $8.06, before telephony</text></g>
 </svg>

@@ -124,7 +124,7 @@ There is one flow. Ishara does the work by default; you take over whenever you w
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/media/architecture-dark.svg">
-  <img src="docs/media/architecture-light.svg" alt="Architecture: the Ishara app on the iPhone talks to the Ishara backend over a WebSocket. The backend is Bolna's custom LLM; Bolna (Deepgram, Sarvam Bulbul, Plivo) carries the phone call to the clinic. Requests travel right; the clinic's words travel back as captions.">
+  <img src="docs/media/architecture-light.svg" alt="One turn of a call as a loop. Along the top, the clinic's words reach your screen: Deepgram transcribes them and the Ishara backend decides the turn (accept, answer or defer). At the Ishara app you have 2 seconds to step in. Along the bottom, your words reach their phone: Groq polishes them, the fact-checker blocks invented facts, and Sarvam speaks them over Plivo. The backend runs on Heroku; Bolna runs the call.">
 </picture>
 
 ### The iPhone app (`ios/`)
