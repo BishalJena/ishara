@@ -1,14 +1,17 @@
 # Ishara backend
 
-The call bridge behind Ishara's [accessible calling experience](../README.md): make incoming
-speech readable, relay person-approved replies, and coordinate a delegated brief with
-accessible mid-call decisions. Signing is an input path, not a condition of the product's
-purpose. See [PITCH.md](../PITCH.md) for the current positioning and [MARKET.md](../MARKET.md)
-for the sourced opportunity and revenue assumptions.
+The service behind Ishara's [calls](../README.md): it runs every call the app starts, acts as
+Bolna's LLM so every word Ishara says comes from its rules, and streams captions and Ishara's
+proposals to the app. See [PITCH.md](../PITCH.md) for the positioning and
+[MARKET.md](../MARKET.md) for the sourced opportunity.
 
-FastAPI service for Path B ([PLAN.md §3](../PLAN.md#3-architecture)): app sessions, the Groq
-composer, Bolna's custom-LLM endpoint, and the "Call for me" mode (decision D9: briefs, the
-delegated agent, call notes). Python 3.11, managed with `uv`.
+FastAPI service for Path B ([PLAN.md §3](../PLAN.md#3-architecture)), deployed on Heroku
+([HEROKU.md](HEROKU.md)). The default call mode is **steer** (decision D10): the typed request
+is the approval; Ishara phrases the opening from it, proposes each line with a 2-second window
+(`STEER_WINDOW_S`), accepts only offers that fit, answers from attached documents only with
+text found verbatim in them, defers the rest as follow-ups, and polishes the person's typed or
+signed lines (Groq, fact-checked, template fallback) before saying them. The earlier relay
+(SEND) and "Call for me" modes (decision D9) remain. Python 3.11, managed with `uv`.
 
 ```sh
 cd backend
@@ -48,7 +51,7 @@ Settings come from the environment or the repo-root `.env` (see `../.env.example
 | `app/bolna_client.py` | `HttpBolnaClient`: calls, events, agent and custom-model admin |
 | `app/tts.py`, `app/sarvam.py` | Path A `POST /tts` via Sarvam Bulbul (A5) |
 | `fakes/` | `FakeBolna` (plays Bolna's graph runtime over HTTP), `ScriptedBolna` (adds the §1 receptionist) and an SSE reader |
-| `scripts/local_demo.py` | Free local backend for the whole §1 call; see [Local demo](#local-demo-no-bolna-no-cost) |
+| `scripts/local_demo.py` | Free local backend for the whole §1 call; see [Local demo](#local-development-server-no-bolna-no-cost) |
 | `scripts/sign_lab.py`, `scripts/lab_composer.py`, `scripts/lab_voice.py` | The local demo with the real composer and voice for webcam tests; see [Sign Lab](#sign-lab-webcam-tests-with-the-real-composer-and-voice) |
 | `scripts/compose_turns.py` | Evaluation turns from `spikes/recognition/video_eval.py`: recognised and ground-truth chips through the production composer, drafts to Sarvam WAVs, paid calls capped |
 | `tools/`, `scripts/fake_app.py`, `scripts/voice_spike.py` | App-side client, PLAN §1 demo script, guided V4 checks (`uv run python -m scripts.fake_app …`) |
@@ -68,9 +71,9 @@ Settings come from the environment or the repo-root `.env` (see `../.env.example
 
 The full check, including the spikes and shell scripts, is `../scripts/verify.sh`.
 
-## Local demo (no Bolna, no cost)
+## Local development server (no Bolna, no cost)
 
-Runs the whole PLAN §1 clinic call on this Mac, for the iOS simulator
+Runs a whole clinic call on this Mac, with Bolna and the receptionist simulated, for the iOS simulator
 (`-IsharaDriver live`) or the Mac bridge. Nothing is dialled and no paid API is
 reached:
 

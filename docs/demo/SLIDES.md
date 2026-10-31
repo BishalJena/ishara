@@ -1,87 +1,72 @@
 # Ishara — six-slide pitch outline
 
-Updated 30 October 2026 · [Pitch](../../PITCH.md) · [Market model](../../MARKET.md) · [Submission](SUBMISSION.md)
+Updated 31 October 2026 · [Pitch](../../PITCH.md) · [Market model](../../MARKET.md) · [Submission](SUBMISSION.md)
 
-One idea per slide. Show the app and the person during the live segment. The current build
-demonstrates signs and tap choices; general typed replies are next.
+One idea per slide. Show the app during the demo segment.
 
-## 1. “Call us” should not mean “find someone who can call for you”
+## 1. "Call us" should not mean "find someone who can call for you"
 
-**Visual:** an appointment line's “Call to book” instruction and someone coordinating
-with a helper. This is an illustrative scenario, not a participant testimonial.
+**Visual:** a clinic's "Call to book" line, and the family member who ends up making the call.
 
-**Say:** “When a service requires a voice call, someone who cannot reliably hear the reply
-may need another person available to help. An everyday task becomes a coordination problem,
-and someone else enters the conversation.”
+**Say:** "Every clinic, bank and office says the same thing: call us. If you can't hear the
+other side, a two-minute call becomes a favour: on someone else's time, with your private
+details in their ears."
 
-## 2. Phone calls, made accessible
+## 2. The scale
+
+| Figure | Source |
+|---|---|
+| 70M+ Deaf people use a sign language | UN, citing WFD |
+| 430M live with disabling hearing loss | WHO |
+| 50 lakh Deaf people in India; fewer than 300 certified ISL interpreters | ISLRTC, Census 2011 |
+
+**Say:** "In India, that's one certified interpreter for every 17,000 Deaf people."
+
+## 3. Ishara makes the call; you stay in control
 
 ```mermaid
 flowchart LR
-    R["Service speaks"] --> C["Read captions"]
-    C --> P["Person chooses the reply"]
-    P --> A["Agent speaks"]
-    A --> R
+    R["Type the request"] --> C["Ishara calls"]
+    C --> P["Ishara proposes each line, 2 s"]
+    P -->|"do nothing"| S["Said"]
+    P -->|"type or sign"| Y["Your words, polished"]
+    Y --> S
 ```
 
-**Say:** “Ishara makes the conversation readable and lets the person direct the reply.
-The business answers its existing phone. It needs no new app.”
+**Say:** "Type what the call is about and tap Call. Ishara introduces itself, speaks for
+you and captions every word. Do nothing, and it handles the call. Step in any time, by
+typing or signing, and it says your words, polished but never embellished."
 
-## 3. The person stays in the conversation
+## 4. Live demo
 
-**Visual:** CALL and CALL FOR ME, then the actual live screen.
+The clinic call: Ishara turns down a 4 pm slot because you asked for mornings; you tap its
+line and add "I'll bring my BP readings"; it answers the allergy question from your health
+history PDF; you sign THANK YOU; the gist opens with the booking quoted.
 
-- Live call: review each draft and SEND it.
-- Call for me: approve the brief; answer when a decision comes back.
-- Product direction: type, sign or tap. Current build: signs and existing buttons.
+## 5. Under the hood
 
-**Demo:** “What time would you like?” → caption → sign or tap TOMORROW → spoken preference.
-Show the incoming question and outgoing audio. Use a confirmed delegated-booking ending
-only after the confirmation/hangup bug is corrected and verified. The live SEND flow can
-instead demonstrate an explicit receptionist confirmation without that delegated hangup.
+**Visual:** the [architecture diagram](../media/architecture-light.svg).
 
-## 4. A large need, a focused starting point
+**Say:** "On the iPhone, MediaPipe and a public ASL model recognise signs, and speak only
+when they're confident. Our backend decides every turn, and a fact-checker blocks anything
+you didn't give it: no invented day, time, number or name. Bolna runs the call: Deepgram
+listens, Sarvam speaks, Plivo connects. The clinic just answers its phone."
 
-| Reference | What it says |
+## 6. The business: your conversation, your control
+
+| | Per minute |
 |---|---|
-| 70M+ Deaf people globally | UN, citing WFD |
-| 430M people requiring rehabilitation for disabling hearing loss | WHO, March 2026; overlaps the first population |
-| $210M/year illustrative TAM scenario | 3.5M eligible accounts at $5/month; eligibility and price are assumptions |
+| Human video relay (US) | $4.07–$8.06 |
+| AI voice agent | from $0.06 |
 
-**Say:** “The need is large. Our first task is one accessible appointment call. We must
-earn repeat use and validate affordability. Our scenarios are transparent assumptions,
-not our user base.” Put [sources and model](../../MARKET.md) beside the figures.
+**Say:** "The US spends $1.48 billion a year on phone relay. An AI minute costs cents, so
+an accessible call can be a subscription, not a subsidy. We start in India, with Deaf-led
+partners, Indian Sign Language and Indian languages next."
 
-## 5. A route to sustainable access
-
-**Visual:** people → individual or sponsored accounts → existing phone lines.
-
-**Say:** “Start with recurring service calls. Test distribution through Deaf-led
-organizations and accessibility programs, and individual or sponsored accounts with
-metered calling. The business case depends on independent completion and cost per task.”
-
-Captioned calls and text relay already exist. The hypothesis is that approved delegation
-and accessible mid-call steering reduce effort. No comparative advantage, paying users
-or partners have been established.
-
-## 6. Your conversation. Your control.
-
-**Visual:** the actual question, the person's choice and the corresponding spoken reply.
-For a booking claim, show the receptionist's actual confirmation.
-
-**Say:** “The prototype uses a small ASL vocabulary and tap choices. I am hearing and
-learned these signs from Lifeprint; we have no Deaf-participant validation yet. Calls
-come from a Bolna number. Next are participant-led evaluation, typing, reliability,
-and separate ISL evaluation. Our goal is independent access to the services people need.”
-
-Close: **“Ishara: phone calls, made accessible.”**
+Close: **"Ishara: phone calls, made accessible."**
 
 ## Delivery notes
 
-- Put citations and assumptions beside numbers, not only in speaker notes.
-- Do not describe Deaf people as unable to speak or assume everyone signs.
-- Label teammate rehearsals, synthetic details, simulator footage and saved-video input.
-- Acceptance is not confirmation; text handoff is not completed audio playback.
-- Architecture in one sentence: “Bolna carries the call; Ishara connects captions,
-  person-controlled replies and an approved brief.”
-- Finalize device and recognition claims from the recorded build before submission.
+- Put the source beside every number.
+- Don't describe Deaf people as unable to speak, or assume everyone signs.
+- Calls come from Ishara's calling number (a Bolna number); say so if asked.

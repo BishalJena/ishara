@@ -37,7 +37,7 @@ struct DemoLaunchOptions {
         case classic
     }
 
-    /// Fake unless asked otherwise, so running the app never places a call by surprise.
+    /// Live in the app (see `from(_:)`); this initial value is for options built directly in tests.
     var driver: Driver = .fake
     /// `-IsharaFlow classic` keeps the earlier Home; the steer flow is the default.
     var flow: Flow = .steer

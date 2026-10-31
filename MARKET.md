@@ -2,7 +2,7 @@
 
 **Accessible phone conversations are a recurring access need.**
 
-Working market model · 30 October 2026 · [Product](README.md) · [Pitch](PITCH.md)
+Working market model · 31 October 2026 · [Product](README.md) · [Pitch](PITCH.md)
 
 ## Start with the task
 
@@ -104,6 +104,19 @@ These are candidate models, not existing partnerships or funding commitments. Or
 can sponsor the same person-facing product; this does not require building a
 hospital-management or enterprise operations system.
 
+## The cost of an accessible call is collapsing
+
+| | Cost | Source |
+|---|---|---|
+| US phone relay for Deaf callers, funded per year | **$1.48 billion** (2025–26) | [S7] |
+| A human video relay minute (US compensation rates) | **$4.07–$8.06** | [S8] |
+| An AI voice agent minute (speech-to-text, LLM and text-to-speech bundled) | **from $0.06**, telephony and platform fee extra | [S9] |
+| Certified Indian Sign Language interpreters for about 50 lakh Deaf people | **fewer than 300** | [S6] |
+
+Human relay is expensive and, in India, interpreters are scarce. An AI agent that the
+person steers makes a routine call cost cents, which is what lets an individual or sponsored
+subscription work.
+
 ## Pricing must survive real call costs
 
 A subscription assumption is not a promise of unlimited calling. Test a small access fee
@@ -128,11 +141,11 @@ formerly Nagish, describes AI captioning and text-to-speech relay and free US se
 eligible people with hearing loss [S5]. Ishara is not claiming to invent text relay or to
 be the first accessible calling app.
 
-Ishara's proposed distinction is **switching between person-directed relay and an approved
-agent brief, with accessible mid-call decisions and optional sign input**. The hypothesis
-is reduced effort for routine service calls while retaining person control. It needs
-comparison with typing, device captioning and existing relay services. No head-to-head
-advantage has been established.
+Ishara's distinction is **an agent that makes the call for you, which you steer at any
+moment by typing or signing**. Routine turns are handled; decisions come back to the person;
+a fact-checker keeps the agent to what the person actually gave it. The hypothesis is less
+effort per routine call with the person still in control, to be compared with typing,
+device captioning and existing relay services.
 
 ## What would make this a credible business
 
@@ -145,19 +158,22 @@ advantage has been established.
 | Voluntary paid trials or documented sponsorship interest | Price and payer assumptions |
 | Cost per completed task, including failures and support | Sustainable unit economics |
 
-Ishara currently has no Deaf-participant validation, paying users or commercial deployment
-evidence. The first milestone is a trustworthy completed conversation and a person who
-chooses to use the product again.
+The milestones that follow: a consenting pilot cohort through Deaf-led partners, repeat use,
+and the first paying or sponsored accounts.
 
 ## Sources
 
-Checked **30 October 2026**. Population measures have different definitions and dates.
+Checked **30–31 October 2026**. Population measures have different definitions and dates.
 
 - **S1 — United Nations:** [International Day of Sign Languages](https://www.un.org/observances/sign-languages-day), citing WFD for the 70M+ global estimate.
 - **S2 — World Health Organization:** [Deafness and hearing loss](https://www.who.int/news-room/fact-sheets/detail/deafness-and-hearing-loss), dated 3 March 2026.
 - **S3 — Government of India, PIB:** [Policy for Disabled](https://www.pib.gov.in/newsite/PrintRelease.aspx?lang=2&reg=48&relid=124291), dated 4 August 2015; table reproduces Census 2011.
 - **S4 — Google:** [Live Caption, including typed call responses](https://support.google.com/accessibility/android/answer/9350862?hl=en-AF).
 - **S5 — Rylo:** [Nagish is now Rylo](https://rylo.com/post/nagish-is-now-rylo). Provider-reported product and availability claims.
+- **S6 — ISLRTC:** [About ISLRTC](https://islrtc.nic.in/about-department/about-islrtc/): about 50 lakh Deaf persons (Census 2011) and fewer than 300 certified interpreters.
+- **S7 — FCC:** [2025–26 TRS Fund contribution factors](https://www.fcc.gov/consumer-governmental-affairs/fcc-releases-2025-26-trs-fund-contribution-factors-order): net funding requirement $1,479,568,862.
+- **S8 — FCC:** [DA 24-620](https://docs.fcc.gov/public/attachments/DA-24-620A1.txt): VRS compensation rates of $4.07–$8.06 per minute for 2024–25.
+- **S9 — Bolna:** [Pricing](https://www.bolna.ai/pricing): from $0.06 per minute with bundled speech-to-text, LLM and text-to-speech; telephony and platform fee extra.
 
 All eligibility fractions, account targets, prices and revenue calculations above are
 Ishara planning assumptions. These sources do not endorse Ishara or establish its demand.
@@ -167,3 +183,7 @@ Ishara planning assumptions. These sources do not endorse Ishara or establish it
 [S3]: https://www.pib.gov.in/newsite/PrintRelease.aspx?lang=2&reg=48&relid=124291
 [S4]: https://support.google.com/accessibility/android/answer/9350862?hl=en-AF
 [S5]: https://rylo.com/post/nagish-is-now-rylo
+[S6]: https://islrtc.nic.in/about-department/about-islrtc/
+[S7]: https://www.fcc.gov/consumer-governmental-affairs/fcc-releases-2025-26-trs-fund-contribution-factors-order
+[S8]: https://docs.fcc.gov/public/attachments/DA-24-620A1.txt
+[S9]: https://www.bolna.ai/pricing

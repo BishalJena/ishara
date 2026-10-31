@@ -1,8 +1,17 @@
 # How to test Ishara
 
-Updated 24 October 2026; the 27 October additions (the ASL model in the app, its simulator
-parity harness, "Call for me" unit and UI tests, the local-backend run) are listed in the
-[handoff](archive/handoffs/2026-10-26-ready-made-asl-recognizer.md#built-on-27-oct-the-mac-only-list).
+Updated 24 October 2026, with these later additions:
+
+- **31 October:** the steer call has its own suites: `backend/tests/test_steer.py` (the
+  2-second window, polishing, cover lines, deferrals, document lookup) and the
+  `SteerCallUITests` UI test (type a request, Ishara runs the call, the user steps in by
+  typing, the gist opens by itself, Done returns Home). Latest run: backend **1,183** passed,
+  iOS unit **225** passed, `SteerCallUITests` passed. `spikes/call_flow` moved to the archive
+  and its tests left CI.
+- **27 October:** the ASL model in the app, its simulator parity harness, "Call for me" unit
+  and UI tests and the local-backend run, listed in the
+  [handoff](archive/handoffs/2026-10-26-ready-made-asl-recognizer.md#built-on-27-oct-the-mac-only-list).
+
 The one place that says **how** to test every layer: the exact
 commands, what "pass" means, what runs by itself and what needs a person, a device or
 money, and the latest measured result. [PLAN.md](../PLAN.md) owns the decisions, tasks
@@ -100,7 +109,7 @@ APP_TOKEN=ishara-local-demo uv run python -m scripts.fake_app \
   is spoken once.
 - No key is set even if one is exported, so drafts are templates and nothing reaches
   Bolna, Groq or Sarvam. CI covers it with `tests/test_local_demo.py` (full §1 script
-  and B24). Details: [backend/README.md](../backend/README.md#local-demo-no-bolna-no-cost).
+  and B24). Details: [backend/README.md](../backend/README.md#local-development-server-no-bolna-no-cost).
 
 ### L4 iOS packages
 
