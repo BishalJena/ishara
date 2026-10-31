@@ -14,7 +14,7 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         /// as when the receptionist is still talking (ledger B24).
         var undeliveredStages: Set<Int> = []
         /// Script stages whose first reply the receptionist talks over while it is being
-        /// spoken. Ordinary talk doesn't cut the reply off (docs/WORKFLOW.md), so it is
+        /// spoken. Ordinary talk doesn't cut the reply off (docs/archive/2026-10-28-workflow.md), so it is
         /// still delivered.
         var interruptedStages: Set<Int> = []
         /// Lose the backend connection mid-call: on a live call once the first draft is on

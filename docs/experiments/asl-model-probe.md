@@ -5,7 +5,7 @@ training, fine-tuning, references or enrollment, to answer: **can a published,
 signer-independent ASL recognizer carry the demo, and which of our ISL signs does it
 already recognize?** [Evidence](evidence/asl-model-probe/README.md) ·
 [Code](../../spikes/asl_probe/) · [Decision D8](../../PLAN.md#2-decisions) ·
-[Handoff](../handoffs/2026-10-26-ready-made-asl-recognizer.md)
+[Handoff](../archive/handoffs/2026-10-26-ready-made-asl-recognizer.md)
 
 ```
 clip / webcam ─▶ legacy MediaPipe Holistic ─▶ [T, 543, 3] Kaggle layout (NaN = missing) ─▶ 1st-place TFLite ─▶ 250 logits ─▶ softmax

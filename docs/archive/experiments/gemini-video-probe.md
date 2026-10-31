@@ -6,7 +6,7 @@ recognizer, which one names the word more often, and how often is each wrong?**
 This is a cross-signer test on public dictionary-style clips. It is not demo accuracy:
 the demo recognizer is personalised to the presenting signer's own Sign Lab takes
 (see [video-pipeline-eval.md](video-pipeline-eval.md)).
-[Evidence](evidence/gemini-video-probe/README.md) · [Code and runbook](../../spikes/gemini_probe/README.md)
+[Evidence](evidence/gemini-video-probe/README.md) · Code: `spikes/gemini_probe`, removed on 30 October (see git history)
 
 ```
                      same file, same sha256
@@ -57,9 +57,9 @@ redistributed. Every source URL that reached the probe is in
 
 | Role | Source | Clips | Terms |
 |---|---|---|---|
-| Test (both systems) | **INCLUDE** (AI4Bharat), [Zenodo 4010759](https://zenodo.org/records/4010759), category zips read by range requests | 263 | CC-BY-4.0 ([ledger R16](../CLAIM-LEDGER.md)) |
+| Test (both systems) | **INCLUDE** (AI4Bharat), [Zenodo 4010759](https://zenodo.org/records/4010759), category zips read by range requests | 263 | CC-BY-4.0 ([ledger R16](../../CLAIM-LEDGER.md)) |
 | Test (both systems) | YouTube single-word videos from the [earlier probe](video-pipeline-eval.md#sources-and-acknowledgements): **Pragya Gupta** ([1](https://www.youtube.com/watch?v=VtbYvVDItvg), [2](https://www.youtube.com/watch?v=lffGJ29IhZQ)), **Youth4Jobs Foundation** ([greetings](https://www.youtube.com/watch?v=U5LSlcD8xPg)), **PHIN Deaf** ([yes/no](https://www.youtube.com/watch?v=T9XE5O_7Bmw), [tomorrow](https://www.youtube.com/watch?v=hTmhHDFUbTk), [today](https://www.youtube.com/watch?v=Zb2h-pZpieY), [morning](https://www.youtube.com/watch?v=4TuRjBpBoMM), [afternoon](https://www.youtube.com/watch?v=m-pUXfAMixM), [evening](https://www.youtube.com/watch?v=YPZ7o80wU9k), [time](https://www.youtube.com/watch?v=mtjse9ZT1Fw), [doctor](https://www.youtube.com/watch?v=qeI6-V8YAKw)) | 21 | standard YouTube licence |
-| References (SignCLIP only) | **ISLRTC Indian Sign Language Dictionary** (Govt. of India) via the re-encoded mirror [silentone0725/Indian_Sign_Language_Data.gov_Rencoded](https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded) | 117 | ISLRTC FAQ Q23: research, teaching, ISL technology with acknowledgement, no resale ([ledger R15](../CLAIM-LEDGER.md)); mirror MIT |
+| References (SignCLIP only) | **ISLRTC Indian Sign Language Dictionary** (Govt. of India) via the re-encoded mirror [silentone0725/Indian_Sign_Language_Data.gov_Rencoded](https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded) | 117 | ISLRTC FAQ Q23: research, teaching, ISL technology with acknowledgement, no resale ([ledger R15](../../CLAIM-LEDGER.md)); mirror MIT |
 | References (SignCLIP only) | **Bridgeconn ISL Bible (ISLV) Dictionary**, [bridgeconn/sign-dictionary-isl](https://huggingface.co/datasets/bridgeconn/sign-dictionary-isl) | 99 | CC-BY-SA-4.0 |
 
 Thanks to AI4Bharat (INCLUDE), ISLRTC, Bridgeconn, Pragya Gupta, Youth4Jobs Foundation and
@@ -67,7 +67,7 @@ PHIN Deaf. Not used: the Deaf Enabled Foundation "Time" video (its sun, clock an
 pictures show the time of day, which Gemini could read instead of the sign). Models:
 Gemini 4 Argon (Google, Gemini API, `gemini-4-argon`) and SignCLIP (the pinned
 multilingual checkpoint and MediaPipe Holistic features of the
-[recognition spike](../../spikes/recognition/README.md)).
+[recognition spike](../../../spikes/recognition/README.md)).
 
 ## Method
 

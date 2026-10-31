@@ -21,6 +21,6 @@ is) and D9 (the "Call for me" mode). Five parts, top to bottom:
 | `ishara-board.excalidraw` | Editable copy for [excalidraw.com](https://excalidraw.com) (menu → Open) or the VS Code extension |
 | `ishara-board.svg`, `ishara-board.png` | The rendered board; the PNG is the SVG rendered at 2× (commands in `board.py`) |
 
-[PLAN.md](../../PLAN.md) wins if the board and the plan disagree; update both together.
+[PLAN.md](../../../PLAN.md) wins if the board and the plan disagree; update both together.
 The 23 October board (personalised ISL with SignCLIP, the day-by-day build lanes and the app
-mock-ups) is in the [archive](../archive/2026-10-23-ishara-board.png).
+mock-ups) is in the [archive](../2026-10-23-ishara-board.png).

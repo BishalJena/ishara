@@ -9,7 +9,7 @@ entry are planned. See the [product overview](../README.md) and [pitch](../PITCH
 SwiftUI demo app (iOS 17+, iPhone, portrait). Two ways to call: **CALL** (sign each reply,
 approve it with SEND) and **CALL FOR ME** (approve a brief once; the agent makes the call and
 brings back notes, decision D9). Screens: Home, Get ready, Call, Brief, Notes
-([workflow](../docs/WORKFLOW.md)). It runs with two call drivers and two recognition modes:
+([workflow](../docs/archive/2026-10-28-workflow.md)). It runs with two call drivers and two recognition modes:
 
 | | Fake (default) | Live |
 |---|---|---|

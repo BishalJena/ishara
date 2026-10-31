@@ -2,7 +2,7 @@
 
 The first run of the iOS app against the real backend code (PR #27, task A2). **Executed**
 on the development Mac, iPhone simulator (iOS 27.0), Xcode 27.1. Free: no Bolna, Groq or
-Sarvam, nothing dialled. How to repeat it: [TESTING.md](../../../TESTING.md#app--local-backend-end-to-end).
+Sarvam, nothing dialled. How to repeat it: [TESTING.md](../../../../TESTING.md#app--local-backend-end-to-end).
 
 ```
 iOS simulator app ──POST /calls, WebSocket──▶ local_demo backend (real create_app, CallManager,

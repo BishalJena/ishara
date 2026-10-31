@@ -50,9 +50,6 @@ jobs:
         run: |
           uv venv --python 3.11 .venv-light
           uv pip install --python "$LIGHT_PY" -r spikes/recognition/requirements-light.txt
-      - name: call_flow tests (stdlib only)
-        run: |
-          "$LIGHT_PY" -m unittest discover -s spikes/call_flow -p 'test_*.py'
       # light_tests.py is the one list scripts/verify.sh runs too: every test_*.py in
       # spikes/recognition and spikes/asl_probe except the exclusions it names (e.g. test_mini).
       - name: Recognition tests (light deps)

@@ -1,10 +1,10 @@
 """Writes the architecture board: ishara-board.excalidraw (editable) and ishara-board.svg, from
 one description below, so the two never drift. Render the PNG from the SVG:
 
-    python3 docs/architecture/board.py
+    python3 docs/archive/architecture/board.py
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new \
       --force-device-scale-factor=2 --window-size=1840,2260 --default-background-color=ffffffff \
-      --screenshot=docs/architecture/ishara-board.png docs/architecture/ishara-board.svg
+      --screenshot=docs/archive/architecture/ishara-board.png docs/archive/architecture/ishara-board.svg
 
 Without Chrome, macOS Quick Look works too: it renders a square thumbnail, so pad the SVG to a
 2260 x 2260 viewBox (`viewBox="-210 0 2260 2260"`, white background), run
@@ -282,7 +282,7 @@ def excalidraw(board: Board) -> dict:
                               strokeStyle="dashed" if a.dashed else "solid", roundness={"type": 2},
                               points=[[px - x0, py - y0] for px, py in pts], lastCommittedPoint=None,
                               startBinding=None, endBinding=None, startArrowhead=None, endArrowhead="arrow"))
-    return {"type": "excalidraw", "version": 2, "source": "docs/architecture/board.py",
+    return {"type": "excalidraw", "version": 2, "source": "docs/archive/architecture/board.py",
             "elements": elements, "appState": {"viewBackgroundColor": "#ffffff", "gridSize": None}, "files": {}}
 
 

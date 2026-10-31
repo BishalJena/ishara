@@ -5,7 +5,7 @@ the start/stop sign detector with rest calibration, and the matchers that turn o
 into a chip, a "did you mean" candidate or "unsure". No UIKit, AVFoundation or MediaPipe: the
 app feeds it tracker results and model outputs. Behaviour follows
 [PLAN.md §4](../../../PLAN.md#4-the-turn-when-signing-becomes-words) and the
-[D8 handoff](../../../docs/handoffs/2026-10-26-ready-made-asl-recognizer.md).
+[D8 handoff](../../../docs/archive/handoffs/2026-10-26-ready-made-asl-recognizer.md).
 
 ```
 Get ready (2 s hands down) ──▶ SignDetector.calibrate ──▶ restY

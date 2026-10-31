@@ -3,7 +3,7 @@
 > Archived task brief and results. Continue from [the active plan](../../PLAN.md);
 > do not repeat this task merely because an old checklist remains incomplete.
 
-**Current handoff:** [backend capability and next steps](../HANDOFF.md). This file
+**Current handoff:** [backend capability and next steps](2026-10-28-handoff.md). This file
 preserves the original INCLUDE task and its execution. The later SignCLIP
 reference comparison and fixed-template composer are covered in the handoff and
 active [PLAN.md](../../PLAN.md); do not restart this historical task as if no

@@ -3,7 +3,7 @@
 Written 25 October 2026 for the teammate, revised the same evening after the measurements,
 on 27 October after the simulator-side work landed (see [Built on 27 Oct](#built-on-27-oct-the-mac-only-list)),
 and on 28 October after the first real calls (see [28 Oct](#28-oct-real-calls-and-what-changed)).
-Supersedes the recognition track (R1–R4, G2) of [PLAN.md](../../PLAN.md); decisions D8 and D9
+Supersedes the recognition track (R1–R4, G2) of [PLAN.md](../../../PLAN.md); decisions D8 and D9
 point here. Everything else in the plan (Bolna Path B, composer, call safety, iPhone gates) stands.
 
 ## The decision, in one paragraph
@@ -12,7 +12,7 @@ point here. Everything else in the plan (Bolna Path B, composer, call safety, iP
 (1D-CNN + Transformer, 11 MB TFLite, MIT code, CC-BY corpus of ~94k phone-camera clips from 21
 Deaf signers), used **as is**: no recording of our own data, no training, no fine-tuning, no
 reference clips, no enrollment. We measured it on 25 Oct
-([record](../experiments/asl-model-probe.md)): 6 of 11 Lifeprint ASL clips right at 0.70–0.94,
+([record](../../experiments/asl-model-probe.md)): 6 of 11 Lifeprint ASL clips right at 0.70–0.94,
 four of the presenter's signs right on the first attempt, confident-when-right and flat-when-not,
 4 ms per sign, 0 wrong accepts at p ≥ 0.6. ISL is the product goal and is blocked by data
 (INCLUDE ≈ 16 clips/word, none for yes/no/sorry); we measured which ISL signs the model happens
@@ -24,7 +24,7 @@ the demo. The pitch says all of this plainly.
 - **Real calls passed.** After five root-caused fixes (#80, #81, #82, #85 and verifying the
   number on the Bolna trial account), Live mode and all three Call-for-me flows passed on real
   Bolna calls, end to end from the simulator app with sign videos as the camera (#89, #90).
-  [Voice record](../experiments/voice.md#runs), [status](../status/2026-10-28.md).
+  [Voice record](../../experiments/voice.md#runs), [status](../status/2026-10-28.md).
 - **Chips:** only **hello, thankyou, yes, no, now, please, tomorrow, wait** can become a chip or
   a tile, at provisional cut-offs from the public-clip Gate 2 (#66): global p 0.65, per word
   0.45–0.6, margin 0.3, pick-one 0.35 (#83). Every other gloss is `?` at any confidence.
@@ -120,7 +120,7 @@ the simulator. Nothing below has run on an iPhone or against real Bolna.
 | Was left | What landed | Verified |
 |---|---|---|
 | **LiteRT in the app** | `SignPipeline/KaggleLayout` (Holistic Landmarker → `[frames, 543, 3]`, NaN for a missing part, the 10 iris points dropped) and the `LogitsModel` protocol; a new package `SignPipelineLiteRT` wrapping Google's prebuilt LiteRT C library (the binary behind the `TensorFlowLiteC` 2.17.0 pod, used directly because the iOS runtime is CocoaPods-only and this project is Swift packages only); `asl-signs.tflite` in `LocalAssets`; the shipped `Resources/asl-bundle.json`; `SegmentClassifier` runs the ASL engine whenever the model is installed (SignCLIP stays as the fallback) | Runtime: the iOS logits match the Mac runtime on a fixed input to < 0.001 with the same top-5; ≈ 15 ms per 1.5 s clip in the simulator. Its symbols don't overlap MediaPipe's embedded TensorFlow Lite (checked with `nm`), and the app links both. |
-| **Parity in the simulator** | `IsharaTests/ASLParityHarness` runs saved clips through the app's own path (Holistic Landmarker task → LiteRT) and writes what it saw; `spikes/asl_probe/parity.py` runs the Mac path (legacy Holistic → the same model) on the same clips and compares | 18 Lifeprint ASL clips: on all 9 clips the Mac is confident about, the app gives the same top-1 and the same chip (no ×2, now ×2, tomorrow ×2, please, wait, yes); decisions agree on 17/18, the one difference being Mac `?` vs app "did you mean MORNING?"; the Mac model on the app's landmarks reproduces the app's output exactly. [Evidence](../experiments/evidence/asl-model-probe/parity-simulator-lifeprint.json). |
+| **Parity in the simulator** | `IsharaTests/ASLParityHarness` runs saved clips through the app's own path (Holistic Landmarker task → LiteRT) and writes what it saw; `spikes/asl_probe/parity.py` runs the Mac path (legacy Holistic → the same model) on the same clips and compares | 18 Lifeprint ASL clips: on all 9 clips the Mac is confident about, the app gives the same top-1 and the same chip (no ×2, now ×2, tomorrow ×2, please, wait, yes); decisions agree on 17/18, the one difference being Mac `?` vs app "did you mean MORNING?"; the Mac model on the app's landmarks reproduces the app's output exactly. [Evidence](../../experiments/evidence/asl-model-probe/parity-simulator-lifeprint.json). |
 | **Pick-one tile** | `RecognitionResult.candidate(Sign)`; a "Did you mean TOMORROW?" tile under the camera on the call and brief screens; it becomes a chip, or answers the agent's question, only when tapped; the next sign or ✕ drops it | app tests |
 | **Brief and Notes screens** | Home → **CALL FOR ME** → Get ready → Brief (sign or tap the day and time, name / callback / reason, "Prepare the request" → the backend's brief, "I'll stay and answer questions" switch, "Approve and call") → the call screen without SEND, chips or quick replies (the camera and the question card only when attended) → "See the call notes" → outcome, what happened, still open, the brief, the transcript, Bolna's summary marked as possibly wrong. Editing anything after the brief was built hides it until rebuilt. The fake driver plays a delegated call too, so it works with no backend. | app and UI tests; **end to end against the real backend code** (`backend/scripts/local_demo.py`, scripted receptionist): the agent opened with the brief, asked, the tapped yes went out on the call, the notes said Booked |
 | **Framing guard** | `RecognitionCore/FramingGuard`: a hand whose landmarks vanish while the pose's wrist is past the left, right or top edge for > 0.3 s explains the `?` ("A hand left the picture. Keep both hands inside the frame.") | unit tests on synthetic tracks; not yet on real portrait footage |
@@ -146,8 +146,8 @@ the old SignCLIP path; without the holistic model the pipeline can't start (Get 
 #89), deployed (#73, Heroku now runs `main` up to #93), demo script and slides (#55). What is
 left on the Mac side:
 
-1. **Rehearse** with the [demo script](../demo/SCRIPT.md) and the
-   [runbook](../demo/RUNBOOK.md); record a backup video.
+1. **Rehearse** with the [demo script](../demo/2026-10-28-demo-script.md) and the
+   [runbook](../demo/2026-10-28-runbook.md); record a backup video.
 2. **Re-run the video-to-speech flows** after any change that touches the call:
    `scripts/e2e_video_to_speech.sh` (free, local) or `--rehearse` (deployed-mode test on
    `local_demo`); a real call (`--real --confirm-cost`) only after the founder's go.
@@ -272,7 +272,7 @@ WebSocket `ask` {ask_id, question, options[{choice, spoken}], fallback, timeout_
 
 ## Claim ledger
 
-Rows R18–R24 and B29 in [CLAIM-LEDGER.md](../CLAIM-LEDGER.md#recognition-data-and-decision-models)
+Rows R18–R24 and B29 in [CLAIM-LEDGER.md](../../CLAIM-LEDGER.md#recognition-data-and-decision-models)
 hold the sources and evidence limits: ASL Signs corpus and CC-BY (R18), the 1st-place model (R19),
 SignCLIP-ASL (R20), LiteRT on iOS (R21), ASL Citizen not used (R22), "ISL and ASL overlap" measured
 per word (R23), the 25 Oct probe results (R24), Bolna call summary on every call (B29).

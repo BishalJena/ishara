@@ -11,7 +11,7 @@ captured segment so the same clips can later be replayed through other candidate
 No training. Everything under `artifacts/` (clone, weights, clips, sessions) is gitignored.
 
 For repository context and a fresh checkout, start with the
-[teammate handoff](../HANDOFF.md). The adapted INCLUDE implementation
+[teammate handoff](2026-10-28-handoff.md). The adapted INCLUDE implementation
 retains its upstream MIT notice in [INCLUDE-LICENSE.txt](../../spikes/recognition/INCLUDE-LICENSE.txt).
 
 ## Current checkpoint: frozen SignCLIP reference matching

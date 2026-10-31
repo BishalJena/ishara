@@ -3,7 +3,7 @@
 ## Current phase and controlling constraints
 
 - **Phase: demo build** (23–31 October 2026). Follow [PLAN.md](PLAN.md): its decisions, day-by-day tasks and gates are the source of truth. The goal is a demo-ready app with a small rehearsed sign vocabulary and one rehearsed clinic call, not a complete product.
-- **Recognition (decision D8, 25 Oct):** pure ASL, using the public Kaggle ASL Signs 1st-place model as is (no own recordings, no training, no fine-tuning, no reference clips). Open-set rule: full 250-way softmax, never restricted to the vocabulary first; chip only for a bundle-vocabulary gloss at margin ≥ 0.3 and p ≥ its cut-off. Since 28 Oct the vocabulary is the rehearsed words minus morning (hello, thankyou, yes, no, now, please, tomorrow, wait) with the provisional public-clip cut-offs (global 0.65, per-word 0.45–0.6); the iPhone clips decide the final values. Morning is out because the model learned the one-handed MORNING, not the two-handed dictionary form; it comes back only if the iPhone test ([issue #72](https://github.com/BishalJena/ishara/issues/72)) shows it chips with no wrong words. The bundle lives in `spikes/recognition/fixtures/asl/` and `ios/Ishara/Resources/asl-bundle.json` (identical, tested). Measurements: [docs/experiments/asl-model-probe.md](docs/experiments/asl-model-probe.md); plan: [docs/handoffs/2026-10-26-ready-made-asl-recognizer.md](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md).
+- **Recognition (decision D8, 25 Oct):** pure ASL, using the public Kaggle ASL Signs 1st-place model as is (no own recordings, no training, no fine-tuning, no reference clips). Open-set rule: full 250-way softmax, never restricted to the vocabulary first; chip only for a bundle-vocabulary gloss at margin ≥ 0.3 and p ≥ its cut-off. Since 28 Oct the vocabulary is the rehearsed words minus morning (hello, thankyou, yes, no, now, please, tomorrow, wait) with the provisional public-clip cut-offs (global 0.65, per-word 0.45–0.6); the iPhone clips decide the final values. Morning is out because the model learned the one-handed MORNING, not the two-handed dictionary form; it comes back only if the iPhone test ([issue #72](https://github.com/BishalJena/ishara/issues/72)) shows it chips with no wrong words. The bundle lives in `spikes/recognition/fixtures/asl/` and `ios/Ishara/Resources/asl-bundle.json` (identical, tested). Measurements: [docs/experiments/asl-model-probe.md](docs/experiments/asl-model-probe.md); plan: [docs/handoffs/2026-10-26-ready-made-asl-recognizer.md](docs/archive/handoffs/2026-10-26-ready-made-asl-recognizer.md).
 - **Call path (decision D1, Option C):** build Path B first. Bolna places the call from its default number, the backend acts as Bolna's custom LLM, and the app sends approved text via graph events. Path A (the user's own-number Phone call plus Apple Add Audio in Calls) is a bonus only if everything else lands by Wednesday 28 Oct. Always disclose that Path B calls come from Ishara's calling number, which Bolna provides, not the user's own number. The app says "Ishara's calling number" (founder's decision on issue #51, 28 Oct); docs, the pitch and the submission say plainly that it is a Bolna number. The Bolna account is on trial, so it only dials numbers verified in the Bolna dashboard.
 - **Live calls: nothing is spoken unless the user taps SEND.** Approvals are single use and tied to a `turn_id`. Unsure recognition, stale drafts, network failure and ended calls stay silent; never guess.
 - **Steer calls (decision D10, 30 Oct): the typed request is the approval.** Ishara may accept only offers that fit it, share only what the user gave (an attached document is quoted word for word, only when asked), and must defer anything else. A user's typed or signed line is polished without new facts, previewed, then spoken. Filler lines carry no facts.
@@ -25,13 +25,13 @@
 ## Where to look
 
 - [Active plan: decisions, tasks, gates, tests](PLAN.md)
-- [Latest system state snapshot (28 Oct)](docs/status/2026-10-28.md); earlier: [25 Oct](docs/status/2026-10-25.md)
-- [Architecture board (Excalidraw)](docs/architecture/README.md)
-- [Current workflow and edge cases](docs/WORKFLOW.md)
-- [Teammate handoff: capability and setup](docs/HANDOFF.md)
+- [Latest system state snapshot (28 Oct)](docs/archive/status/2026-10-28.md); earlier: [25 Oct](docs/archive/status/2026-10-25.md)
+- [Architecture board (Excalidraw)](docs/archive/architecture/README.md)
+- [Current workflow and edge cases](docs/archive/2026-10-28-workflow.md)
+- [Teammate handoff: capability and setup](docs/archive/2026-10-28-handoff.md)
 - [Measured ML results and limits](docs/experiments/recognition.md)
 - [Recognition commands](spikes/recognition/README.md)
-- [Bolna/device spike commands](spikes/call_flow/README.md)
+- [Bolna/device spike commands](docs/archive/spikes/call_flow/README.md)
 - [Research reading guide](docs/research/README.md)
 - [Claim ledger and external source inventory](docs/CLAIM-LEDGER.md)
 - [Historical plans and experiment notebooks](docs/archive/README.md): earlier constraints (own-number only, mandatory Bolna, no Bolna-originated calls) are superseded by the 23 October decisions.

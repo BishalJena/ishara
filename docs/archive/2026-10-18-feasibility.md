@@ -1,7 +1,7 @@
 # Preserve ordinary calls while translating signs
 
 > Historical feasibility synthesis. Its optional-Bolna and hard no-pivot assumptions
-> are superseded. Use the [handoff](../HANDOFF.md) and [active plan](../../PLAN.md)
+> are superseded. Use the [handoff](2026-10-28-handoff.md) and [active plan](../../PLAN.md)
 > for current scope, capability and next steps.
 
 **The best current candidate preserves the user's ordinary cellular Phone call from their own number, adds foreground Ishara sign capture, and injects approved speech through Apple's public AAC mechanism.** System Live Captions is a candidate return channel for the user; it does not give Ishara an incoming transcript. This fits the user's clarified goal more closely than a service-originated call, callback, or two-call bridge, all of which are excluded. The target device is an iPhone 17, but its installed iOS version is unknown and **camera + AAC injection + system captions have not been tested together**. A small, bounded ISL conversation is a credible research objective, not an established capability: recognition, utterance boundaries, unknown rejection, and natural phrase coverage remain unvalidated. Bolna authentication and voice-catalog access passed read-only checks, but no documented standalone Bolna text-to-audio endpoint was established in the pages inspected. Research completed on **18 October 2026** supports the device and data experiments below; it does not authorize implementation or establish a ready-to-build architecture.

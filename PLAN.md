@@ -6,16 +6,16 @@ acceptance criteria. Submission deadline: **Saturday 31 October 2026**.
 **Recognition track change (25 Oct, decisions D8 and D9):** no own recordings and no training.
 The demo is **pure ASL** with a published, signer-independent model used as is, measured on
 25 Oct ([record](docs/experiments/asl-model-probe.md)); a delegated-call mode is proposed. See the
-[handoff](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md). R1–R4 and G2 below are
+[handoff](docs/archive/handoffs/2026-10-26-ready-made-asl-recognizer.md). R1–R4 and G2 below are
 superseded by that document until it is folded back in.
 
 **28 Oct:** the first real calls ran. After five root-caused fixes, Live mode and all three
 Call-for-me flows passed on real Bolna calls, end to end from the simulator app with sign
 videos as the camera; Gate 1 passed. Still waiting for the iPhone: install, live camera, speed,
 phone clips and the final thresholds, Gate 4 ([issue #72](https://github.com/BishalJena/ishara/issues/72)).
-Snapshot: [status, 28 Oct](docs/status/2026-10-28.md).
+Snapshot: [status, 28 Oct](docs/archive/status/2026-10-28.md).
 
-**Visual version:** [architecture board](docs/architecture/README.md)
+**Visual version:** [architecture board](docs/archive/architecture/README.md)
 (`docs/architecture/ishara-board.excalidraw`). If the board and this plan disagree,
 this plan wins; update both together.
 
@@ -42,7 +42,7 @@ Receptionist's words ◀── Bolna (Deepgram) ◀── phone call ◀── B
 > *28 Oct:* the table below is the original 23 Oct story. Under D8 the Live call signs
 > **hello** → **no · tomorrow · please** → **yes · thankyou** (doctor and morning can't chip; the
 > purpose supplies "doctor's appointment"), and the planned wrong chip is not rehearsed. The
-> stage script with both modes is [docs/demo/SCRIPT.md](docs/demo/SCRIPT.md). The simulator's
+> stage script with both modes is [docs/demo/SCRIPT.md](docs/archive/demo/2026-10-28-demo-script.md). The simulator's
 > scripted fake call still plays the old signs; that is demo-only playback, not recognition.
 
 | Turn | Who | What happens |
@@ -75,8 +75,8 @@ Agreed on 23 October 2026. Raise any change explicitly; don't switch silently.
 | D5 | Vocabulary | *Superseded by D8 (8 ASL chip words).* **12 signs** (see §5), one sign at a time with hands down between signs. Wait and Repeat are buttons | Enough for the script; small enough to record and rehearse |
 | D6 | Where recognition runs | **On the iPhone**: MediaPipe Holistic for iOS (official SwiftPM package, MediaPipeTasksVision 1.1.1) plus SignCLIP converted to Core ML (FP16, run with compute units `.cpuAndGPU`; see P1). The **Mac is the backup** | On-device is the pitch; the Mac replay pipeline (extraction, SignCLIP embedding, reference matching) already runs, though it has no calibrated cut-off yet and abstains on everything until R2b |
 | D7 | Backend hosting | Small Python backend on **Heroku**, **EU** region, **Basic dyno or higher** (never Eco). Deployed by pushing `backend/` with `git subtree` (`backend/HEROKU.md`) | Team has credits; Eco dynos sleep and Bolna would hear silence. EU is closer to India than the default US region (latency not measured) |
-| D8 | Recognition model and data *(25 Oct, revised the same evening)* | **Pure ASL, with a ready-made signer-independent model used as is**: the Kaggle ASL Signs 1st-place model (MIT code, public 11 MB TFLite, 250 glosses, CC-BY corpus of ~94k phone-camera clips from 21 Deaf signers). **No own recordings, no training or fine-tuning, no reference clips.** Any of the 250 glosses can become a chip under the open-set rule (full softmax, p ≥ 0.6, margin ≥ 0.3, gloss in the service-call vocabulary; pick-one tile below that; never restrict to the vocabulary first). Rehearsed words: hello, thankyou, yes, no, now (today), please, tomorrow; candidates morning, wait; dropped sick, time. *28 Oct, after public-clip Gate 2:* only the rehearsed words minus morning may chip (morning waits for the iPhone test of the one-handed form), cut-offs global 0.65 plus per-word, still provisional. ISL forms are **not** mixed in, even where measured to coincide. Details: [handoff](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md), [measurements](docs/experiments/asl-model-probe.md) | We cannot produce sign data ourselves and public ISL data cannot give a signer-independent recognizer (INCLUDE ≈ 16 clips/word, none for yes/no/sorry; cross-signer SignCLIP accepted 4/42). Measured 25 Oct: the ASL model got 6/11 Lifeprint clips at 0.70–0.94 and four of the presenter's signs first try, 4 ms per sign, 0 wrong accepts at p ≥ 0.6, and stays flat on signs it does not know |
-| D9 *(approved 25 Oct, both variants)* | Delegated call mode | The user signs the intent, approves a **brief** once, and the Bolna agent makes the call for them, pursuing only the brief; afterwards the app shows transcript + Bolna's call summary. Optionally **attended**: live captions, and at decision points the agent says "one moment" and the user answers yes/no/wait by sign or tap (event injection); an open "when?" question with no time on offer gets a signed or tapped time word instead (tomorrow, morning, now, or wait; 28 Oct, version B; morning is tap-only while it can't chip). The verbatim live mode stays. Details: [handoff §D9](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#d9-approved-25-oct-built-the-delegated-call-with-optional-steering) | Removes real-time turn-taking pressure, needs 2–3 content signs per call, fits service calls, and is what Bolna agents are built for (~1 day on the existing backend). Keeps every safety rule: one explicit approval, disclosure, no out-of-brief commitments, allowlisted recipients |
+| D8 | Recognition model and data *(25 Oct, revised the same evening)* | **Pure ASL, with a ready-made signer-independent model used as is**: the Kaggle ASL Signs 1st-place model (MIT code, public 11 MB TFLite, 250 glosses, CC-BY corpus of ~94k phone-camera clips from 21 Deaf signers). **No own recordings, no training or fine-tuning, no reference clips.** Any of the 250 glosses can become a chip under the open-set rule (full softmax, p ≥ 0.6, margin ≥ 0.3, gloss in the service-call vocabulary; pick-one tile below that; never restrict to the vocabulary first). Rehearsed words: hello, thankyou, yes, no, now (today), please, tomorrow; candidates morning, wait; dropped sick, time. *28 Oct, after public-clip Gate 2:* only the rehearsed words minus morning may chip (morning waits for the iPhone test of the one-handed form), cut-offs global 0.65 plus per-word, still provisional. ISL forms are **not** mixed in, even where measured to coincide. Details: [handoff](docs/archive/handoffs/2026-10-26-ready-made-asl-recognizer.md), [measurements](docs/experiments/asl-model-probe.md) | We cannot produce sign data ourselves and public ISL data cannot give a signer-independent recognizer (INCLUDE ≈ 16 clips/word, none for yes/no/sorry; cross-signer SignCLIP accepted 4/42). Measured 25 Oct: the ASL model got 6/11 Lifeprint clips at 0.70–0.94 and four of the presenter's signs first try, 4 ms per sign, 0 wrong accepts at p ≥ 0.6, and stays flat on signs it does not know |
+| D9 *(approved 25 Oct, both variants)* | Delegated call mode | The user signs the intent, approves a **brief** once, and the Bolna agent makes the call for them, pursuing only the brief; afterwards the app shows transcript + Bolna's call summary. Optionally **attended**: live captions, and at decision points the agent says "one moment" and the user answers yes/no/wait by sign or tap (event injection); an open "when?" question with no time on offer gets a signed or tapped time word instead (tomorrow, morning, now, or wait; 28 Oct, version B; morning is tap-only while it can't chip). The verbatim live mode stays. Details: [handoff §D9](docs/archive/handoffs/2026-10-26-ready-made-asl-recognizer.md#d9-approved-25-oct-built-the-delegated-call-with-optional-steering) | Removes real-time turn-taking pressure, needs 2–3 content signs per call, fits service calls, and is what Bolna agents are built for (~1 day on the existing backend). Keeps every safety rule: one explicit approval, disclosure, no out-of-brief commitments, allowlisted recipients |
 | D10 *(founder, 30 Oct)* | Steer calls: one call flow | The user types the number and what the call is about (optionally attaching a card or letter, read on the phone), and Ishara runs the call. **The typed request is the approval**: Ishara accepts only offers that fit it, shares only what the user gave (quoting an attached document word for word, only when asked), and defers anything else as a follow-up. With the call screen open, Ishara's next line fills a timed bar and is spoken when it runs out; typing or signing holds it, Ishara covers the pause with varied filler lines, and the user's polished line is previewed and then spoken. Screen off or app closed: Ishara answers at once. Live Activity on the lock screen. PR #107 | A Deaf caller shouldn't have to drive every turn; one flow covers present, absent and stepping in. Bolna can't be interrupted mid-sentence, so control sits before a line starts (the timed bar). The first live steer call still has to confirm Bolna tolerates the up-to-8 s reply window |
 
 Already settled: native **SwiftUI** app. Live calls keep **nothing spoken unless the user taps SEND**; steer calls (D10) speak within the typed request instead.
@@ -254,7 +254,7 @@ Pauses cost nothing: hands at rest means nothing happens.
 > **Superseded 25 Oct (D8).** The demo is pure ASL: any of the model's 250 glosses can become a
 > chip; the rehearsed words are hello, thankyou, yes, no, now, please, tomorrow (candidates
 > morning, wait) per the
-> [handoff](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#vocabulary-and-script).
+> [handoff](docs/archive/handoffs/2026-10-26-ready-made-asl-recognizer.md#vocabulary-and-script).
 > *28 Oct:* only hello, thankyou, yes, no, now, please, tomorrow and wait can chip (#83); morning
 > waits for the iPhone test of its one-handed form.
 > The recording budget below does not apply. The table is kept as the ISL target vocabulary;
@@ -312,7 +312,7 @@ device task waits for it ([issue #72](https://github.com/BishalJena/ishara/issue
   Bolna API key with credits, Groq API key, Heroku app in the **EU** region with a
   **Basic** dyno, and an Apple developer team in Xcode.
   *Done:* the backend's config check (V1) reports every key present.
-  (keys: done, all 10 present on Heroku and equal to `.env`, [go-live check](docs/status/2026-10-28-live.md);
+  (keys: done, all 10 present on Heroku and equal to `.env`, [go-live check](docs/archive/status/2026-10-28-live.md);
   Bolna is still a trial account, which dials only verified numbers; pending: the Apple
   developer team, with the iPhone install)
 - [x] **H2 [You]** Give the consenting receptionist-teammate's number for `ALLOWED_RECIPIENTS`
@@ -418,13 +418,13 @@ device task waits for it ([issue #72](https://github.com/BishalJena/ishara/issue
   webcam session, offline analysis. *Done 25 Oct:* [record](docs/experiments/asl-model-probe.md).
 - [x] **R5 [Mate]** ASL recognizer in the app (simulator): LiteRT, Kaggle layout from the Tasks
   Landmarker, parity on saved cuts, pick-one tile, framing guard, Brief/Notes screens. *Done 27 Oct*
-  ([what landed](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#built-on-27-oct-the-mac-only-list));
+  ([what landed](docs/archive/handoffs/2026-10-26-ready-made-asl-recognizer.md#built-on-27-oct-the-mac-only-list));
   what is left for the teammate is review, simulator testing and the deploy
-  ([list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-the-teammate-mac-and-simulator)).
+  ([list](docs/archive/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-the-teammate-mac-and-simulator)).
   Replaces R1–R4.
 - [ ] **R7 [You]** iPhone, when it is available: the phone clips (the Camera app is enough), frozen
   thresholds, device speed, the first real delegated call. *Done:* the
-  [founder list](docs/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-the-founder-needs-the-iphone).
+  [founder list](docs/archive/handoffs/2026-10-26-ready-made-asl-recognizer.md#left-for-the-founder-needs-the-iphone).
   (first real delegated calls: done 28 Oct from the simulator, [voice record](docs/experiments/voice.md#runs);
   pending, waiting for the device: phone clips, frozen thresholds, speed, MORNING one-handed;
   steps in [issue #72](https://github.com/BishalJena/ishara/issues/72))
@@ -480,10 +480,10 @@ device task waits for it ([issue #72](https://github.com/BishalJena/ishara/issue
 
 ### Wed 28 Oct: full flow in the simulator
 
-Landed on 28 Oct (each with tests; evidence in the PR and the [status](docs/status/2026-10-28.md)):
+Landed on 28 Oct (each with tests; evidence in the PR and the [status](docs/archive/status/2026-10-28.md)):
 
 - [x] Go-live: D9 on Heroku and the Bolna agent with the call summary on (#71, #73,
-  [go-live check](docs/status/2026-10-28-live.md))
+  [go-live check](docs/archive/status/2026-10-28-live.md))
 - [x] Fixes from the first real calls: speak the approved turn without event properties (#80),
   times said in words (#81), one uvicorn worker (#82), notes record a promised callback (#85)
 - [x] Chips only for the rehearsed words minus morning, provisional 0.65 cut-offs (#83)

@@ -4,7 +4,7 @@ A screen-by-screen review of the iOS app on `main @ 54b1c50`, before the fixes i
 #37–#40. The findings (F1–F19, polish P1–P6) are in [REPORT.md](REPORT.md); how each
 high and medium finding was fixed and re-checked is in
 [the verified fixes](../ios-fixes-verified-24oct/README.md). Method and pass rules for
-this kind of review: [TESTING.md](../../../TESTING.md#ios-visual-review).
+this kind of review: [TESTING.md](../../../../TESTING.md#ios-visual-review).
 
 **Executed** on the development Mac: Xcode 27.1, iOS 27.0 simulators (iPhone 17 and
 iPhone 17e), status bar fixed at 9:41. Nothing was dialled and no paid API was used.

@@ -112,7 +112,7 @@ public struct ServerError: Equatable, Sendable {
 
 /// The single source of truth for one call on the app side.
 ///
-/// Safety rules (PLAN.md §4, docs/WORKFLOW.md): nothing is spoken unless the user taps SEND,
+/// Safety rules (PLAN.md §4, docs/archive/2026-10-28-workflow.md): nothing is spoken unless the user taps SEND,
 /// an approval is used once and tied to its turn, unsure chips and stale drafts never reach
 /// the call, and after End or a disconnect nothing is sent on the user's behalf.
 /// The agent paused the receptionist and needs the user's answer (D9): yes / no / wait for
