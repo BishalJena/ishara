@@ -266,6 +266,11 @@ class CallNotes(_Message):
     stepped_in: int = 0
 
 
+class HistoryMessage(_Message):
+    type: Literal["history"] = "history"
+    entries: list[TranscriptEntry]
+
+
 # ---- app -> backend (WebSocket) ----
 
 

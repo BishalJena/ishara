@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import hmac
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import SecretStr
 
 from app.config import Settings
 from app.deps import get_settings_dep
+from app.web_auth import COOKIE, browser_authenticated
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -26,9 +27,18 @@ def _check(expected: SecretStr | None, credentials: HTTPAuthorizationCredentials
 
 
 def require_app_token(
+    request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
     settings: Settings = Depends(get_settings_dep),
 ) -> None:
+    if credentials is None and browser_authenticated(
+        settings,
+        request.cookies.get(COOKIE),
+        request.headers.get("origin"),
+        str(request.base_url),
+        write=request.method not in {"GET", "HEAD", "OPTIONS"},
+    ):
+        return
     _check(settings.app_token, credentials)
 
 
