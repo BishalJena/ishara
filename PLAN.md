@@ -542,12 +542,12 @@ All four wait for the iPhone; the steps for whoever holds it are
 
 ## 7. Gates (go / no-go)
 
-| Gate | When | Pass | If it fails | Status (28 Oct) |
+| Gate | When | Pass | If it fails | Status |
 |---|---|---|---|---|
 | **G1** Voice | Sat 24 | Exact text spoken on the call; no double speech; agent stays quiet otherwise; captions reach the backend | Fallback 1: the speak node uses a built-in LLM with a "repeat exactly" prompt and the backend checks the transcript. Fallback 2: Path A becomes the main path | **Passed 28 Oct** after #80 and #82 ([voice record](docs/experiments/voice.md#gate-1-verdict)) |
 | **G2** Recognition *(revised 25 Oct, D8)* | Mon 26 | Presenter live trial on the Mac, 10 attempts per script sign: **≥ 6/10 correct chips per sign** (auto-accepted or chosen with one tap from a pick-one pair), **0 wrong auto-accepted chips**, **0 auto-accepts on the negatives**, **< 2 s** from the sign ending to the chip | Swap a missed sign for an in-vocabulary synonym or a button; if three or more script signs miss, run "pick-one always" (model proposes top-2, user taps) and say so on the slide | **Pending.** On public clips (#66) it failed for yes and hello; with the shipped bundle 0 wrong chips and 0 on negatives (#83). The presenter trial and the final thresholds wait for the iPhone (#72) |
 | **G3** On-device | Tue 27 | The simulator pipeline matches the Mac on every calibration clip | Demo recognition on the Mac (A4) and pitch "designed for on-device" | Met in the simulator on the Lifeprint parity clips; pending: the phone clips |
-| **G4** Real call | Thu 29 | The full script works live twice on the iPhone; the recipient hears exactly the approved sentences | Friday becomes a fix day; the Mac fallback and the backup video are the safety net | **Pending: waiting for the iPhone** (#72). The same flows passed on real calls from the simulator on 28 Oct |
+| **G4** Real call | Thu 29 | The full script works live twice on the iPhone; the recipient hears exactly the approved sentences | Friday becomes a fix day; the Mac fallback and the backup video are the safety net | **Met (31 Oct):** calls from the iPhone, with recognition on the iPhone (#72). The same flows passed on real calls from the simulator on 28 Oct |
 
 ---
 
