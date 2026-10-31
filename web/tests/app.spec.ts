@@ -135,12 +135,18 @@ test('an accepted call survives a lost POST response without a second dial', asy
   expect(posts).toBe(1);
 });
 
-test('backend status remains visible and offers a fresh service check', async ({page}) => {
+test('backend status lives in Settings and leaves the home composer clear', async ({page}) => {
   await page.goto('/');
-  await page.getByRole('button', {name: 'Backend status'}).click();
-  const sheet = page.getByRole('dialog', {name: 'Backend status'});
-  await expect(sheet.getByText(/ask the demo operator to verify/)).toBeVisible();
-  await expect(sheet.getByRole('button', {name: /Check again|Checking/})).toBeVisible();
+  await expect(page.locator('summary[aria-label="Backend status"]')).toHaveCount(0);
+  await page.getByRole('button', {name: 'Settings', exact: true}).click();
+  const settings = page.getByRole('dialog', {name: 'Settings', exact: true});
+  await settings.locator('summary[aria-label="Backend status"]').click();
+  const details = settings.getByRole('region', {name: 'Backend status', exact: true});
+  await expect(details.getByText(/ask the demo operator to verify/)).toBeVisible();
+  await expect(details.getByRole('button', {name: /Check again|Checking/})).toBeVisible();
+  await settings.getByRole('button', {name: 'Done', exact: true}).click();
+  await expect(page.locator('summary')).toHaveCount(0);
+  await expect(page.getByRole('heading', {name: 'Who are we calling today?'})).toBeVisible();
 });
 
 

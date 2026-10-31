@@ -5,6 +5,8 @@ struct SettingsSheet: View {
     /// Set when the sheet opens because a call needs the name: it says why, focuses the
     /// field, and its Call button continues the call (Cancel doesn't).
     var onContinueCall: (() -> Void)? = nil
+    var serviceStatus: BackendServiceStatus? = nil
+    @State private var showsBackendHelp = false
     private var forCall: Bool { onContinueCall != nil }
     @AppStorage("ishara.name") private var name = ""
     @AppStorage("ishara.callback") private var callback = ""
@@ -46,6 +48,18 @@ struct SettingsSheet: View {
                 } footer: {
                     Text("Ishara gives the callback number only if they ask how to reach you. Every call opens by saying Ishara is calling for a Deaf caller, from Ishara's number, not yours.")
                 }
+                if !forCall, let serviceStatus {
+                    Section("Backend") {
+                        Button {
+                            showsBackendHelp = true
+                            Task { await serviceStatus.check() }
+                        } label: {
+                            Label(serviceStatus.message, systemImage: serviceStatus.online ? "checkmark.circle.fill" : "exclamationmark.circle")
+                                .foregroundStyle(serviceStatus.online ? .green : .orange)
+                        }
+                        .accessibilityIdentifier("settings.backendStatus")
+                    }
+                }
             }
             .navigationTitle(forCall ? "Before the call" : "Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -59,6 +73,19 @@ struct SettingsSheet: View {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Cancel") { dismiss() }
                     }
+                }
+            }
+            .sheet(isPresented: $showsBackendHelp) {
+                NavigationStack {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 18) {
+                            Text(serviceStatus?.message ?? "Checking service…").font(.headline)
+                            Text("Check your connection and ask the demo operator to verify the backend service. A network failure can also make the service unreachable.")
+                            Text("Do not restart the backend during a call.").font(.footnote).foregroundStyle(.secondary)
+                            Button("Check again") { Task { await serviceStatus?.check() } }
+                        }.padding(24)
+                    }.navigationTitle("Backend status").navigationBarTitleDisplayMode(.inline)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showsBackendHelp = false } } }
                 }
             }
             .onAppear { if forCall { nameFocused = true } }
