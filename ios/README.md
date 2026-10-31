@@ -1,22 +1,30 @@
 # Ishara iOS app
 
-The person-facing app for **accessible, independently directed phone conversations**.
-Captions make incoming speech readable; the person controls replies or steers an approved
-agent brief. Signing is one input option in the product direction, alongside typing and
-buttons. This build implements signs and tap choices; general typed replies and camera-free
-entry are planned. See the [product overview](../README.md) and [pitch](../PITCH.md).
+The person-facing app: **Ishara makes the call, and the person steers it at any moment by
+typing or signing.** See the [product overview and architecture](../README.md) and the
+[pitch](../PITCH.md).
 
-SwiftUI demo app (iOS 17+, iPhone, portrait). Two ways to call: **CALL** (sign each reply,
-approve it with SEND) and **CALL FOR ME** (approve a brief once; the agent makes the call and
-brings back notes, decision D9). Screens: Home, Get ready, Call, Brief, Notes
-([workflow](../docs/WORKFLOW.md)). It runs with two call drivers and two recognition modes:
+SwiftUI (iOS 17+, iPhone, portrait). The default flow is the **steer call** (decision D10):
 
-| | Fake (default) | Live |
+- **Home:** the number behind a fixed +91 prefix (pasted or Contacts numbers become E.164),
+  recent people, the request in the person's words and attachments (photos and PDFs, read
+  with Vision and PDFKit and sent as document text). The caller's name lives in Settings;
+  Call asks for it once if it's missing.
+- **Call:** captions of both sides, the facts strip, Ishara's proposed line with its 2-second
+  bar (tap it to edit; the line drops into the field), the composer and the sign panel, and
+  a Live Activity on the lock screen and in the Dynamic Island with End.
+- **Gist:** opens by itself after the call, with Call again and Done; stored in Recent calls.
+
+`-IsharaFlow classic` keeps the earlier Home with **CALL** (sign each reply, approve it with
+SEND) and **CALL FOR ME** (an approved brief, decision D9). It runs with two call drivers and
+two recognition modes:
+
+| | Live (default) | Fake (`-IsharaDriver fake`) |
 |---|---|---|
-| **Call** (`-IsharaDriver`) | `FakeCallDriver` plays the PLAN §1 clinic call, or a scripted "Call for me" call, on timers. Nothing is dialled | `LiveCallDriver` → Ishara backend (`POST /briefs`, `POST /calls` + call WebSocket, `GET /calls/{id}/notes`) → Bolna dials (Path B). **Places a real, paid call** |
-| **Recognition** (`-IsharaRecognition`) | `scripted`: replays fixed results (the fake call's script, `-IsharaReplay` such as `hello,tomorrow?,frame,?`, or the replay menu) | `pipeline`: MediaPipe Holistic → start/stop detector → the ASL Signs model via LiteRT → open-set rule (SignCLIP as the fallback when the ASL model isn't installed). Camera on a device, saved videos in the simulator |
+| **Call** (`-IsharaDriver`) | `LiveCallDriver` → Ishara backend (`POST /briefs`, `POST /calls` + call WebSocket, `GET /calls/{id}/notes`) → Bolna dials (Path B). **Places a real, paid call** | `FakeCallDriver` plays a clinic call on timers, for UI tests and offline work. Nothing is dialled |
+| **Recognition** (`-IsharaRecognition`) | `pipeline`: MediaPipe Holistic → start/stop detector → the ASL Signs model via LiteRT → open-set rule (SignCLIP as the fallback when the ASL model isn't installed). Camera on a device, saved videos in the simulator | `scripted`: replays fixed results (the fake call's script, `-IsharaReplay` such as `hello,tomorrow?,frame,?`, or the replay menu) |
 
-Recognition defaults to `scripted` with the fake call and to `pipeline` with the live one.
+Recognition defaults to `pipeline` with the live call and to `scripted` with the fake one.
 
 ```
 Views ─▶ ActiveCallViewModel ─▶ TurnStore (CallSession: every SEND safety rule)
@@ -27,7 +35,7 @@ Views ─▶ ActiveCallViewModel ─▶ TurnStore (CallSession: every SEND safet
      RecognitionController: Scripted │ Pipeline (frames → landmarks → detector → ASL model → rule)
 ```
 
-The SEND rules live in one place, `TurnStore` in [CallSession](Packages/CallSession/README.md):
+The turn rules live in one place, `TurnStore` in [CallSession](Packages/CallSession/README.md):
 single-use SEND tied to a turn id, stale drafts ignored, `?` never sent, re-SEND only on
 an explicit tap with a new turn id, and chips, drafts and pending approvals wiped on End or a
 lost connection. The captions stay on screen as a read-only transcript of the call.
@@ -43,9 +51,9 @@ the local packages and clones MediaPipe (about 600 MB, once). To run on a device
 choose your own team under Signing & Capabilities. Don't commit it:
 `DEVELOPMENT_TEAM` stays empty in Git.
 
-## Configure the backend (live call only)
+## Configure the backend
 
-The backend URL and the demo `APP_TOKEN` come from an untracked xcconfig, never from Git:
+The backend URL and the `APP_TOKEN` come from an untracked xcconfig, never from Git:
 
 ```sh
 cp ios/Ishara/Config/Secrets.example.xcconfig ios/Ishara/Config/Secrets.xcconfig

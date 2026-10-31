@@ -87,7 +87,7 @@ Nothing here has been run against the live API yet.
 | `voicemail` | false | Documented; keeps voicemail checks away from our custom LLM | same |
 | `backchanneling` ("Mm-hmm" fillers) | false | Documented; nothing may be spoken without SEND | same |
 | Agent-level `number_of_words_for_interruption` (default 2) | not set | Documented default 2, but **the live agent reads 1** (GET, 28 Oct); applies to the welcome message and `listen` | same |
-| `discard_pre_welcome_utterance` ("Ignore user speech before welcome message") | true | Field name seen only in the live GET (28 Oct); the create schema doesn't list it, the [agent tab](https://www.bolna.ai/docs/agent-setup/agent-tab.md) documents the toggle. On so the receptionist's "Hello?" can't cut the disclosure or race the Call-for-me opening, see [go-live check](../../docs/status/2026-10-28-live.md#3-what-d9-needs-from-bolna) | live GET |
+| `discard_pre_welcome_utterance` ("Ignore user speech before welcome message") | true | Field name seen only in the live GET (28 Oct); the create schema doesn't list it, the [agent tab](https://www.bolna.ai/docs/agent-setup/agent-tab.md) documents the toggle. On so the receptionist's "Hello?" can't cut the disclosure or race the Call-for-me opening, see [go-live check](../../docs/archive/status/2026-10-28-live.md#3-what-d9-needs-from-bolna) | live GET |
 | Agent-level `call_summary_enabled` | true | Documented: off by default; when on, the final webhook carries `summary`. D9 notes need it on | [create](https://www.bolna.ai/docs/api-reference/agent/v2/create.md) |
 
 ### Custom LLM (ledger B08, B23)

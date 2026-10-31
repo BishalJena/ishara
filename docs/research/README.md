@@ -1,7 +1,7 @@
 # Research index
 
 These are dated source studies, not running status documents. For current capability
-read the [handoff](../HANDOFF.md); for measured local outcomes read the
+read the [handoff](../archive/2026-10-28-handoff.md); for measured local outcomes read the
 [experiment record](../experiments/recognition.md).
 
 ## Recognition

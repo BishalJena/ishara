@@ -2,9 +2,9 @@
 
 Executed 20 October 2026 on the development Mac. This is the authoritative summary
 of local ML measurements. [Runbook](../../spikes/recognition/README.md) ·
-[Current direction](../HANDOFF.md) · [Next acceptance gates](../../PLAN.md)
+[Current direction](../archive/2026-10-28-handoff.md) · [Next acceptance gates](../../PLAN.md)
 
-Later, separate run: [video-to-voice pipeline on public ISL videos](video-pipeline-eval.md)
+Later, separate run: [video-to-voice pipeline on public ISL videos](../archive/experiments/video-pipeline-eval.md)
 (24 October, cross-signer, through the live recognizer, composer and voice).
 
 ## Scope
@@ -116,7 +116,7 @@ labels exist, and actual keyboard-driven camera capture remains to be exercised.
 A clean tracked-file export also passed the backend/data commands with one
 OpenHands transform test skipped because its source checkout was absent. It reused
 the installed Python environment; it was not a fresh dependency installation.
-The separate [call-flow runbook](../../spikes/call_flow/README.md) owns its mock,
+The separate [call-flow runbook](../archive/spikes/call_flow/README.md) owns its mock,
 provider-probe and iPhone build observations.
 
 ## Artifact provenance

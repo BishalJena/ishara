@@ -7,11 +7,11 @@ first from a script client and then end to end from the simulator app driven by 
 STOP, B24, B25 and the timings are still open. Before the calls: Heroku ran `main` with the
 D9 routes, the live Bolna agent matched `agent.json` and the free smoke tests passed; see
 [Deployed state before the first call](#deployed-state-before-the-first-call) and the
-[go-live check](../status/2026-10-28-live.md). Day summary: [status, 28 Oct](../status/2026-10-28.md).
+[go-live check](../archive/status/2026-10-28-live.md). Day summary: [status, 28 Oct](../archive/status/2026-10-28.md).
 This file is the authoritative summary of Path B voice measurements (task V4,
 [Gate 1](../../PLAN.md#7-gates-go--no-go), testing layer 3 in
 [PLAN.md §8](../../PLAN.md#8-testing-plan)). [Plan](../../PLAN.md) ·
-[Workflow edge cases](../WORKFLOW.md) · [Claim ledger](../CLAIM-LEDGER.md) ·
+[Workflow edge cases](../archive/2026-10-28-workflow.md) · [Claim ledger](../CLAIM-LEDGER.md) ·
 [Recognition record](recognition.md)
 
 ## How runs are recorded
@@ -148,7 +148,7 @@ speech, SEND while the receptionist talks (B24), talk-over with "wait" (B25) and
 ## Deployed state before the first call
 
 Recorded on 28 Oct after the deploy go; **no call placed**. Details in the
-[go-live check §5](../status/2026-10-28-live.md#5-gate-1-deploy-results-28-oct).
+[go-live check §5](../archive/status/2026-10-28-live.md#5-gate-1-deploy-results-28-oct).
 
 | What | State |
 |---|---|

@@ -14,7 +14,7 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
         /// as when the receptionist is still talking (ledger B24).
         var undeliveredStages: Set<Int> = []
         /// Script stages whose first reply the receptionist talks over while it is being
-        /// spoken. Ordinary talk doesn't cut the reply off (docs/WORKFLOW.md), so it is
+        /// spoken. Ordinary talk doesn't cut the reply off (docs/archive/2026-10-28-workflow.md), so it is
         /// still delivered.
         var interruptedStages: Set<Int> = []
         /// Lose the backend connection mid-call: on a live call once the first draft is on
@@ -263,7 +263,8 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
 
     private func propose(_ text: String, origin: ProposalOrigin, then: @escaping () -> Void) {
         let turnID = TurnID("steer-\(UUID().uuidString.prefix(8))")!
-        let window = (origin == .agent ? min(8, 3.5 + 0.25 * Double(text.split(separator: " ").count)) : 1.5)
+        // Like the backend: Ishara's line waits a fixed 2 s; the user's preview 1.5 s.
+        let window = origin == .agent ? 2.0 : 1.5
         pendingProposal = PendingProposal(turnID: turnID, text: text, origin: origin, then: then)
         deliver(.proposal(turnID: turnID, text: text, windowS: window, origin: origin))
         proposalTask = schedule(after: window) { $0.settleProposal(spoken: true) }

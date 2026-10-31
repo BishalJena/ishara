@@ -1,7 +1,7 @@
 # Recognition runbook
 
 Local diagnostics, not a deployed recognition service.
-[Handoff](../../docs/HANDOFF.md) · [Measured results](../../docs/experiments/recognition.md) ·
+[Handoff](../../docs/archive/2026-10-28-handoff.md) · [Measured results](../../docs/experiments/recognition.md) ·
 [Active gates](../../PLAN.md) · [Historical notebook](../../docs/archive/2026-10-20-recognition-notes.md)
 
 > **Current path (decision D8, 25 Oct): the public ASL Signs model, used as is.** It runs
@@ -552,7 +552,7 @@ yes 0.70–0.72, thankyou 0.82; 0.4–0.9 s from hands down to chip), morning st
 ## Evaluate saved videos end to end (video_eval.py)
 
 Replays saved clips through the same live path and scores them; it never feeds labels,
-audio or file names to the recognizer. Results: [video pipeline evaluation](../../docs/experiments/video-pipeline-eval.md).
+audio or file names to the recognizer. Results: [video pipeline evaluation](../../docs/archive/experiments/video-pipeline-eval.md).
 
 ```sh
 artifacts/signclip/.venv/bin/python video_eval.py prepare     # local spec -> silent clip_NNN.mp4 + manifest; labels apart

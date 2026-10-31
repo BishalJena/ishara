@@ -1,6 +1,6 @@
 """Pure call, turn and approval state for one call. No I/O; app/calls.py does that.
 
-Rules (PLAN.md §4, docs/WORKFLOW.md edge cases):
+Rules (PLAN.md §4, docs/archive/2026-10-28-workflow.md edge cases):
 - The app picks turn ids. A never-seen id becomes the current turn and closes the
   previous one; messages for closed turns are rejected as stale.
 - An approval (SEND) is single use, tied to its turn and only accepted while the

@@ -4,7 +4,7 @@
 > The recognition acceptance gate and pilot protocol below are still referenced by it.
 
 Updated 20 October 2026. This file owns active tasks and acceptance criteria.
-Read the [handoff](../HANDOFF.md) for current capability, the
+Read the [handoff](2026-10-28-handoff.md) for current capability, the
 [experiment record](../experiments/recognition.md) for measurements, and the
 [archive](README.md) for completed investigations.
 
@@ -61,7 +61,7 @@ data. Do not train merely to improve the seven old intended-hello clips.
 ## Speech: establish meaningful Bolna output
 
 This track can progress independently of recognition, using approved synthetic
-text and the [call-flow runbook](../../spikes/call_flow/README.md).
+text and the [call-flow runbook](spikes/call_flow/README.md).
 
 - [ ] Establish a usable Bolna text/audio integration. Inspect the OSS routing and
   lifecycle issues identified in [the source study](../research/speech-device/bolna-paths.md);
@@ -105,4 +105,4 @@ whether an app-owned/service-originated route is an acceptable product pivot.
 
 A small personalized pilot does not establish general ISL reliability, natural
 conversation or accessibility validation. No Deaf participant study has occurred;
-the [workflow](../WORKFLOW.md) keeps those limits explicit.
+the [workflow](2026-10-28-workflow.md) keeps those limits explicit.

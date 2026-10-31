@@ -1,14 +1,14 @@
 # Historical demo script — 28 October 2026
 
-> Retained as an earlier rehearsal. Use [PITCH.md](../../PITCH.md), the current
-> [slides](SLIDES.md) and [submission copy](SUBMISSION.md) for public positioning.
+> Retained as an earlier rehearsal. Use [PITCH.md](../../../PITCH.md), the current
+> [slides](../../demo/SLIDES.md) and [submission copy](../../demo/SUBMISSION.md) for public positioning.
 > Its acceptance-only Booked ending is not receptionist confirmation and must not
 > be used as proof of a completed booking.
 
 Written 28 October 2026 for the 31 October submission. Two parts:
 **(a) Call for me, attended** (about 2 minutes) and **(b) a short live-mode exchange**
-(about 1 minute). [Slides](SLIDES.md) · [Submission text](SUBMISSION.md) ·
-[Demo-day runbook](RUNBOOK.md) · [Plan](../../PLAN.md) ·
+(about 1 minute). [Slides](../../demo/SLIDES.md) · [Submission text](../../demo/SUBMISSION.md) ·
+[Demo-day runbook](2026-10-28-runbook.md) · [Plan](../../../PLAN.md) ·
 [Handoff](../handoffs/2026-10-26-ready-made-asl-recognizer.md)
 
 > **Status, 28 Oct.** Every line below was checked against the code and run through the
@@ -59,7 +59,7 @@ in a simulator screenshot.
 
 | Kind of line | Comes from |
 |---|---|
-| Receptionist lines | [PLAN §1](../../PLAN.md#the-demo-story-the-script-we-rehearse) turns 2 and 4, the same strings as `RECEPTIONIST_LINES` in `backend/fakes/scripted_call.py` |
+| Receptionist lines | [PLAN §1](../../../PLAN.md#the-demo-story-the-script-we-rehearse) turns 2 and 4, the same strings as `RECEPTIONIST_LINES` in `backend/fakes/scripted_call.py` |
 | The voice's fixed lines (disclosure, goodbye) | `DISCLOSURE`, `GOODBYE` in `backend/app/markers.py`; the disclosure is the Bolna agent's welcome message (`backend/bolna/agent.json`) |
 | The agent's lines in Call for me | `PAUSE_LINE`, `CALLBACK_LINE`, `RuleBrain.opening` and `_options_for` in `backend/app/delegate.py`; the opening always comes from the rule brain (`_open_delegate` in `backend/app/calls.py`) |
 | Live-mode drafts | `compose_template` in `backend/app/templates.py` (the template fallback) |

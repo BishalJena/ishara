@@ -1,6 +1,6 @@
 import XCTest
 
-/// Live-call edge cases (PLAN §6 T2, docs/WORKFLOW.md edge-case table) that need neither a
+/// Live-call edge cases (PLAN §6 T2, docs/archive/2026-10-28-workflow.md edge-case table) that need neither a
 /// camera nor a real call, on the fake call. Each test checks the safety rule the case is
 /// about: nothing is spoken without SEND, an approval speaks once, a stale or removed draft
 /// can't be sent, and a drop or End leaves nothing that could still be sent.

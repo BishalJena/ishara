@@ -50,7 +50,6 @@ xcuserdata/
 .playwright-mcp/
 
 # Feasibility recordings, API evidence and generated audio stay local.
-spikes/call_flow/artifacts/
 
 # Recognition validation clips, weights and generated evidence
 spikes/recognition/artifacts/

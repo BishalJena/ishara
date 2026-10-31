@@ -4,8 +4,8 @@ Executed 24 October 2026 on the development Mac. This is a **cross-signer check 
 pipeline mechanics**, not a measurement of demo accuracy: the production recognizer is
 personalised (its references are the presenting signer's own Sign Lab takes), while here
 every reference and every test clip comes from other people.
-[Runbook](../../spikes/recognition/README.md) · [Recognition record](recognition.md) ·
-[Plan](../../PLAN.md)
+[Runbook](../../../spikes/recognition/README.md) · [Recognition record](../../experiments/recognition.md) ·
+[Plan](../../../PLAN.md)
 
 ```
 silent public clip ─▶ legacy Holistic ─▶ detector cut ─▶ SignCLIP ─▶ bundle rank + decision ─▶ chip or ?
@@ -50,8 +50,8 @@ the source media and anything derived from it stays local.
 
 | Role | Source | Terms |
 |---|---|---|
-| References (17 clips, all 12 signs) | **ISLRTC Indian Sign Language Dictionary** (Govt. of India, data.gov.in, till Jan 2024), via the re-encoded mirror [silentone0725/Indian_Sign_Language_Data.gov_Rencoded](https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded): Hello, Thank You (+ Sign 2), Yes (+ Sign 2), No (+ Sign 2), Sorry (+ Signs 2, 3), Doctor, Today, Tomorrow, Morning, Afternoon, Evening, Time | ISLRTC FAQ Q23: research, teaching and ISL technology use with acknowledgement, no resale ([ledger R15](../CLAIM-LEDGER.md)); the mirror is MIT |
-| References (18) and test set B (18) | **INCLUDE** (AI4Bharat), [Zenodo 4010759](https://zenodo.org/records/4010759): folders Greetings/48. Hello, 55. Thank you; Jobs/87. Doctor; Days_and_Time/73. Today, 74. Tomorrow, 82. Morning, 83. Afternoon, 84. Evening, 86. Time (4 clips each) | CC-BY-4.0 ([ledger R16](../CLAIM-LEDGER.md)) |
+| References (17 clips, all 12 signs) | **ISLRTC Indian Sign Language Dictionary** (Govt. of India, data.gov.in, till Jan 2024), via the re-encoded mirror [silentone0725/Indian_Sign_Language_Data.gov_Rencoded](https://huggingface.co/datasets/silentone0725/Indian_Sign_Language_Data.gov_Rencoded): Hello, Thank You (+ Sign 2), Yes (+ Sign 2), No (+ Sign 2), Sorry (+ Signs 2, 3), Doctor, Today, Tomorrow, Morning, Afternoon, Evening, Time | ISLRTC FAQ Q23: research, teaching and ISL technology use with acknowledgement, no resale ([ledger R15](../../CLAIM-LEDGER.md)); the mirror is MIT |
+| References (18) and test set B (18) | **INCLUDE** (AI4Bharat), [Zenodo 4010759](https://zenodo.org/records/4010759): folders Greetings/48. Hello, 55. Thank you; Jobs/87. Doctor; Days_and_Time/73. Today, 74. Tomorrow, 82. Morning, 83. Afternoon, 84. Evening, 86. Time (4 clips each) | CC-BY-4.0 ([ledger R16](../../CLAIM-LEDGER.md)) |
 | Test set A (24) | **Pragya Gupta**, [ISL 101 Basic Words 1](https://www.youtube.com/watch?v=VtbYvVDItvg) and [Basic Words 2](https://www.youtube.com/watch?v=lffGJ29IhZQ) | standard YouTube licence |
 | Test set A | **Youth4Jobs Foundation**, [Basic ISL Greetings](https://www.youtube.com/watch?v=U5LSlcD8xPg) | standard YouTube licence |
 | Test set A | **PHIN Deaf**: [Yes and No](https://www.youtube.com/watch?v=T9XE5O_7Bmw), [Tomorrow](https://www.youtube.com/watch?v=hTmhHDFUbTk), [Today](https://www.youtube.com/watch?v=Zb2h-pZpieY), [Morning](https://www.youtube.com/watch?v=4TuRjBpBoMM), [Afternoon](https://www.youtube.com/watch?v=m-pUXfAMixM), [Evening](https://www.youtube.com/watch?v=YPZ7o80wU9k), [Time](https://www.youtube.com/watch?v=mtjse9ZT1Fw), [Doctor](https://www.youtube.com/watch?v=qeI6-V8YAKw) | standard YouTube licence |

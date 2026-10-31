@@ -27,7 +27,7 @@ struct ChipView: View {
     var body: some View {
         Button(action: onRemove) {
             HStack(spacing: 6) {
-                Text(chip.label)
+                Text(chip.title)
                     .font(.body.weight(.semibold))
                 Image(systemName: "xmark")
                     .font(.caption.weight(.bold))

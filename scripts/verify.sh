@@ -103,11 +103,6 @@ check_backend() {
   step uv run --locked pytest -q
 }
 
-check_call_flow() {
-  [[ -d spikes/call_flow ]] || skip "no spikes/call_flow"
-  step python3 -m unittest discover -s spikes/call_flow -p 'test_*.py'
-}
-
 # cd into spikes/recognition and set $python: the full README venv (.venv), else a light one
 # built from requirements-light.txt (.venv-light).
 enter_recognition() {
@@ -215,7 +210,6 @@ check_ios_app() {
 
 echo "Xcode: ${XCODE_DIR:-not found}"
 run_category "backend (format, lint, tests)" check_backend
-run_category "call_flow tests" check_call_flow
 run_category "recognition light tests" check_recognition_light
 run_category "clip-driven fallback" check_clip_fallback
 run_category "shellcheck" check_shellcheck

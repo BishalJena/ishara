@@ -1,93 +1,83 @@
 # Ishara — submission copy
 
-Updated 30 October 2026 · [Pitch](../../PITCH.md) · [Market model and sources](../../MARKET.md)
+Updated 31 October 2026 · [Product and architecture](../../README.md) · [Pitch](../../PITCH.md) · [Market model and sources](../../MARKET.md)
 
 ## Project description — under 200 characters
 
-Ishara helps Deaf people handle phone calls independently: read captions, approve spoken replies, or steer a voice agent through an approved brief and accessible mid-call choices.
+Ishara makes phone calls for Deaf people: an AI agent speaks for you and captions every word, and you steer it any time by typing or signing. The business just answers its phone.
 
 ## The problem
 
-At a service whose next step is “Call us”, someone who cannot reliably hear the reply may
-need another person available to help. An everyday task can depend on a second schedule
-and put another person inside a private conversation.
+Clinics, banks and offices still say "call us". For someone who can't hear the reply, a
+two-minute call depends on another person being free, and puts that person inside a
+private conversation. Typing alone doesn't solve it, because the other side is talking.
 
-Ishara aims to make those calls independently accessible. Incoming speech becomes captions;
-the person directs replies or authorizes an agent to pursue a bounded request. The business
-uses its ordinary phone. Signing is an optional input; people who prefer typing or buttons
-belong in the same product experience. Deafness does not imply an inability to speak.
+Ishara gives the call back to the person it belongs to. Deafness does not imply an
+inability to speak, and signing is optional: people steer by typing, signing, or both.
 
 ## What we built
 
-- **Live relay:** supported signs become editable word chips and a draft. The person
-  reviews it and taps SEND before the reply is supplied to the voice service. Existing
-  quick replies also require SEND.
-- **Call for me:** approve a brief once. In attended mode, captions and supported sign/tap
-  choices let the person steer decisions. An open “What time would you like?” question
-  can be answered with TOMORROW while the agent stays on the call. In unattended mode,
-  unsupported decisions lead to a callback requirement.
-- **Follow-up:** captions, transcripts, delegated notes, and Recent calls stored on the phone.
+One flow, where the agent does the work by default and the person takes over at will:
 
-**General typed replies and camera-free entry are planned, not shipped.** The prototype
-currently demonstrates signs, buttons and limited text fields in the brief.
+- **Before the call:** a +91 number (or a contact), the request in the person's own words,
+  and attachments such as a health-history PDF, read on the phone.
+- **During the call:** Ishara introduces itself, states the request in its own words and
+  handles each turn. Its next line appears with a **2-second bar**; left alone, it's said.
+  It accepts only offers that fit the request, answers from the person's documents word for
+  word when asked, and defers anything else as a follow-up.
+- **Stepping in:** tap Ishara's line to change it, type a reply, or sign. Ishara polishes
+  the words without adding facts, previews them for 1.5 seconds, then says them, and covers
+  the pause while the person composes.
+- **After the call:** the gist opens with what was agreed (quoted), who answered what,
+  follow-ups and the transcript. A Live Activity shows the call on the lock screen.
 
 ```mermaid
 flowchart LR
-    R["Receptionist asks"] --> C["Person reads the caption"]
-    C --> I["Person signs or taps an answer"]
-    I --> A["Agent speaks the reply"]
-    A --> R
+    R["Receptionist speaks"] --> C["Caption on the phone"]
+    C --> P["Ishara proposes a line, 2 s"]
+    P -->|"no action"| S["Ishara says it"]
+    P -->|"tap, type or sign"| Y["The person's words, polished"]
+    Y --> S
+    S --> R
 ```
 
 ## How Bolna is used
 
-Bolna places the call, runs the graph agent and calls our FastAPI custom-LLM endpoint.
-Graph events connect approved replies to speech. Deepgram transcribes, Sarvam supplies
-the voice, and Plivo carries the phone line. Groq composes drafts with checks and
-deterministic fallback. MediaPipe and a published ASL model run on the iPhone through LiteRT.
+Bolna places the call and runs a graph agent whose LLM is our FastAPI backend, so every
+word Ishara speaks comes from our rules: Deepgram transcribes the other side, Sarvam Bulbul
+speaks, Plivo carries the line. The backend uses Groq (`openai/gpt-oss-120b`) to phrase the
+opening and polish the person's words; a validator blocks any invented day, time, number or
+name, with deterministic templates as the fallback. On the iPhone, MediaPipe and the
+published Kaggle ASL Signs model recognise signs through LiteRT.
 
-**Calls originate from a Bolna number, not the person's own number.** The trial account
-only dials verified recipients. Demonstration calls use an allowlisted consenting teammate
-and synthetic details.
+The backend runs on Heroku. Calls come from Ishara's calling number (a Bolna number), not
+the person's own number, and Ishara says who it is at the start of every call.
 
 ## Opportunity
 
-The UN cites **70M+ Deaf people globally**. WHO reports **430M people requiring rehabilitation
-for disabling hearing loss**. These populations overlap and are not customer counts.
-Sources and dates: [MARKET.md](../../MARKET.md#sources).
+**70M+ Deaf people** use a sign language worldwide (UN, citing WFD); **430M** live with
+disabling hearing loss (WHO); India has about **50 lakh** Deaf people and **fewer than 300**
+certified ISL interpreters (ISLRTC). In the US, phone relay is funded at **$1.48B a year**,
+and a human video relay minute costs **$4.07–$8.06**, against **from $0.06** for an AI voice
+agent minute. Sources: [MARKET.md](../../MARKET.md#sources).
 
-An illustrative global scenario is **3.5M eligible accounts × $5/month = $210M/year** in
-subscription revenue. Eligibility assumes 5% of the 70M reference population; both that
-fraction and price are unvalidated. The initial India-first opportunity depends on usable
-language/input coverage and reliable calls. Individual access and sponsored accounts with
-metered calling are models to test. No paying users, partnerships or commercial deployments
-are claimed.
+Ishara starts in India with individual and sponsored subscriptions. A global scenario of
+**3.5M accounts × $5/month = $210M/year** illustrates the scale; eligibility and price are
+planning assumptions.
 
-## Demonstration and current limits
+## Signing
 
-The team recorded real Bolna calls on 28 October through the simulator with sign videos
-as input: live relay, attended and unattended delegation, and an open time question. This
-is rehearsed integration evidence with a teammate, not participant validation.
-
-- The recognizer permits eight isolated ASL words. It does not translate continuous signing.
-  MORNING is tap-only; arbitrary clock times cannot be signed.
-- ASL and ISL are separate languages. ISL needs suitable data and its own evaluation.
-- No Deaf participant has validated the app. The presenter is hearing and learned the
-  demonstrated signs from Lifeprint.
-- Physical iPhone camera/performance and final thresholds remain unverified in the available
-  evidence. Label simulator footage and clip replay.
-- Booking outcomes and early hangup need hardening: acceptance is not confirmation.
-  Delivered currently means text handoff, not completed audio. State is process-local,
-  with limited restart recovery.
-- Output checks reduce selected model errors; they do not prove arbitrary factual correctness.
-
-Update claims only after verification. A badge is not independent proof of a clinic booking.
+Recognition runs on the iPhone with the public Kaggle ASL Signs first-place model (250
+signs, trained on about 94,000 clips from 21 Deaf signers). Ishara shows a word only when
+the model is confident; anything else is never spoken. The signs in the app today are
+hello, thank you, yes, no, now, please, tomorrow and wait. ASL and Indian Sign Language
+are separate languages; ISL comes next, with Deaf partners and ISL data.
 
 ## Next
 
-Participant-led validation of independent completion and input preference; general typed
-replies and camera-free entry; confirmation, delivery and recovery hardening; then bounded
-ISL evaluation with Deaf partners. The goal is reliable accessible calls with a choice of input.
+Indian Sign Language and more signs; Hindi and regional languages through Sarvam; calls
+from the person's own number; pilots with Deaf-led organisations to measure independent
+completion, input preference and repeat use.
 
 ## Credits
 

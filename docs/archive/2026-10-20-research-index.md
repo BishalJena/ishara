@@ -1,9 +1,9 @@
 # Ishara research entrypoint
 
 > Historical sequence of research updates. Use the [research index](../research/README.md)
-> for navigation and the [handoff](../HANDOFF.md) for the current state.
+> for navigation and the [handoff](2026-10-28-handoff.md) for the current state.
 
-New to the project? Start with the [teammate handoff](../HANDOFF.md) for current
+New to the project? Start with the [teammate handoff](2026-10-28-handoff.md) for current
 capability, execution results, setup and next tasks. This index preserves the
 dated research and corrections that led to those decisions.
 
@@ -91,7 +91,7 @@ Read the [new product-directions report](../research/product-directions.md) firs
 
 Pinned OSS source now establishes an engineerable **text-input/audio-output Bolna transport with marks and clear messages**. Inspected routing/lifecycle defects mean it is not configuration-only or runtime-validated. The older hosted standalone-TTS not-found result remains valid for those checked hosted docs; it does not rule out source integration. Current research proposes two decisive engineering experiments for a future authorized build phase, rather than asking the founder to solve the integration.
 
-The [earlier feasibility report](2026-10-18-feasibility.md), [claim ledger](../CLAIM-LEDGER.md), [workflow](../WORKFLOW.md) and [validation plan](../../PLAN.md) preserve dated findings. Their hard no-pivot scope, optional-Bolna wording and unknown mandatory-use statements are historical and superseded by this notice and the new report. Platform audio boundaries and unexecuted empirical gates still apply. Impact/seamlessness are the user's working product criteria; no official judging weights or winning probability were established.
+The [earlier feasibility report](2026-10-18-feasibility.md), [claim ledger](../CLAIM-LEDGER.md), [workflow](2026-10-28-workflow.md) and [validation plan](../../PLAN.md) preserve dated findings. Their hard no-pivot scope, optional-Bolna wording and unknown mandatory-use statements are historical and superseded by this notice and the new report. Platform audio boundaries and unexecuted empirical gates still apply. Impact/seamlessness are the user's working product criteria; no official judging weights or winning probability were established.
 
 ## Corrections that govern the next phase
 
@@ -118,7 +118,7 @@ The iPhone 17 is confirmed, installed iOS is not. The current consulted Apple fe
 | [Bolna integration-path note](../research/speech-device/bolna-paths.md) | Pinned OSS input/output/lifecycle findings, hosted tools/events and exact supported-versus-engineerable boundaries |
 | [Demo/recognition feasibility note](../research/speech-device/demo-feasibility.md) | Checkpoint/label-map audit, model/data limits, changed-offer repair demonstration and evidence priorities |
 | [Narrative feasibility report](2026-10-18-feasibility.md) | Recommendation, rationale, alternatives, engineering gaps and founder questions |
-| [Working workflow](../WORKFLOW.md) | Provisional persona, existing-call steps, added friction, user-owned decisions, conceptual data flow and repair |
+| [Working workflow](2026-10-28-workflow.md) | Provisional persona, existing-call steps, added friction, user-owned decisions, conceptual data flow and repair |
 | [Validation plan](../../PLAN.md) | Ordered device/data/model/provider gates, measurements and decision implications; none of the future experiments executed |
 | [Claim ledger and complete source inventory](../CLAIM-LEDGER.md) | Stable claim IDs, exact URLs, evidence limits, source conflicts and every external URL retained from the topic notes |
 | [iOS and workflow note](../research/speech-device/ios-and-workflow.md) | AAC, Phone ownership, captions/translation, camera/Dynamic Island, device and future face-to-face ASR constraints |
