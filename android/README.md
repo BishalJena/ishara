@@ -5,13 +5,20 @@ Kotlin + Jetpack Compose app. The shared logic is the same Swift code the iOS ap
 with the Swift SDK for Android into `libIsharaCore.so`. Kotlin calls it through a small
 hand-written JNI layer (`android/swift`); commands and results cross as JSON strings.
 
-Right now this is only the foundation: a debug screen and smoke tests that prove the bridge
-works. The real screens, the call flow and recognition come later.
+So far: the bridge, the call layer (CallSession's `TurnStore`, `BackendClient` and `LiveCall`
+behind a Kotlin facade, plus the ported live call driver) and a debug screen. The real screens,
+the fake demo call and recognition come later.
 
 ## Layout
 
-- `app/`: the Android app (`ai.ishara.demo`). `core/IsharaCore.kt` is the Kotlin side of the bridge.
-- `swift/`: Swift package `IsharaAndroidBridge`, product `IsharaCore` (JNI entry points, main-queue pump, event callback).
+- `app/`: the Android app (`ai.ishara.demo`).
+  - `core/IsharaCore.kt`: the JNI functions; `core/CoreEvents.kt`: routes Swift events by their `type`.
+  - `core/call/`: the call layer over CallSession. `CallCore` starts live calls and local sessions;
+    a session is a `CallStore` (snapshot `StateFlow` plus `TurnStore` actions).
+  - `call/`, `models/`, `app/`: ports of the iOS app target's `CallDriver`, `LiveCallDriver`, `CallSetup`
+    and `AppConfig` (the rule: Swift *packages* are shared, the iOS *app target* is ported to Kotlin).
+- `swift/`: Swift package `IsharaAndroidBridge`, product `IsharaCore` (JNI entry points, main-queue pump,
+  event callback, and `Call/`: the session registry, snapshots and commands).
 - The recognition bundle is not copied into the repo: Gradle packages
   `ios/Ishara/Resources/asl-bundle.json` as the asset `asl-bundle.json`.
 
@@ -36,6 +43,16 @@ works. The real screens, the call flow and recognition come later.
 
    The same settings can come from `SWIFT_BIN`, `SWIFT_SDK` and `ANDROID_NDK_HOME`.
 
+4. Optional, for live calls: add the backend to `android/local.properties` (it becomes BuildConfig
+   fields; never commit it):
+
+   ```properties
+   ishara.backendUrl=http://10.0.2.2:8000   # the emulator's address for a backend on this Mac
+   ishara.appToken=<APP_TOKEN>
+   ```
+
+   Without them `AppConfig.fromBuildConfig()` fails and the app must use the fake call, like iOS.
+
 ## Build, install, test
 
 ```sh
@@ -43,7 +60,8 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@17
 cd android
 ./gradlew :app:assembleDebug                 # also builds libIsharaCore.so (buildSwiftCoreDebug)
 ./gradlew :app:installDebug                  # needs a device or emulator (arm64 only)
-./gradlew :app:connectedDebugAndroidTest     # bridge smoke tests on the device
+./gradlew :app:testDebugUnitTest             # JVM tests (driver, config, wire format)
+./gradlew :app:connectedDebugAndroidTest     # bridge and call tests on the device (fake backend in-process)
 adb shell am start -n ai.ishara.demo/.MainActivity
 ```
 
@@ -60,3 +78,25 @@ into the APK. Only arm64-v8a is built.
 - The Swift runtime is linked dynamically (`--static-swift-stdlib` failed to link with 6.4.2), so
   the APK carries about 70 MB of `.so` files; ICU alone is 40 MB.
 - AndroidX libraries newer than core 1.18 / Compose BOM 2026.06 need compileSdk 37; the app stays on 36.
+  OkHttp 5.5 (mockwebserver3, test only) needs 37 too, so it stays on 5.4.
+
+## Call layer bridge
+
+- Each call session in Swift wraps one `TurnStore`. **Live** sessions come from `CallCore.startCall`
+  (`POST /calls` and the socket, all in Swift). **Local** sessions (`CallCore.startLocalSession`) have no
+  socket: Kotlin feeds backend messages with `receive` and reads what the store sends from `outgoing`.
+  The fake demo call and tests use them, so every path runs the same Swift safety rules.
+- After every change Swift sends a full snapshot (`{"type":"state",...}`), at most one per main-queue
+  turn, so a snapshot lands just after the action that caused it, not inside it.
+- Session actions must run on the main thread (they throw `IllegalStateException` otherwise). Async
+  work (start call, brief, notes, reconnect, last close) answers with a `result` event for its request id.
+- `outgoing` and `connectionLost` are buffered channels: nothing is lost before they are collected,
+  and each should be collected once.
+
+## Known gaps
+
+- **Close codes are lost on Android.** swift-corelibs-foundation's `URLSessionWebSocketTask` turns any
+  close code it has no case for into 1003 (`CloseCode(rawValue:) ?? .unsupportedData` in
+  `WebSocketURLProtocol.swift`), so the backend's 4401 / 4404 / 4409 reach CallSession as a plain drop.
+  `LiveCallDriver` then reconnects (3 tries) instead of stopping with the refusal's reason, and a 4409
+  ("connected somewhere else") socket is taken back. iOS is not affected.
