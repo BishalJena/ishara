@@ -5,6 +5,7 @@ import javax.inject.Inject
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 // The Swift SDK for Android targets this API level; the app's minSdk must match it.
@@ -17,6 +18,9 @@ val localProperties = Properties().apply {
 
 fun toolchainSetting(property: String, environment: String, default: String): String =
     localProperties.getProperty(property) ?: providers.environmentVariable(environment).orNull ?: default
+
+fun buildConfigString(value: String?): String =
+    "\"" + value.orEmpty().trim().replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
 val home: String = System.getProperty("user.home")
 val swiftBinPath = toolchainSetting("swift.bin", "SWIFT_BIN", "$home/.swiftly/bin/swift")
@@ -43,10 +47,14 @@ android {
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += "arm64-v8a" }
+        // Untracked backend settings; empty when absent, and the app then can't place a live call.
+        buildConfigField("String", "ISHARA_BACKEND_URL", buildConfigString(localProperties.getProperty("ishara.backendUrl")))
+        buildConfigField("String", "ISHARA_APP_TOKEN", buildConfigString(localProperties.getProperty("ishara.appToken")))
     }
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     compileOptions {
@@ -215,9 +223,16 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
     debugImplementation(libs.androidx.compose.ui.tooling)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.okhttp.mockwebserver3)
 }
