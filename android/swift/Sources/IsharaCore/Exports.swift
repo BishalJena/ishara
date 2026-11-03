@@ -1,6 +1,7 @@
 import CAndroidBridge
 
 // JNI entry points for `ai.ishara.demo.core.IsharaCore` (a Kotlin object, so each call gets its instance).
+// The call layer's entry points are in Call/CallExports.swift.
 
 @_cdecl("Java_ai_ishara_demo_core_IsharaCore_installMainQueuePump")
 public func installMainQueuePump(_ env: JNIEnvPointer, _ this: jobject?) {

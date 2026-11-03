@@ -29,4 +29,26 @@ object IsharaCore {
     /** Runs RecognitionCore's open-set matcher; throws IllegalArgumentException for invalid input. */
     external fun matchLogits(bundleJson: String, logitsJson: String, qualityJson: String): String
 
+    // Call layer (android/swift/Sources/IsharaCore/Call). Use it through `core.call.CallCore`.
+    // Sync functions must run on the main thread; async ones answer with a `result` event.
+
+    external fun configureBackend(baseUrl: String, appToken: String)
+
+    external fun startLocalSession(requestJson: String): String
+
+    external fun startLiveCall(requestId: Long, requestJson: String)
+
+    external fun createBrief(requestId: Long, requestJson: String)
+
+    external fun fetchNotes(requestId: Long, callId: String)
+
+    external fun connect(requestId: Long, sessionId: Int)
+
+    external fun lastClose(requestId: Long, sessionId: Int)
+
+    external fun command(sessionId: Int, commandJson: String): String
+
+    external fun receive(sessionId: Int, messageJson: String)
+
+    external fun closeSession(sessionId: Int)
 }
