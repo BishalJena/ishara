@@ -1,5 +1,6 @@
 package ai.ishara.demo
 
+import ai.ishara.demo.core.CoreEvents
 import ai.ishara.demo.core.IsharaCore
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -39,9 +40,9 @@ class MainActivity : ComponentActivity() {
 private fun CoreSmokeScreen(bundleJson: String) {
     var echo by remember { mutableStateOf("waiting for the main actor…") }
     DisposableEffect(Unit) {
-        IsharaCore.setListener { json -> echo = json }
+        val subscription = CoreEvents.subscribe("echo") { event -> echo = event.toString() }
         IsharaCore.echoOnMain("hello from Kotlin")
-        onDispose { IsharaCore.setListener(null) }
+        onDispose { subscription.close() }
     }
     val match = remember(bundleJson) {
         IsharaCore.matchLogits(

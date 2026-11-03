@@ -23,9 +23,11 @@ class IsharaCoreTest {
     }
     private val goodQuality = """{"poseFraction":1.0,"handFraction":0.9}"""
 
+    private val subscriptions = mutableListOf<AutoCloseable>()
+
     @After
-    fun clearListener() {
-        IsharaCore.setListener(null)
+    fun unsubscribe() {
+        subscriptions.forEach(AutoCloseable::close)
     }
 
     @Test
@@ -37,8 +39,8 @@ class IsharaCoreTest {
     fun echoOnMainIsDeliveredFromTheMainThread() {
         data class Delivery(val json: String, val onMainLooper: Boolean)
         val deliveries = LinkedBlockingQueue<Delivery>()
-        IsharaCore.setListener { json ->
-            deliveries.add(Delivery(json, Looper.myLooper() == Looper.getMainLooper()))
+        subscriptions += CoreEvents.subscribe("echo") { event ->
+            deliveries.add(Delivery(event.toString(), Looper.myLooper() == Looper.getMainLooper()))
         }
         val message = "héllo \uD83D\uDC4B \"quoted\""
 

@@ -18,13 +18,15 @@ object IsharaCore {
      */
     external fun installMainQueuePump()
 
+    /** The single event listener; [CoreEvents] owns it and routes events by their `type`. */
     external fun setListener(listener: CoreEventListener?)
 
     external fun version(): String
 
-    /** Hops to Swift's main actor and emits `{"echo": message, "onMainThread": Boolean}`. */
+    /** Hops to Swift's main actor and emits `{"type":"echo","echo": message, "onMainThread": Boolean}`. */
     external fun echoOnMain(message: String)
 
     /** Runs RecognitionCore's open-set matcher; throws IllegalArgumentException for invalid input. */
     external fun matchLogits(bundleJson: String, logitsJson: String, qualityJson: String): String
+
 }

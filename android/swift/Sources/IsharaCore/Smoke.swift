@@ -5,6 +5,7 @@ import RecognitionCore
 let coreVersion = "IsharaCore 0.1.0 (logits bundle v\(LogitsBundle.supportedVersion))"
 
 struct EchoEvent: Encodable {
+    let type = "echo"
     let echo: String
     let onMainThread: Bool
 }
