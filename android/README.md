@@ -6,8 +6,10 @@ with the Swift SDK for Android into `libIsharaCore.so`. Kotlin calls it through 
 hand-written JNI layer (`android/swift`); commands and results cross as JSON strings.
 
 So far: the bridge, the call layer (CallSession's `TurnStore`, `BackendClient` and `LiveCall`
-behind a Kotlin facade, plus the ported live call driver) and a debug screen. The real screens,
-the fake demo call and recognition come later.
+behind a Kotlin facade), the ported app logic (live and fake call drivers, the call, brief and
+notes models, call history, settings, launch options) and the app shell with shared components.
+The screens are working placeholders that the next phase replaces; camera recognition plugs in
+through `RecognitionPipelineFactory`.
 
 ## Layout
 
@@ -15,8 +17,13 @@ the fake demo call and recognition come later.
   - `core/IsharaCore.kt`: the JNI functions; `core/CoreEvents.kt`: routes Swift events by their `type`.
   - `core/call/`: the call layer over CallSession. `CallCore` starts live calls and local sessions;
     a session is a `CallStore` (snapshot `StateFlow` plus `TurnStore` actions).
-  - `call/`, `models/`, `app/`: ports of the iOS app target's `CallDriver`, `LiveCallDriver`, `CallSetup`
-    and `AppConfig` (the rule: Swift *packages* are shared, the iOS *app target* is ported to Kotlin).
+  - `call/`, `models/`, `app/`, `recognition/`: ports of the iOS app target (the rule: Swift *packages*
+    are shared, the iOS *app target* is ported to Kotlin). `call/FakeCallDriver` plays the demo call
+    into a local session's real `TurnStore`; `call/ActiveCallViewModel` maps its snapshot onto the call
+    screens; `app/AppNavigator` is iOS `AppRootView`'s routing and `app/AppRoot` shows the routes.
+  - `ui/components/`: shared, stateless Compose pieces tagged with the iOS accessibility identifiers.
+  - `ui/home/`, `ui/classic/`, `ui/steer/`, `ui/notes/`: one file per screen, plus the screen models
+    (`BriefModel`, `NotesModel`, `SteerLogic`).
 - `swift/`: Swift package `IsharaAndroidBridge`, product `IsharaCore` (JNI entry points, main-queue pump,
   event callback, and `Call/`: the session registry, snapshots and commands).
 - The recognition bundle is not copied into the repo: Gradle packages
@@ -61,9 +68,18 @@ cd android
 ./gradlew :app:assembleDebug                 # also builds libIsharaCore.so (buildSwiftCoreDebug)
 ./gradlew :app:installDebug                  # needs a device or emulator (arm64 only)
 ./gradlew :app:testDebugUnitTest             # JVM tests (driver, config, wire format)
-./gradlew :app:connectedDebugAndroidTest     # bridge and call tests on the device (fake backend in-process)
-adb shell am start -n ai.ishara.demo/.MainActivity
+./gradlew :app:connectedDebugAndroidTest     # bridge, call and UI tests on the device (fake backend in-process)
+adb shell am start -n ai.ishara.demo/.MainActivity --es IsharaDriver fake --es IsharaFlow classic
 ```
+
+Launch extras use the iOS launch argument names (`app/DemoLaunchOptions.kt`): `IsharaDriver fake|live`
+(live by default; without backend settings the fake call stands in and Home says why),
+`IsharaFlow steer|classic`, `IsharaRecognition scripted|pipeline`, `IsharaReplay "hello,?,tomorrow?,frame"`,
+`IsharaFakeNotDelivered`, `IsharaFakeInterrupt`, `IsharaFakeConnectionDrop reconnects|staysDown`,
+`IsharaFakeOpenQuestion tap|<time word>`, `IsharaFakeOpenQuestionText`, `IsharaFakeBolnaSummary <s>`,
+`IsharaFakeTimeScale <x>`, `IsharaFixture <state>` (debug), `IsharaCallHistory memory|<dir>`,
+`IsharaSampleSigns <dir>` and `IsharaUITestName <name>` (iOS `ISHARA_UITEST_NAME`). Booleans may be
+`--ez` or `--es ... YES`.
 
 `buildSwiftCoreDebug` / `buildSwiftCoreRelease` run `swift build` in `android/swift` and copy
 `libIsharaCore.so` plus every library it needs (Swift runtime, Foundation, `libc++_shared.so`)
@@ -91,7 +107,9 @@ into the APK. Only arm64-v8a is built.
 - Session actions must run on the main thread (they throw `IllegalStateException` otherwise). Async
   work (start call, brief, notes, reconnect, last close) answers with a `result` event for its request id.
 - `outgoing` and `connectionLost` are buffered channels: nothing is lost before they are collected,
-  and each should be collected once.
+  and each should be collected once. A local session's `sink`, when set, takes the store's messages
+  instead, inside the action that sent them, like iOS's `OutgoingMessageSink`: the fake call needs that
+  so its goodbye caption lands before `end()` closes the store.
 - The call socket runs on OkHttp (`core/call/OkHttpWebSockets.kt`), driven by Swift's
   `KotlinWebSocketTransport` over JNI; REST stays on Swift's URLSession. Swift's own Android
   WebSocket turns unknown close codes into 1003, which would hide the backend's 4401 / 4404 / 4409.
