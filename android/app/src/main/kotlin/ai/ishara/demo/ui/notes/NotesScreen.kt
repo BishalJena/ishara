@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
@@ -104,11 +105,11 @@ fun NotesSections(notes: CallNotes, contactName: String) {
             }
         }
         if (notes.summary.isNotEmpty()) {
-            FormSection(header = "What happened") { Rows(notes.summary) { Text(it, style = IsharaType.body) } }
+            FormSection(header = "What happened") { NotesRows(notes.summary) { Text(it, style = IsharaType.body) } }
         }
         if (notes.openQuestions.isNotEmpty()) {
             FormSection(header = "Still open") {
-                Rows(notes.openQuestions) { IconLabel(it, Icons.Filled.Info, color = IsharaColors.Orange) }
+                NotesRows(notes.openQuestions) { IconLabel(it, Icons.AutoMirrored.Outlined.HelpOutline, color = IsharaColors.Orange) }
             }
         }
         notes.brief?.let { brief ->
@@ -118,7 +119,7 @@ fun NotesSections(notes: CallNotes, contactName: String) {
             if (notes.transcript.isEmpty()) {
                 NotesRow { Text("Nothing was heard on the call.", style = IsharaType.body, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
-            Rows(notes.transcript) { entry ->
+            NotesRows(notes.transcript) { entry ->
                 val isAgent = entry.speaker == CaptionSpeaker.AGENT
                 TranscriptRow(if (isAgent) "Agent (for you)" else "They said", entry.text, isAgent)
             }
@@ -134,8 +135,9 @@ fun NotesSections(notes: CallNotes, contactName: String) {
     }
 }
 
+/** The rows of a notes section, divided like a Form's. */
 @Composable
-private fun <T> Rows(items: List<T>, row: @Composable (T) -> Unit) {
+internal fun <T> NotesRows(items: List<T>, row: @Composable (T) -> Unit) {
     items.forEachIndexed { index, item ->
         if (index > 0) FormDivider()
         NotesRow { row(item) }
@@ -143,7 +145,7 @@ private fun <T> Rows(items: List<T>, row: @Composable (T) -> Unit) {
 }
 
 @Composable
-private fun NotesRow(content: @Composable () -> Unit) {
+internal fun NotesRow(content: @Composable () -> Unit) {
     Column(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(horizontal = 16.dp, vertical = 11.dp)) { content() }
 }
 
