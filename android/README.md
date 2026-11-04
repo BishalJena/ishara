@@ -188,6 +188,14 @@ ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest   # on the
   call starts. Android asks for permissions only from an Activity, so the screens ask.
 - No contacts permission: the picker hands back just the picked number.
 - Only `arm64-v8a`, so no x86_64 emulators. The SignCLIP / Core ML fallback recognizer isn't ported.
+- **Test mode reads the call aloud.** With the fake call (Home says "Test mode"), the phone reads
+  Ishara's side of it with Android's on-device TextToSpeech: the agent's own lines and your replies
+  once the call has spoken them, each once. Never a draft, a preview or the receptionist; it stops
+  when the call ends or you leave the call screen. A real call is never voiced on the phone (the
+  receptionist hears it on the line, you read the captions).
+- **Call screens:** the classic call shows a small camera indicator in the status bar (green
+  watching, amber signing, red can't see you) instead of the camera card; the full preview is on
+  Get ready. Once a call ends the transcript fills the screen.
 
 ## Things to know
 
@@ -198,10 +206,12 @@ ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest   # on the
 - The Swift runtime is linked dynamically (`--static-swift-stdlib` failed to link with 6.4.2), so
   the APK carries about 70 MB of `.so` files; ICU alone is 40 MB.
 - AndroidX libraries newer than core 1.18 / Compose BOM 2026.06 need compileSdk 37; the app stays on 36.
-- The classic screens are ports of the SwiftUI views, which stay the spec (layout order, strings,
-  colours). SF Symbols become Material icons from `material-icons-extended` (the BOM's 1.7.8). UI tests
-  for the classic and Call for me flows live in `androidTest/.../ui/classic` (they mirror
-  `ios/IsharaUITests`); `CallLayoutUiTest` sets the system font scale to 2.0 and restores it.
+- The classic screens are ports of the SwiftUI views, which stay the spec for strings and flow;
+  sizes follow Material 3. Buttons come in tiers (`ui/components/IsharaButton.kt`: one primary per
+  screen, then tonal, text, destructive for Stop, icon), all with 48 dp targets. SF Symbols
+  become Material icons from `material-icons-extended` (the BOM's 1.7.8). UI tests for the classic
+  and Call for me flows live in `androidTest/.../ui/classic` (they mirror `ios/IsharaUITests`);
+  `CallLayoutUiTest` sets the system font scale to 2.0 and restores it.
   OkHttp 5.5 needs 37 too, so OkHttp and mockwebserver3 stay on 5.4.
 
 ## Recognition
