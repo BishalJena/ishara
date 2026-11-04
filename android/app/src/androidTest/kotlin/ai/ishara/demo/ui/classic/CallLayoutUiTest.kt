@@ -5,6 +5,7 @@ import ai.ishara.demo.ui.classic.Turns.TURN3
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -14,7 +15,8 @@ import org.junit.runner.RunWith
 /**
  * The call screen's layout rules at the default and the largest font scale (Android's Dynamic
  * Type), on the debug fixtures: the sentence SEND or STOP acts on is wholly readable right
- * above its button, and the controls that matter stay on screen. Mirrors iOS
+ * above its button, the signing video is never dropped, and the controls that matter stay on
+ * screen. Mirrors iOS
  * `testSentenceStaysBesideSendAndStopAtAccessibilityTextSizes` and the camera-above-the-question checks.
  */
 @RunWith(AndroidJUnit4::class)
@@ -34,16 +36,33 @@ class CallLayoutUiTest {
             assertTrue(app.exists("call.draft", sentence))
             app.assertFullyVisible("call.draft", above = "call.send")
             app.assertFullyVisible("call.status", above = "call.actionBar")
+            app.assertFullyVisible("call.camera", above = "call.actionBar")
             app.closeApp()
         }
         app.launch("IsharaFixture" to "speaking")
         app.waitFor("call.stop")
         assertTrue(app.exists("call.speaking", TURN3))
         app.assertFullyVisible("call.speaking", above = "call.stop")
+        app.assertFullyVisible("call.camera", above = "call.actionBar")
     }
 
     @Test
     fun sentenceStaysBesideSendAndStop() = assertSentenceBesideSendAndStop()
+
+    /** Signing then speaking, the video keeps its size and place across, so nothing jumps under the user's hands. */
+    @Test
+    fun videoKeepsItsSizeFromSigningToSpeaking() {
+        app.launch("IsharaFixture" to "signing")
+        app.waitFor("call.send")
+        val signing = app.bounds("call.camera")
+        app.closeApp()
+        app.launch("IsharaFixture" to "speaking")
+        app.waitFor("call.stop")
+        val speaking = app.bounds("call.camera")
+        assertEquals("the video moved sideways or changed size", signing.width, speaking.width, 0.5f)
+        assertEquals(signing.height, speaking.height, 0.5f)
+        assertEquals(signing.left, speaking.left, 0.5f)
+    }
 
     @Test
     fun sentenceStaysBesideSendAndStopAtTheLargestFontScale() {
@@ -71,9 +90,9 @@ class CallLayoutUiTest {
         app.waitGone("chip.afternoon")
     }
 
-    /** The user signs the answer, so the camera indicator stays wholly above the agent's question card. */
+    /** The user signs the answer, so the video stays wholly above the agent's question card. */
     @Test
-    fun cameraIndicatorStaysInViewAboveTheTimeQuestion() {
+    fun cameraVideoStaysInViewAboveTheTimeQuestion() {
         val transcript = "sorry about the wait so what time would will would you like to come in " +
             "tomorrow or would the morning or later on in the afternoon suit her better do you think"
         app.launch("IsharaFakeOpenQuestion" to "tap", "IsharaFakeOpenQuestionText" to transcript, timeScale = "2")
