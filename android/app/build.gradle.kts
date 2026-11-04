@@ -24,14 +24,20 @@ fun toolchainSetting(property: String, environment: String, default: String): St
 fun buildConfigString(value: String?): String =
     "\"" + value.orEmpty().trim().replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
+// Defaults suit a Mac set up as in android/README.md; elsewhere (Linux, CI) Swift comes from the
+// PATH and the NDK from the Android SDK, unless local.properties or the environment say otherwise.
 val home: String = System.getProperty("user.home")
-val swiftBinPath = toolchainSetting("swift.bin", "SWIFT_BIN", "$home/.swiftly/bin/swift")
-val swiftSdk = toolchainSetting("swift.sdk", "SWIFT_SDK", "swift-6.4.2-RELEASE_android")
-val ndkDirPath = toolchainSetting(
-    "android.ndk", "ANDROID_NDK_HOME", "/opt/homebrew/share/android-commandlinetools/ndk/30.0.16248370",
+val swiftOnPath: String? = System.getenv("PATH").orEmpty().split(File.pathSeparator)
+    .map { File(it, "swift") }.firstOrNull { it.canExecute() }?.path
+val swiftBinPath = toolchainSetting(
+    "swift.bin", "SWIFT_BIN",
+    File(home, ".swiftly/bin/swift").takeIf { it.canExecute() }?.path ?: swiftOnPath ?: "$home/.swiftly/bin/swift",
 )
-val swiftRuntimeLibDir =
-    "$home/Library/org.swift.swiftpm/swift-sdks/$swiftSdk.artifactbundle/swift-android/swift-resources/usr/lib/swift-aarch64/android"
+val swiftSdkName = toolchainSetting("swift.sdk", "SWIFT_SDK", "swift-6.4.2-RELEASE_android")
+val androidSdkDir = localProperties.getProperty("sdk.dir")
+    ?: providers.environmentVariable("ANDROID_HOME").orNull
+    ?: "/opt/homebrew/share/android-commandlinetools"
+val ndkDirPath = toolchainSetting("android.ndk", "ANDROID_NDK_HOME", "$androidSdkDir/ndk/30.0.16248370")
 
 android {
     namespace = "ai.ishara.demo"
@@ -91,8 +97,9 @@ abstract class BuildSwiftCore @Inject constructor(
     @get:Input
     abstract val swiftBin: Property<String>
 
+    /** The installed Swift SDK for Android (`swift sdk list`); its runtime libraries ship in the APK. */
     @get:Input
-    abstract val runtimeLibDir: Property<String>
+    abstract val swiftSdk: Property<String>
 
     @get:Input
     abstract val ndkDir: Property<String>
@@ -104,13 +111,13 @@ abstract class BuildSwiftCore @Inject constructor(
     fun build() {
         val swift = File(swiftBin.get())
         val ndk = File(ndkDir.get())
-        val runtime = File(runtimeLibDir.get())
         if (!swift.canExecute()) {
             throw GradleException("Swift not found at $swift. Set swift.bin in android/local.properties or SWIFT_BIN.")
         }
         if (!ndk.isDirectory) {
             throw GradleException("Android NDK not found at $ndk. Set android.ndk in android/local.properties or ANDROID_NDK_HOME.")
         }
+        val runtime = swiftRuntimeDir(swift)
         if (!runtime.isDirectory) {
             throw GradleException("Swift SDK runtime not found at $runtime. Set swift.sdk in android/local.properties or SWIFT_SDK.")
         }
@@ -156,6 +163,25 @@ abstract class BuildSwiftCore @Inject constructor(
             from(shipped.values)
             into(outputDir.dir("arm64-v8a"))
         }
+    }
+
+    /** Asks SwiftPM where the SDK is installed (it differs between macOS and Linux). */
+    private fun swiftRuntimeDir(swift: File): File {
+        val output = ByteArrayOutputStream()
+        val result = execOperations.exec {
+            commandLine(swift.path, "sdk", "configure", "--show-configuration", swiftSdk.get(), triple.get())
+            standardOutput = output
+            errorOutput = output
+            isIgnoreExitValue = true
+        }
+        val resources = output.toString().lineSequence().firstNotNullOfOrNull { it.substringAfter("swiftResourcesPath: ", "").ifEmpty { null } }
+        if (result.exitValue != 0 || resources == null) {
+            throw GradleException(
+                "Swift SDK ${swiftSdk.get()} for ${triple.get()} is not installed for $swift " +
+                    "(set swift.sdk in android/local.properties or SWIFT_SDK):\n$output",
+            )
+        }
+        return File(resources.trim(), "android")
     }
 
     private fun neededLibraries(readelf: File, library: File): List<String> {
@@ -231,7 +257,7 @@ val buildSwiftCore = listOf("debug", "release").associateWith { configuration ->
         this.configuration.set(configuration)
         triple.set(swiftTriple)
         swiftBin.set(swiftBinPath)
-        runtimeLibDir.set(swiftRuntimeLibDir)
+        swiftSdk.set(swiftSdkName)
         ndkDir.set(ndkDirPath)
         outputDir.set(layout.buildDirectory.dir("swift/$configuration/jniLibs"))
     }
