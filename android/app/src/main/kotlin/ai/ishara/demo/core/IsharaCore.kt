@@ -51,4 +51,13 @@ object IsharaCore {
     external fun receive(sessionId: Int, messageJson: String)
 
     external fun closeSession(sessionId: Int)
+
+    // Call sockets: Swift's transport drives `call.OkHttpWebSockets`, which reports back here.
+
+    external fun setSocketBridge(bridge: Any)
+
+    external fun socketMessage(socketId: Long, text: String)
+
+    /** [code] is the server's close code, or negative when no close frame arrived. */
+    external fun socketClosed(socketId: Long, code: Int)
 }

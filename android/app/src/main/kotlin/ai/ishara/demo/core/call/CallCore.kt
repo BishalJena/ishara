@@ -36,6 +36,7 @@ object CallCore : CallBackend {
     private val sessions = ConcurrentHashMap<Int, CallSessionHandle>()
 
     init {
+        IsharaCore.setSocketBridge(OkHttpWebSockets)
         CoreEvents.subscribe("result") { event -> pending.remove(event.getValue("requestId").jsonPrimitive.long)?.invoke(event) }
         CoreEvents.subscribe("state") { event ->
             session(event)?.update(CoreJson.decodeFromJsonElement(CallSnapshot.serializer(), event.getValue("snapshot")))
