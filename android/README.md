@@ -159,3 +159,24 @@ clips skip those tests.
 - Debug builds allow cleartext http/ws to `10.0.2.2`, `127.0.0.1` and `localhost` only
   (`src/debug/res/xml/network_security_config.xml`). OkHttp enforces Android's network security
   policy and Swift's URLSession doesn't, so a backend at a LAN address needs adding there.
+
+## Steer screens
+
+Ports of iOS `SetupView`, `SteerCallView`, `SteerGistView`, `SettingsSheet`, `RecentCallView` and
+`RecentCallsSection`, drawn in the iOS system colours (`ui/steer/SteerStyle.kt`, light and dark).
+
+- **Contacts:** the picker lists phone numbers (`ACTION_PICK` on `Phone.CONTENT_TYPE`) and hands
+  back only the picked row with a temporary read grant, so the app asks for no contacts permission.
+- **Attachments:** photos (system photo picker) and PDFs or images (document picker) are read on the
+  phone (`ui/steer/AttachmentReader.kt`): a PDF's text layer on Android 15+, otherwise on-device OCR
+  (ML Kit text recognition, bundled Latin model) of its first 10 pages; photos by OCR. Text is
+  trimmed and capped at 20,000 characters, like iOS.
+- **Ongoing-call notification** (the iOS Live Activity, `call/notification/`): the contact, who is
+  answering, a running timer, the latest line and **End call**, which ends the call through the app
+  exactly like the End button. While a steer call is on, a foreground service of type `specialUse`
+  keeps the process (and so the call's socket) running when the user leaves the app; it stops with
+  the call or the app's task. A call that ends while the app is away leaves "Call ended · open
+  Ishara for the gist" for a minute. Notifications are asked for on the first Call (Android 13+);
+  without them the call and the service run as usual, only nothing is shown.
+- Google Play needs the `specialUse` service declared in the Play Console with a justification
+  (the manifest's `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` text) before release.
