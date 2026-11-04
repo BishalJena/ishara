@@ -4,7 +4,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
 
-    <!-- Recognition uses the front camera; without one the app replays saved videos. -->
+    <!-- Recognition uses the front camera; without one the app replays saved videos. CAMERA would
+         otherwise imply a required rear camera. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.front" android:required="false" />
 
     <application
