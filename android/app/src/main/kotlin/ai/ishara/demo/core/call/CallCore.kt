@@ -183,13 +183,22 @@ class LocalCallSession internal constructor(id: Int, initial: CallSnapshot) : Ca
     private val outgoingChannel = Channel<Outgoing>(Channel.UNLIMITED)
     val outgoing: Flow<Outgoing> = outgoingChannel.receiveAsFlow()
 
+    /**
+     * Takes what the store sends instead of [outgoing], inside the action that sent it, like
+     * CallSession's `OutgoingMessageSink`: [receive] may be called from it, before the action
+     * finishes (the fake call's goodbye lands before `end()` closes the store). Set it before
+     * the first action. Main thread only.
+     */
+    var sink: ((Outgoing) -> Unit)? = null
+
     /** Applies a backend message to the store, exactly as a socket frame would be. Main thread only. */
     fun receive(message: ServerMessage) {
         CallCore.receive(id, message)
     }
 
     internal fun deliver(item: Outgoing) {
-        outgoingChannel.trySend(item)
+        val sink = sink
+        if (sink != null) sink(item) else outgoingChannel.trySend(item)
     }
 
     override fun onClose() {
