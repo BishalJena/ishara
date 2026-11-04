@@ -69,6 +69,8 @@ jobs:
 
   # macOS minutes cost 10x on a private repo, so decide on a cheap Linux runner whether the
   # Swift job is needed at all: only when ios/** changed and at least one package exists.
+  # The Android job is long too (Swift toolchain, NDK, Gradle), so it runs only when the app or
+  # what it compiles and reads from ios/ changed.
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -77,6 +79,7 @@ jobs:
       pull-requests: read
     outputs:
       swift: ${{ steps.filter.outputs.ios == 'true' && steps.packages.outputs.found == 'true' }}
+      android: ${{ steps.filter.outputs.android }}
     steps:
       - uses: actions/checkout@v7
       - id: filter
@@ -85,6 +88,13 @@ jobs:
           filters: |
             ios:
               - 'ios/**'
+              - '.github/workflows/ci.yml'
+            android:
+              - 'android/**'
+              - 'ios/Packages/CallSession/**'
+              - 'ios/Packages/RecognitionCore/**'
+              - 'ios/Packages/SignPipeline/Tests/SignPipelineTests/Fixtures/**'
+              - 'ios/Ishara/Resources/asl-bundle.json'
               - '.github/workflows/ci.yml'
       - id: packages
         name: Find Swift packages
@@ -126,3 +136,93 @@ jobs:
             swift test --package-path "$package"
             echo "::endgroup::"
           done
+
+  # The Android app (android/README.md) with the shared Swift packages compiled for Android.
+  # No models, clips or backend settings here: the build packages whichever exist, and the
+  # device tests need an emulator, so they stay local (scripts/verify.sh).
+  android:
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    # The Swift toolchain below is the Ubuntu 24.04 build, so the runner is pinned to match.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      SWIFT_VERSION: 6.4.2
+      SWIFT_SDK: swift-6.4.2-RELEASE_android
+      SWIFT_SDK_CHECKSUM: 4d6ad63ea74becd58e123ff58b1b48c3be5ec0db0dff0ea5abe37ac007dd3233
+      SWIFT_HOME: ${{ github.workspace }}/../swift-toolchain
+      ANDROID_NDK_VERSION: 30.0.16248370
+      ANDROID_TRIPLE: aarch64-unknown-linux-android28
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      # The runner's preinstalled SDK has the licences accepted; its ANDROID_NDK_HOME points at
+      # an older NDK, so the one the Swift SDK needs is installed and exported instead.
+      - name: Android SDK packages and NDK r30
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install \
+            "platforms;android-36" "build-tools;36.1.0" "platform-tools" "ndk;$ANDROID_NDK_VERSION" >/dev/null
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$ANDROID_NDK_VERSION" >> "$GITHUB_ENV"
+      - id: swift-cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.SWIFT_HOME }}
+          key: swift-${{ env.SWIFT_VERSION }}-ubuntu24.04-android
+      # The open-source toolchain (Xcode's or a distro's swift can't use the Android SDK; the
+      # versions must match exactly), checked against swift.org's signing keys.
+      - name: Download the Swift toolchain and the Swift SDK for Android
+        if: steps.swift-cache.outputs.cache-hit != 'true'
+        run: |
+          release="https://download.swift.org/swift-$SWIFT_VERSION-release"
+          toolchain="swift-$SWIFT_VERSION-RELEASE-ubuntu24.04.tar.gz"
+          mkdir -p "$SWIFT_HOME"
+          cd "$RUNNER_TEMP"
+          curl -fsSL "$release/ubuntu2404/swift-$SWIFT_VERSION-RELEASE/$toolchain" -o "$toolchain"
+          curl -fsSL "$release/ubuntu2404/swift-$SWIFT_VERSION-RELEASE/$toolchain.sig" -o "$toolchain.sig"
+          curl -fsSL --compressed https://www.swift.org/keys/all-keys.asc | gpg --batch --quiet --import -
+          gpg --batch --verify "$toolchain.sig" "$toolchain"
+          tar -xzf "$toolchain" --strip-components=1 -C "$SWIFT_HOME"
+          rm "$toolchain"
+          curl -fsSL "$release/android-sdk/swift-$SWIFT_VERSION-RELEASE/$SWIFT_SDK.artifactbundle.tar.gz" \
+            -o "$SWIFT_HOME/$SWIFT_SDK.artifactbundle.tar.gz"
+      - name: Install the Swift SDK for Android
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libcurl4-openssl-dev libedit2 libncurses-dev libpython3-dev \
+            libsqlite3-0 libxml2-dev libz3-dev pkg-config zlib1g-dev >/dev/null
+          bundle="$SWIFT_HOME/$SWIFT_SDK.artifactbundle.tar.gz"
+          echo "$SWIFT_SDK_CHECKSUM  $bundle" | sha256sum --check --quiet
+          echo "SWIFT_BIN=$SWIFT_HOME/usr/bin/swift" >> "$GITHUB_ENV"
+          swift="$SWIFT_HOME/usr/bin/swift"
+          "$swift" --version
+          "$swift" sdk install "$bundle"
+          # Links the SDK's sysroot to the NDK, as android/README.md's setup does.
+          resources=$("$swift" sdk configure --show-configuration "$SWIFT_SDK" "$ANDROID_TRIPLE" \
+            | sed -n 's/^swiftResourcesPath: //p')
+          "${resources%/swift-resources/*}/scripts/setup-android-sdk.sh"
+      # CallSession and RecognitionCore are compiled unchanged into the app; an Apple-only API in
+      # them would break Android before the app build says why.
+      - name: Build the shared Swift packages for Android
+        run: |
+          for package in CallSession RecognitionCore; do
+            echo "::group::swift build $package"
+            "$SWIFT_BIN" build --package-path "ios/Packages/$package" --swift-sdk "$ANDROID_TRIPLE" \
+              --scratch-path "android/build/swift-packages/$package"
+            echo "::endgroup::"
+          done
+      - name: JVM tests, lint and the debug APK (builds libIsharaCore.so)
+        working-directory: android
+        run: ./gradlew --no-daemon :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+      - name: Keep the test and lint reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-reports
+          path: |
+            android/app/build/reports/
+            android/app/build/test-results/
+          retention-days: 7
