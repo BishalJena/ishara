@@ -7,10 +7,10 @@ import ai.ishara.demo.models.title
 import ai.ishara.demo.models.wire
 import ai.ishara.demo.ui.components.BorderedButton
 import ai.ishara.demo.ui.components.BottomBar
-import ai.ishara.demo.ui.components.CallCameraNotice
 import ai.ishara.demo.ui.components.CallingNumberNote
-import ai.ishara.demo.ui.components.CameraIndicator
+import ai.ishara.demo.ui.components.CameraVideoRow
 import ai.ishara.demo.ui.components.CandidateTile
+import ai.ishara.demo.ui.components.CantSeeYouNotice
 import ai.ishara.demo.ui.components.ChipView
 import ai.ishara.demo.ui.components.FramingHint
 import ai.ishara.demo.ui.components.IconLabel
@@ -140,36 +140,38 @@ fun BriefScreen(model: BriefModel, modeDescription: String, onApprove: (CallSetu
     }
 }
 
+/** What to sign, with the live video beside what was recognised; the taps come under both. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SigningSection(model: BriefModel) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Sign what you need", style = IsharaType.headline, modifier = Modifier.weight(1f))
-            CameraIndicator(model.cameraState)
-        }
-        Text(
-            "For ${model.setup.purpose.title.lowercase()} at ${model.setup.contact.name}. Sign the day and time, for example TOMORROW, MORNING.",
-            style = IsharaType.subheadline,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        CallCameraNotice(model.recognition.camera, model.cameraState)
-        ReplayMenu(model.recognition.replayOptions, model.recognition::replay)
-        if (model.showsFramingHint) {
-            FramingHint()
-        } else if (model.lastSignUnsure) {
-            IconLabel(
-                "That sign wasn't recognised. Sign it again, or tap it below.",
-                Icons.Filled.Info,
-                modifier = Modifier.semantics(mergeDescendants = true) {}.testTag("brief.unsure"),
-                color = IsharaColors.Orange,
-                style = IsharaType.subheadline,
-            )
-        }
-        model.candidate?.let { CandidateTile(it, model::acceptCandidate, model::dismissCandidate) }
-        if (model.chips.isNotEmpty()) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                model.chips.forEach { sign -> ChipView(Chip.recognised(sign)) { model.remove(sign) } }
+        Text("Sign what you need", style = IsharaType.headline)
+        CameraVideoRow(model.recognition.camera, model.cameraState, videoTag = "brief.camera") { modifier ->
+            Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    "For ${model.setup.purpose.title.lowercase()} at ${model.setup.contact.name}. Sign the day and time, for example TOMORROW, MORNING.",
+                    style = IsharaType.subheadline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                CantSeeYouNotice(model.cameraState)
+                ReplayMenu(model.recognition.replayOptions, model.recognition::replay)
+                if (model.showsFramingHint) {
+                    FramingHint()
+                } else if (model.lastSignUnsure) {
+                    IconLabel(
+                        "That sign wasn't recognised. Sign it again, or tap it below.",
+                        Icons.Filled.Info,
+                        modifier = Modifier.semantics(mergeDescendants = true) {}.testTag("brief.unsure"),
+                        color = IsharaColors.Orange,
+                        style = IsharaType.subheadline,
+                    )
+                }
+                model.candidate?.let { CandidateTile(it, model::acceptCandidate, model::dismissCandidate) }
+                if (model.chips.isNotEmpty()) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        model.chips.forEach { sign -> ChipView(Chip.recognised(sign)) { model.remove(sign) } }
+                    }
+                }
             }
         }
         val remaining = BriefModel.suggestions.filter { it !in model.chips }
