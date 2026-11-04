@@ -6,11 +6,11 @@ import ai.ishara.demo.call.ActiveCallViewModel.Delivery
 import ai.ishara.demo.call.ActiveCallViewModel.EndReason
 import ai.ishara.demo.ui.components.AskCard
 import ai.ishara.demo.ui.components.BottomBar
-import ai.ishara.demo.ui.components.CallCameraNotice
 import ai.ishara.demo.ui.components.CallErrorBanner
 import ai.ishara.demo.ui.components.CallStatusBar
-import ai.ishara.demo.ui.components.CameraIndicator
+import ai.ishara.demo.ui.components.CameraVideoRow
 import ai.ishara.demo.ui.components.CandidateTile
+import ai.ishara.demo.ui.components.CantSeeYouNotice
 import ai.ishara.demo.ui.components.CaptionHistory
 import ai.ishara.demo.ui.components.ChipRow
 import ai.ishara.demo.ui.components.ConnectionLostPanel
@@ -82,8 +82,9 @@ import androidx.compose.ui.unit.dp
  *
  * The sentence SEND or STOP acts on lives in the pinned action bar right above its button, so
  * it can never scroll away or hide behind it at any text size; the captions give up height at
- * large text sizes so the chips stay reachable (see [CallLayout]). The camera is only a small indicator in the
- * status bar. Once the call is over the transcript fills the screen.
+ * large text sizes so the chips stay reachable (see [CallLayout]). While the user may sign, the
+ * live video sits under the captions with the panel beside it. Once the call is over the
+ * transcript fills the screen.
  */
 @Composable
 fun ActiveCallScreen(model: ActiveCallViewModel, onLeave: () -> Unit, onShowNotes: (() -> Unit)?) {
@@ -119,24 +120,34 @@ fun ActiveCallScreen(model: ActiveCallViewModel, onLeave: () -> Unit, onShowNote
                     model.isSpeaking,
                     model.connectedAt,
                     onEnd = model::end,
-                    indicator = if (model.watchesSigns && !model.isCallOver) {
-                        { CameraIndicator(model.cameraState, Modifier.testTag("call.camera")) }
-                    } else {
-                        null
-                    },
                 )
                 if (stage is ActiveCallStage.Ended) {
                     EndedTranscript(model, stage.reason, Modifier.weight(1f))
                 } else {
                     CaptionHistory(model.captions, Modifier.fillMaxWidth().weight(1f))
-                    Column(Modifier.fillMaxWidth().heightIn(max = layout.panelMaxHeight).verticalScroll(panelScroll)) {
-                        when (stage) {
-                            is ActiveCallStage.ConnectionLost -> ConnectionLostPanel(stage.notice, stage.isReconnecting)
-                            is ActiveCallStage.Speaking -> SpeakingPanel(model)
-                            ActiveCallStage.Signing -> SigningPanel(model, chipsInView, bannerInView)
-                            is ActiveCallStage.Ended -> Unit
+                    val panel = @Composable { modifier: Modifier ->
+                        Column(modifier.heightIn(max = layout.panelMaxHeight).verticalScroll(panelScroll)) {
+                            when (stage) {
+                                is ActiveCallStage.ConnectionLost -> ConnectionLostPanel(stage.notice, stage.isReconnecting)
+                                is ActiveCallStage.Speaking -> SpeakingPanel(model)
+                                ActiveCallStage.Signing -> SigningPanel(model, chipsInView, bannerInView)
+                                is ActiveCallStage.Ended -> Unit
+                            }
+                            Spacer(Modifier.height(8.dp))
                         }
-                        Spacer(Modifier.height(8.dp))
+                    }
+                    // The same video through signing, speaking and a dropped connection, so it never jumps.
+                    if (model.watchesSigns && !model.isCallOver) {
+                        CameraVideoRow(
+                            model.recognition.camera,
+                            model.cameraState,
+                            videoTag = "call.camera",
+                            modifier = Modifier.padding(bottom = 8.dp),
+                            maxVideoHeight = layout.panelMaxHeight,
+                            side = panel,
+                        )
+                    } else {
+                        panel(Modifier.fillMaxWidth())
                     }
                 }
             }
@@ -205,15 +216,16 @@ private fun EndedTranscript(model: ActiveCallViewModel, reason: EndReason, modif
 }
 
 /**
- * Screen 3 body, top to bottom in the order the eyes move: what the camera needs, chips. The
- * draft, quick replies and SEND live in the action bar. On a delegated call (D9) there are no
- * chips: the camera is there only to answer the agent (attended); an unattended call has none.
+ * Screen 3 body beside the video, top to bottom in the order the eyes move: what the camera
+ * needs, chips. The draft, quick replies and SEND live in the action bar. On a delegated call
+ * (D9) there are no chips: the camera is there only to answer the agent (attended); an
+ * unattended call has none.
  */
 @Composable
 private fun SigningPanel(model: ActiveCallViewModel, chipsInView: BringIntoViewRequester, bannerInView: BringIntoViewRequester) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (model.watchesSigns) {
-            CallCameraNotice(model.recognition.camera, model.cameraState)
+            CantSeeYouNotice(model.cameraState)
             ReplayMenu(model.recognition.replayOptions, model.recognition::replay)
         }
         model.errorMessage?.let { CallErrorBanner(it) }
@@ -228,11 +240,11 @@ private fun SigningPanel(model: ActiveCallViewModel, chipsInView: BringIntoViewR
     }
 }
 
-/** Screen 4 body: the camera keeps watching so the user can sign the next thing. */
+/** Screen 4 body beside the video: the camera keeps watching so the user can sign the next thing. */
 @Composable
 private fun SpeakingPanel(model: ActiveCallViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        CallCameraNotice(model.recognition.camera, model.cameraState)
+        CantSeeYouNotice(model.cameraState)
         if (model.isStopTooLate) StopTooLateBanner()
         model.errorMessage?.let { CallErrorBanner(it) }
     }

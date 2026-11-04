@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.max
 import kotlinx.coroutines.delay
 
-/** Contact, call state and elapsed time, with End always in reach; [indicator] (the camera) sits beside End. */
+/** Contact, call state and elapsed time, with End always in reach. */
 @Composable
 fun CallStatusBar(
     contactName: String,
@@ -37,7 +37,6 @@ fun CallStatusBar(
     connectedAt: Double?,
     onEnd: () -> Unit,
     modifier: Modifier = Modifier,
-    indicator: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
@@ -55,7 +54,6 @@ fun CallStatusBar(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        indicator?.invoke()
         if (phase !is Phase.Ended) {
             Button(
                 onClick = onEnd,
