@@ -85,6 +85,13 @@ interface LiveCamera {
     /** Latest wrists, shoulders and rest line; null until a frame is tracked. */
     val overlay: StateFlow<BodyOverlay?>
 
+    /**
+     * The answer to the system camera prompt, or the current permission when the app returns
+     * from Settings. Android shows the prompt only from an Activity, so the screens ask and
+     * report here; recognition starts the camera once it is granted.
+     */
+    fun onPermissionResult(granted: Boolean)
+
     /** The mirrored preview of the frames recognition reads. Never starts the camera itself. */
     @Composable
     fun Preview(modifier: Modifier)
