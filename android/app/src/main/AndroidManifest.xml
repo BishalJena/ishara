@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Recognition uses the front camera; without one the app replays saved videos. -->
+    <uses-feature android:name="android.hardware.camera.front" android:required="false" />
 
     <application
         android:name=".IsharaApplication"
