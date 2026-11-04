@@ -18,6 +18,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.lifecycle.Lifecycle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -267,6 +268,32 @@ class SteerCallUiTest {
         waitForNotification { it.extras.getCharSequence(Notification.EXTRA_TITLE)?.toString() == contact }
         compose.onNodeWithTag("steer.end").performClick()
         ui.waitFor("steer.gist", timeoutMs = 5_000)
+    }
+
+    @Test
+    fun endCallWhileAwayEndsTheCallAndLeavesACallEndedNotice() {
+        ui.launch("1", "IsharaUITestName" to "Riya")
+        typeRequest()
+        compose.onNodeWithTag("setup.call").performClick()
+        ui.waitFor("steer.status", "Ishara is handling it — step in any time", timeoutMs = 15_000)
+        val end = waitForNotification { true }.actions.single { it.title.toString() == "End call" }
+
+        // The app leaves the screen (as when the user goes to another app); the call goes on.
+        ui.scenario!!.moveToState(Lifecycle.State.CREATED)
+        waitForNotification { it.extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString() == "Answering for you" }
+        end.actionIntent.send()
+
+        assertTrue("the ongoing notification goes with the call", waitUntil { activeNotification(OngoingCallNotifications.ONGOING_ID) == null })
+        var ended: Notification? = null
+        assertTrue(waitUntil { activeNotification(OngoingCallNotifications.ENDED_ID)?.also { ended = it } != null })
+        assertEquals("Call ended · open Ishara for the gist", ended!!.extras.getCharSequence(Notification.EXTRA_TEXT)?.toString())
+        assertTrue("it can be swiped away", ended.flags and Notification.FLAG_ONGOING_EVENT == 0)
+        assertTrue(ended.actions.isNullOrEmpty())
+
+        // Back in the app: the call is over, and the notice has done its job.
+        ui.scenario!!.moveToState(Lifecycle.State.RESUMED)
+        ui.waitFor("notes.outcome", timeoutMs = 10_000)
+        assertTrue(waitUntil { activeNotification(OngoingCallNotifications.ENDED_ID) == null })
     }
 
     private fun activeNotification(id: Int): Notification? =
