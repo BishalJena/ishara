@@ -1,76 +1,202 @@
 package ai.ishara.demo.ui.home
 
-import ai.ishara.demo.core.call.CallMode
-import ai.ishara.demo.models.CallHistory
+import ai.ishara.demo.core.call.CallNotes
+import ai.ishara.demo.core.call.CaptionSpeaker
 import ai.ishara.demo.models.CallRecord
 import ai.ishara.demo.ui.notes.NotesModel
-import androidx.compose.foundation.clickable
+import ai.ishara.demo.ui.steer.SteerType
+import ai.ishara.demo.ui.steer.steerColors
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import java.text.DateFormat
-import java.util.Date
 
-/** Recent calls on Home: newest first, one row each. Placeholder layout (iOS `RecentCallsSection`). */
+/**
+ * A saved call, read only (port of iOS `RecentCallView`): its notes when they were loaded,
+ * otherwise the captions the call screen showed. [record] comes from the history, so notes that
+ * arrive while it is open (Bolna's late summary) show up; it is null once the call is deleted.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RecentCallsSection(history: CallHistory, onOpen: (recordId: String) -> Unit) {
-    if (history.records.isEmpty() && history.problem == null) return
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Recent calls", style = MaterialTheme.typography.titleMedium)
-        history.problem?.let { Text(it, modifier = Modifier.testTag("recentCalls.problem")) }
-        history.records.forEach { record ->
-            Row(modifier = Modifier.fillMaxWidth().clickable { onOpen(record.id) }.padding(vertical = 8.dp).testTag("recentCalls.row")) {
-                Text("${record.contactName} · ${formatDate(record.date)}")
+fun RecentCallScreen(record: CallRecord?, onBack: () -> Unit, onDelete: () -> Unit) {
+    val colors = steerColors()
+    Column(Modifier.fillMaxSize().background(colors.groupedBackground)) {
+        CenterAlignedTopAppBar(
+            title = { Text(record?.let { recentCallDate(it.date) }.orEmpty(), style = SteerType.headline) },
+            navigationIcon = {
+                IconButton(onClick = onBack, modifier = Modifier.testTag("recentCall.back")) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                }
+            },
+            actions = {
+                if (record != null) {
+                    IconButton(onClick = onDelete, modifier = Modifier.testTag("recentCall.delete")) {
+                        Icon(Icons.Outlined.Delete, contentDescription = "Delete this call")
+                    }
+                }
+            },
+            // AppRoot already keeps the screen clear of the system bars.
+            windowInsets = WindowInsets(0),
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = colors.groupedBackground,
+                titleContentColor = colors.primary,
+                navigationIconContentColor = colors.blue,
+                actionIconContentColor = colors.red,
+            ),
+        )
+        if (record == null) return@Column
+        Column(
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(22.dp),
+        ) {
+            val notes = record.notes
+            if (notes != null) {
+                NotesSections(notes, record.contactName)
+            } else {
+                Section("Call with ${record.contactName}") {
+                    OutcomeLabel(record.outcomeText(), Icons.Outlined.Info)
+                }
+                Section("Captions") {
+                    if (record.captions.isEmpty()) Text("No captions in this call.", style = SteerType.body, color = colors.secondary)
+                    record.captions.forEachIndexed { index, line ->
+                        if (index > 0) Divider()
+                        TranscriptRow(speakerName(line.speaker), line.text, isAgent = line.speaker == CallRecord.Line.Speaker.AGENT)
+                    }
+                }
             }
         }
     }
 }
 
-/**
- * One saved call, read-only: its captions, or its notes for a Call for me call. Placeholder
- * layout; the next phase ports iOS `RecentCallView` here. [record] is null once deleted.
- */
+/** iOS `NotesSections`: the notes of a saved call. */
 @Composable
-fun RecentCallScreen(record: CallRecord?, onBack: () -> Unit, onDelete: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        TextButton(onClick = onBack) { Text("Back") }
-        if (record == null) {
-            Text("This call is no longer saved.")
-            return
+private fun NotesSections(notes: CallNotes, contactName: String) {
+    val colors = steerColors()
+    Section("Call with $contactName") {
+        OutcomeLabel(
+            NotesModel.describe(notes.outcome, notes.ready),
+            if (notes.outcome == "booked") Icons.Filled.CheckCircle else Icons.Outlined.Info,
+        )
+    }
+    if (notes.summary.isNotEmpty()) {
+        Section("What happened") {
+            notes.summary.forEachIndexed { index, line ->
+                if (index > 0) Divider()
+                Text(line, style = SteerType.body, color = colors.primary)
+            }
         }
-        Text(record.contactName, style = MaterialTheme.typography.headlineSmall)
-        Text(formatDate(record.date), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        record.notes?.let { notes ->
-            Text(NotesModel.describe(notes.outcome, notes.ready), style = MaterialTheme.typography.titleMedium)
-            notes.bolnaSummary?.let { Text(it) }
+    }
+    if (notes.openQuestions.isNotEmpty()) {
+        Section("Still open") {
+            notes.openQuestions.forEachIndexed { index, question ->
+                if (index > 0) Divider()
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.AutoMirrored.Outlined.HelpOutline, contentDescription = null, tint = colors.orange, modifier = Modifier.size(20.dp))
+                    Text(question, style = SteerType.body, color = colors.orange)
+                }
+            }
         }
-        record.captions.forEach { line ->
-            Text("${speakerName(line.speaker, record)}: ${line.text}")
+    }
+    notes.brief?.let { brief -> Section("The brief you approved") { Text(brief, style = SteerType.body, color = colors.primary) } }
+    Section("Transcript") {
+        if (notes.transcript.isEmpty()) Text("Nothing was heard on the call.", style = SteerType.body, color = colors.secondary)
+        notes.transcript.forEachIndexed { index, entry ->
+            if (index > 0) Divider()
+            val isAgent = entry.speaker == CaptionSpeaker.AGENT
+            TranscriptRow(if (isAgent) "Agent (for you)" else "They said", entry.text, isAgent)
         }
-        TextButton(onClick = onDelete) { Text("Delete this call") }
+    }
+    notes.bolnaSummary?.let { summary ->
+        Section(
+            "Automatic summary",
+            footer = "Written by the call service's AI. It can be wrong; the transcript is what was said.",
+        ) {
+            Text(summary, style = SteerType.body, color = colors.primary, modifier = Modifier.testTag("notes.bolnaSummary"))
+        }
     }
 }
 
-private fun speakerName(speaker: CallRecord.Line.Speaker, record: CallRecord): String = when (speaker) {
-    CallRecord.Line.Speaker.RECEPTIONIST -> record.contactName
-    CallRecord.Line.Speaker.AGENT -> if (record.mode == CallMode.LIVE) "Ishara (voice)" else "Ishara for you"
-    CallRecord.Line.Speaker.USER -> "You"
+/** An inset grouped list section: a small capital header, the rows in a card, an optional footer. */
+@Composable
+private fun Section(header: String, footer: String? = null, content: @Composable ColumnScope.() -> Unit) {
+    val colors = steerColors()
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(header.uppercase(), style = SteerType.footnote, color = colors.secondary, modifier = Modifier.padding(horizontal = 16.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(colors.secondaryGroupedBackground)
+                .padding(horizontal = 16.dp, vertical = 11.dp),
+            verticalArrangement = Arrangement.spacedBy(11.dp),
+            content = content,
+        )
+        footer?.let { Text(it, style = SteerType.footnote, color = colors.secondary, modifier = Modifier.padding(horizontal = 16.dp)) }
+    }
 }
 
-private fun formatDate(epochSeconds: Double): String =
-    DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date((epochSeconds * 1000).toLong()))
+@Composable
+private fun Divider() {
+    HorizontalDivider(color = steerColors().separator, thickness = 0.5.dp)
+}
+
+@Composable
+private fun OutcomeLabel(text: String, icon: ImageVector) {
+    val colors = steerColors()
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        // Read as one element, so the icon isn't announced on its own.
+        modifier = Modifier.testTag("notes.outcome").semantics(mergeDescendants = true) {},
+    ) {
+        Icon(icon, contentDescription = null, tint = colors.blue, modifier = Modifier.size(20.dp))
+        Text(text, style = SteerType.headline, color = colors.primary)
+    }
+}
+
+@Composable
+private fun TranscriptRow(speaker: String, text: String, isAgent: Boolean) {
+    val colors = steerColors()
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.semantics(mergeDescendants = true) {}) {
+        Text(speaker, style = SteerType.caption, fontWeight = FontWeight.SemiBold, color = if (isAgent) colors.blue else colors.secondary)
+        Text(text, style = SteerType.body, color = colors.primary)
+    }
+}
+
+/** The call screen's names for who spoke (`CaptionHistory`). */
+private fun speakerName(speaker: CallRecord.Line.Speaker): String = when (speaker) {
+    CallRecord.Line.Speaker.RECEPTIONIST -> "Receptionist"
+    CallRecord.Line.Speaker.AGENT -> "Ishara (voice)"
+    CallRecord.Line.Speaker.USER -> "You"
+}
