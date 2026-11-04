@@ -129,7 +129,9 @@ data class OpenQuestion(
     val fallback: String,
     val timeoutS: Double,
     val askedAt: Double,
-)
+) {
+    fun spoken(choice: AskChoice): String? = options.firstOrNull { it.choice == choice }?.spoken
+}
 
 @Serializable
 data class Proposal(
@@ -138,4 +140,7 @@ data class Proposal(
     val windowS: Double,
     val origin: ProposalOrigin,
     val shownAt: Double,
-)
+) {
+    /** How far the window has run at [now] (epoch seconds), 0...1. */
+    fun progress(now: Double): Double = if (windowS <= 0) 1.0 else ((now - shownAt) / windowS).coerceIn(0.0, 1.0)
+}

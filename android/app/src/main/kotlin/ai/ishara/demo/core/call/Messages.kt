@@ -95,7 +95,16 @@ enum class Sign {
 
     companion object {
         fun fromWire(raw: String): Sign? = entries.firstOrNull { it.wire == raw }
+
+        /** The words rehearsed for the demo (D8), in the probe's order. */
+        val rehearsed = listOf(HELLO, THANKYOU, YES, NO, NOW, PLEASE, TOMORROW, WAIT, MORNING)
     }
+}
+
+/** Limits the backend enforces (Vocabulary.swift `ProtocolLimits`). */
+object ProtocolLimits {
+    /** `MAX_CHIPS`: most chips one `chips` message may carry. */
+    const val MAX_CHIPS = 8
 }
 
 @Serializable
