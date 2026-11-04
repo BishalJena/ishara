@@ -193,9 +193,14 @@ ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest   # on the
   once the call has spoken them, each once. Never a draft, a preview or the receptionist; it stops
   when the call ends or you leave the call screen. A real call is never voiced on the phone (the
   receptionist hears it on the line, you read the captions).
-- **Call screens:** the classic call shows a small camera indicator in the status bar (green
-  watching, amber signing, red can't see you) instead of the camera card; the full preview is on
-  Get ready. Once a call ends the transcript fills the screen.
+- **Call screens:** while you may sign, the classic call, Brief and the steer signing panel show
+  the live mirrored video (`ui/components/CameraVideoCard.kt`) with the shoulders, wrists and rest
+  line on it and the camera state in a chip on the video (green watching, amber signing, red can't
+  see you, which also outlines it). On the call and Brief it is a 3:4 card on the left (40 % of
+  the width, 30 % at accessibility text sizes) with the chips beside it; the steer panel keeps its
+  96 × 128 tile with just the dot. The emulator shows a placeholder in the same card. Once a call
+  ends the transcript fills the screen. Screenshots with a sample-clip frame standing in for the
+  camera: run `CameraVideoScreenshots` with `-e cameraScreenshots true` (see the class).
 
 ## Things to know
 
