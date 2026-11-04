@@ -13,12 +13,12 @@ import ai.ishara.demo.ui.notes.NotesScreen
 import ai.ishara.demo.ui.steer.SetupScreen
 import ai.ishara.demo.ui.steer.SteerCallScreen
 import ai.ishara.demo.ui.steer.SteerGistScreen
+import ai.ishara.demo.ui.steer.steerColors
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -43,7 +43,8 @@ fun AppRoot(navigator: AppNavigator) {
     BackHandler(enabled = navigator.route != Route.Home || navigator.settingsPrompt != null) { navigator.back() }
     CompositionLocalProvider(LocalRunsInEmulator provides services.runsInEmulator) {
         Surface(
-            color = MaterialTheme.colorScheme.background,
+            // iOS's systemBackground (white / black) behind every screen and the system bars.
+            color = steerColors().background,
             // Test tags double as resource ids, so UI Automator and adb dumps see the iOS identifiers.
             modifier = Modifier.fillMaxSize().semantics { testTagsAsResourceId = true },
         ) {
