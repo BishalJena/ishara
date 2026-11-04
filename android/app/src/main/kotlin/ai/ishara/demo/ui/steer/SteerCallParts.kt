@@ -318,7 +318,7 @@ fun SteerCameraTile(camera: LiveCamera?, state: CameraState, modifier: Modifier 
         }
         val dot = when (state) {
             CameraState.WATCHING -> IsharaColors.Green
-            CameraState.SIGNING -> IsharaColors.Yellow
+            CameraState.SIGNING -> IsharaColors.Orange
             CameraState.CANT_SEE -> IsharaColors.Red
         }
         Box(

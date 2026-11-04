@@ -9,6 +9,7 @@ import ai.ishara.demo.ui.components.CallErrorBanner
 import ai.ishara.demo.ui.components.CandidateTile
 import ai.ishara.demo.ui.components.ChipRow
 import ai.ishara.demo.ui.components.InitialsAvatar
+import ai.ishara.demo.ui.components.PrimaryButton
 import ai.ishara.demo.ui.components.epochSeconds
 import android.Manifest
 import android.content.pm.PackageManager
@@ -417,7 +418,7 @@ private fun TypingBar(
                     disabledContainerColor = colors.tertiary.copy(alpha = 0.18f),
                     disabledContentColor = colors.tertiary,
                 ),
-                modifier = Modifier.size(34.dp).testTag("steer.send"),
+                modifier = Modifier.size(40.dp).testTag("steer.send"),
             ) {
                 Icon(Icons.Filled.ArrowUpward, contentDescription = "Send", modifier = Modifier.size(20.dp))
             }
@@ -466,16 +467,14 @@ private fun SigningPanel(model: ActiveCallViewModel, onType: () -> Unit, onSend:
                 Text(draft.text, style = SteerType.body, fontWeight = FontWeight.Medium, color = colors.primary)
             }
         }
-        Button(
-            onClick = onSend,
+        PrimaryButton(
+            "Send",
+            onSend,
+            Modifier.testTag("steer.sendSigned"),
             enabled = model.canSend,
-            contentPadding = PaddingValues(vertical = 14.dp),
-            modifier = Modifier.fillMaxWidth().testTag("steer.sendSigned"),
-        ) {
-            Icon(Icons.Filled.ArrowUpward, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(6.dp))
-            Text("Send", style = SteerType.headline)
-        }
+            icon = Icons.Filled.ArrowUpward,
+            fillWidth = true,
+        )
     }
 }
 
