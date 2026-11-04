@@ -24,14 +24,8 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -40,7 +34,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.max
 
 /**
  * Decision D9, attended delegated call: the agent said "one moment, please" and needs the
@@ -48,12 +41,10 @@ import kotlin.math.max
  * "when?". Each button shows exactly what the agent will say; signing an option's word answers
  * too. Nothing is spoken until one is chosen (or the backend's timeout line after [OpenQuestion.timeoutS]).
  *
- * The user is asked to sign the answer, so the card leaves the camera in view above it: the
- * answers sit two per row with their sentences in small type and the question shows at most two
- * lines (TalkBack reads all of it). Above XL text the sentences no longer fit in the buttons, so
- * the question and each option's exact sentence scroll in a bounded box ([maxHeight] at the
- * large standard sizes, [detailsMaxHeight] at accessibility sizes) and short option-word buttons
- * stay below it, never scrolled away (the answer has a 10 s timeout).
+ * The answers sit two per row with their sentences in small type and the question shows at most
+ * two lines (TalkBack reads all of it). Above XL text the sentences no longer fit in the buttons,
+ * so the question and each option's exact sentence scroll in a box of at most [detailsMaxHeight]
+ * and short option-word buttons stay below it, never scrolled away (the answer has a 10 s timeout).
  */
 @Composable
 fun AskCard(
@@ -61,27 +52,14 @@ fun AskCard(
     onAnswer: (AskChoice) -> Unit,
     modifier: Modifier = Modifier,
     detailsMaxHeight: Dp = 240.dp,
-    maxHeight: Dp? = null,
 ) {
-    var shortAnswersHeight by remember { mutableStateOf<Dp?>(null) }
-    val isAccessibilitySize = isAccessibilityTextSize()
-    val isLarge = isLargerThanExtraLargeText()
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(IsharaColors.Orange.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
             .padding(CARD_PADDING),
     ) {
-        when {
-            isAccessibilitySize -> CompactAsk(question, onAnswer, detailsMaxHeight) { shortAnswersHeight = it }
-            isLarge -> {
-                val sentencesMax = maxHeight?.let { cardMax ->
-                    max(60f, (cardMax - CARD_PADDING * 2 - (shortAnswersHeight ?: 0.dp) - COMPACT_SPACING).value).dp
-                } ?: detailsMaxHeight
-                CompactAsk(question, onAnswer, sentencesMax) { shortAnswersHeight = it }
-            }
-            else -> RegularAsk(question, onAnswer)
-        }
+        if (isLargerThanExtraLargeText()) CompactAsk(question, onAnswer, detailsMaxHeight) else RegularAsk(question, onAnswer)
     }
 }
 
@@ -106,8 +84,7 @@ private fun RegularAsk(question: OpenQuestion, onAnswer: (AskChoice) -> Unit) {
 }
 
 @Composable
-private fun CompactAsk(question: OpenQuestion, onAnswer: (AskChoice) -> Unit, detailsMaxHeight: Dp, onAnswersHeight: (Dp) -> Unit) {
-    val density = LocalDensity.current
+private fun CompactAsk(question: OpenQuestion, onAnswer: (AskChoice) -> Unit, detailsMaxHeight: Dp) {
     Column(verticalArrangement = Arrangement.spacedBy(COMPACT_SPACING)) {
         PinnedSentence(maxHeight = detailsMaxHeight) {
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -119,14 +96,11 @@ private fun CompactAsk(question: OpenQuestion, onAnswer: (AskChoice) -> Unit, de
                 Text(askFallbackText(question), style = IsharaType.footnote, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        val answersModifier = Modifier.onSizeChanged { onAnswersHeight(with(density) { it.height.toDp() }) }
         if (question.options.size > 3) {
             // Four answers (an open "when?") one per row push WAIT off screen: two per row.
-            Column(answersModifier) {
-                AnswerGrid(question.options) { option, cellModifier -> ShortAnswerButton(option, onAnswer, cellModifier) }
-            }
+            AnswerGrid(question.options) { option, cellModifier -> ShortAnswerButton(option, onAnswer, cellModifier) }
         } else {
-            Row(answersModifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 question.options.forEach { option -> ShortAnswerButton(option, onAnswer, Modifier.weight(1f)) }
             }
         }

@@ -6,9 +6,11 @@ import ai.ishara.demo.core.call.Caption
 import ai.ishara.demo.core.call.ProposalOrigin
 import ai.ishara.demo.recognition.CameraPermission
 import ai.ishara.demo.ui.components.CallErrorBanner
+import ai.ishara.demo.ui.components.CameraVideoCard
 import ai.ishara.demo.ui.components.CandidateTile
 import ai.ishara.demo.ui.components.ChipRow
 import ai.ishara.demo.ui.components.InitialsAvatar
+import ai.ishara.demo.ui.components.PrimaryButton
 import ai.ishara.demo.ui.components.epochSeconds
 import android.Manifest
 import android.content.pm.PackageManager
@@ -417,7 +419,7 @@ private fun TypingBar(
                     disabledContainerColor = colors.tertiary.copy(alpha = 0.18f),
                     disabledContentColor = colors.tertiary,
                 ),
-                modifier = Modifier.size(34.dp).testTag("steer.send"),
+                modifier = Modifier.size(40.dp).testTag("steer.send"),
             ) {
                 Icon(Icons.Filled.ArrowUpward, contentDescription = "Send", modifier = Modifier.size(20.dp))
             }
@@ -435,10 +437,13 @@ private fun SigningPanel(model: ActiveCallViewModel, onType: () -> Unit, onSend:
     CameraWhileSigning(model)
     Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.testTag("steer.signing")) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-            SteerCameraTile(
+            // The screen asks for the camera itself (CameraWhileSigning), when the user first signs.
+            CameraVideoCard(
                 camera = model.recognition.camera,
                 state = model.cameraState,
-                modifier = Modifier.size(width = 96.dp, height = 128.dp).clip(RoundedCornerShape(20.dp)),
+                modifier = Modifier.size(width = 96.dp, height = 128.dp).testTag("steer.camera"),
+                asksPermission = false,
+                compact = true,
             )
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -466,16 +471,14 @@ private fun SigningPanel(model: ActiveCallViewModel, onType: () -> Unit, onSend:
                 Text(draft.text, style = SteerType.body, fontWeight = FontWeight.Medium, color = colors.primary)
             }
         }
-        Button(
-            onClick = onSend,
+        PrimaryButton(
+            "Send",
+            onSend,
+            Modifier.testTag("steer.sendSigned"),
             enabled = model.canSend,
-            contentPadding = PaddingValues(vertical = 14.dp),
-            modifier = Modifier.fillMaxWidth().testTag("steer.sendSigned"),
-        ) {
-            Icon(Icons.Filled.ArrowUpward, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(6.dp))
-            Text("Send", style = SteerType.headline)
-        }
+            icon = Icons.Filled.ArrowUpward,
+            fillWidth = true,
+        )
     }
 }
 

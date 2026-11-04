@@ -2,12 +2,12 @@ package ai.ishara.demo.ui.classic
 
 import ai.ishara.demo.recognition.GetReadyModel
 import ai.ishara.demo.recognition.RecognitionController
-import ai.ishara.demo.ui.components.BigActionButton
 import ai.ishara.demo.ui.components.BottomBar
 import ai.ishara.demo.ui.components.CallingNumberNote
 import ai.ishara.demo.ui.components.CameraCard
 import ai.ishara.demo.ui.components.InfoLabel
 import ai.ishara.demo.ui.components.LargeTitle
+import ai.ishara.demo.ui.components.PrimaryButton
 import ai.ishara.demo.ui.components.ReplayMenu
 import ai.ishara.demo.ui.components.TopBar
 import ai.ishara.demo.ui.components.WarningLabel
@@ -40,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
@@ -78,8 +79,8 @@ fun GetReadyScreen(
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text("Prop the phone about an arm away.", style = IsharaType.title3)
                 Box {
-                    CameraCard(camera = recognition.camera, state = null)
-                    ReplayMenu(recognition.replayOptions, recognition::replay, Modifier.align(Alignment.BottomEnd).padding(10.dp))
+                    CameraCard(camera = recognition.camera)
+                    ReplayMenu(recognition.replayOptions, recognition::replay, Modifier.align(Alignment.BottomEnd).padding(10.dp), tint = Color.White)
                 }
                 val shownFailure = failure
                 val shownNotice = notice
@@ -98,13 +99,13 @@ fun GetReadyScreen(
             }
             // Repeated from Home: this is where the call is actually placed.
             CallingNumberNote()
-            BigActionButton(
+            PrimaryButton(
                 startTitle,
-                IsharaColors.Green,
                 onStart,
                 Modifier.testTag("getReady.start"),
                 enabled = state.isReady,
                 icon = Icons.Filled.Phone,
+                fillWidth = true,
             )
         }
     }
@@ -116,8 +117,8 @@ private fun ChecklistCard(passed: Set<GetReadyModel.Check>) {
         modifier = Modifier
             .fillMaxWidth()
             .background(IsharaColors.Green.copy(alpha = 0.15f), RoundedCornerShape(16.dp))
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         GetReadyModel.Check.entries.forEach { check ->
             val isPassed = check in passed
@@ -132,11 +133,11 @@ private fun ChecklistCard(passed: Set<GetReadyModel.Check>) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (isPassed) {
-                    Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = IsharaColors.Green, modifier = Modifier.size(24.dp))
+                    Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = IsharaColors.Green, modifier = Modifier.size(20.dp))
                 } else {
                     DottedCircle()
                 }
-                Text(check.title, style = IsharaType.title3)
+                Text(check.title, style = IsharaType.callout)
             }
         }
     }
@@ -147,7 +148,7 @@ private fun ChecklistCard(passed: Set<GetReadyModel.Check>) {
 private fun DottedCircle() {
     val color = MaterialTheme.colorScheme.onSurfaceVariant
     Box(
-        Modifier.size(24.dp).padding(2.dp).drawBehind {
+        Modifier.size(20.dp).padding(2.dp).drawBehind {
             drawCircle(
                 color,
                 style = Stroke(width = 2.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(2.dp.toPx(), 3.dp.toPx()))),
@@ -170,7 +171,7 @@ private fun CalibrationCard(progress: Double, isActive: Boolean) {
             .background(IsharaColors.Yellow.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
             .semantics(mergeDescendants = true) {}
             .testTag("getReady.calibration")
-            .padding(16.dp),
+            .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(title, style = IsharaType.headline)

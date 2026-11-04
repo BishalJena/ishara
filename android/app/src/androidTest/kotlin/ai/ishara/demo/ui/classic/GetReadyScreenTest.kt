@@ -3,22 +3,17 @@ package ai.ishara.demo.ui.classic
 import ai.ishara.demo.recognition.BodyOverlay
 import ai.ishara.demo.recognition.CameraPermission
 import ai.ishara.demo.recognition.GetReadyModel
-import ai.ishara.demo.recognition.LiveCamera
 import ai.ishara.demo.recognition.NormalizedPoint
 import ai.ishara.demo.recognition.RecognitionController
-import ai.ishara.demo.recognition.RecognitionEvent
+import ai.ishara.demo.support.CameraRecognition
+import ai.ishara.demo.support.FakeCamera
 import ai.ishara.demo.ui.theme.IsharaColors
 import ai.ishara.demo.ui.theme.IsharaTheme
 import android.Manifest
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.Lifecycle
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toPixelMap
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.captureToImage
@@ -28,10 +23,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.emptyFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -49,34 +40,6 @@ class GetReadyScreenTest {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
 
-    private class FakeCamera(permission: CameraPermission, overlay: BodyOverlay? = null) : LiveCamera {
-        override val permission = MutableStateFlow(permission)
-        override val isUnavailable = MutableStateFlow(false)
-        override val overlay = MutableStateFlow(overlay)
-        val reported = mutableListOf<Boolean>()
-
-        override fun onPermissionResult(granted: Boolean) {
-            reported += granted
-            permission.value = if (granted) CameraPermission.GRANTED else CameraPermission.DENIED
-        }
-
-        @Composable
-        override fun Preview(modifier: Modifier) {
-            Box(modifier.background(Color.DarkGray).testTag("fake.preview"))
-        }
-    }
-
-    private class FakeRecognition(override val camera: LiveCamera? = null) : RecognitionController {
-        override val getReady = GetReadyModel()
-        override val failure: StateFlow<String?> = MutableStateFlow(null)
-        override val notice: StateFlow<String?> = MutableStateFlow(null)
-        override val replayOptions: List<String> = emptyList()
-        override fun start() = Unit
-        override fun signingEvents(): Flow<RecognitionEvent> = emptyFlow()
-        override fun replay(option: String) = Unit
-        override fun stop() = Unit
-    }
-
     private var started = 0
 
     private fun show(recognition: RecognitionController) {
@@ -89,7 +52,7 @@ class GetReadyScreenTest {
 
     @Test
     fun startStaysOffUntilEveryCheckPassedAndCalibrationFinished() {
-        val recognition = FakeRecognition()
+        val recognition = CameraRecognition()
         show(recognition)
         val start = compose.onNodeWithTag("getReady.start")
         start.assertIsNotEnabled()
@@ -113,7 +76,7 @@ class GetReadyScreenTest {
 
     @Test
     fun calibrationWaitsForTheChecklist() {
-        val recognition = FakeRecognition()
+        val recognition = CameraRecognition()
         show(recognition)
         recognition.getReady.recordCalibration(GetReadyModel.CALIBRATION_SECONDS)
         compose.onNode(hasText("Starts once the checklist is done.", substring = true)).assertExists()
@@ -122,7 +85,7 @@ class GetReadyScreenTest {
 
     @Test
     fun refusedCameraExplainsAndOffersSettings() {
-        val recognition = FakeRecognition(FakeCamera(CameraPermission.DENIED))
+        val recognition = CameraRecognition(FakeCamera(CameraPermission.DENIED))
         GetReadyModel.Check.entries.forEach(recognition.getReady::pass)
         show(recognition)
         compose.onNodeWithTag("camera.blocked").assertExists()
@@ -136,7 +99,7 @@ class GetReadyScreenTest {
     @Test
     fun grantFromSettingsIsReportedOnReturn() {
         val camera = FakeCamera(CameraPermission.DENIED)
-        show(FakeRecognition(camera))
+        show(CameraRecognition(camera))
         compose.onNodeWithTag("camera.blocked").assertExists()
         grantCamera()
         compose.activityRule.scenario.moveToState(Lifecycle.State.STARTED)
@@ -156,7 +119,7 @@ class GetReadyScreenTest {
     fun grantedCameraIsReportedAndPreviewed() {
         grantCamera()
         val camera = FakeCamera(CameraPermission.NOT_DETERMINED)
-        show(FakeRecognition(camera))
+        show(CameraRecognition(camera))
         compose.waitUntil(5_000) { camera.reported.isNotEmpty() }
         assertEquals(listOf(true), camera.reported)
         compose.onNodeWithTag("camera.preview").assertExists()
@@ -168,7 +131,7 @@ class GetReadyScreenTest {
     fun bodyOverlayIsDrawnOnTheMirroredPreview() {
         // A 9:16 image: the preview shows all of it, so normalized points map straight across.
         val overlay = BodyOverlay(720, 1280, wrists = listOf(NormalizedPoint(0.2f, 0.3f)), restY = 0.75)
-        show(FakeRecognition(FakeCamera(CameraPermission.GRANTED, overlay)))
+        show(CameraRecognition(FakeCamera(CameraPermission.GRANTED, overlay)))
         val pixels = compose.onNodeWithTag("fake.preview").captureToImage().toPixelMap()
         fun isColor(x: Int, y: Int, color: Color) = pixels[x, y].let {
             abs(it.red - color.red) < 0.1f && abs(it.green - color.green) < 0.1f && abs(it.blue - color.blue) < 0.1f

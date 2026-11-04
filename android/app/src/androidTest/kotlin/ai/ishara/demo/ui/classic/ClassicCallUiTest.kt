@@ -68,7 +68,7 @@ class ClassicCallUiTest {
 
         // Turn 6: End. Nothing more can be sent; the captions stay as a read-only transcript.
         app.tapPinned("call.end")
-        app.waitFor("call.endedPanel", "You ended the call")
+        app.waitForEnded()
         assertFalse(app.exists("call.send"))
         assertTrue("the transcript was wiped on End", app.captionExists("caption.you", TURN5))
         assertTrue(app.captionExists("caption.receptionist", "Yes, 10:30 tomorrow morning."))
@@ -233,7 +233,7 @@ class ClassicCallUiTest {
         assertFalse(app.exists("call.connectionLostPanel", "Reconnecting"))
         assertFalse(app.isEnabled("call.send"))
         app.tapPinned("call.end")
-        app.waitFor("call.endedPanel", "You ended the call")
+        app.waitForEnded()
         assertFalse(app.exists("caption.you"))
     }
 
@@ -245,7 +245,7 @@ class ClassicCallUiTest {
         app.waitForDraft(TURN1)
         app.tapPinned("call.end")
 
-        app.waitFor("call.endedPanel", "You ended the call")
+        app.waitForEnded()
         assertFalse(app.exists("call.send"))
         assertFalse("the unsent draft outlived End", app.exists("call.draft"))
         app.assertStays("silence after End", 3.0) { !app.exists("caption.you") }

@@ -64,12 +64,12 @@ fun isLargerThanExtraLargeText(): Boolean = LocalDensity.current.fontScale > Tex
 
 /** The bar pinned under a screen (iOS `.safeAreaInset(edge: .bottom)` with `.background(.bar)`). */
 @Composable
-fun BottomBar(modifier: Modifier = Modifier, spacing: Dp = 10.dp, content: @Composable ColumnScope.() -> Unit) {
+fun BottomBar(modifier: Modifier = Modifier, spacing: Dp = 8.dp, content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(spacing),
         content = content,
     )
@@ -83,7 +83,7 @@ fun TopBar(
     leading: @Composable RowScope.() -> Unit = {},
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
-    Box(modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 8.dp)) {
+    Box(modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 4.dp)) {
         Row(Modifier.align(Alignment.CenterStart), verticalAlignment = Alignment.CenterVertically, content = leading)
         if (title != null) {
             Text(title, style = IsharaType.headline, modifier = Modifier.align(Alignment.Center))

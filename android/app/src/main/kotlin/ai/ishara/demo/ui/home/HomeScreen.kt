@@ -1,27 +1,29 @@
 package ai.ishara.demo.ui.home
 
-import ai.ishara.demo.models.CallHistory
 import ai.ishara.demo.core.call.CallPurpose
+import ai.ishara.demo.models.CallHistory
 import ai.ishara.demo.models.CallSetup
 import ai.ishara.demo.models.CallVoice
 import ai.ishara.demo.models.Contact
 import ai.ishara.demo.models.PreferredTime
 import ai.ishara.demo.models.title
-import ai.ishara.demo.ui.components.BigActionButton
 import ai.ishara.demo.ui.components.BottomBar
 import ai.ishara.demo.ui.components.CallingNumberNote
 import ai.ishara.demo.ui.components.FormDivider
 import ai.ishara.demo.ui.components.FormRow
 import ai.ishara.demo.ui.components.FormSection
 import ai.ishara.demo.ui.components.LargeTitle
+import ai.ishara.demo.ui.components.PrimaryButton
+import ai.ishara.demo.ui.components.TonalButton
 import ai.ishara.demo.ui.components.WarningLabel
-import ai.ishara.demo.ui.theme.IsharaColors
+import ai.ishara.demo.ui.components.isLargerThanExtraLargeText
 import ai.ishara.demo.ui.theme.IsharaType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -62,7 +64,7 @@ import androidx.compose.ui.unit.dp
 
 /**
  * The classic Home (`IsharaFlow classic`, iOS `HomeView`): who to call, why, the saved details
- * and voice, then CALL (sign every reply) or CALL FOR ME (D9). Both need a name and a call that
+ * and voice, then Call (sign every reply) or Call for me (D9). Both need a name and a call that
  * can be placed.
  */
 @Composable
@@ -152,22 +154,45 @@ fun HomeScreen(
                 Text(modeDescription, style = IsharaType.footnote, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             CallingNumberNote()
-            BigActionButton(
-                "CALL",
-                IsharaColors.Green,
-                { onCall(chosen) },
-                Modifier.testTag("home.call").semantics { contentDescription = "Call ${contact.name}" },
-                enabled = canCall,
-                icon = Icons.Filled.Call,
+            CallButtons(
+                call = {
+                    PrimaryButton(
+                        "Call",
+                        { onCall(chosen) },
+                        it.testTag("home.call").semantics { contentDescription = "Call ${contact.name}" },
+                        enabled = canCall,
+                        icon = Icons.Filled.Call,
+                    )
+                },
+                callForMe = {
+                    TonalButton(
+                        "Call for me",
+                        { onCallForMe(chosen) },
+                        it.testTag("home.callForMe").semantics { contentDescription = "Let the agent call ${contact.name} for you" },
+                        enabled = canCall,
+                        icon = Icons.Filled.Person,
+                    )
+                },
             )
-            BigActionButton(
-                "CALL FOR ME",
-                IsharaColors.Blue,
-                { onCallForMe(chosen) },
-                Modifier.testTag("home.callForMe").semantics { contentDescription = "Let the agent call ${contact.name} for you" },
-                enabled = canCall,
-                icon = Icons.Filled.Person,
-            )
+        }
+    }
+}
+
+/**
+ * Call for me and Call side by side, Call (the primary) on the right; stacked full width once
+ * the text is too large for both labels on one line.
+ */
+@Composable
+private fun CallButtons(call: @Composable (Modifier) -> Unit, callForMe: @Composable (Modifier) -> Unit) {
+    if (isLargerThanExtraLargeText()) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            call(Modifier.fillMaxWidth())
+            callForMe(Modifier.fillMaxWidth())
+        }
+    } else {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            callForMe(Modifier.weight(1f))
+            call(Modifier.weight(1f))
         }
     }
 }
