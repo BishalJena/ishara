@@ -61,7 +61,7 @@ class DemoCallUiTest {
 
         waitFor("getReady.start")
         compose.waitUntil(10_000) { runCatching { compose.onNodeWithTag("getReady.start").assertIsEnabled() }.isSuccess }
-        compose.onNodeWithTag("getReady.start").performScrollTo().performClick()
+        compose.onNodeWithTag("getReady.start").performClick()
 
         // Turn 1: the signed chips, then the draft. Nothing is spoken before SEND.
         waitFor("chip.tomorrow")
@@ -89,7 +89,7 @@ class DemoCallUiTest {
         waitFor("home.call")
         compose.onNodeWithTag("home.call").performClick()
         compose.waitUntil(10_000) { runCatching { compose.onNodeWithTag("getReady.start").assertIsEnabled() }.isSuccess }
-        compose.onNodeWithTag("getReady.start").performScrollTo().performClick()
+        compose.onNodeWithTag("getReady.start").performClick()
 
         waitFor("call.draft", "Hello, I'd like a doctor's appointment tomorrow.")
         compose.onNodeWithTag("call.send").performClick()
