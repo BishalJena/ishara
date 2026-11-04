@@ -78,7 +78,7 @@ into the APK. Only arm64-v8a is built.
 - The Swift runtime is linked dynamically (`--static-swift-stdlib` failed to link with 6.4.2), so
   the APK carries about 70 MB of `.so` files; ICU alone is 40 MB.
 - AndroidX libraries newer than core 1.18 / Compose BOM 2026.06 need compileSdk 37; the app stays on 36.
-  OkHttp 5.5 (mockwebserver3, test only) needs 37 too, so it stays on 5.4.
+  OkHttp 5.5 needs 37 too, so OkHttp and mockwebserver3 stay on 5.4.
 
 ## Call layer bridge
 
@@ -92,11 +92,9 @@ into the APK. Only arm64-v8a is built.
   work (start call, brief, notes, reconnect, last close) answers with a `result` event for its request id.
 - `outgoing` and `connectionLost` are buffered channels: nothing is lost before they are collected,
   and each should be collected once.
-
-## Known gaps
-
-- **Close codes are lost on Android.** swift-corelibs-foundation's `URLSessionWebSocketTask` turns any
-  close code it has no case for into 1003 (`CloseCode(rawValue:) ?? .unsupportedData` in
-  `WebSocketURLProtocol.swift`), so the backend's 4401 / 4404 / 4409 reach CallSession as a plain drop.
-  `LiveCallDriver` then reconnects (3 tries) instead of stopping with the refusal's reason, and a 4409
-  ("connected somewhere else") socket is taken back. iOS is not affected.
+- The call socket runs on OkHttp (`core/call/OkHttpWebSockets.kt`), driven by Swift's
+  `KotlinWebSocketTransport` over JNI; REST stays on Swift's URLSession. Swift's own Android
+  WebSocket turns unknown close codes into 1003, which would hide the backend's 4401 / 4404 / 4409.
+- Debug builds allow cleartext http/ws to `10.0.2.2`, `127.0.0.1` and `localhost` only
+  (`src/debug/res/xml/network_security_config.xml`). OkHttp enforces Android's network security
+  policy and Swift's URLSession doesn't, so a backend at a LAN address needs adding there.
