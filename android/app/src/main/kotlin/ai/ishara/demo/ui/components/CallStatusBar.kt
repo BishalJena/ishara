@@ -1,0 +1,89 @@
+package ai.ishara.demo.ui.components
+
+import ai.ishara.demo.call.ActiveCallViewModel.Phase
+import ai.ishara.demo.core.call.CallState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
+import ai.ishara.demo.ui.theme.IsharaColors
+import kotlinx.coroutines.delay
+import kotlin.math.max
+
+/** Contact, call state and elapsed time, with End always in reach. */
+@Composable
+fun CallStatusBar(
+    contactName: String,
+    phase: Phase,
+    isSpeaking: Boolean,
+    connectedAt: Double?,
+    onEnd: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(14.dp))
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f).testTag("call.status")) {
+            Text(contactName, style = MaterialTheme.typography.titleMedium)
+            Text(
+                statusLine(phase, isSpeaking, connectedAt),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (phase !is Phase.Ended) {
+            Button(
+                onClick = onEnd,
+                colors = ButtonDefaults.buttonColors(containerColor = IsharaColors.Red, contentColor = androidx.compose.ui.graphics.Color.White),
+                modifier = Modifier.testTag("call.end").semantics { contentDescription = "End call" },
+            ) { Text("End") }
+        }
+    }
+}
+
+@Composable
+private fun statusLine(phase: Phase, isSpeaking: Boolean, connectedAt: Double?): String = when (phase) {
+    is Phase.Connecting -> if (phase.state == CallState.RINGING) "Ringing…" else "Dialing…"
+    is Phase.Interrupted -> "Connection lost · reconnecting…"
+    is Phase.Disconnected -> "Connection lost"
+    Phase.Live -> if (connectedAt == null) "In call" else "${if (isSpeaking) "Speaking" else "In call"} · ${elapsed(connectedAt)}"
+    is Phase.Ended -> "Call ended"
+}
+
+/** "1:42" since [since] (epoch seconds), ticking every second. */
+@Composable
+fun elapsed(since: Double): String {
+    val now by produceState(epochSeconds(), since) {
+        while (true) {
+            value = epochSeconds()
+            delay(1_000)
+        }
+    }
+    return formatElapsed(since, now)
+}
+
+fun formatElapsed(since: Double, now: Double): String {
+    val seconds = max(0, (now - since).toInt())
+    return "%d:%02d".format(seconds / 60, seconds % 60)
+}
+
+fun epochSeconds(): Double = System.currentTimeMillis() / 1000.0
