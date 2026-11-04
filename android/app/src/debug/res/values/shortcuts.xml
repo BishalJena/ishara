@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shortcut_test_classic_short">Test: City Clinic</string>
+    <string name="shortcut_test_classic_long">Test call: City Clinic (nothing dialled)</string>
+    <string name="shortcut_test_steer_short">Test: steer call</string>
+    <string name="shortcut_test_steer_long">Test steer call (nothing dialled)</string>
+</resources>
