@@ -22,7 +22,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -138,12 +140,22 @@ private fun RouteContent(navigator: AppNavigator) {
     }
 }
 
-/** Places the call and feeds it recognition while shown; saves and follows it once it is over. */
+/**
+ * Places the call and feeds it recognition while shown; saves and follows it once it is over.
+ * In test mode the phone also reads Ishara's lines aloud while the call screen is up.
+ */
 @Composable
 private fun RunCall(model: ActiveCallViewModel, navigator: AppNavigator) {
     LaunchedEffect(model) { model.run() }
     LaunchedEffect(model) {
         snapshotFlow { model.isCallOver }.first { it }
         navigator.callOver(model)
+    }
+    val voice = remember(model) { navigator.services.makeTestModeVoice(model.driver, captionsShown = model.captions.size) }
+    if (voice != null) {
+        LaunchedEffect(voice) {
+            snapshotFlow { model.captions to model.isCallOver }.collect { (captions, isOver) -> voice.update(captions, isOver) }
+        }
+        DisposableEffect(voice) { onDispose { voice.close() } }
     }
 }
