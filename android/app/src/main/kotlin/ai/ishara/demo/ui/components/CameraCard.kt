@@ -103,7 +103,7 @@ enum class CameraPlaceholder(val message: String) {
 }
 
 /** Tracking dots on or off, for every camera card of the run (iOS keeps it in `@AppStorage`). */
-private val showsBodyOverlay = mutableStateOf(true)
+internal val showsBodyOverlay = mutableStateOf(true)
 
 /**
  * Get ready's camera area, where the user frames themselves: the live preview, a camera-permission
@@ -120,11 +120,15 @@ fun CameraCard(camera: LiveCamera?, modifier: Modifier = Modifier) {
     }
 }
 
-/** What to show for [camera], asking for the permission while it is unknown. */
+/** What to show for [camera], asking for the permission while it is unknown if [asksPermission]. */
 @Composable
-private fun cameraContent(camera: LiveCamera?, isEmulator: Boolean = LocalRunsInEmulator.current): CameraCardContent {
+internal fun cameraContent(
+    camera: LiveCamera?,
+    asksPermission: Boolean = true,
+    isEmulator: Boolean = LocalRunsInEmulator.current,
+): CameraCardContent {
     if (camera == null) return CameraCardContent.of(null, isEmulator)
-    CameraPermissionRequest(camera)
+    if (asksPermission) CameraPermissionRequest(camera)
     // Read as state so the screens follow permission changes.
     camera.permission.collectAsState().value
     camera.isUnavailable.collectAsState().value
@@ -277,12 +281,12 @@ const val FRAME_ASPECT = 9f / 16f
  * frames redraw this layer and nothing else.
  */
 @Composable
-fun BodyOverlayLayer(camera: LiveCamera, modifier: Modifier = Modifier) {
+fun BodyOverlayLayer(camera: LiveCamera, modifier: Modifier = Modifier, dotScale: Float = 1f) {
     val overlay by camera.overlay.collectAsState()
-    Canvas(modifier.clearAndSetSemantics {}) { overlay?.let { draw(it) } }
+    Canvas(modifier.clearAndSetSemantics {}) { overlay?.let { draw(it, dotScale) } }
 }
 
-private fun DrawScope.draw(overlay: BodyOverlay) {
+private fun DrawScope.draw(overlay: BodyOverlay, dotScale: Float) {
     val mapping = PreviewMapping.of(overlay, size.width, size.height)
     overlay.restY?.let { restY ->
         val y = mapping.y(restY)
@@ -296,12 +300,12 @@ private fun DrawScope.draw(overlay: BodyOverlay) {
     }
     overlay.shoulders.forEach { point ->
         val (x, y) = mapping.point(point)
-        drawCircle(Color.White, 5.dp.toPx(), Offset(x, y))
+        drawCircle(Color.White, 5.dp.toPx() * dotScale, Offset(x, y))
     }
     overlay.wrists.forEach { point ->
         val (x, y) = mapping.point(point)
-        drawCircle(IsharaColors.Yellow, 8.dp.toPx(), Offset(x, y))
-        drawCircle(Color.Black.copy(alpha = 0.6f), 8.dp.toPx(), Offset(x, y), style = Stroke(1.5.dp.toPx()))
+        drawCircle(IsharaColors.Yellow, 8.dp.toPx() * dotScale, Offset(x, y))
+        drawCircle(Color.Black.copy(alpha = 0.6f), 8.dp.toPx() * dotScale, Offset(x, y), style = Stroke(1.5.dp.toPx()))
     }
 }
 
@@ -310,7 +314,7 @@ private fun DrawScope.draw(overlay: BodyOverlay) {
  * can't run, so nothing will be recognised or sent.
  */
 @Composable
-private fun CameraBlocked(modifier: Modifier) {
+internal fun CameraBlocked(modifier: Modifier) {
     val context = LocalContext.current
     Column(
         modifier = modifier
