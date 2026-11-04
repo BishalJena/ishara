@@ -71,9 +71,9 @@ class CallLayoutUiTest {
         app.waitGone("chip.afternoon")
     }
 
-    /** The user signs the answer, so the camera stays wholly above the agent's question card. */
+    /** The user signs the answer, so the camera indicator stays wholly above the agent's question card. */
     @Test
-    fun cameraStaysInViewAboveTheTimeQuestion() {
+    fun cameraIndicatorStaysInViewAboveTheTimeQuestion() {
         val transcript = "sorry about the wait so what time would will would you like to come in " +
             "tomorrow or would the morning or later on in the afternoon suit her better do you think"
         app.launch("IsharaFakeOpenQuestion" to "tap", "IsharaFakeOpenQuestionText" to transcript, timeScale = "2")
@@ -86,6 +86,41 @@ class CallLayoutUiTest {
         }
         app.tapPinned("ask.tomorrow")
         app.waitFor("caption.you", "Tomorrow, please.")
+    }
+
+    /**
+     * Once the call is over the transcript is the screen: it runs from under the status bar to
+     * Back to Home, with no box about the ending in between, and nothing can be sent.
+     */
+    private fun assertEndedTranscriptFillsTheScreen() {
+        app.launch("IsharaFixture" to "ended")
+        app.waitForEnded()
+        val status = app.bounds("call.status")
+        val transcript = app.bounds("call.endedPanel")
+        val bar = app.bounds("call.actionBar")
+        assertTrue("the transcript $transcript doesn't start under the status bar $status", transcript.top - status.bottom < 32f)
+        assertTrue("the transcript $transcript stops short of the bar $bar", bar.top - transcript.bottom < 24f)
+        assertFalse("an ended call explains itself in a box", app.exists("call.endedWarning"))
+        val back = app.bounds("call.backHome")
+        assertTrue("Back to Home $back isn't in the bar $bar", back.top >= bar.top && back.bottom <= bar.bottom + 0.5f)
+    }
+
+    @Test
+    fun endedTranscriptFillsTheScreen() = assertEndedTranscriptFillsTheScreen()
+
+    @Test
+    fun endedTranscriptFillsTheScreenAtTheLargestFontScale() {
+        app.setFontScale(2.0f)
+        assertEndedTranscriptFillsTheScreen()
+    }
+
+    /** A hang-up the backend couldn't confirm still says so, in one line above the transcript. */
+    @Test
+    fun unconfirmedHangUpWarnsAboveTheTranscript() {
+        app.launch("IsharaFixture" to "hangUpUnconfirmed")
+        app.waitForEnded()
+        app.waitFor("call.endedWarning", "Couldn't confirm the hang-up")
+        assertTrue(app.bounds("call.endedWarning").bottom <= app.bounds("call.captions").top + 0.5f)
     }
 
     /** At the largest font the four time answers and End all stay on screen. */

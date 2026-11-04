@@ -5,17 +5,20 @@ import ai.ishara.demo.core.call.Chip
 import ai.ishara.demo.models.CallSetup
 import ai.ishara.demo.models.title
 import ai.ishara.demo.models.wire
-import ai.ishara.demo.ui.components.BigActionButton
 import ai.ishara.demo.ui.components.BorderedButton
 import ai.ishara.demo.ui.components.BottomBar
+import ai.ishara.demo.ui.components.CallCameraNotice
 import ai.ishara.demo.ui.components.CallingNumberNote
-import ai.ishara.demo.ui.components.CameraCard
+import ai.ishara.demo.ui.components.CameraIndicator
 import ai.ishara.demo.ui.components.CandidateTile
 import ai.ishara.demo.ui.components.ChipView
 import ai.ishara.demo.ui.components.FramingHint
 import ai.ishara.demo.ui.components.IconLabel
+import ai.ishara.demo.ui.components.IsharaButtons
 import ai.ishara.demo.ui.components.LargeTitle
+import ai.ishara.demo.ui.components.PrimaryButton
 import ai.ishara.demo.ui.components.ReplayMenu
+import ai.ishara.demo.ui.components.TonalButton
 import ai.ishara.demo.ui.components.TopBar
 import ai.ishara.demo.ui.components.WarningLabel
 import ai.ishara.demo.ui.theme.IsharaColors
@@ -29,12 +32,14 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -105,20 +110,30 @@ fun BriefScreen(model: BriefModel, modeDescription: String, onApprove: (CallSetu
             CallingNumberNote()
             val approved = model.approvedSetup
             if (approved != null) {
-                BigActionButton("Approve and call", IsharaColors.Green, { onApprove(approved) }, Modifier.testTag("brief.approve"), icon = Icons.Filled.Phone)
+                PrimaryButton(
+                    "Approve and call",
+                    { onApprove(approved) },
+                    Modifier.testTag("brief.approve"),
+                    icon = Icons.Filled.Phone,
+                    fillWidth = true,
+                )
             } else if (model.isPreparing) {
                 Box(
-                    Modifier.fillMaxWidth().background(IsharaColors.Blue, RoundedCornerShape(16.dp)).padding(20.dp).testTag("brief.prepare"),
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = IsharaButtons.Height)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f), CircleShape)
+                        .testTag("brief.prepare"),
                     contentAlignment = Alignment.Center,
-                ) { CircularProgressIndicator(Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp) }
+                ) { CircularProgressIndicator(Modifier.size(20.dp), color = MaterialTheme.colorScheme.primary, strokeWidth = 2.dp) }
             } else {
-                BigActionButton(
+                TonalButton(
                     "Prepare the request",
-                    IsharaColors.Blue,
                     { scope.launch { model.prepare() } },
                     Modifier.testTag("brief.prepare"),
                     enabled = model.canPrepare,
                     icon = Icons.Filled.Search,
+                    fillWidth = true,
                 )
             }
         }
@@ -129,16 +144,17 @@ fun BriefScreen(model: BriefModel, modeDescription: String, onApprove: (CallSetu
 @Composable
 private fun SigningSection(model: BriefModel) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Sign what you need", style = IsharaType.headline)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Sign what you need", style = IsharaType.headline, modifier = Modifier.weight(1f))
+            CameraIndicator(model.cameraState)
+        }
         Text(
             "For ${model.setup.purpose.title.lowercase()} at ${model.setup.contact.name}. Sign the day and time, for example TOMORROW, MORNING.",
             style = IsharaType.subheadline,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Box {
-            CameraCard(camera = model.recognition.camera, state = model.cameraState)
-            ReplayMenu(model.recognition.replayOptions, model.recognition::replay, Modifier.align(Alignment.BottomEnd).padding(10.dp))
-        }
+        CallCameraNotice(model.recognition.camera, model.cameraState)
+        ReplayMenu(model.recognition.replayOptions, model.recognition::replay)
         if (model.showsFramingHint) {
             FramingHint()
         } else if (model.lastSignUnsure) {

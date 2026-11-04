@@ -138,6 +138,17 @@ class AppRobot(private val compose: ComposeTestRule) {
         assertTrue("$above $button is off screen", button.bottom <= screen.bottom + 0.5f)
     }
 
+    /**
+     * The call is over: the status bar says so, the read-only transcript takes the screen and
+     * nothing can be sent or ended any more.
+     */
+    fun waitForEnded(timeoutMs: Long = 15_000) {
+        waitFor("call.status", "Call ended", timeoutMs)
+        waitFor("call.endedPanel")
+        assertFalse("SEND outlived the call", exists("call.send"))
+        assertFalse("End outlived the call", exists("call.end"))
+    }
+
     /** A caption somewhere in the history, scrolled to (the history is a lazy list). */
     fun captionExists(tag: String, text: String): Boolean = runCatching {
         compose.onNodeWithTag("call.captions").performScrollToNode(matcher(tag, text))

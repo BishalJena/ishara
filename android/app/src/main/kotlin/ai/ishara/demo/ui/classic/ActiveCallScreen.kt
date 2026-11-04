@@ -3,31 +3,34 @@ package ai.ishara.demo.ui.classic
 import ai.ishara.demo.call.ActiveCallStage
 import ai.ishara.demo.call.ActiveCallViewModel
 import ai.ishara.demo.call.ActiveCallViewModel.Delivery
+import ai.ishara.demo.call.ActiveCallViewModel.EndReason
 import ai.ishara.demo.ui.components.AskCard
-import ai.ishara.demo.ui.components.BigActionButton
 import ai.ishara.demo.ui.components.BottomBar
-import ai.ishara.demo.ui.components.CallEndedPanel
+import ai.ishara.demo.ui.components.CallCameraNotice
 import ai.ishara.demo.ui.components.CallErrorBanner
 import ai.ishara.demo.ui.components.CallStatusBar
-import ai.ishara.demo.ui.components.CameraCard
+import ai.ishara.demo.ui.components.CameraIndicator
 import ai.ishara.demo.ui.components.CandidateTile
 import ai.ishara.demo.ui.components.CaptionHistory
 import ai.ishara.demo.ui.components.ChipRow
 import ai.ishara.demo.ui.components.ConnectionLostPanel
 import ai.ishara.demo.ui.components.DeliveryBanner
+import ai.ishara.demo.ui.components.DestructiveButton
 import ai.ishara.demo.ui.components.DraftCard
 import ai.ishara.demo.ui.components.FramingHint
 import ai.ishara.demo.ui.components.IconLabel
+import ai.ishara.demo.ui.components.IsharaTextButton
 import ai.ishara.demo.ui.components.PinnedSentence
+import ai.ishara.demo.ui.components.PrimaryButton
 import ai.ishara.demo.ui.components.QuickReplyBar
 import ai.ishara.demo.ui.components.ReplayMenu
 import ai.ishara.demo.ui.components.StopTooLateBanner
-import ai.ishara.demo.ui.components.isAccessibilityTextSize
+import ai.ishara.demo.ui.components.TonalButton
+import ai.ishara.demo.ui.components.WarningLabel
 import ai.ishara.demo.ui.theme.IsharaColors
 import ai.ishara.demo.ui.theme.IsharaType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,6 +38,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
@@ -44,8 +48,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,6 +60,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -67,8 +74,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
-import androidx.compose.ui.unit.min
 
 /**
  * Screens 3 and 4 (iOS `ActiveCallView`): signing a reply, then speaking it; also the lost
@@ -77,16 +82,15 @@ import androidx.compose.ui.unit.min
  *
  * The sentence SEND or STOP acts on lives in the pinned action bar right above its button, so
  * it can never scroll away or hide behind it at any text size; the captions give up height at
- * large text sizes (and, while the agent asks, for the camera) so the chips stay reachable.
+ * large text sizes so the chips stay reachable (see [CallLayout]). The camera is only a small indicator in the
+ * status bar. Once the call is over the transcript fills the screen.
  */
 @Composable
 fun ActiveCallScreen(model: ActiveCallViewModel, onLeave: () -> Unit, onShowNotes: (() -> Unit)?) {
     val stage = ActiveCallStage.of(model)
     val density = LocalDensity.current
-    val isAccessibilitySize = isAccessibilityTextSize()
-    // Heights of the status bar and the action bar. Neither depends on the caption box, so
-    // sizing the captions from them (and the screen) can't feed back into a layout loop.
-    var statusBarHeight by remember { mutableStateOf<Dp?>(null) }
+    // Height of the action bar. It doesn't depend on the caption box, so sizing the captions
+    // from it (and the screen) can't feed back into a layout loop.
     var actionBarHeight by remember { mutableStateOf<Dp?>(null) }
     val panelScroll = rememberScrollState()
     val chipsInView = remember { BringIntoViewRequester() }
@@ -103,18 +107,11 @@ fun ActiveCallScreen(model: ActiveCallViewModel, onLeave: () -> Unit, onShowNote
     LaunchedEffect(showsDeliveryBanner, model.delivery) { if (showsDeliveryBanner) bannerInView.bringIntoView() }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val screenHeight = maxHeight
-        val layout = CallLayout(
-            screenHeight = screenHeight,
-            statusBarHeight = statusBarHeight,
-            actionBarHeight = actionBarHeight,
-            scaledCaptionHeight = CallLayout.CAPTION_HEIGHT * density.fontScale,
-            keepsCameraInView = model.isDelegated && model.watchesSigns && model.openQuestion != null && !isAccessibilitySize,
-        )
+        val layout = CallLayout(screenHeight = maxHeight, actionBarHeight = actionBarHeight)
         Column(Modifier.fillMaxSize()) {
             Column(
-                modifier = Modifier.weight(1f).padding(start = 16.dp, end = 16.dp, top = CallLayout.TOP_PADDING),
-                verticalArrangement = Arrangement.spacedBy(CallLayout.SPACING),
+                modifier = Modifier.weight(1f).padding(start = 16.dp, end = 16.dp, top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 CallStatusBar(
                     model.setup.contact.name,
@@ -122,24 +119,31 @@ fun ActiveCallScreen(model: ActiveCallViewModel, onLeave: () -> Unit, onShowNote
                     model.isSpeaking,
                     model.connectedAt,
                     onEnd = model::end,
-                    modifier = Modifier.onSizeChanged { statusBarHeight = with(density) { it.height.toDp() } },
+                    indicator = if (model.watchesSigns && !model.isCallOver) {
+                        { CameraIndicator(model.cameraState, Modifier.testTag("call.camera")) }
+                    } else {
+                        null
+                    },
                 )
-                CaptionHistory(model.captions, Modifier.fillMaxWidth().height(layout.captionBoxHeight), isCallOver = model.isCallOver)
-                Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(panelScroll)) {
-                    when (stage) {
-                        is ActiveCallStage.Ended -> CallEndedPanel(stage.reason)
-                        is ActiveCallStage.ConnectionLost -> ConnectionLostPanel(stage.notice, stage.isReconnecting)
-                        is ActiveCallStage.Speaking -> SpeakingPanel(model)
-                        ActiveCallStage.Signing -> SigningPanel(model, chipsInView, bannerInView)
+                if (stage is ActiveCallStage.Ended) {
+                    EndedTranscript(model, stage.reason, Modifier.weight(1f))
+                } else {
+                    CaptionHistory(model.captions, Modifier.fillMaxWidth().weight(1f))
+                    Column(Modifier.fillMaxWidth().heightIn(max = layout.panelMaxHeight).verticalScroll(panelScroll)) {
+                        when (stage) {
+                            is ActiveCallStage.ConnectionLost -> ConnectionLostPanel(stage.notice, stage.isReconnecting)
+                            is ActiveCallStage.Speaking -> SpeakingPanel(model)
+                            ActiveCallStage.Signing -> SigningPanel(model, chipsInView, bannerInView)
+                            is ActiveCallStage.Ended -> Unit
+                        }
+                        Spacer(Modifier.height(8.dp))
                     }
-                    Spacer(Modifier.height(8.dp))
                 }
             }
             BottomBar(
                 Modifier
                     .onSizeChanged { actionBarHeight = with(density) { it.height.toDp() } }
                     .testTag("call.actionBar"),
-                spacing = 12.dp,
             ) {
                 if (model.isDelegated) {
                     DelegatedBar(model, stage, layout, onLeave, onShowNotes)
@@ -152,59 +156,16 @@ fun ActiveCallScreen(model: ActiveCallViewModel, onLeave: () -> Unit, onShowNote
 }
 
 /**
- * The call screen's sizes, ported from iOS `ActiveCallView` (points become dp): the caption
- * box, the tallest the agent's question card may be, and the room for the pinned sentence.
+ * The call screen's sizes: the room for the pinned sentence, and for the panel under the
+ * captions. The captions take whatever the panel leaves, so they fill the screen when there is
+ * little to show and give up space at large text sizes so the chips stay reachable.
  */
-private class CallLayout(
-    private val screenHeight: Dp,
-    private val statusBarHeight: Dp?,
-    private val actionBarHeight: Dp?,
-    /** iOS `@ScaledMetric(relativeTo: .body) captionHeight = 150`: grows with the text size. */
-    private val scaledCaptionHeight: Dp,
-    /** The user signs the answer to the agent's question, so the camera stays in view above its card. */
-    private val keepsCameraInView: Boolean,
-) {
+private class CallLayout(private val screenHeight: Dp, private val actionBarHeight: Dp?) {
     /** Room for the pinned sentence; past this it scrolls inside its card. */
     val sentenceMaxHeight: Dp get() = screenHeight * 0.55f
 
-    /**
-     * At large text sizes the action bar takes much of the screen; the captions then give up
-     * space so the chips stay reachable. While the agent asks they also give up what the
-     * camera needs.
-     */
-    val captionBoxHeight: Dp
-        get() {
-            val preferred = min(scaledCaptionHeight, 240.dp)
-            val bar = actionBarHeight ?: return preferred
-            var height = min(preferred, (screenHeight - bar) * 0.4f)
-            val status = statusBarHeight
-            if (keepsCameraInView && status != null) {
-                height = min(height, screenHeight - bar - chromeHeight(status) - CAMERA_ROOM)
-            }
-            return max(MIN_CAPTION_HEIGHT, height)
-        }
-
-    /** The tallest the question card may be with the captions at their smallest and the camera's room left. */
-    val askCardMaxHeight: Dp?
-        get() {
-            val status = statusBarHeight
-            if (!keepsCameraInView || status == null) return null
-            return screenHeight - chromeHeight(status) - MIN_CAPTION_HEIGHT - CAMERA_ROOM - ACTION_BAR_PADDING * 2
-        }
-
-    /** Everything above the scrolling panel but the captions: top padding, status bar, the two gaps. */
-    private fun chromeHeight(statusBar: Dp): Dp = TOP_PADDING + statusBar + SPACING * 2
-
-    companion object {
-        val CAPTION_HEIGHT = 150.dp
-        val MIN_CAPTION_HEIGHT = 80.dp
-
-        /** The whole live camera card (a 170 dp preview in 10 dp of padding) and a little space under it. */
-        val CAMERA_ROOM = 190.dp + 8.dp
-        val TOP_PADDING = 8.dp
-        val SPACING = 12.dp
-        val ACTION_BAR_PADDING = 16.dp
-    }
+    /** The panel (chips, banners) scrolls inside this, leaving the captions at least the rest. */
+    val panelMaxHeight: Dp get() = (screenHeight - (actionBarHeight ?: 0.dp)) * 0.55f
 }
 
 private fun showsDeliveryBanner(model: ActiveCallViewModel): Boolean {
@@ -216,22 +177,44 @@ private fun showsDeliveryBanner(model: ActiveCallViewModel): Boolean {
 }
 
 /**
- * Screen 3 body, top to bottom in the order the eyes move: camera, chips. The draft, quick
- * replies and SEND live in the action bar. On a delegated call (D9) there are no chips: the
- * camera is there only to answer the agent (attended); an unattended call shows no camera.
+ * The call is over: the read-only transcript takes the screen (the status bar already says
+ * "Call ended"). Only what still needs the user's attention sits above it: a hang-up that
+ * wasn't confirmed, or why the call failed. Nothing more can be sent.
+ */
+@Composable
+private fun EndedTranscript(model: ActiveCallViewModel, reason: EndReason, modifier: Modifier) {
+    Column(modifier.fillMaxWidth().testTag("call.endedPanel"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        when (reason) {
+            EndReason.HangUpUnconfirmed -> IconLabel(
+                "Couldn't confirm the hang-up. Check the call is over.",
+                Icons.Filled.Warning,
+                Modifier.fillMaxWidth().testTag("call.endedWarning"),
+                color = IsharaColors.Orange,
+                style = IsharaType.subheadline.copy(fontWeight = FontWeight.SemiBold),
+            )
+            is EndReason.Failed -> WarningLabel(
+                reason.message,
+                Modifier.fillMaxWidth().testTag("call.endedWarning"),
+                style = IsharaType.subheadline.copy(fontWeight = FontWeight.SemiBold),
+            )
+            EndReason.UserEnded, EndReason.RemoteEnded -> Unit
+        }
+        CaptionHistory(model.captions, Modifier.fillMaxWidth().weight(1f), isCallOver = true)
+        Spacer(Modifier.height(4.dp))
+    }
+}
+
+/**
+ * Screen 3 body, top to bottom in the order the eyes move: what the camera needs, chips. The
+ * draft, quick replies and SEND live in the action bar. On a delegated call (D9) there are no
+ * chips: the camera is there only to answer the agent (attended); an unattended call has none.
  */
 @Composable
 private fun SigningPanel(model: ActiveCallViewModel, chipsInView: BringIntoViewRequester, bannerInView: BringIntoViewRequester) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (model.watchesSigns) {
-            Box(Modifier.testTag("call.camera")) {
-                CameraCard(camera = model.recognition.camera, state = model.cameraState)
-                ReplayMenu(
-                    model.recognition.replayOptions,
-                    model.recognition::replay,
-                    Modifier.align(androidx.compose.ui.Alignment.BottomEnd).padding(10.dp),
-                )
-            }
+            CallCameraNotice(model.recognition.camera, model.cameraState)
+            ReplayMenu(model.recognition.replayOptions, model.recognition::replay)
         }
         model.errorMessage?.let { CallErrorBanner(it) }
         if (model.showsFramingHint) FramingHint()
@@ -248,8 +231,8 @@ private fun SigningPanel(model: ActiveCallViewModel, chipsInView: BringIntoViewR
 /** Screen 4 body: the camera keeps watching so the user can sign the next thing. */
 @Composable
 private fun SpeakingPanel(model: ActiveCallViewModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        CameraCard(camera = model.recognition.camera, state = model.cameraState)
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        CallCameraNotice(model.recognition.camera, model.cameraState)
         if (model.isStopTooLate) StopTooLateBanner()
         model.errorMessage?.let { CallErrorBanner(it) }
     }
@@ -285,15 +268,15 @@ private fun DelegatedBar(
 ) {
     val isOver = stage is ActiveCallStage.Ended || (stage is ActiveCallStage.ConnectionLost && !stage.isReconnecting)
     if (isOver) {
+        // The notes are what the user came back for, so they lead.
         if (onShowNotes != null) {
-            BigActionButton("See the call notes", IsharaColors.Blue, onShowNotes, Modifier.testTag("call.notes"), icon = Icons.Filled.Info)
+            PrimaryButton("See the call notes", onShowNotes, Modifier.testTag("call.notes"), icon = Icons.Filled.Info, fillWidth = true)
         }
-        BackHomeButton(onLeave, tint = IsharaColors.Gray.copy(alpha = 0.3f), foreground = MaterialTheme.colorScheme.onSurface)
+        BackHomeButton(onLeave, Modifier.fillMaxWidth())
     } else {
-        // Leaves room for the answer buttons and the status bar with End above, and at standard
-        // text sizes for the camera too.
+        // Leaves room for the answer buttons and the status bar with End above.
         model.openQuestion?.let { question ->
-            AskCard(question, model::answer, detailsMaxHeight = layout.sentenceMaxHeight * 0.5f, maxHeight = layout.askCardMaxHeight)
+            AskCard(question, model::answer, detailsMaxHeight = layout.sentenceMaxHeight * 0.5f)
         }
     }
 }
@@ -305,15 +288,14 @@ private fun DelegatedBar(
 @Composable
 private fun LiveBar(model: ActiveCallViewModel, stage: ActiveCallStage, sentenceMaxHeight: Dp, onLeave: () -> Unit) {
     when (stage) {
-        is ActiveCallStage.Ended -> BackHomeButton(onLeave, tint = IsharaColors.Blue, foreground = Color.White)
+        is ActiveCallStage.Ended -> BackHomeButton(onLeave, Modifier.fillMaxWidth())
         is ActiveCallStage.Speaking -> {
             PinnedSentence(sentenceMaxHeight) {
                 // Once STOP is refused it is still being spoken, not stopping.
                 SpeakingCard(stage.text, isStopRequested = model.isStopRequested && !model.isStopTooLate)
             }
-            BigActionButton(
-                "STOP",
-                IsharaColors.Red,
+            DestructiveButton(
+                "Stop",
                 model::stop,
                 Modifier.testTag("call.stop"),
                 enabled = !model.isStopRequested,
@@ -337,20 +319,16 @@ private fun LiveBar(model: ActiveCallViewModel, stage: ActiveCallStage, sentence
 
 @Composable
 private fun SendRow(model: ActiveCallViewModel) {
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         // Sized to its label so the word never wraps at large text sizes; SEND takes the rest.
-        BigActionButton(
+        IsharaTextButton(
             "Clear",
-            IsharaColors.Gray.copy(alpha = 0.3f),
             model::clear,
             Modifier.testTag("call.clear"),
             enabled = model.chips.isNotEmpty() || model.draft != null,
-            foreground = MaterialTheme.colorScheme.onSurface,
-            fillWidth = false,
         )
-        BigActionButton(
-            "SEND",
-            IsharaColors.Orange,
+        PrimaryButton(
+            "Send",
             model::send,
             Modifier.weight(1f).testTag("call.send").semantics { contentDescription = "Send reply" },
             enabled = model.canSend,
@@ -360,8 +338,8 @@ private fun SendRow(model: ActiveCallViewModel) {
 }
 
 @Composable
-private fun BackHomeButton(onLeave: () -> Unit, tint: Color, foreground: Color) {
-    BigActionButton("Back to Home", tint, onLeave, Modifier.testTag("call.backHome"), foreground = foreground)
+private fun BackHomeButton(onLeave: () -> Unit, modifier: Modifier) {
+    TonalButton("Back to Home", onLeave, modifier.testTag("call.backHome"), icon = Icons.Filled.Home)
 }
 
 /** The exact sentence being spoken. */
@@ -374,11 +352,11 @@ private fun SpeakingCard(text: String, isStopRequested: Boolean) {
             .background(IsharaColors.Purple.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
             .semantics(mergeDescendants = true) { contentDescription = "${title.removeSuffix("…")}: $text" }
             .testTag("call.speaking")
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(title, style = IsharaType.headline)
-        Text("\u201C$text\u201D", style = IsharaType.title2.copy(fontWeight = FontWeight.SemiBold))
+        Text(title, style = IsharaType.subheadline.copy(fontWeight = FontWeight.SemiBold))
+        Text("\u201C$text\u201D", style = IsharaType.title3.copy(fontWeight = FontWeight.SemiBold))
     }
 }
 
