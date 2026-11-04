@@ -5,8 +5,10 @@
 #   scripts/verify.sh --keep-going  run every category, then report
 #
 # Categories that don't exist yet (no Swift packages, no Xcode project, no recognition venv)
-# or need a missing tool (Xcode, shellcheck) are reported as SKIPPED with the reason.
-# Optional overrides: IOS_SCHEME (default Ishara), IOS_DESTINATION (xcodebuild -destination).
+# or need a missing tool (Xcode, shellcheck, JDK 17, Android SDK / NDK, Swift SDK for Android)
+# are reported as SKIPPED with the reason.
+# Optional overrides: IOS_SCHEME (default Ishara), IOS_DESTINATION (xcodebuild -destination),
+# ANDROID_SERIAL (run the Android device tests there; otherwise only on a running emulator).
 set -uo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -16,7 +18,7 @@ KEEP_GOING=0
 case "${1:-}" in
   "") ;;
   --keep-going) KEEP_GOING=1 ;;
-  -h | --help) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  -h | --help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
   *) echo "unknown option: $1 (try --help)" >&2; exit 2 ;;
 esac
 
@@ -208,6 +210,106 @@ check_ios_app() {
     -destination "$destination"
 }
 
+# The Android build needs JDK 17+, the Android SDK, NDK r30 and the Swift SDK for Android that
+# matches the Swift toolchain. Resolved like android/app/build.gradle.kts does (local.properties,
+# then the environment, then the defaults) and exported so Gradle uses the same ones.
+ANDROID_TRIPLE=aarch64-unknown-linux-android28
+ANDROID_NDK_VERSION=30.0.16248370
+
+android_property() {
+  [[ -f android/local.properties ]] || return 0
+  sed -n "s/^$1=//p" android/local.properties | tail -n 1
+}
+
+# Sets swift and exports SWIFT_BIN, SWIFT_SDK and ANDROID_NDK_HOME, or skips with what's missing.
+find_swift_for_android() {
+  local ndk sdk_name
+  swift=$(android_property swift.bin)
+  swift=${swift:-${SWIFT_BIN:-}}
+  if [[ -z $swift ]]; then
+    if [[ -x $HOME/.swiftly/bin/swift ]]; then
+      swift=$HOME/.swiftly/bin/swift
+    else
+      swift=$(command -v swift || true)
+    fi
+  fi
+  [[ -n $swift && -x $swift ]] || skip "no Swift toolchain (android/README.md: One-time setup)"
+  sdk_name=$(android_property swift.sdk)
+  SWIFT_SDK=${sdk_name:-${SWIFT_SDK:-swift-6.4.2-RELEASE_android}}
+  "$swift" sdk configure --show-configuration "$SWIFT_SDK" "$ANDROID_TRIPLE" >/dev/null 2>&1 \
+    || skip "Swift SDK $SWIFT_SDK not installed for $swift (android/README.md: One-time setup)"
+  ndk=$(android_property android.ndk)
+  ndk=${ndk:-${ANDROID_NDK_HOME:-}}
+  if [[ -z $ndk ]]; then
+    ndk=$(android_sdk_dir)
+    [[ -n $ndk ]] && ndk=$ndk/ndk/$ANDROID_NDK_VERSION
+  fi
+  [[ -n $ndk && -d $ndk/toolchains/llvm/prebuilt ]] \
+    || skip "no Android NDK $ANDROID_NDK_VERSION (set ANDROID_NDK_HOME or android.ndk in android/local.properties)"
+  export SWIFT_BIN=$swift SWIFT_SDK ANDROID_NDK_HOME=$ndk
+}
+
+android_sdk_dir() {
+  local dir
+  dir=$(android_property sdk.dir)
+  echo "${dir:-${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}}"
+}
+
+# JDK 17 or newer: JAVA_HOME, else Homebrew's openjdk@17, else macOS's java_home.
+find_jdk() {
+  local candidate
+  for candidate in "${JAVA_HOME:-}" /opt/homebrew/opt/openjdk@17 "$(/usr/libexec/java_home -v 17+ 2>/dev/null || true)"; do
+    if [[ -n $candidate && -x $candidate/bin/java ]]; then
+      export JAVA_HOME=$candidate
+      return
+    fi
+  done
+  skip "no JDK 17 (brew install openjdk@17, or set JAVA_HOME)"
+}
+
+# CallSession and RecognitionCore are compiled unchanged into the Android app, so an Apple-only
+# API in them breaks Android. Build both for Android; the scratch folders stay in android/build.
+check_shared_swift_android() {
+  local swift package
+  find_swift_for_android
+  for package in CallSession RecognitionCore; do
+    step "$swift" build --package-path "ios/Packages/$package" --swift-sdk "$ANDROID_TRIPLE" \
+      --scratch-path "android/build/swift-packages/$package"
+  done
+}
+
+check_android_app() {
+  local swift sdk
+  [[ -x android/gradlew ]] || skip "no android/gradlew"
+  find_jdk
+  sdk=$(android_sdk_dir)
+  [[ -n $sdk && -d $sdk ]] || skip "no Android SDK (set sdk.dir in android/local.properties or ANDROID_HOME)"
+  find_swift_for_android
+  cd android
+  step ./gradlew --quiet :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+}
+
+# Device tests install the app, so they run on ANDROID_SERIAL when set, otherwise only on a
+# running emulator; a plugged-in phone is never picked by itself.
+check_android_device() {
+  local swift sdk adb serial
+  [[ -x android/gradlew ]] || skip "no android/gradlew"
+  find_jdk
+  sdk=$(android_sdk_dir)
+  [[ -n $sdk && -d $sdk ]] || skip "no Android SDK (set sdk.dir in android/local.properties or ANDROID_HOME)"
+  adb=$sdk/platform-tools/adb
+  [[ -x $adb ]] || skip "no adb in $sdk/platform-tools"
+  serial=${ANDROID_SERIAL:-}
+  if [[ -z $serial ]]; then
+    serial=$("$adb" devices | awk '$1 ~ /^emulator-/ && $2 == "device" { print $1; exit }')
+    [[ -n $serial ]] || skip "no running emulator (start one, or set ANDROID_SERIAL)"
+  fi
+  find_swift_for_android
+  export ANDROID_SERIAL=$serial
+  cd android
+  step ./gradlew --quiet :app:connectedDebugAndroidTest
+}
+
 echo "Xcode: ${XCODE_DIR:-not found}"
 run_category "backend (format, lint, tests)" check_backend
 run_category "recognition light tests" check_recognition_light
@@ -216,6 +318,9 @@ run_category "shellcheck" check_shellcheck
 run_category "heroku script tests" check_script_tests
 run_category "swift packages" check_swift_packages
 run_category "ios app (xcodebuild test)" check_ios_app
+run_category "shared swift for android" check_shared_swift_android
+run_category "android app (tests, lint, build)" check_android_app
+run_category "android device tests" check_android_device
 
 echo
 echo "Summary"

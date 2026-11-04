@@ -65,3 +65,13 @@ backend/artifacts/
 
 # Mutation testing workspace (mutmut)
 backend/mutants/
+
+# Android: Gradle and Kotlin caches, build output, machine-specific SDK paths, IDE files
+# (android/swift/.build is covered by .build/ above)
+android/.gradle/
+android/.kotlin/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+*.iml

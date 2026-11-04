@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 /// Where the backend lives and the demo app token. Both come from the app's configuration;
 /// nothing here is hardcoded.
