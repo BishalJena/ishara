@@ -71,7 +71,7 @@ class SetupAndSettingsTest {
             number = "9845012345"
             pickedName = "Dr Mehta"
             request = "  Book a check-up  "
-            attachments = listOf(Document("card.jpg", "Policy 42"))
+            attachments = listOf(Attachment.read("card.jpg", null, "Policy 42"), Attachment.read("blank.jpg", null, " "))
         }
         assertNull("Settings asks for the name first", draft.callSetup(settings, null))
 
@@ -82,7 +82,7 @@ class SetupAndSettingsTest {
         assertEquals(Contact("number", "Dr Mehta", "+919845012345"), setup.contact)
         assertEquals("Riya", setup.details.name)
         assertEquals("Book a check-up", setup.request)
-        assertEquals(listOf(Document("card.jpg", "Policy 42")), setup.documents)
+        assertEquals("an attachment with no text sends nothing", listOf(Document("card.jpg", "Policy 42")), setup.documents)
         assertEquals("+91 98000 12345", setup.callback)
         assertNull(draft.callSetup(settings, "No backend."))
 

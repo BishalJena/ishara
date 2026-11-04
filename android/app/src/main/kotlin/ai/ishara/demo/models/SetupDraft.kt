@@ -1,7 +1,6 @@
 package ai.ishara.demo.models
 
 import ai.ishara.demo.core.call.CallPurpose
-import ai.ishara.demo.core.call.Document
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -16,8 +15,8 @@ class SetupDraft {
     var pickedName: String by mutableStateOf("")
     var request: String by mutableStateOf("")
 
-    /** Cards, letters or bills read on this phone, as text Ishara may quote from. */
-    var attachments: List<Document> by mutableStateOf(emptyList())
+    /** Cards, letters or bills read on this phone; the readable ones go as text Ishara may quote from. */
+    var attachments: List<Attachment> by mutableStateOf(emptyList())
 
     fun clear() {
         number = ""
@@ -51,7 +50,7 @@ class SetupDraft {
             details = SavedDetails(name = name, preferredTime = PreferredTime.MORNINGS),
             voice = CallVoice.INDIAN_ENGLISH,
             request = request.trim(),
-            documents = attachments,
+            documents = attachments.mapNotNull(Attachment::document),
             // Said only when they ask how to reach the caller ("You can reach me on ...").
             callback = settings.callbackForCall,
         )
