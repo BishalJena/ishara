@@ -32,7 +32,7 @@ object OngoingCallNotifications {
     private const val PURPLE = 0xFFAF52DE.toInt()
 
     fun ensureChannel(context: Context) {
-        val channel = NotificationChannel(CHANNEL_ID, "Ongoing call", NotificationManager.IMPORTANCE_LOW).apply {
+        val channel = NotificationChannel(CHANNEL_ID, "Ongoing call", NotificationManager.IMPORTANCE_DEFAULT).apply {
             description = "Shows a call Ishara is handling for you, with End call."
             setShowBadge(false)
         }
