@@ -22,7 +22,10 @@ notes models, call history, settings, launch options), on-device recognition (se
     `app/AppNavigator` is iOS `AppRootView`'s routing and `app/AppRoot` shows the routes.
   - `recognition/`: the recognizer contract the screens use; `recognition/core` (RecognitionCore over
     JNI), `recognition/landmarks` and `recognition/pipeline` (the real camera / clip pipeline).
-  - `ui/components/`: shared, stateless Compose pieces tagged with the iOS accessibility identifiers.
+  - `ui/components/`: shared, stateless Compose pieces tagged with the iOS accessibility identifiers;
+    `ScreenParts.kt` holds the iOS-look building blocks (bottom bar, grouped Form sections, bordered
+    buttons) and maps Dynamic Type onto the font scale (≥ 1.6 counts as an accessibility size,
+    > 1.2 as larger than XL). Text styles are iOS's (`ui/theme/IsharaType.kt`).
   - `ui/home/`, `ui/classic/`, `ui/steer/`, `ui/notes/`: one file per screen, plus the screen models
     (`BriefModel`, `NotesModel`, `SteerLogic`).
 - `swift/`: Swift package `IsharaAndroidBridge`, product `IsharaCore` (JNI entry points, main-queue pump,
@@ -95,6 +98,10 @@ into the APK. Only arm64-v8a is built.
 - The Swift runtime is linked dynamically (`--static-swift-stdlib` failed to link with 6.4.2), so
   the APK carries about 70 MB of `.so` files; ICU alone is 40 MB.
 - AndroidX libraries newer than core 1.18 / Compose BOM 2026.06 need compileSdk 37; the app stays on 36.
+- The classic screens are ports of the SwiftUI views, which stay the spec (layout order, strings,
+  colours). SF Symbols become Material icons from `material-icons-core` (the BOM's 1.7.8). UI tests
+  for the classic and Call for me flows live in `androidTest/.../ui/classic` (they mirror
+  `ios/IsharaUITests`); `CallLayoutUiTest` sets the system font scale to 2.0 and restores it.
   OkHttp 5.5 needs 37 too, so OkHttp and mockwebserver3 stay on 5.4.
 
 ## Recognition
