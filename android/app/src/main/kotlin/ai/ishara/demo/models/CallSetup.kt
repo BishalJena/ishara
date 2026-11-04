@@ -21,12 +21,57 @@ data class Contact(val id: String, val name: String, val phoneNumber: String? = 
 
         /** Synthetic demo contacts. Real numbers stay in the backend allowlist. */
         val demoContacts = listOf(cityClinic, mehtaOffice)
+
+        private val e164 = Regex("""^\+[1-9]\d{6,14}$""")
+
+        /** A typed or pasted number as a contact; the name defaults to the number, spaced. */
+        fun number(digits: String, name: String? = null): Contact? {
+            val number = digits.filter { it.isDigit() || it == '+' }
+            if (!e164.matches(number)) return null
+            val given = name?.trim().orEmpty()
+            val shown = if (given.isEmpty() || isNumberName(given)) display(number) else given
+            return Contact(id = "number", name = shown, phoneNumber = number)
+        }
+
+        /** "+919800012345" as people write it: "+91 98000 12345". */
+        fun display(e164: String): String {
+            val digits = e164.filter(Char::isDigit)
+            if (!e164.startsWith("+91") || digits.length != 12) return e164
+            val national = digits.drop(2)
+            return "+91 ${national.take(5)} ${national.takeLast(5)}"
+        }
+
+        /** A "name" that is really a number (a record of a call to a typed number). */
+        fun isNumberName(name: String): Boolean {
+            val first = name.firstOrNull() ?: return false
+            return first == '+' || first.isDigit()
+        }
+
+        /** An Indian number from its 10 national digits (the app is India-only, so +91 is implied). */
+        fun indian(digits: String, name: String? = null): Contact? {
+            val national = digits.filter(Char::isDigit)
+            if (national.length != 10 || national.first() == '0' || national.first() == '1') return null
+            return number("+91$national", name)
+        }
+
+        /** The 10 national digits of a number typed or picked in any common Indian form. */
+        fun indianDigits(raw: String): String {
+            var digits = raw.filter(Char::isDigit)
+            if (digits.length == 12 && digits.startsWith("91")) digits = digits.drop(2)
+            if (digits.length == 11 && digits.startsWith("0")) digits = digits.drop(1)
+            return digits.take(10)
+        }
     }
 }
 
-enum class PreferredTime { MORNINGS, AFTERNOONS, EVENINGS }
+val CallPurpose.title: String
+    get() = when (this) {
+        CallPurpose.DOCTOR_APPOINTMENT -> "Doctor's appointment"
+    }
 
-enum class CallVoice(val code: String) { INDIAN_ENGLISH("en-IN") }
+enum class PreferredTime(val title: String) { MORNINGS("Mornings"), AFTERNOONS("Afternoons"), EVENINGS("Evenings") }
+
+enum class CallVoice(val code: String, val title: String) { INDIAN_ENGLISH("en-IN", "Indian English") }
 
 /** Details the user saved once so quick replies and the composer can use them. */
 data class SavedDetails(val name: String, val preferredTime: PreferredTime)
