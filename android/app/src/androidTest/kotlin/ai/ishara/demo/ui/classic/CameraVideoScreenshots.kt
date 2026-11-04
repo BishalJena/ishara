@@ -50,7 +50,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -73,9 +72,12 @@ class CameraVideoScreenshots {
     private val fontScale = mutableStateOf(1f)
     private val screen = mutableStateOf<(@Composable () -> Unit)?>(null)
 
+    // A plain return, not an assumption: AGP 9 reports skipped assumptions as failed tests.
+    private val asked = InstrumentationRegistry.getArguments().getString("cameraScreenshots") == "true"
+
     @Before
     fun onlyWhenAsked() {
-        assumeTrue(InstrumentationRegistry.getArguments().getString("cameraScreenshots") == "true")
+        if (!asked) return
         // The steer screen asks the system itself.
         InstrumentationRegistry.getInstrumentation().uiAutomation.grantRuntimePermission(app.packageName, Manifest.permission.CAMERA)
         compose.setContent {
@@ -144,6 +146,7 @@ class CameraVideoScreenshots {
 
     @Test
     fun classicCall() {
+        if (!asked) return
         val signingCall = call(DemoFixture.SIGNING, signing)
         both("classic-signing") { ActiveCallScreen(signingCall, onLeave = {}, onShowNotes = null) }
         val watchingCall = call(DemoFixture.COMPOSING, watching, CameraState.WATCHING)
@@ -159,6 +162,7 @@ class CameraVideoScreenshots {
 
     @Test
     fun classicCallAtTheLargestFontScale() {
+        if (!asked) return
         fontScale.value = 2f
         val signingCall = call(DemoFixture.SIGNING, signing)
         both("classic-signing-font2") { ActiveCallScreen(signingCall, onLeave = {}, onShowNotes = null) }
@@ -171,6 +175,7 @@ class CameraVideoScreenshots {
 
     @Test
     fun brief() {
+        if (!asked) return
         val model = onMain { BriefModel(CallSetup.demo, RecordingDriver(), recognition(signing)) }
         onMain {
             model.handle(RecognitionEvent.Camera(CameraState.SIGNING))
@@ -181,6 +186,7 @@ class CameraVideoScreenshots {
 
     @Test
     fun steer() {
+        if (!asked) return
         val brief = Brief("b1", "Call on behalf of Riya.", "book a doctor's appointment", emptyList())
         val setup = CallSetup.demo.copy(delegation = Delegation(brief, attended = false, mode = CallMode.STEER), request = "Book a doctor's appointment")
         val driver = onMain { RecordingDriver() }
