@@ -3,14 +3,27 @@ package ai.ishara.demo.ui.steer
 import ai.ishara.demo.core.call.Proposal
 import ai.ishara.demo.core.call.ProposalOrigin
 import ai.ishara.demo.ui.components.epochSeconds
+import ai.ishara.demo.recognition.CameraState
+import ai.ishara.demo.recognition.LiveCamera
+import ai.ishara.demo.ui.components.BodyOverlayLayer
+import ai.ishara.demo.ui.components.CameraCardContent
+import ai.ishara.demo.ui.components.LocalRunsInEmulator
+import ai.ishara.demo.ui.components.cameraPillTitle
+import ai.ishara.demo.ui.theme.IsharaColors
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -33,6 +46,7 @@ import androidx.compose.material.icons.filled.CurrencyRupee
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.VideocamOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledIconButton
@@ -41,6 +55,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.LaunchedEffect
@@ -50,6 +65,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -58,6 +74,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
@@ -266,5 +283,79 @@ fun StatusPill(text: String, icon: ImageVector, color: Color, modifier: Modifier
     ) {
         Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
         Text(text, style = SteerType.footnote, fontWeight = FontWeight.SemiBold, color = color)
+    }
+}
+
+/**
+ * The signing panel's small camera tile (96 × 128): the mirrored preview with the tracking dots
+ * and a coloured dot for the camera state, or a short reason when there is no picture. The
+ * shared `CameraCard` lays out the full-width call camera, too big for this tile.
+ */
+@Composable
+fun SteerCameraTile(camera: LiveCamera?, state: CameraState, modifier: Modifier = Modifier) {
+    val content = if (camera == null) {
+        CameraCardContent.of(null, LocalRunsInEmulator.current)
+    } else {
+        // Read as state so the tile follows permission changes.
+        camera.permission.collectAsState().value
+        camera.isUnavailable.collectAsState().value
+        CameraCardContent.of(camera, LocalRunsInEmulator.current)
+    }
+    val title = cameraPillTitle(state)
+    Box(
+        modifier
+            .background(IsharaColors.CameraBackdrop)
+            .testTag("steer.camera")
+            .semantics(mergeDescendants = true) { stateDescription = "Camera: $title" },
+    ) {
+        when (content) {
+            CameraCardContent.Live -> if (camera != null) {
+                camera.Preview(Modifier.fillMaxSize().semantics { contentDescription = "Camera preview of you" })
+                BodyOverlayLayer(camera, Modifier.fillMaxSize())
+            }
+            CameraCardContent.Blocked -> CameraTileMessage("Camera is off for Ishara.", offersSettings = true)
+            is CameraCardContent.Placeholder -> CameraTileMessage(content.reason.message, offersSettings = false)
+        }
+        val dot = when (state) {
+            CameraState.WATCHING -> IsharaColors.Green
+            CameraState.SIGNING -> IsharaColors.Yellow
+            CameraState.CANT_SEE -> IsharaColors.Red
+        }
+        Box(
+            Modifier
+                .align(Alignment.TopStart)
+                .padding(8.dp)
+                .size(10.dp)
+                .background(dot, CircleShape)
+                .border(1.dp, Color.White.copy(alpha = 0.8f), CircleShape),
+        )
+    }
+}
+
+@Composable
+private fun BoxScope.CameraTileMessage(message: String, offersSettings: Boolean) {
+    val context = LocalContext.current
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.align(Alignment.Center).padding(horizontal = 8.dp, vertical = 20.dp),
+    ) {
+        Icon(Icons.Filled.VideocamOff, contentDescription = null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(20.dp))
+        Text(message, style = SteerType.caption2, color = Color.White.copy(alpha = 0.85f), textAlign = TextAlign.Center)
+        if (offersSettings) {
+            Text(
+                "Settings",
+                style = SteerType.caption2,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                modifier = Modifier
+                    .clickable {
+                        context.startActivity(
+                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)),
+                        )
+                    }
+                    .testTag("camera.openSettings"),
+            )
+        }
     }
 }

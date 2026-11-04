@@ -6,7 +6,6 @@ import ai.ishara.demo.core.call.Caption
 import ai.ishara.demo.core.call.ProposalOrigin
 import ai.ishara.demo.recognition.CameraPermission
 import ai.ishara.demo.ui.components.CallErrorBanner
-import ai.ishara.demo.ui.components.CameraCard
 import ai.ishara.demo.ui.components.CandidateTile
 import ai.ishara.demo.ui.components.ChipRow
 import ai.ishara.demo.ui.components.InitialsAvatar
@@ -436,7 +435,7 @@ private fun SigningPanel(model: ActiveCallViewModel, onType: () -> Unit, onSend:
     CameraWhileSigning(model)
     Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.testTag("steer.signing")) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-            CameraCard(
+            SteerCameraTile(
                 camera = model.recognition.camera,
                 state = model.cameraState,
                 modifier = Modifier.size(width = 96.dp, height = 128.dp).clip(RoundedCornerShape(20.dp)),
