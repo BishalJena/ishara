@@ -4,6 +4,8 @@ import ai.ishara.demo.call.ActiveCallViewModel.Phase
 import ai.ishara.demo.core.call.CallState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -22,6 +24,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import ai.ishara.demo.ui.theme.IsharaColors
+import ai.ishara.demo.ui.theme.IsharaType
 import kotlinx.coroutines.delay
 import kotlin.math.max
 
@@ -42,11 +45,11 @@ fun CallStatusBar(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.weight(1f).testTag("call.status")) {
-            Text(contactName, style = MaterialTheme.typography.titleMedium)
+        Column(modifier = Modifier.weight(1f).semantics(mergeDescendants = true) {}.testTag("call.status")) {
+            Text(contactName, style = IsharaType.headline)
             Text(
                 statusLine(phase, isSpeaking, connectedAt),
-                style = MaterialTheme.typography.bodyMedium,
+                style = IsharaType.subheadline,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -54,8 +57,9 @@ fun CallStatusBar(
             Button(
                 onClick = onEnd,
                 colors = ButtonDefaults.buttonColors(containerColor = IsharaColors.Red, contentColor = androidx.compose.ui.graphics.Color.White),
-                modifier = Modifier.testTag("call.end").semantics { contentDescription = "End call" },
-            ) { Text("End") }
+                contentPadding = PaddingValues(horizontal = 22.dp, vertical = 12.dp),
+                modifier = Modifier.heightIn(min = 50.dp).testTag("call.end").semantics { contentDescription = "End call" },
+            ) { Text("End", style = IsharaType.body) }
         }
     }
 }
