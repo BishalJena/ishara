@@ -1,6 +1,7 @@
 package ai.ishara.demo.app
 
 import ai.ishara.demo.MainActivity
+import ai.ishara.demo.support.SteerUi
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -106,6 +107,7 @@ class DemoCallUiTest {
 
     @Test
     fun steerCallFromTheTypedRequestToItsGist() {
+        SteerUi.grantNotifications()
         launch("IsharaUITestName" to "Riya")
         waitFor("setup.number")
         compose.onNodeWithTag("setup.number").performTextInput("9800012345")
