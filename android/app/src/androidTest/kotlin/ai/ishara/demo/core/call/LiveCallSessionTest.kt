@@ -1,6 +1,7 @@
 package ai.ishara.demo.core.call
 
 import ai.ishara.demo.call.LiveCallDriver
+import ai.ishara.demo.call.ReconnectStop
 import ai.ishara.demo.models.CallSetup
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.Dispatchers
@@ -17,7 +18,6 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -89,7 +89,7 @@ class LiveCallSessionTest {
     }
 
     @Test
-    fun aSocketClosedByTheBackendIsLostAndTheStoreGoesSilent() {
+    fun aReplacedSocketIsLostSilentAndNotReconnectable() {
         val call = startCall()
         val socket = backend.awaitSocket()
         socket.send("""{"type":"status","state":"in_call"}""")
@@ -102,12 +102,21 @@ class LiveCallSessionTest {
         val silent = call.snapshot.value
         assertEquals(CallState.ERROR, silent.state)
         assertEquals("Nothing will be sent", silent.notice)
-        // Android reports every backend close as a plain drop (see android/README.md), so only "closed" is checked.
-        assertNotNull(runBlocking { call.lastClose() })
+        assertEquals(SocketClose(CallSocketClose.REPLACED, allowsReconnect = false), runBlocking { call.lastClose() })
     }
 
     @Test
-    fun theDriverReconnectsADroppedSocketAndResendsNothing() = withDriver { driver ->
+    fun aRefusedTokenOnTheSocketIsUnauthorized() {
+        val call = startCall()
+
+        backend.awaitSocket().close(4401, "unauthorized")
+
+        call.connectionLost.awaitFirst()
+        assertEquals(SocketClose(CallSocketClose.UNAUTHORIZED, allowsReconnect = false), runBlocking { call.lastClose() })
+    }
+
+    @Test
+    fun theDriverReconnectsADroppedSocketAndResendsNothing() = withDriver { driver, stops ->
         val store = runBlocking { onMainSuspend { driver.start(CallSetup.demo) } }
         val first = backend.awaitSocket()
         first.send("""{"type":"status","state":"in_call"}""")
@@ -118,18 +127,33 @@ class LiveCallSessionTest {
         first.close(1001, "going away")
 
         val second = backend.awaitSocket()
-        assertEquals("/calls/call_1/ws", backend.requests.last().url.encodedPath)
+        val reconnect = backend.requests.last()
+        assertEquals("/calls/call_1/ws", reconnect.url.encodedPath)
+        assertEquals("Bearer $TOKEN", reconnect.headers["Authorization"])
         assertNull("the draft was wiped", store.awaitSnapshot { it.state == CallState.ERROR }.draft)
         second.send("""{"type":"status","state":"in_call"}""")
         store.awaitSnapshot { it.state == CallState.IN_CALL }
         backend.assertNoFrame()
+        assertNull("the driver gave up on a plain drop", stops.poll())
     }
 
-    private fun withDriver(body: (LiveCallDriver) -> Unit) {
+    @Test
+    fun theDriverNeverReconnectsAReplacedSocket() = withDriver { driver, stops ->
+        runBlocking { onMainSuspend { driver.start(CallSetup.demo) } }
+
+        backend.awaitSocket().close(4409, "replaced")
+
+        assertEquals(ReconnectStop.Refused(CallSocketClose.REPLACED), stops.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+        assertNull("a replaced socket was reopened", backend.sockets.poll(500, TimeUnit.MILLISECONDS))
+    }
+
+    private fun withDriver(body: (LiveCallDriver, LinkedBlockingQueue<ReconnectStop>) -> Unit) {
         val scope = MainScope()
+        val stops = LinkedBlockingQueue<ReconnectStop>()
         val driver = LiveCallDriver(CallCore, reconnectDelays = listOf(Duration.ZERO), scope = scope)
+        driver.onReconnectStopped = { stops.add(it) }
         try {
-            body(driver)
+            body(driver, stops)
         } finally {
             onMain { driver.close() }
             scope.cancel()
