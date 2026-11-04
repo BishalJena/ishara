@@ -88,6 +88,14 @@ enum class Sign {
     @SerialName("see") SEE,
     @SerialName("hear") HEAR,
     @SerialName("read") READ,
+    ;
+
+    /** The wire literal; every serial name above is the lowercased case name. */
+    val wire: String get() = name.lowercase()
+
+    companion object {
+        fun fromWire(raw: String): Sign? = entries.firstOrNull { it.wire == raw }
+    }
 }
 
 @Serializable
