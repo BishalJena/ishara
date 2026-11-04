@@ -5,19 +5,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -44,27 +36,5 @@ fun InitialsAvatar(name: String, modifier: Modifier = Modifier, color: Color = I
             fontWeight = FontWeight.Bold,
             fontSize = (size.value * 0.38f).sp,
         )
-    }
-}
-
-/** Replays a sign by hand when there is no camera: a sign name, `?`, `frame` or a `name?` candidate. */
-@Composable
-fun ReplayMenu(options: List<String>, onReplay: (String) -> Unit, modifier: Modifier = Modifier) {
-    if (options.isEmpty()) return
-    var expanded by remember { mutableStateOf(false) }
-    Box(modifier) {
-        OutlinedButton(onClick = { expanded = true }, modifier = Modifier.testTag("replayMenu")) { Text("Replay a sign") }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option) },
-                    onClick = {
-                        expanded = false
-                        onReplay(option)
-                    },
-                    modifier = Modifier.testTag("replay.$option"),
-                )
-            }
-        }
     }
 }

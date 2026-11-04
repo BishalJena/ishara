@@ -2,6 +2,7 @@ package ai.ishara.demo.ui.components
 
 import ai.ishara.demo.core.call.Caption
 import ai.ishara.demo.ui.theme.IsharaColors
+import ai.ishara.demo.ui.theme.IsharaType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -32,14 +37,19 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun CaptionHistory(captions: List<Caption>, modifier: Modifier = Modifier, isCallOver: Boolean = false) {
     val list = rememberLazyListState()
+    // Opens on the newest caption (iOS `defaultScrollAnchor(.bottom)`), then follows new ones.
+    var hasScrolled by remember { mutableStateOf(false) }
     LaunchedEffect(captions.size) {
-        if (captions.isNotEmpty()) list.animateScrollToItem(captions.size - 1)
+        if (captions.isEmpty()) return@LaunchedEffect
+        if (hasScrolled) list.animateScrollToItem(captions.size - 1) else list.scrollToItem(captions.size - 1)
+        hasScrolled = true
     }
     LazyColumn(
         state = list,
         modifier = modifier
             .background(IsharaColors.Teal.copy(alpha = 0.15f), RoundedCornerShape(16.dp))
-            .semantics { contentDescription = "Conversation captions" },
+            .semantics { contentDescription = "Conversation captions" }
+            .testTag("call.captions"),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -47,7 +57,7 @@ fun CaptionHistory(captions: List<Caption>, modifier: Modifier = Modifier, isCal
             item {
                 Text(
                     if (isCallOver) "No captions in this call." else "The receptionist's words will appear here.",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = IsharaType.callout,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.testTag("caption.placeholder"),
                 )
@@ -64,13 +74,13 @@ private fun CaptionRow(caption: Caption) {
         Caption.Speaker.RECEPTIONIST -> CaptionLine(
             label = "Receptionist",
             text = caption.text,
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+            style = IsharaType.title3.copy(fontWeight = FontWeight.SemiBold),
             tag = "caption.receptionist",
         )
         Caption.Speaker.USER -> CaptionLine(
             label = "You",
             text = caption.text,
-            style = MaterialTheme.typography.bodyLarge,
+            style = IsharaType.body,
             tag = "caption.you",
             secondary = true,
         )
@@ -79,7 +89,7 @@ private fun CaptionRow(caption: Caption) {
         Caption.Speaker.AGENT -> CaptionLine(
             label = "Ishara (voice)",
             text = caption.text,
-            style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
+            style = IsharaType.callout.copy(fontStyle = FontStyle.Italic),
             tag = "caption.agent",
             secondary = true,
             trailing = true,
@@ -108,7 +118,7 @@ private fun CaptionLine(
     ) {
         Text(
             label,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+            style = IsharaType.caption.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(

@@ -4,12 +4,18 @@ import ai.ishara.demo.call.ActiveCallViewModel
 import ai.ishara.demo.call.ActiveCallViewModel.Delivery
 import ai.ishara.demo.call.ActiveCallViewModel.EndReason
 import ai.ishara.demo.ui.theme.IsharaColors
+import ai.ishara.demo.ui.theme.IsharaType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -17,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -84,8 +91,8 @@ private fun StatusBanner(title: String, detail: String?, color: Color, modifier:
             .testTag(tag),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(title, style = MaterialTheme.typography.titleMedium)
-        if (detail != null) Text(detail, style = MaterialTheme.typography.bodyMedium)
+        Text(title, style = IsharaType.headline)
+        if (detail != null) Text(detail, style = IsharaType.subheadline)
     }
 }
 
@@ -93,27 +100,27 @@ private fun StatusBanner(title: String, detail: String?, color: Color, modifier:
 @Composable
 fun CallEndedPanel(reason: EndReason, modifier: Modifier = Modifier) {
     PanelCard(modifier.testTag("call.endedPanel")) {
-        Text(if (reason is EndReason.Failed) "⚠" else "☎", style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        PanelIcon(if (reason is EndReason.Failed) Icons.Filled.Warning else Icons.Filled.Call)
         Text(
             when (reason) {
                 EndReason.UserEnded, EndReason.HangUpUnconfirmed -> "You ended the call"
                 EndReason.RemoteEnded -> "The call ended"
                 is EndReason.Failed -> reason.message
             },
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            style = IsharaType.title2.copy(fontWeight = FontWeight.Bold),
             textAlign = TextAlign.Center,
         )
         if (reason == EndReason.HangUpUnconfirmed) {
-            Text(
-                "⚠ Couldn't confirm the hang-up. Check the call is over.",
-                style = MaterialTheme.typography.titleMedium,
+            IconLabel(
+                "Couldn't confirm the hang-up. Check the call is over.",
+                Icons.Filled.Warning,
                 color = IsharaColors.Orange,
-                textAlign = TextAlign.Center,
+                style = IsharaType.headline,
             )
         }
         Text(
             "Nothing more will be sent. Any unsent draft was wiped.",
-            style = MaterialTheme.typography.bodyLarge,
+            style = IsharaType.body,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
@@ -124,19 +131,24 @@ fun CallEndedPanel(reason: EndReason, modifier: Modifier = Modifier) {
 @Composable
 fun ConnectionLostPanel(notice: String, isReconnecting: Boolean, modifier: Modifier = Modifier) {
     PanelCard(modifier.testTag("call.connectionLostPanel")) {
-        Text("⚠", style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(ActiveCallViewModel.CONNECTION_LOST_TITLE, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold))
+        PanelIcon(Icons.Filled.Warning)
+        Text(ActiveCallViewModel.CONNECTION_LOST_TITLE, style = IsharaType.title2.copy(fontWeight = FontWeight.Bold))
         Text(
             if (isReconnecting) {
                 "$notice. Chips and draft were wiped. Reconnecting… You can still End the call."
             } else {
                 "$notice. Nothing will be sent. End the call to go back."
             },
-            style = MaterialTheme.typography.bodyLarge,
+            style = IsharaType.body,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
     }
+}
+
+@Composable
+private fun PanelIcon(icon: ImageVector) {
+    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(48.dp))
 }
 
 @Composable
@@ -156,13 +168,14 @@ private fun PanelCard(modifier: Modifier, content: @Composable () -> Unit) {
  * Calls come from Ishara's calling number (Bolna's, Path B), never the user's own, and the
  * receptionist hears an automated voice. Shown on Home and again on Get ready.
  */
+const val CALLING_NUMBER_NOTE = "Calls are placed from Ishara's calling number, not your own number. " +
+    "The receptionist hears an automated voice reading what you approve."
+
 @Composable
 fun CallingNumberNote(modifier: Modifier = Modifier) {
-    Text(
-        "ⓘ Calls are placed from Ishara's calling number, not your own number. " +
-            "The receptionist hears an automated voice reading what you approve.",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = modifier.fillMaxWidth().testTag("callingNumberNote"),
+    InfoLabel(
+        CALLING_NUMBER_NOTE,
+        modifier = modifier.fillMaxWidth().semantics(mergeDescendants = true) {}.testTag("callingNumberNote"),
+        style = IsharaType.footnote,
     )
 }

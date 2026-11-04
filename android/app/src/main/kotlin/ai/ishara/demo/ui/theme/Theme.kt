@@ -26,8 +26,49 @@ object IsharaColors {
     val CameraBackdrop = Color(0xFF333333)
 }
 
-private val LightColors = lightColorScheme(primary = AccentLight, onPrimary = Color.White)
-private val DarkColors = darkColorScheme(primary = AccentDark, onPrimary = Color.Black)
+// iOS system greys instead of Material's tinted baseline: background = systemBackground,
+// surfaceVariant = secondarySystemBackground (`.background.secondary`), surfaceContainer = the
+// bottom bars (`.bar`), surfaceContainerLow = systemGroupedBackground behind Form / List cards.
+private val LightColors = lightColorScheme(
+    primary = AccentLight,
+    onPrimary = Color.White,
+    secondary = AccentLight,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFE5E5EA),
+    onSecondaryContainer = Color.Black,
+    background = Color.White,
+    onBackground = Color.Black,
+    surface = Color.White,
+    onSurface = Color.Black,
+    surfaceVariant = Color(0xFFF2F2F7),
+    onSurfaceVariant = Color(0xFF6C6C70),
+    surfaceContainer = Color(0xFFF7F7F8),
+    surfaceContainerLow = Color(0xFFF2F2F7),
+    surfaceContainerHigh = Color(0xFFFFFFFF),
+    surfaceContainerHighest = Color(0xFFE5E5EA),
+    outline = Color(0xFFC6C6C8),
+    outlineVariant = Color(0xFFE0E0E3),
+)
+private val DarkColors = darkColorScheme(
+    primary = AccentDark,
+    onPrimary = Color.Black,
+    secondary = AccentDark,
+    onSecondary = Color.Black,
+    secondaryContainer = Color(0xFF3A3A3C),
+    onSecondaryContainer = Color.White,
+    background = Color.Black,
+    onBackground = Color.White,
+    surface = Color.Black,
+    onSurface = Color.White,
+    surfaceVariant = Color(0xFF1C1C1E),
+    onSurfaceVariant = Color(0xFF98989F),
+    surfaceContainer = Color(0xFF161618),
+    surfaceContainerLow = Color.Black,
+    surfaceContainerHigh = Color(0xFF1C1C1E),
+    surfaceContainerHighest = Color(0xFF2C2C2E),
+    outline = Color(0xFF545458),
+    outlineVariant = Color(0xFF38383A),
+)
 
 @Composable
 fun IsharaTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {

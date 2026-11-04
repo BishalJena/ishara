@@ -4,6 +4,7 @@ import ai.ishara.demo.core.call.Chip
 import ai.ishara.demo.core.call.Sign
 import ai.ishara.demo.models.title
 import ai.ishara.demo.ui.theme.IsharaColors
+import ai.ishara.demo.ui.theme.IsharaType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,7 +13,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -57,8 +61,8 @@ fun ChipView(chip: Chip, onRemove: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val color = if (sign == null) Color.White else Color.Black
-        Text(chip.title, color = color, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold))
-        Text("✕", color = color, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+        Text(chip.title, color = color, style = IsharaType.body.copy(fontWeight = FontWeight.SemiBold))
+        Icon(Icons.Filled.Close, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
     }
 }
 
