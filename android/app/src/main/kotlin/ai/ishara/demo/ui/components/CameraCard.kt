@@ -33,11 +33,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,13 +53,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -107,7 +103,7 @@ internal val showsBodyOverlay = mutableStateOf(true)
 
 /**
  * Get ready's camera area, where the user frames themselves: the live preview, a camera-permission
- * message, or a placeholder. The call screens show only [CameraIndicator]. A live camera asks
+ * message, or a placeholder. The call screens show the smaller [CameraVideoCard]. A live camera asks
  * for the camera permission here (Android prompts only from an Activity) and reports the answer
  * to recognition.
  */
@@ -134,63 +130,6 @@ internal fun cameraContent(
     camera.isUnavailable.collectAsState().value
     return CameraCardContent.of(camera, isEmulator)
 }
-
-/**
- * The call screens' small camera indicator: a green camera while recognition watches, amber
- * with "Signing…" while a sign is in progress, red when it can't see the user (the panel then
- * says what to do, see [CallCameraNotice]). TalkBack reads the full camera state.
- */
-@Composable
-fun CameraIndicator(state: CameraState, modifier: Modifier = Modifier) {
-    val color = cameraStateColor(state)
-    val label = if (state == CameraState.SIGNING && !isAccessibilityTextSize()) "Signing…" else null
-    Row(
-        modifier = modifier
-            .testTag("camera.pill")
-            .clearAndSetSemantics { contentDescription = "Camera: ${cameraPillTitle(state)}" }
-            .background(color.copy(alpha = 0.15f), CircleShape)
-            .padding(horizontal = if (label == null) 6.dp else 10.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(Icons.Filled.Videocam, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-        if (label != null) Text(label, color = color, style = IsharaType.footnote.copy(fontWeight = FontWeight.SemiBold))
-    }
-}
-
-/**
- * What the call screens say about the camera beside the indicator: the permission card when it
- * is refused, why there is no picture on a phone without a front camera, and what to do when it
- * can't see the user. Also asks for the permission, like Get ready's card.
- */
-@Composable
-fun CallCameraNotice(camera: LiveCamera?, state: CameraState, modifier: Modifier = Modifier) {
-    val content = cameraContent(camera)
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (content == CameraCardContent.Blocked) CameraBlocked(Modifier)
-        if (content == CameraCardContent.Placeholder(CameraPlaceholder.NO_CAMERA)) {
-            WarningLabel(CameraPlaceholder.NO_CAMERA.message, style = IsharaType.subheadline)
-        }
-        if (state == CameraState.CANT_SEE) {
-            WarningLabel(
-                "Can't see you — move back",
-                Modifier.semantics(mergeDescendants = true) {}.testTag("camera.cantSee"),
-                style = IsharaType.headline,
-            )
-        }
-    }
-}
-
-/** Green = watching, amber = signing, red = can't see you (WORKFLOW.md), readable on the screen's background. */
-@Composable
-fun cameraStateColor(state: CameraState): Color = when (state) {
-    CameraState.WATCHING -> MaterialTheme.colorScheme.primary
-    CameraState.SIGNING -> if (MaterialTheme.colorScheme.background.luminance() < 0.5f) IsharaColors.Orange else DarkAmber
-    CameraState.CANT_SEE -> IsharaColors.Red
-}
-
-/** Amber dark enough for text on white (4.6:1). */
-private val DarkAmber = Color(0xFFA85A00)
 
 /**
  * Asks for CAMERA while the answer is unknown (or reports a grant the app already has), and on
