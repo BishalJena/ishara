@@ -27,7 +27,7 @@ final class CallSessions {
 
     /// Places the call (`POST /calls`), opens its socket and registers its store.
     func startLive(config: BackendConfig, request: StartCallRequest) async throws -> CallSessionBox {
-        let client = BackendClient(config: config)
+        let client = BackendClient(config: config, transport: KotlinWebSocketTransport())
         let call = try await LiveCall.start(client: client, request: request)
         let id = allocateID()
         let session = CallSessionBox(id: id, kind: .live(call, client), store: call.store)
