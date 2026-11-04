@@ -10,7 +10,7 @@
 - **The LLM composer (Groq, `openai/gpt-oss-120b`) may reword but not add facts.** A validator rejects missing chip meanings and any invented day, time, number or name; templates are the fallback (also when Groq is slower than 1.5 s or has no key).
 - **Calls:** only to numbers in `ALLOWED_RECIPIENTS` (consenting teammates; comma-separated `contact_id=+E164` entries, e.g. contact id `clinic`; the app sends a contact id or a typed number, and a typed number is dialled only if it is on the list), with synthetic appointment details. Never place an unexpected or third-party call. Give a cost heads-up before paid runs. Placing calls, paid inference, device installations and deployments need explicit task authorization; a task in `PLAN.md` is not authorization by itself.
 - **Buildathon rule:** any project with a voice component qualifies; Bolna is not mandatory by the rules. The team chose Bolna (Sarvam voice, Deepgram ASR, Plivo line) anyway.
-- **Hosting:** the backend runs on Heroku (EU region) with a Basic dyno or higher, deployed by pushing `backend/` as a `git subtree`. Eco dynos sleep, and a sleeping custom-LLM endpoint means silence on the call. Run exactly one dyno and one uvicorn worker (`--workers 1` in the Procfile, `WEB_CONCURRENCY=1` as a backup): call state is in memory, and two workers split a call (seen live 28 Oct). API keys stay on the backend, never in the iOS app.
+- **Hosting:** the backend runs on Heroku (EU region) with a Basic dyno or higher, deployed by pushing `backend/` as a `git subtree`. Eco dynos sleep, and a sleeping custom-LLM endpoint means silence on the call. Run exactly one dyno and one uvicorn worker (`--workers 1` in the Procfile, `WEB_CONCURRENCY=1` as a backup): call state is in memory, and two workers split a call (seen live 28 Oct). API keys stay on the backend, never in the iOS or Android app.
 - **Device:** the founder's iPhone 17; calls from the iPhone and recognition on the iPhone are done ([issue #72](https://github.com/BishalJena/ishara/issues/72), 31 Oct). Other work runs in the iOS simulator with saved videos (no camera, no Phone-app calls; it can start Path B calls through the backend, as on 28 Oct). The app needs `ios/Packages/SignPipelineLiteRT/Scripts/download_tflite_c.sh` run once (verify.sh does it) and the models in `ios/Ishara/LocalAssets/` (see its README).
 - No Deaf participant validation. Don't present the personalised 12-sign pilot, hearing reenactment or isolated-sign benchmarks as validated natural conversation or usability.
 - No secret keys, account identifiers, telephone values, raw account responses or private credential paths in repository artifacts.
@@ -19,6 +19,7 @@
 
 - Everything: `scripts/verify.sh` (add `--keep-going` to see every failure). Missing tools or parts show as `SKIPPED`. Light recognition tests need `spikes/recognition/.venv-light` or the full `.venv`.
 - Backend: `cd backend && uv run ruff format --check . && uv run ruff check . && uv run pytest -q`
+- Android: `cd android && ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug` (device tests: `ANDROID_SERIAL=<emulator> ./gradlew :app:connectedDebugAndroidTest`); setup in `android/README.md`.
 - Env names are listed in `.env.example`; `cd backend && uv run python -m app.config` shows which are set.
 - Heroku deploys follow `backend/HEROKU.md` and still need explicit deploy authorization.
 
@@ -29,6 +30,7 @@
 - [Deploying the backend to Heroku](backend/HEROKU.md) and [the Bolna agent](backend/bolna/README.md)
 - [How to test Ishara](docs/TESTING.md)
 - [Measured ML results and limits](docs/experiments/recognition.md)
+- [Android app: setup, build, tests, differences from iOS](android/README.md)
 - [Recognition commands](spikes/recognition/README.md)
 - [Research reading guide](docs/research/README.md)
 - [Claim ledger and external source inventory](docs/CLAIM-LEDGER.md)
