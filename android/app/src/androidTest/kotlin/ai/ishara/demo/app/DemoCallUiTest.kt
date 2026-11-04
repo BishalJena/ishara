@@ -117,7 +117,7 @@ class DemoCallUiTest {
         waitFor("steer.status")
         waitFor("steer.facts", "tomorrow", timeoutMs = 15_000)
         waitFor("notes.outcome", "Booked", timeoutMs = 30_000)
-        compose.onNodeWithTag("notes.done").performScrollTo().performClick()
+        compose.onNodeWithTag("notes.done").performClick()
         waitFor("setup.number")
     }
 }
