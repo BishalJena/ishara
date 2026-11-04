@@ -46,6 +46,20 @@ extension UnsafeMutablePointer where Pointee == JNIEnv? {
         return storage.withUnsafeBufferPointer { jni.NewString(self, $0.baseAddress, jsize(units.count)) }
     }
 
+    func doubles(_ array: jdoubleArray) -> [Double] {
+        let count = Int(jni.GetArrayLength(self, array))
+        var values = [Double](repeating: 0, count: count)
+        values.withUnsafeMutableBufferPointer { jni.GetDoubleArrayRegion(self, array, 0, jsize(count), $0.baseAddress) }
+        return values
+    }
+
+    func floats(_ array: jfloatArray) -> [Float] {
+        let count = Int(jni.GetArrayLength(self, array))
+        var values = [Float](repeating: 0, count: count)
+        values.withUnsafeMutableBufferPointer { jni.GetFloatArrayRegion(self, array, 0, jsize(count), $0.baseAddress) }
+        return values
+    }
+
     func throwNew(_ className: String, _ message: String) {
         guard let exceptionClass = jni.FindClass(self, className) else { return }
         _ = jni.ThrowNew(self, exceptionClass, message)
