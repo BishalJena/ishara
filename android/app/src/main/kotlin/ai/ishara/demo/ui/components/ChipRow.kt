@@ -11,9 +11,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
@@ -56,12 +57,13 @@ fun ChipView(chip: Chip, onRemove: () -> Unit) {
             .clickable(role = Role.Button, onClickLabel = "Remove", onClick = onRemove)
             .semantics(mergeDescendants = true) { contentDescription = description }
             .testTag(chipTag(sign))
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .heightIn(min = 32.dp)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val color = if (sign == null) Color.White else Color.Black
-        Text(chip.title, color = color, style = IsharaType.body.copy(fontWeight = FontWeight.SemiBold))
+        Text(chip.title, color = color, style = IsharaType.subheadline.copy(fontWeight = FontWeight.SemiBold))
         Icon(Icons.Filled.Close, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
     }
 }

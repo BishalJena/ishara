@@ -2,12 +2,14 @@ package ai.ishara.demo.ui.components
 
 import ai.ishara.demo.call.ActiveCallViewModel.Phase
 import ai.ishara.demo.core.call.CallState
+import ai.ishara.demo.ui.theme.IsharaColors
+import ai.ishara.demo.ui.theme.IsharaType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -23,12 +25,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import ai.ishara.demo.ui.theme.IsharaColors
-import ai.ishara.demo.ui.theme.IsharaType
-import kotlinx.coroutines.delay
 import kotlin.math.max
+import kotlinx.coroutines.delay
 
-/** Contact, call state and elapsed time, with End always in reach. */
+/** Contact, call state and elapsed time, with End always in reach; [indicator] (the camera) sits beside End. */
 @Composable
 fun CallStatusBar(
     contactName: String,
@@ -37,12 +37,14 @@ fun CallStatusBar(
     connectedAt: Double?,
     onEnd: () -> Unit,
     modifier: Modifier = Modifier,
+    indicator: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(14.dp))
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
+            .padding(start = 14.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
+            .heightIn(min = 48.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f).semantics(mergeDescendants = true) {}.testTag("call.status")) {
@@ -53,13 +55,14 @@ fun CallStatusBar(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        indicator?.invoke()
         if (phase !is Phase.Ended) {
             Button(
                 onClick = onEnd,
                 colors = ButtonDefaults.buttonColors(containerColor = IsharaColors.Red, contentColor = androidx.compose.ui.graphics.Color.White),
-                contentPadding = PaddingValues(horizontal = 22.dp, vertical = 12.dp),
-                modifier = Modifier.heightIn(min = 50.dp).testTag("call.end").semantics { contentDescription = "End call" },
-            ) { Text("End", style = IsharaType.body) }
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                modifier = Modifier.heightIn(min = IsharaButtons.Height).testTag("call.end").semantics { contentDescription = "End call" },
+            ) { Text("End", style = IsharaButtons.Label) }
         }
     }
 }

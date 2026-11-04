@@ -19,7 +19,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -29,6 +31,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.drop
 
 /**
  * The receptionist's words, the call agent's fixed lines and the user's delivered replies,
@@ -44,6 +47,13 @@ fun CaptionHistory(captions: List<Caption>, modifier: Modifier = Modifier, isCal
         if (hasScrolled) list.animateScrollToItem(captions.size - 1) else list.scrollToItem(captions.size - 1)
         hasScrolled = true
     }
+    // The box shrinks when chips or banners appear below it: keep the newest line in view.
+    val count by rememberUpdatedState(captions.size)
+    LaunchedEffect(list) {
+        snapshotFlow { list.layoutInfo.viewportSize.height }.drop(1).collect {
+            if (count > 0) list.scrollToItem(count - 1)
+        }
+    }
     LazyColumn(
         state = list,
         modifier = modifier
@@ -51,7 +61,9 @@ fun CaptionHistory(captions: List<Caption>, modifier: Modifier = Modifier, isCal
             .semantics { contentDescription = "Conversation captions" }
             .testTag("call.captions"),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        // During the call the newest line sits at the bottom, next to the reply, like a chat;
+        // the ended transcript reads from the top.
+        verticalArrangement = Arrangement.spacedBy(10.dp, if (isCallOver) Alignment.Top else Alignment.Bottom),
     ) {
         if (captions.isEmpty()) {
             item {
@@ -64,17 +76,19 @@ fun CaptionHistory(captions: List<Caption>, modifier: Modifier = Modifier, isCal
             }
         }
         // Captions are only ever appended, so the position is a stable key.
-        itemsIndexed(captions, key = { index, _ -> index }) { _, caption -> CaptionRow(caption) }
+        val latestReceptionist = captions.indexOfLast { it.speaker == Caption.Speaker.RECEPTIONIST }
+        itemsIndexed(captions, key = { index, _ -> index }) { index, caption -> CaptionRow(caption, isLatest = index == latestReceptionist) }
     }
 }
 
 @Composable
-private fun CaptionRow(caption: Caption) {
+private fun CaptionRow(caption: Caption, isLatest: Boolean) {
     when (caption.speaker) {
+        // The line being answered stays the largest; earlier ones step down but stay bold.
         Caption.Speaker.RECEPTIONIST -> CaptionLine(
             label = "Receptionist",
             text = caption.text,
-            style = IsharaType.title3.copy(fontWeight = FontWeight.SemiBold),
+            style = (if (isLatest) IsharaType.title3 else IsharaType.body).copy(fontWeight = FontWeight.SemiBold),
             tag = "caption.receptionist",
         )
         Caption.Speaker.USER -> CaptionLine(
@@ -89,7 +103,7 @@ private fun CaptionRow(caption: Caption) {
         Caption.Speaker.AGENT -> CaptionLine(
             label = "Ishara (voice)",
             text = caption.text,
-            style = IsharaType.callout.copy(fontStyle = FontStyle.Italic),
+            style = IsharaType.subheadline.copy(fontStyle = FontStyle.Italic),
             tag = "caption.agent",
             secondary = true,
             trailing = true,
