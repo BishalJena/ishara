@@ -3,6 +3,11 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- The ongoing-call notification (Android 13+ asks on the first Call) and the foreground
+         service that keeps a steer call's connection open while the app is in the background. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <!-- Recognition uses the front camera; without one the app replays saved videos. CAMERA would
          otherwise imply a required rear camera. -->
@@ -24,6 +29,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".call.notification.OngoingCallService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="true">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keeps the live connection of a relay call the user started (captions, the user's approvals and End call) open while the app is in the background, until the call ends." />
+        </service>
+
+        <receiver
+            android:name=".call.notification.EndCallReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

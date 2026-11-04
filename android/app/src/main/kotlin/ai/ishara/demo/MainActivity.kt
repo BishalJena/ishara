@@ -2,6 +2,7 @@ package ai.ishara.demo
 
 import ai.ishara.demo.app.AppRoot
 import ai.ishara.demo.app.AppViewModel
+import ai.ishara.demo.call.notification.OngoingCallNotifications
 import ai.ishara.demo.ui.theme.IsharaTheme
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -20,5 +21,11 @@ class MainActivity : ComponentActivity() {
                 AppRoot(model.navigator)
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // "Call ended · open Ishara for the gist" has done its job once the app is open.
+        OngoingCallNotifications.cancelEnded(this)
     }
 }
