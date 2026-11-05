@@ -18,7 +18,7 @@ struct Contact: Identifiable, Hashable, Sendable {
         return Contact(id: "number", name: given.isEmpty || isNumberName(given) ? display(e164) : given, phoneNumber: e164)
     }
 
-    /// "+919800012345" as people write it: "+91 98000 12345".
+    /// Formats an Indian E.164 number with a spaced national part.
     static func display(_ e164: String) -> String {
         let digits = e164.filter(\.isNumber)
         guard e164.hasPrefix("+91"), digits.count == 12 else { return e164 }
@@ -53,6 +53,7 @@ extension CallPurpose {
     var title: String {
         switch self {
         case .doctorAppointment: "Doctor's appointment"
+        case .general: "General call"
         }
     }
 }
@@ -113,7 +114,7 @@ struct CallSetup: Equatable, Sendable {
     /// The brief request for a steer call: the typed request plus the profile and details.
     var steerBriefRequest: BriefRequest {
         BriefRequest(
-            purpose: purpose, chips: [],
+            purpose: .general, chips: [],
             profile: Profile(name: details.name, callback: callback, details: sharedDetails, documents: documents),
             request: request)
     }
@@ -126,7 +127,8 @@ struct CallSetup: Equatable, Sendable {
             return StartCallRequest(contactID: contactID, phoneNumber: contact.phoneNumber, purpose: purpose)
         }
         return StartCallRequest(
-            contactID: contactID, phoneNumber: contact.phoneNumber, purpose: purpose, mode: delegation.mode,
+            contactID: contactID, phoneNumber: contact.phoneNumber,
+            purpose: delegation.mode == .steer ? .general : purpose, mode: delegation.mode,
             briefID: delegation.brief.briefID, attended: delegation.attended)
     }
 }

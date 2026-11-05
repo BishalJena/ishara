@@ -516,9 +516,9 @@ def test_goodbye_after_an_accepted_time_closes_the_call():
     assert decision.say == CLOSE_LINE
 
 
-def test_goodbye_before_anything_was_agreed_does_not_close():
+def test_goodbye_without_agreement_closes_without_claiming_success():
     decision = RuleBrain().decide(steer_state(), "okay bye")
-    assert decision.kind != "close"
+    assert decision.kind == "close" and decision.done and decision.callback
 
 
 def test_steer_notes_say_what_was_asked_and_who_answered():

@@ -18,7 +18,7 @@ final class VocabularyTests: XCTestCase {
     }
 
     func testPurposeRawValueMatchesBackend() {
-        XCTAssertEqual(CallPurpose.allCases.map(\.rawValue), ["doctor_appointment"])
+        XCTAssertEqual(CallPurpose.allCases.map(\.rawValue), ["doctor_appointment", "general"])
     }
 
     func testLimitsMatchBackend() {

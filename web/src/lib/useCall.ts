@@ -33,11 +33,11 @@ export function useCall() {
       } else {
         const phone = indianNumber(chosen.number);
         if (!phone) throw new Error('Enter a valid 10-digit Indian number.');
-        const brief = await api<{brief_id: string}>('/briefs', {purpose: 'doctor_appointment', chips: [], profile: chosen.profile, request: chosen.request});
+        const brief = await api<{brief_id: string}>('/briefs', {purpose: 'general', chips: [], profile: chosen.profile, request: chosen.request});
         // Never automatically retry this POST: a lost response can still mean a call was placed.
         let call: {call_id: string};
         try {
-          call = await api<{call_id: string}>('/calls', {phone_number: phone, purpose: 'doctor_appointment', mode: 'steer', brief_id: brief.brief_id, attended: false});
+          call = await api<{call_id: string}>('/calls', {phone_number: phone, purpose: 'general', mode: 'steer', brief_id: brief.brief_id, attended: false});
         } catch (error) {
           // Recover the accepted call by its unique brief. Never retry the dial POST.
           try { call = await api<{call_id: string}>(`/briefs/${brief.brief_id}/call`); }

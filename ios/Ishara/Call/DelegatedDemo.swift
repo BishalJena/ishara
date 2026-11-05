@@ -26,6 +26,7 @@ enum DelegatedDemo {
     static func goal(_ purpose: CallPurpose) -> String {
         switch purpose {
         case .doctorAppointment: "book a doctor's appointment"
+        case .general: "carry out the caller's request"
         }
     }
 
@@ -37,7 +38,7 @@ enum DelegatedDemo {
     }
 
     static func brief(for request: BriefRequest) -> Brief {
-        let goal = goal(request.purpose)
+        let goal = request.request?.trimmingCharacters(in: .whitespacesAndNewlines) ?? goal(request.purpose)
         let name = request.profile.name.trimmingCharacters(in: .whitespaces)
         let when = when(request.chips)
         var lines = ["Call on behalf of \(name), who is Deaf and uses the Ishara app, to \(goal)."]

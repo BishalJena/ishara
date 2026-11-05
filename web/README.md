@@ -1,6 +1,8 @@
 # Ishara web call desk
 
 A phone-shaped browser companion matching the current native steer screens.
+Live calls pursue the user’s own goal across services, using supplied context and
+delivered live replies; the scripted clinic is only a rehearsal example.
 The Python backend serves the web app, calls and ASL inference. It opens directly in
 Scripted demo, which makes no telephone request. Choose Live call (or Settings
 on a phone) and unlock with the backend's `APP_TOKEN` for live calling and signing.

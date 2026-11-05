@@ -17,6 +17,7 @@ async function unlock(page: import('@playwright/test').Page) {
   await page.getByLabel('Demo access code').fill('ishara-web-demo');
   await page.getByRole('button', {name: 'Open call desk'}).click();
   await expect(page.getByRole('heading', {name: 'Who are we calling today?'})).toBeVisible();
+  await page.locator('#request').fill('Book a check-up tomorrow morning.');
 }
 
 test('scripted demo covers setup, typed intervention and notes without calling REST', async ({page}) => {
@@ -188,4 +189,28 @@ test('saved calls lead with the automatic summary and refresh without losing the
   await page.getByRole('button', {name: 'Make another call'}).click();
   await page.locator('.recent-row').first().click();
   await expect(page.locator('.notes-primary').getByText('The clinic booked a check-up tomorrow at 10:30.')).toBeVisible();
+});
+
+
+test('live calls start with an empty general request instead of the scripted clinic goal', async ({page}) => {
+  await page.goto('/');
+  await page.getByRole('button', {name: 'Live call', exact: true}).click();
+  await page.getByLabel('Demo access code').fill('ishara-web-demo');
+  await page.getByRole('button', {name: 'Open call desk'}).click();
+  await expect(page.locator('#request')).toHaveValue('');
+  await page.locator('#request').fill('Ask a plumber about fixing a leaking pipe.');
+  let purpose = '';
+  await page.route('**/briefs', async route => {
+    purpose = route.request().postDataJSON().purpose;
+    await route.fulfill({status: 422, json: {detail: 'Fixture stops before dialing'}});
+  });
+  await page.getByRole('button', {name: 'Contacts', exact: true}).click();
+  await page.getByRole('button', {name: /Clinic/}).click();
+  // The fixture response deliberately stops before a telephone request.
+  const dialogErrors = errors.get(page)!;
+  await page.getByRole('button', {name: 'Place live call'}).click();
+  await expect(page.getByRole('alert')).toContainText('Check your details and try again.');
+  expect(purpose).toBe('general');
+  // An intentional HTTP error is expected in this regression, unlike a page error.
+  for (let i = dialogErrors.length - 1; i >= 0; i--) if (dialogErrors[i].includes('422')) dialogErrors.splice(i, 1);
 });

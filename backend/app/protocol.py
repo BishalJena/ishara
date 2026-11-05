@@ -91,8 +91,8 @@ Sign = Literal[
     "hear",
     "read",
 ]
-PURPOSES = ("doctor_appointment",)
-Purpose = Literal["doctor_appointment"]
+PURPOSES = ("doctor_appointment", "general")
+Purpose = Literal["doctor_appointment", "general"]
 
 MAX_CHIPS = 8
 MAX_SPOKEN_CHARS = 300
@@ -125,7 +125,8 @@ class _Message(BaseModel):
 # moment by typing or signing. While the app is in front, each agent line is proposed to
 # the app first and spoken when its window runs out; while it is away, lines are spoken
 # at once. The agent accepts an offer only when it fits the brief, shares only the
-# brief's details, and defers anything else as a follow-up. It never asks a question.
+# brief's details, and defers decisions outside the user's approval. It may ask the
+# other person relevant questions to achieve the caller's goal.
 CallMode = Literal["live", "delegated", "steer"]
 BriefId = Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")]
 PhoneNumber = Annotated[str, Field(pattern=r"^\+[1-9]\d{6,14}$")]
@@ -196,6 +197,14 @@ class BriefRequest(_Message):
     # Steer calls: what the user typed the call is about. The agent pursues exactly this;
     # its days and parts of day are the only times the agent may agree to.
     request: str | None = Field(default=None, min_length=1, max_length=MAX_REQUEST_CHARS)
+
+    @model_validator(mode="after")
+    def needs_caller_goal(self) -> BriefRequest:
+        if self.request is not None and not self.request.strip():
+            raise ValueError("The caller request cannot be blank")
+        if self.purpose == "general" and not self.request:
+            raise ValueError("A general call needs the caller's request")
+        return self
 
 
 class BriefResponse(_Message):

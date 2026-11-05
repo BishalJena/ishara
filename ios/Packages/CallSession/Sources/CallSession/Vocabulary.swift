@@ -52,6 +52,7 @@ public enum Sign: String, Codable, CaseIterable, Sendable {
 /// Why the call is being placed. Chosen on the Home screen, never signed.
 public enum CallPurpose: String, Codable, CaseIterable, Sendable {
     case doctorAppointment = "doctor_appointment"
+    case general = "general"
 }
 
 /// Limits the backend enforces; the app checks them first so it never sends a message
