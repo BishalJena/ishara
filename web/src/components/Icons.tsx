@@ -1,6 +1,7 @@
 import type {CSSProperties} from 'react';
 
 const paths = {
+  refresh: 'M20 7A9 9 0 1 0 21 13M20 7V2M20 7h-5',
   settings: 'M4 6h16M4 12h16M4 18h16M8 3v6M16 9v6M10 15v6',
   paperclip: 'M8 12l7-7a4 4 0 0 1 6 6L11 21a6 6 0 0 1-8-8L13 3M6 15l10-10',
   person: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0M4 21v-2a8 8 0 0 1 16 0v2',

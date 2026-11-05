@@ -47,7 +47,8 @@ test('browser cookie works through real REST and WebSocket with fake telephone s
   await expect(page.getByText('Your reply, polished')).toBeVisible({timeout: 10000});
   await page.getByRole('button', {name: 'End call', exact: true}).click();
   await expect(page.getByRole('button', {name: 'Make another call'})).toBeVisible({timeout: 15000});
-  await expect(page.getByRole('heading', {name: 'The conversation'})).toBeVisible();
+  await expect(page.getByRole('heading', {name: 'Transcript'})).toBeVisible();
+  expect(await page.locator('.notes-primary').evaluate(e => Boolean(e.compareDocumentPosition(document.querySelector('.notes-transcript')!) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
 });
 
 test('mobile setup has no horizontal overflow and controls remain usable', async ({page}) => {
@@ -162,4 +163,29 @@ test('typing holds the actual pending agent proposal before sending a reviewed r
   await expect(page.getByText('Your reply, polished')).toBeVisible({timeout: 10000});
   await page.getByRole('button', {name: 'End call', exact: true}).click();
   await expect(page.getByRole('button', {name: 'Make another call'})).toBeVisible({timeout: 15000});
+});
+
+
+test('saved calls lead with the automatic summary and refresh without losing the transcript', async ({page}) => {
+  const notes = {call_id: 'saved-fixture', ready: true, outcome: 'booked', summary: ['The clinic confirmed the appointment.'], follow_ups: [], open_questions: [], stepped_in: 0, transcript: [{speaker: 'receptionist', text: 'Your appointment is confirmed for tomorrow at 10:30.', at: 1}]};
+  await page.addInitScript(record => localStorage.setItem('ishara.calls', JSON.stringify([record])), {id: 'saved-fixture', contact: 'City Clinic', request: 'Book a check-up tomorrow morning.', at: Date.now(), demo: false, notes});
+  await page.route('**/web/session', route => route.fulfill({json: {authenticated: true}}));
+  await page.route('**/web/contacts', route => route.fulfill({json: {contacts: []}}));
+  await page.route('**/calls/recent', route => route.fulfill({json: {calls: []}}));
+  let refreshes = 0;
+  await page.route('**/calls/saved-fixture/notes', route => { refreshes++; return route.fulfill({json: {...notes, bolna_summary: 'The clinic booked a check-up tomorrow at 10:30.'}}); });
+  await page.goto('/');
+  await page.locator('.recent-row').first().click();
+  const summary = page.locator('.notes-primary');
+  await expect(summary.getByRole('heading', {name: 'Call summary', exact: true})).toBeVisible();
+  await expect(summary.getByText('An automatic summary is not available for this call.')).toBeVisible();
+  await page.getByRole('button', {name: 'Refresh call notes'}).click();
+  await expect(summary.getByText('The clinic booked a check-up tomorrow at 10:30.')).toBeVisible();
+  expect(await summary.evaluate(e => Boolean(e.compareDocumentPosition(document.querySelector('.notes-transcript')!) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
+  await page.getByText('Transcript', {exact: true}).click();
+  await expect(page.getByText('Your appointment is confirmed for tomorrow at 10:30.', {exact: true})).toBeVisible();
+  expect(refreshes).toBe(1);
+  await page.getByRole('button', {name: 'Make another call'}).click();
+  await page.locator('.recent-row').first().click();
+  await expect(page.locator('.notes-primary').getByText('The clinic booked a check-up tomorrow at 10:30.')).toBeVisible();
 });

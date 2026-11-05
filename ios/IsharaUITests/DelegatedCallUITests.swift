@@ -95,12 +95,12 @@ final class DelegatedCallUITests: XCTestCase {
         openNotes()
         app.waitFor(app.element("notes.outcome"), labelContains: "call back")
         let summary = app.element("notes.bolnaSummary")
-        // At the end of the transcript, where the summary goes once it's in.
-        XCTAssertTrue(app.scrolledToText(containing: "Agent (for you), I'll need to check that and call back.").exists)
+        XCTAssertTrue(app.element("notes.summaryTitle").isHittable, "The summary leads the screen")
         XCTAssertFalse(summary.exists, "the summary was there before Bolna sent it")
-
-        XCTAssertTrue(app.swipedUntilExists(summary, timeout: 30), "Bolna's summary never reached the notes")
+        XCTAssertTrue(summary.waitForExistence(timeout: 30), "Bolna's summary never reached the top of the notes")
+        XCTAssertTrue(summary.isHittable, "The automatic summary needs no scrolling")
         app.waitFor(summary, labelContains: "The agent called to book a doctor's appointment for Riya.", timeout: 1)
+        XCTAssertTrue(app.scrolledToText(containing: "Agent (for you), I'll need to check that and call back.").exists)
     }
 
     // MARK: Recent calls
@@ -124,18 +124,21 @@ final class DelegatedCallUITests: XCTestCase {
         app.waitFor(app.element("notes.outcome"), labelContains: "call back")
         app.keepScreenshot("recent-call-detail", in: self)
         XCTAssertFalse(app.buttons["notes.refresh"].exists, "a saved call is read only")
-        XCTAssertTrue(app.scrolledToText(containing: "Agent (for you), I'll need to check that and call back.").exists,
-                      "the transcript is missing")
+        XCTAssertTrue(app.element("notes.summaryTitle").isHittable)
         let summary = app.element("notes.bolnaSummary")
         XCTAssertFalse(summary.exists, "the summary was there before Bolna sent it")
-        XCTAssertTrue(app.swipedUntilExists(summary, timeout: 30), "Bolna's summary never reached the saved call")
+        XCTAssertTrue(summary.waitForExistence(timeout: 30), "Bolna's summary never reached the saved call")
+        XCTAssertTrue(summary.isHittable, "A saved call opens with its automatic summary")
         app.waitFor(summary, labelContains: "The agent called to book a doctor's appointment for Riya.", timeout: 1)
+        XCTAssertTrue(app.scrolledToText(containing: "Agent (for you), I'll need to check that and call back.").exists,
+                      "the transcript is missing below the summary")
         app.keepScreenshot("recent-call-summary", in: self)
         app.navigationBars.buttons["Ishara"].tap()
 
         // Opened again, the saved call has it.
         app.recentCallRow().tap()
-        XCTAssertTrue(app.swipedUntilExists(app.element("notes.bolnaSummary"), timeout: 5))
+        XCTAssertTrue(app.element("notes.bolnaSummary").waitForExistence(timeout: 5))
+        XCTAssertTrue(app.element("notes.bolnaSummary").isHittable)
         app.navigationBars.buttons["Ishara"].tap()
 
         app.recentCallRow().swipeLeft()

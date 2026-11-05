@@ -3,7 +3,7 @@ import {api} from './lib/api';
 import {useCall} from './lib/useCall';
 import {useBackendStatus} from './lib/useBackendStatus';
 import {BackendStatus} from './components/BackendStatus';
-import type {Contact, Profile, Record as CallRecord} from './lib/types';
+import type {Contact, Notes, Profile, Record as CallRecord} from './lib/types';
 import {SetupForm} from './components/SetupForm';
 import {CallPanel} from './components/CallPanel';
 import {NotesPanel} from './components/NotesPanel';
@@ -62,6 +62,17 @@ export function App() {
   }, [authenticated]);
   const active = Boolean(call.setup && call.view.state !== 'ended');
   const latest = call.notes && call.setup && call.callId ? {id: call.callId, contact: call.setup.contactName, request: call.setup.request, at: Date.now(), demo: call.demo, notes: call.notes} : null;
+  const candidate = selected || latest;
+  const displayed = candidate ? records.find(record => record.id === candidate.id) ?? candidate : null;
+  const refreshRecord = async (record: CallRecord) => {
+    if (record.demo) return;
+    const notes = await api<Notes>(`/calls/${encodeURIComponent(record.id)}/notes`);
+    setRecords(old => {
+      const next = [{...record, notes}, ...old.filter(item => item.id !== record.id)].sort((a, b) => b.at - a.at).slice(0, 10);
+      try { localStorage.setItem('ishara.calls', JSON.stringify(next)); } catch { /* Optional storage. */ }
+      return next;
+    });
+  };
   const home = () => { if (!active) { call.reset(); setSelected(null); } };
   const chooseMode = (value: boolean) => {
     if (active) return;
@@ -70,7 +81,7 @@ export function App() {
   };
   const closeSettings = () => { setSettings(false); try { localStorage.setItem('ishara.profile', JSON.stringify({name: profile.name, callback: profile.callback})); } catch { /* Optional convenience. */ } };
   return <PhoneShell demo={demo} active={active} onMode={chooseMode}>
-    {authenticated === null ? <div className="loading-page"><Mark /><p>Opening Ishara…</p></div> : unlocking ? <Unlock onUnlock={() => { setAuthenticated(true); setUnlocking(false); setDemo(false); }} onExplore={() => { setUnlocking(false); setDemo(true); }} /> : selected || latest ? <NotesPanel record={(selected || latest)!} onDone={home} /> : call.setup ? <CallPanel view={call.view} setup={call.setup} demo={call.demo} unlocked={Boolean(authenticated)} onSend={call.send} onSay={call.say} onHold={call.hold} onDone={home} notesProblem={call.notesProblem} onRetryNotes={() => void call.retryNotes()} /> : <div className="setup-scroll">
+    {authenticated === null ? <div className="loading-page"><Mark /><p>Opening Ishara…</p></div> : unlocking ? <Unlock onUnlock={() => { setAuthenticated(true); setUnlocking(false); setDemo(false); }} onExplore={() => { setUnlocking(false); setDemo(true); }} /> : displayed ? <NotesPanel key={displayed.id} record={displayed} onDone={home} onRefresh={refreshRecord} awaitingSummary={!selected && call.notesPending} /> : call.setup ? <CallPanel view={call.view} setup={call.setup} demo={call.demo} unlocked={Boolean(authenticated)} onSend={call.send} onSay={call.say} onHold={call.hold} onDone={home} notesProblem={call.notesProblem} onRetryNotes={() => void call.retryNotes()} /> : <div className="setup-scroll">
       <SetupForm demo={demo} unlocked={Boolean(authenticated)} contacts={contacts} starting={call.starting} problem={call.view.problem} profile={profile} onSettings={() => setSettings(true)} onStart={setup => void call.start(setup, demo)} />
       {authenticated && records.length > 0 && <section className="recent-section"><header><h2>Recent</h2><button className="text-button" onClick={() => { setRecords([]); try { localStorage.removeItem('ishara.calls'); } catch { /* Storage may be unavailable. */ } }}>Clear</button></header>{records.map(record => <button className="recent-row" key={record.id} onClick={() => setSelected(record)}><span className="initial-avatar purple">{record.contact.charAt(0)}</span><span><strong>{record.notes.outcome === 'booked' ? 'Appointment booked' : 'Call with ' + record.contact}</strong><small>{record.contact} · {new Date(record.at).toLocaleDateString([], {month: 'short', day: 'numeric'})}</small></span><Icon name="arrow" size={16} /></button>)}</section>}
       <button className="phone-mode-label" onClick={() => setSettings(true)}>{demo ? 'Scripted demo · no phone is dialled' : 'Live calling · approved recipients'}<Icon name="settings" size={13} /></button>
