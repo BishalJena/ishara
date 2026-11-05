@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     app_token: SecretStr | None = None
     bolna_api_key: SecretStr | None = None
     bolna_agent_id: str | None = None
+    bolna_custom_model: str = "ishara-relay"
     custom_llm_token: SecretStr | None = None
     bolna_webhook_secret: SecretStr | None = None
     groq_api_key: SecretStr | None = None
@@ -42,6 +43,8 @@ class Settings(BaseSettings):
     sarvam_api_key: SecretStr | None = None
     allowed_recipients: Annotated[frozenset[str], NoDecode] = Field(default_factory=frozenset)
     public_base_url: str | None = None
+    web_asl_model_path: str | None = None
+    call_notes_dir: str | None = None
 
     @field_validator(
         "app_token",

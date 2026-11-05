@@ -168,3 +168,16 @@ webcam ─▶ live_source.py ─▶ mac_bridge.py ──chips, SEND──▶ sig
   captions, as the Deaf caller would).
 - Tests: `tests/test_sign_lab.py`, `tests/test_lab_composer.py`,
   `tests/test_lab_voice.py`, `tests/test_sign_lab_script.py` (fake venvs, `--free`).
+
+## Browser companion and call recovery
+
+The [web companion](../web/README.md) provides the phone-layout call flow and
+webcam signing through this backend. `BOLNA_CUSTOM_MODEL` optionally selects a
+custom-model registration and defaults to `ishara-relay`.
+
+Set `CALL_NOTES_DIR` to a private persistent directory outside releases to retain
+completed call notes for 24 hours after their last update. Keep one backend
+worker: active call state remains in memory. Authenticated clients can restore
+completed notes from `GET /calls/recent`, recover an accepted call by unique brief
+with `GET /briefs/{brief_id}/call`, and request spoken history using WebSocket
+`?history=1`. Recovery never redials or replays approvals.
