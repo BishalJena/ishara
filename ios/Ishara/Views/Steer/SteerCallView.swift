@@ -1,5 +1,6 @@
 import CallSession
 import SwiftUI
+import UIKit
 
 /// The one call screen for steer calls: Ishara runs the call from the typed request; the
 /// user watches the captions and steps in by typing (first) or signing. Each agent line
@@ -40,7 +41,15 @@ struct SteerCallView: View {
         .background(Color(.systemBackground))
         .task { await model.run() }
         .onAppear { model.setPresent(scenePhase == .active) }
-        .onChange(of: scenePhase) { _, phase in model.setPresent(phase == .active) }
+        .onChange(of: scenePhase) { _, phase in
+            model.setPresent(phase == .active)
+            if phase == .background, isSigning {
+                isSigning = false
+                model.endSigning()
+                model.clear()
+                if typed.isEmpty { model.cancelSteppingIn() }
+            }
+        }
         .onChange(of: model.store == nil) { _, _ in model.setPresent(scenePhase == .active) }
         .onChange(of: typing) { _, isTyping in
             if isTyping { model.beginSteppingIn() } else if typed.isEmpty { model.cancelSteppingIn() }
@@ -48,6 +57,8 @@ struct SteerCallView: View {
         .onChange(of: model.isCallOver) { _, isOver in
             if isOver {
                 typing = false
+                isSigning = false
+                model.endSigning()
                 activity.end(outcome: "Call ended · open Ishara for the gist")
             }
         }
@@ -292,7 +303,7 @@ struct SteerCallView: View {
             Button {
                 isSigning = true
                 typing = false
-                model.beginSteppingIn()
+                model.beginSigning()
             } label: {
                 Image(systemName: "hand.raised.fill").frame(width: 24, height: 24)
             }
@@ -349,11 +360,29 @@ struct SteerCallView: View {
         typing = false
     }
 
+    private var signingGuidance: String {
+        if let failure = model.recognition.failure { return failure }
+        guard let camera = model.recognition.camera else {
+            return AppServices.isSimulator ? "The simulator has no camera. Use a saved sign clip or type." : "Camera is off in this run. You can still type your reply."
+        }
+        if camera.isUnavailable { return "No front camera is available. You can still type." }
+        switch camera.permission {
+        case .notDetermined: return "Allow camera access to sign."
+        case .denied: return "Allow Camera for Ishara in Settings, then reopen signing."
+        case .restricted: return "Camera access is restricted on this iPhone. You can still type."
+        case .authorized: break
+        }
+        if !model.recognition.getReady.allChecksPassed { return "Move back until your face, shoulders and both hands are visible." }
+        if !model.recognition.getReady.isCalibrated { return "Rest both hands in view for two seconds to get ready." }
+        if model.showsFramingHint || model.cameraState == .cantSee { return "Keep both hands inside the camera view, then try again." }
+        return "Sign one word, lower your hands, and review the word before Send."
+    }
+
     private var signingPanel: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
-                CameraCard(camera: model.recognition.camera, state: model.cameraState)
-                    .frame(width: 96, height: 128)
+                CameraCard(camera: model.recognition.camera, state: model.cameraState, layout: .compact)
+                    .frame(width: 108, height: 192)
                     .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
@@ -361,11 +390,23 @@ struct SteerCallView: View {
                         Spacer()
                         Button("Type", systemImage: "keyboard") {
                             isSigning = false
+                            model.endSigning()
                             model.clear()
                             if typed.isEmpty { model.cancelSteppingIn() }
                         }
                         .font(.footnote.weight(.semibold))
                         .accessibilityIdentifier("steer.type")
+                    }
+                    Text(signingGuidance)
+                        .font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("steer.signingGuidance")
+                    if model.recognition.camera?.permission == .denied,
+                       let url = URL(string: UIApplication.openSettingsURLString) {
+                        Link("Open camera settings", destination: url).font(.caption.weight(.semibold))
+                    }
+                    if let notice = model.recognition.notice {
+                        Text(notice).font(.caption).foregroundStyle(.orange)
                     }
                     ChipRow(chips: model.chips, onRemove: model.removeChip)
                     if let candidate = model.candidate {
