@@ -37,6 +37,13 @@ def decision(logits: list[float], bundle: dict) -> dict:
     result = {"kind": "unsure", "p": p, "margin": margin, "provisional": True}
     if gloss not in bundle["vocabulary"]:
         return {**result, "reason": "That sign is outside this demo's vocabulary."}
+    # Review choices come from the original full-model top three, never a
+    # vocabulary-only softmax. They require a tap and never become automatic chips.
+    result["suggestions"] = [
+        bundle["glosses"][index]
+        for index in ranked[:3]
+        if bundle["glosses"][index] in bundle["vocabulary"]
+    ]
     thresholds = bundle["thresholds"]
     cutoff = bundle.get("per_word", {}).get(gloss, thresholds["p"])
     if p >= cutoff and margin >= thresholds["margin"]:

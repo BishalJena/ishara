@@ -135,6 +135,51 @@ final class ActiveCallViewModelTests: XCTestCase {
         XCTAssertFalse(model.isSigningActive)
     }
 
+    func testSteerUncertaintyDoesNotAccumulateAndSelectionStillNeedsSend() async {
+        let driver = StubCallDriver(initialState: .inCall)
+        var setup = CallSetup.demo
+        setup.delegation = Delegation(brief: Brief(briefID: "test", text: "A general request", goal: "A task", constraints: []), attended: false, mode: .steer)
+        let model = ActiveCallViewModel(setup: setup, driver: driver, recognition: StubRecognition())
+        await model.run()
+        model.beginSigning()
+        for _ in 0..<6 { model.handle(.result(.unsure)) }
+        model.handle(.result(.handLeftFrame))
+        XCTAssertTrue(model.chips.isEmpty)
+        XCTAssertTrue(model.showsFramingHint)
+        model.handle(.reading)
+        XCTAssertTrue(model.isReadingSign)
+        model.handle(.result(.suggestions([.hello, .thankyou, .please])))
+        XCTAssertFalse(model.isReadingSign)
+        XCTAssertEqual(model.signSuggestions, [.hello, .thankyou, .please])
+        XCTAssertTrue(model.chips.isEmpty, "Suggestions are not accepted words")
+        model.selectSigningWord(.hello)
+        model.handle(.result(.sign(.hello)))
+        model.selectSigningWord(.hello)
+        XCTAssertEqual(model.chips.map(\.label), ["hello"], "Repeated results must not flood the sentence")
+        model.selectSigningWord(.doctor)
+        XCTAssertEqual(model.chips.count, 1, "The manual palette cannot expand the supported vocabulary")
+        model.selectSigningWord(.please)
+        XCTAssertEqual(model.chips.map(\.label), ["hello", "please"])
+        driver.store.receive(.draft(turnID: driver.store.currentTurnID, text: "Hello. Please.", source: .template))
+        XCTAssertEqual(model.takeSigningTextForEditing(), "Hello. Please.")
+        XCTAssertTrue(model.chips.isEmpty)
+        XCTAssertFalse(model.isSigningActive)
+        XCTAssertTrue(driver.sink.approvals.isEmpty, "Choosing and editing must never speak")
+    }
+
+    func testSwitchToTypingPreservesSelectedWordsBeforeTheDraftArrives() async {
+        let driver = StubCallDriver(initialState: .inCall)
+        var setup = CallSetup.demo
+        setup.delegation = Delegation(brief: Brief(briefID: "test", text: "A task", goal: "A task", constraints: []), attended: false, mode: .steer)
+        let model = ActiveCallViewModel(setup: setup, driver: driver, recognition: StubRecognition())
+        await model.run()
+        model.beginSigning()
+        model.selectSigningWord(.thankyou)
+        model.selectSigningWord(.please)
+        XCTAssertEqual(model.takeSigningTextForEditing(), "thank you please")
+        XCTAssertTrue(driver.sink.approvals.isEmpty)
+    }
+
     // MARK: SEND availability
 
     func testSendIsDisabledWithoutDraft() {

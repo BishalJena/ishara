@@ -4,6 +4,7 @@ import {spokenWord} from '../lib/state';
 import {Icon} from './Icons';
 
 const EDGES = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[0,17],[17,18],[18,19],[19,20]];
+const SUPPORTED_WORDS = ['hello', 'thankyou', 'yes', 'no', 'now', 'please', 'tomorrow', 'wait'];
 
 export function CameraPanel({onWords, onComposing, enabled}: {onWords: (text: string) => void; onComposing?: (value: boolean) => void; enabled: boolean}) {
   const video = useRef<HTMLVideoElement>(null);
@@ -26,6 +27,13 @@ export function CameraPanel({onWords, onComposing, enabled}: {onWords: (text: st
   const [words, setWords] = useState<string[]>([]);
   const [result, setResult] = useState<Recognition | null>(null);
   const [problem, setProblem] = useState('');
+  const [showWords, setShowWords] = useState(false);
+  const choices = result?.kind === 'chip' ? [] : (result?.suggestions ?? (result?.kind === 'candidate' && result.gloss ? [result.gloss] : [])).filter(word => SUPPORTED_WORDS.includes(word)).slice(0, 3);
+  const addWord = (word: string) => {
+    if (!enabled || !SUPPORTED_WORDS.includes(word)) return;
+    setWords(old => old.at(-1) === word ? old : [...old, word].slice(0, 8));
+    setResult(null); onComposing?.(true);
+  };
 
   const stop = useCallback(() => {
     generation.current++;
@@ -53,7 +61,7 @@ export function CameraPanel({onWords, onComposing, enabled}: {onWords: (text: st
       const match = await response.json() as Recognition;
       if (run !== generation.current) return;
       setResult(match);
-      if (match.kind === 'chip' && match.gloss) setWords(old => [...old, match.gloss!].slice(0, 8));
+      if (match.kind === 'chip' && match.gloss && SUPPORTED_WORDS.includes(match.gloss)) setWords(old => old.at(-1) === match.gloss ? old : [...old, match.gloss!].slice(0, 8));
     } catch (error) { if (run === generation.current) setProblem(error instanceof Error ? error.message : 'That sign couldn’t be read. Please try again.'); }
     finally { setReading(false); }
   }, []);
@@ -125,7 +133,8 @@ export function CameraPanel({onWords, onComposing, enabled}: {onWords: (text: st
   return <section className="camera-panel" aria-labelledby="sign-heading">
     <div className="panel-heading"><h2 id="sign-heading"><Icon name="hand" /> Say it with a sign</h2><span className="tag">ASL preview</span></div>
     <p className="secondary">One sign at a time. Review your words before using them.</p>
-    <p className="hint">Try: hello, thank you, yes, no, now, please, tomorrow, wait.</p>
+    <button className="text-button signing-word-toggle" aria-expanded={showWords} onClick={() => setShowWords(old => !old)}>{showWords ? 'Hide words' : 'All 8 words · tap to choose'}</button>
+    {showWords && <div className="signing-word-palette" aria-label="Supported signing words">{SUPPORTED_WORDS.map(word => <button key={word} disabled={!enabled || words.length >= 8} onClick={() => addWord(word)}>{spokenWord(word)}</button>)}</div>}
     <div className={`camera-frame ${open ? 'is-open' : ''}`}>
       <video ref={video} playsInline muted aria-label="Mirrored webcam preview" />
       <canvas ref={canvas} aria-hidden="true" />
@@ -138,11 +147,11 @@ export function CameraPanel({onWords, onComposing, enabled}: {onWords: (text: st
       timer.current = setTimeout(() => void finish(), 4000);
     }}><Icon name={capturing ? 'check' : 'hand'} />{reading ? 'Reading sign…' : capturing ? 'Finish sign' : 'Record one sign'}</button><span className="hint">Up to 4 seconds</span></div>}
     <div aria-live="polite">
-      {result?.kind === 'candidate' && <div className="candidate"><span>Did you mean <strong>{spokenWord(result.gloss!)}</strong>?</span><button onClick={() => { setWords(old => [...old, result.gloss!].slice(0, 8)); setResult(null); }}>Add word</button></div>}
-      {result?.kind === 'unsure' && <p className="recognition-message">{result.reason}</p>}
+      {choices.length > 0 && <div className="signing-choices"><div><span>Choose a word</span><button className="text-button" onClick={() => setResult(null)}>Dismiss</button></div><div className="signing-word-palette" aria-label="Sign suggestions">{choices.map(word => <button key={word} disabled={words.length >= 8} onClick={() => addWord(word)}>{spokenWord(word)}</button>)}</div></div>}
+      {result?.kind === 'unsure' && choices.length === 0 && <p className="recognition-message">{result.reason} Try again, or choose from All 8 words.</p>}
       {problem && <p className="error-message" role="alert">{problem}</p>}
     </div>
-    {words.length > 0 && <div className="word-review"><div className="word-chips">{words.map((word, i) => <button key={`${i}-${word}`} onClick={() => setWords(old => old.filter((_, index) => i !== index))} aria-label={`Remove ${spokenWord(word)}`}>{spokenWord(word)}<Icon name="close" size={12} /></button>)}</div><button className="text-button" onClick={() => { onWords(words.map(spokenWord).join(' ')); setWords([]); setResult(null); }}>Use these words <Icon name="arrow" size={16} /></button></div>}
+    {words.length > 0 && <div className="word-review"><div className="word-chips">{words.map((word, i) => <button key={`${i}-${word}`} onClick={() => setWords(old => old.filter((_, index) => i !== index))} aria-label={`Remove ${spokenWord(word)}`}>{spokenWord(word)}<Icon name="close" size={12} /></button>)}</div><button className="text-button" onClick={() => { onWords(words.map(spokenWord).join(' ')); setWords([]); setResult(null); }}>Edit sentence <Icon name="arrow" size={16} /></button><p className="hint">Review and finish your sentence before Send. Nothing is spoken here.</p></div>}
     <p className="privacy-note"><Icon name="shield" size={15} /><span>Video stays in your browser. Landmark coordinates go to Ishara for recognition and aren’t saved. Experimental, 8-word ASL vocabulary.</span></p>
   </section>;
 }

@@ -138,3 +138,25 @@ def test_recognition_requires_margin_and_never_accepts_nan() -> None:
     assert decision(logits, bundle)["kind"] == "candidate"
     logits[0] = float("nan")
     assert decision(logits, bundle)["kind"] == "unsure"
+
+
+def test_ambiguous_signs_offer_supported_full_model_top_three_without_auto_accepting():
+    import math
+
+    bundle = load_bundle()
+    mass = {"hello": 0.30, "yes": 0.25, "no": 0.20}
+    rest = 0.25 / (len(bundle["glosses"]) - len(mass))
+    result = decision([math.log(mass.get(gloss, rest)) for gloss in bundle["glosses"]], bundle)
+    assert result["kind"] == "unsure"
+    assert result["suggestions"] == ["hello", "yes", "no"]
+
+
+def test_outside_winner_and_invalid_evidence_do_not_offer_supported_runner_ups():
+    import math
+
+    bundle = load_bundle()
+    mass = {"can": 0.50, "yes": 0.30, "no": 0.15}
+    rest = 0.05 / (len(bundle["glosses"]) - len(mass))
+    result = decision([math.log(mass.get(gloss, rest)) for gloss in bundle["glosses"]], bundle)
+    assert result["kind"] == "unsure" and not result.get("suggestions")
+    assert not decision([float("nan")] * len(bundle["glosses"]), bundle).get("suggestions")

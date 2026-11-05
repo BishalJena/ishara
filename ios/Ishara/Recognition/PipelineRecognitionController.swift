@@ -92,6 +92,7 @@ final class PipelineRecognitionController: RecognitionController {
     enum WorkerOutput: Sendable {
         case session(RecognitionSession.Output)
         case result(RecognitionResult)
+        case reading
         /// What the preview draws for the latest camera or video frame.
         case overlay(BodyOverlay)
     }
@@ -126,7 +127,11 @@ final class PipelineRecognitionController: RecognitionController {
             for frame in frames {
                 for output in session.process(frame) {
                     if case .segment(let clip) = output {
-                        await emit(.result(components.classifier.classify(clip)))
+                        await emit(.reading)
+                        let started = Date()
+                        let result = components.classifier.classify(clip)
+                        recognitionLog.info("sign classification ms=\(Date().timeIntervalSince(started) * 1000, privacy: .public) frames=\(clip.frames.count, privacy: .public)")
+                        await emit(.result(result))
                     } else {
                         await emit(.session(output))
                     }
@@ -165,6 +170,8 @@ final class PipelineRecognitionController: RecognitionController {
             break  // classified in the worker
         case .result(let result):
             continuation?.yield(.result(result))
+        case .reading:
+            continuation?.yield(.reading)
         case .overlay(let overlay):
             camera?.overlay = overlay
         }
