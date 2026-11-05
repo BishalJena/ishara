@@ -75,3 +75,10 @@ android/app/build/
 android/local.properties
 android/.idea/
 *.iml
+
+# Browser dependencies, generated assets and test evidence
+backend/web_static/
+web/public/models/
+web/public/mediapipe/
+web/artifacts/
+web/*.tsbuildinfo

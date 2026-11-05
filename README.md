@@ -14,10 +14,10 @@ moment, and you steer it. The business just answers its ordinary phone.
   <img src="docs/media/demo-light.gif" alt="Ishara on the iPhone: typing a request to a clinic with a PDF attached, Ishara calling and introducing itself, turning down a 4 pm slot, the user tapping Ishara's line to add their own words, Ishara answering an allergy question from the PDF, the user signing THANK YOU, and the gist. Beside the phone, the part of the system at work lights up: the app, the Ishara backend, Bolna or the clinic.">
 </picture>
 
-**Live:** the iPhone app runs against the Ishara backend on Heroku, and every call is a real
+**Live:** the iPhone app runs against the Ishara backend, and every call is a real
 phone call, placed through Bolna (Deepgram listens, Sarvam speaks, Plivo connects).
 
-[The opportunity](#the-opportunity) · [How a call works](#one-call-your-way) · [Architecture](#architecture) · [Run it](#run-it) · [Deploy](#deploy) · [Pitch](PITCH.md) · [Market model](MARKET.md)
+[The opportunity](#the-opportunity) · [How a call works](#one-call-your-way) · [Architecture](#architecture) · [Run it](#run-it) · [Web companion](web/README.md) · [Deploy](#deploy) · [Pitch](PITCH.md) · [Market model](MARKET.md)
 
 ## Why Ishara
 
