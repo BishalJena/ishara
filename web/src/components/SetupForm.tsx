@@ -1,13 +1,13 @@
-import {useState, type ReactNode} from 'react';
+import {useState} from 'react';
 import type {Contact, Profile, Setup} from '../lib/types';
 import {indianNumber} from '../lib/state';
 import {CameraPanel} from './CameraPanel';
 import {Icon} from './Icons';
 import {Sheet} from './PhoneShell';
 
-export function SetupForm({demo, unlocked, contacts, starting, problem, profile, backendStatus, onSettings, onStart}: {
+export function SetupForm({demo, unlocked, contacts, starting, problem, profile, onSettings, onStart}: {
   demo: boolean; unlocked: boolean; contacts: Contact[]; starting: boolean; problem: string; profile: Profile;
-  backendStatus?: ReactNode; onSettings: () => void; onStart: (setup: Setup) => void;
+  onSettings: () => void; onStart: (setup: Setup) => void;
 }) {
   const [number, setNumber] = useState('');
   const [contactName, setContactName] = useState('');
@@ -34,7 +34,6 @@ export function SetupForm({demo, unlocked, contacts, starting, problem, profile,
       {problem && <p className="error-message" role="alert">{problem}</p>}
       <div className="composer-toolbar"><button type="button" className="circle-button" aria-label="Attach details or document" onClick={() => setSheet('attach')}><Icon name="paperclip" /></button><button type="button" className="circle-button" aria-label="Contacts" onClick={() => setSheet('contacts')}><Icon name="person" /></button><button type="button" className="circle-button" aria-label="Open signing" onClick={() => setSheet('camera')}><Icon name="hand" /></button><button className="native-call-button" type="submit" disabled={!valid || starting} aria-label={demo ? 'Start scripted call' : 'Place live call'}><Icon name="phone" size={17} />{starting ? 'Calling…' : 'Call'}</button></div>
     </form>
-    {backendStatus}
     <p className="setup-disclosure">Ishara leads the call from what you wrote and never adds anything else. It calls from Ishara’s number, not yours. {demo ? 'This is a scripted demo. Nothing is dialled.' : 'Live calls use Bolna credits.'}</p>
     {demo && <div className="native-demo-hint"><Icon name="phone" size={17} /><span>A clinic appointment, ready to try.<small>Tap Call, follow the captions, and step in any time.</small></span></div>}
     {sheet === 'contacts' && <Sheet title="Contacts" onClose={() => setSheet(null)}>{demo ? <button className="contact-choice" onClick={() => { setContactName('City Clinic'); setSheet(null); }}><span className="initial-avatar purple">C</span><span>City Clinic<small>Scripted recipient · no number dialled</small></span><Icon name="check" /></button> : contacts.map(contact => <button className="contact-choice" key={contact.id} onClick={() => { setNumber(contact.number.replace(/^\+91/, '')); setContactName(contact.name); setSheet(null); }}><span className="initial-avatar purple">{contact.name.charAt(0)}</span><span>{contact.name}<small>{contact.number}</small></span></button>)}{!demo && !contacts.length && <p className="secondary">No approved contacts are available. Check your connection or unlock the call desk.</p>}</Sheet>}

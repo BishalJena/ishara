@@ -91,6 +91,28 @@ final class SteerCallUITests: XCTestCase {
         attach("native-backend-gist")
     }
 
+    func testBackendStatusLivesInSettingsAndTheAppStaysPortrait() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["ISHARA_LOCAL_BACKEND"] == "1")
+        app.terminate()
+        app.launchArguments = ["-IsharaCallHistory", "memory", "-IsharaFlow", "steer", "-IsharaDriver", "live", "-IsharaRecognition", "scripted"]
+        app.launch()
+        XCTAssertTrue(app.buttons["setup.settings"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["setup.backendStatus"].exists)
+        XCTAssertFalse(app.buttons["settings.backendStatus"].exists)
+        app.buttons["setup.settings"].tap()
+        let status = app.buttons["settings.backendStatus"]
+        XCTAssertTrue(status.waitForExistence(timeout: 5))
+        status.tap()
+        XCTAssertTrue(app.buttons["Check again"].waitForExistence(timeout: 5))
+        app.buttons["Done"].firstMatch.tap()
+        app.buttons["settings.done"].tap()
+        XCTAssertTrue(app.textFields["setup.number"].firstMatch.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["settings.backendStatus"].exists)
+        defer { XCUIDevice.shared.orientation = .portrait }
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertLessThan(app.frame.width, app.frame.height, "The app remains portrait when the phone rotates")
+    }
+
     private func attach(_ name: String) {
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = name

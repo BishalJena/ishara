@@ -16,3 +16,7 @@
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 .service-status{display:flex;align-items:center;gap:7px;width:100%;font-size:12px;color:#986012;padding:15px 0 0;text-align:left}.service-status.is-online{color:#28713b}.service-status>span:nth-child(2){flex:1}.service-status-heading{font-size:18px;font-weight:600;margin-top:20px}.vm-command{display:block;overflow-wrap:anywhere;font-size:12px;line-height:1.6;padding:12px;background:#e5e5ed;border-radius:12px}.sheet-content a.button{display:flex;text-decoration:none;margin:16px 0}.notes-retry{margin-left:10px;color:inherit;font-weight:600;text-decoration:underline}
+
+.backend-details > summary {list-style:none; cursor:pointer}
+.backend-details > summary::-webkit-details-marker {display:none}
+.backend-details[open] > summary {margin-bottom:18px}
