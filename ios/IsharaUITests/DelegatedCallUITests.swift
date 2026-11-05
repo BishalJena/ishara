@@ -148,7 +148,8 @@ final class DelegatedCallUITests: XCTestCase {
     func testRecentCallsSurviveARelaunch() throws {
         let folder = FileManager.default.temporaryDirectory.appending(path: "ishara-history-\(UUID().uuidString)")
         addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
-        let arguments = ["-IsharaFakeTimeScale", "0.5"]
+        // The custom history folder replaces freshHistory, including its mode flags.
+        let arguments = ["-IsharaFakeTimeScale", "0.5", "-IsharaFlow", "classic", "-IsharaDriver", "fake"]
         launch(arguments, history: ["-IsharaCallHistory", folder.path])
         callForMeUnattended()
         XCTAssertTrue(app.buttons["call.backHome"].waitForExistence(timeout: 30))

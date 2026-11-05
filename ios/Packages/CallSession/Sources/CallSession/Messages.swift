@@ -355,6 +355,8 @@ extension AppMessage: Encodable {
 /// Messages the backend sends on the call WebSocket.
 public enum ServerMessage: Equatable, Sendable {
     case status(CallState)
+    /// Authoritative spoken transcript on attachment/reconnection; never replays approvals.
+    case history([TranscriptEntry])
     /// A line said on the call: the receptionist's words, or a fixed agent line. `at` is
     /// unix time in seconds.
     case caption(text: String, at: Double, speaker: CaptionSpeaker = .receptionist)
@@ -382,6 +384,7 @@ public enum ServerMessage: Equatable, Sendable {
 }
 
 extension ServerMessage: Decodable {
+    private enum HistoryKeys: String, CodingKey { case entries }
     enum CodingKeys: String, CodingKey {
         case type
         case state
@@ -420,6 +423,9 @@ extension ServerMessage: Decodable {
                 outcome: try container.decode(ProposalOutcome.self, forKey: .outcome))
         case "follow_up":
             self = .followUp(text: try container.decode(String.self, forKey: .text))
+        case "history":
+            let history = try decoder.container(keyedBy: HistoryKeys.self)
+            self = .history(try history.decode([TranscriptEntry].self, forKey: .entries))
         case "status":
             self = .status(try container.decode(CallState.self, forKey: .state))
         case "caption":

@@ -15,6 +15,7 @@ struct AppRootView: View {
 
     /// Why the steer call couldn't be set up (creating its brief failed).
     @State private var steerProblem: String?
+    @State private var serviceStatus = BackendServiceStatus()
     /// What's typed on Home, kept across the call so "Back to the request" finds it.
     @State private var draft = SetupDraft()
 
@@ -38,6 +39,7 @@ struct AppRootView: View {
                     setupProblem: services.setupProblem ?? steerProblem,
                     history: services.history,
                     draft: draft,
+                    serviceStatus: services.options.driver == .live ? serviceStatus : nil,
                     onCall: { chosen in startSteerCall(chosen) }
                 )
             case .steerCall(let model):
@@ -135,7 +137,15 @@ struct AppRootView: View {
                 NotesView(model: model, onDone: { route = .home })
             }
         }
+        .task { await services.recoverRecentCalls() }
+        .task {
+            if services.options.driver == .live, case .success(let config) = services.config {
+                await serviceStatus.monitor(config.backend)
+            }
+        }
     }
+
+
 
     /// The ended call's follow-up, started once per call.
     @discardableResult

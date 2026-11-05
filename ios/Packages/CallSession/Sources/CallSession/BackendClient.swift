@@ -137,6 +137,21 @@ public actor BackendClient: AppMessageSending {
         try await post(body, path: "briefs", as: Brief.self)
     }
 
+    /// Recover the one call started from this unique brief; this never dials again.
+    public func callForBrief(_ briefID: String) async throws -> CallStart {
+        let url = config.baseURL.appending(path: "briefs").appending(path: briefID).appending(path: "call")
+        let (data, response) = try await http.perform(authorizedRequest(url: url))
+        return try decoded(CallStart.self, data: data, response: response)
+    }
+
+    /// Finished notes recovered from the private backend archive.
+    public func recentNotes() async throws -> [CallNotes] {
+        struct Recent: Decodable { let calls: [CallNotes] }
+        let url = config.baseURL.appending(path: "calls/recent")
+        let (data, response) = try await http.perform(authorizedRequest(url: url))
+        return try decoded(Recent.self, data: data, response: response).calls
+    }
+
     /// `GET /calls/{id}/notes` (D9): transcript, outcome and summary; `ready` once the call ended.
     public func notes(callID: String) async throws -> CallNotes {
         let url = config.baseURL.appending(path: "calls").appending(path: callID).appending(path: "notes")
@@ -167,7 +182,7 @@ public actor BackendClient: AppMessageSending {
     public func connect(callID: String) async {
         pump?.cancel()
         let url = config.webSocketBaseURL.appending(path: "calls").appending(path: callID)
-            .appending(path: "ws")
+            .appending(path: "ws").appending(queryItems: [URLQueryItem(name: "history", value: "1")])
         let frames = await transport.connect(authorizedRequest(url: url))
         let (messages, continuation) = AsyncStream<ServerMessage>.makeStream()
         events = messages

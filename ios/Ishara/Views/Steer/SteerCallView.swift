@@ -23,6 +23,16 @@ struct SteerCallView: View {
         VStack(spacing: 0) {
             header
             statusPill
+            if let error = model.errorMessage {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(error).font(.footnote).foregroundStyle(.red)
+                    if !lastTyped.isEmpty {
+                        Button("Edit last reply") { typed = lastTyped; model.beginSteppingIn(); typing = true }
+                            .font(.footnote.weight(.semibold))
+                    }
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 20).padding(.bottom, 8)
+                .accessibilityIdentifier("steer.deliveryError")
+            }
             factsStrip
             captions
             composer
@@ -289,20 +299,21 @@ struct SteerCallView: View {
             .buttonStyle(.bordered).buttonBorderShape(.circle)
             .accessibilityLabel("Sign instead")
             .accessibilityIdentifier("steer.sign")
-            .disabled(model.isCallOver)
+            .disabled(!model.canSteer)
 
             HStack {
                 TextField("Type to step in…", text: $typed, axis: .vertical)
                     .lineLimit(1...4)
                     .focused($typing)
                     .submitLabel(.send)
+                    .disabled(!model.canSteer)
                     .onSubmit(sendTyped)
                     .accessibilityIdentifier("steer.field")
                 Button(action: sendTyped) {
                     Image(systemName: "arrow.up").font(.headline).frame(width: 30, height: 30)
                 }
                 .buttonStyle(.borderedProminent).buttonBorderShape(.circle)
-                .disabled(typed.trimmingCharacters(in: .whitespaces).isEmpty || model.isCallOver)
+                .disabled(typed.trimmingCharacters(in: .whitespaces).isEmpty || !model.canSteer)
                 .accessibilityIdentifier("steer.send")
             }
             .padding(.leading, 14).padding(.trailing, 6).padding(.vertical, 6)
@@ -332,9 +343,8 @@ struct SteerCallView: View {
 
     private func sendTyped() {
         let text = typed.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        guard !text.isEmpty, model.say(text) else { return }
         lastTyped = text
-        model.say(text)
         typed = ""
         typing = false
     }

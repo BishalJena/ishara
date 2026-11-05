@@ -27,7 +27,7 @@ final class LiveCallTests: XCTestCase {
         XCTAssertEqual(call.callID, "call_123")
         XCTAssertEqual(call.store.state, .dialing)
         let requests = await transport.requests
-        XCTAssertEqual(requests.map(\.url?.absoluteString), ["wss://backend.example.test/calls/call_123/ws"])
+        XCTAssertEqual(requests.map(\.url?.absoluteString), ["wss://backend.example.test/calls/call_123/ws?history=1"])
     }
 
     func testFailedStartOpensNoSocket() async {

@@ -35,6 +35,21 @@ final class CallHistoryTests: XCTestCase {
             .filter { $0.pathExtension == "json" }
     }
 
+    func testRecoveredBackendNotesPersistWithoutDuplicateCalls() {
+        let history = CallHistory(folder: folder)
+        let notes = delegatedNotes(bolna: "A recovered summary.")
+        history.recover([notes])
+        history.recover([notes])
+        XCTAssertEqual(history.records.count, 1)
+        XCTAssertEqual(history.records.first?.backendCallID, notes.callID)
+        XCTAssertEqual(CallHistory(folder: folder).records.first?.notes?.bolnaSummary, "A recovered summary.")
+        var late = notes
+        late.bolnaSummary = "The later summary."
+        history.recover([late])
+        XCTAssertEqual(history.records.count, 1)
+        XCTAssertEqual(history.records.first?.notes?.bolnaSummary, "The later summary.")
+    }
+
     func testSavedCallsSurviveARelaunch() throws {
         let history = CallHistory(folder: folder)
         let live = record(minutesAgo: 10)

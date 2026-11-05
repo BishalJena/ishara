@@ -1,5 +1,6 @@
 import CallSession
 import Foundation
+import OSLog
 
 /// The real call: `POST /calls` on the Ishara backend, then one WebSocket per call, via
 /// CallSession's `LiveCall`. The backend asks Bolna to dial (Path B).
@@ -12,6 +13,7 @@ import Foundation
 final class LiveCallDriver: CallDriver {
     static let defaultReconnectDelays: [Duration] = [.seconds(1), .seconds(2), .seconds(4)]
 
+    private let log = Logger(subsystem: "ai.ishara.demo", category: "call")
     private let client: BackendClient
     private let reconnectDelays: [Duration]
     private let sleep: @Sendable (Duration) async throws -> Void
@@ -19,9 +21,12 @@ final class LiveCallDriver: CallDriver {
     private var call: LiveCall?
     /// Kept after `close()` so the notes of an ended call can still be fetched.
     private var lastCallID: String?
+    private var lastBriefID: String?
+    private var starting: Task<TurnStore, Error>?
     private var reconnectsUsed = 0
     private var reconnecting: Task<Void, Never>?
 
+    var backendCallID: String? { lastCallID }
     var onReconnectStopped: ((ReconnectStop) -> Void)?
 
     init(
@@ -41,18 +46,43 @@ final class LiveCallDriver: CallDriver {
     }
 
     func start(_ setup: CallSetup) async throws -> TurnStore {
-        let call = try await LiveCall.start(client: client, request: setup.startRequest, makeTurnID: makeTurnID)
-        call.onConnectionLost = { [weak self] in self?.connectionLost() }
-        self.call = call
-        lastCallID = call.callID
-        return call.store
+        if let starting { return try await starting.value }
+        lastBriefID = setup.delegation?.brief.briefID
+        // A view task can disappear after the server has dialled. Own startup here;
+        // cancelling the screen must not cancel and forget an accepted call.
+        let task = Task { @MainActor [self] in
+            log.info("Starting call request")
+            let accepted: CallStart
+            do {
+                accepted = try await client.startCall(setup.startRequest)
+            } catch {
+                guard let lastBriefID,
+                      let recovered = try? await client.callForBrief(lastBriefID) else { throw error }
+                log.notice("Recovered the accepted call after a lost startup response")
+                accepted = recovered
+            }
+            let call = LiveCall(client: client, start: accepted, makeTurnID: makeTurnID)
+            self.call = call
+            lastCallID = call.callID  // retain identity before any live-feed setup
+            log.info("Call identity retained; connecting live feed")
+            call.onConnectionLost = { [weak self] in self?.connectionLost() }
+            await call.connect()
+            return call.store
+        }
+        starting = task
+        return try await task.value
     }
 
     func createBrief(_ request: BriefRequest) async throws -> Brief {
-        try await client.createBrief(request)
+        let brief = try await client.createBrief(request)
+        lastBriefID = brief.briefID
+        return brief
     }
 
     func notes() async throws -> CallNotes {
+        if lastCallID == nil, let lastBriefID {
+            lastCallID = try await client.callForBrief(lastBriefID).callID
+        }
         guard let lastCallID else { throw CallDriverError.noCall }
         return try await client.notes(callID: lastCallID)
     }
