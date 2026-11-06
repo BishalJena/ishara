@@ -35,7 +35,8 @@ def _request(notes: CallNotes) -> str:
 def task_title(notes: CallNotes) -> str:
     text = _request(notes)
     text = re.sub(
-        r"^(?:(?:please|can you|could you|i'd like (?:you )?to|i want to|i need to)\s+)+",
+        r"^(?:(?:please|can you|could you|help me(?: to)?|"
+        r"i'd like (?:you )?to|i want to|i need to)\s+)+",
         "",
         text,
         flags=re.I,
@@ -45,6 +46,22 @@ def task_title(notes: CallNotes) -> str:
     )[0]
     text = re.sub(r"\b\S*\d\S*\b", "", text)
     words = text.split()[:7]
+    while words and words[-1].lower() in {
+        "for",
+        "with",
+        "to",
+        "of",
+        "and",
+        "or",
+        "the",
+        "a",
+        "an",
+        "at",
+        "on",
+        "in",
+        "from",
+    }:
+        words.pop()
     if not words:
         return "Call summary"
     verbs = {
@@ -59,7 +76,10 @@ def task_title(notes: CallNotes) -> str:
         "cancel": "Cancelling",
     }
     words[0] = verbs.get(words[0].lower(), words[0].capitalize())
-    return " ".join(words)[:72].rstrip(" ,;:")
+    title = " ".join(words)[:72].rstrip(" ,;:")
+    return re.sub(
+        r"\bdr\.?\s+([a-z][\w-]*)", lambda m: "Dr. " + m[1].capitalize(), title, flags=re.I
+    )
 
 
 def default_presentation(notes: CallNotes, *, status: str = "ready") -> CallPresentation:
@@ -70,18 +90,19 @@ def default_presentation(notes: CallNotes, *, status: str = "ready") -> CallPres
         "callback": "The call ended with a callback requested.",
         "no_answer": "The call was not answered.",
     }.get(notes.outcome or "", "The call ended before the full request was confirmed.")
+    follow_ups = [
+        q
+        for q in notes.follow_ups
+        if not re.fullmatch(r"(?:okay|ok|right|sure|thanks|thank you)[.! ,]*", q.strip(), re.I)
+    ]
     next_step = None
     if notes.outcome not in {"booked", "done"}:
-        next_step = (
-            "Still needed: " + notes.follow_ups[0].strip()
-            if notes.follow_ups
-            else "Call again to complete the request."
-        )[:200]
+        next_step = ("Unanswered: " + follow_ups[0].strip() if follow_ups else "")[:200] or None
     return CallPresentation(
         status=status,
         title=task_title(notes),
         overview=overview,
-        key_points=["Also unresolved: " + question[:160] for question in notes.follow_ups[1:4]],
+        key_points=["Also unresolved: " + question[:160] for question in follow_ups[1:4]],
         next_step=next_step,
     )
 

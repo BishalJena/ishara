@@ -660,7 +660,56 @@ _OPERATION_OFFERS = {
 }
 
 
+def named_target_fits(request: str, offer: str, *, require_name: bool = False) -> bool:
+    """Reject explicitly different named providers; omitted names add no limit."""
+    stop = r"(?!(?i:at|on|for|and|or|with|who|using|in|the|to|shall|can|is|will|has)\b)"
+    word = stop + r"[A-Za-z][A-Za-z'’-]*\.?"
+    proper = stop + r"[A-Z][A-Za-z'’-]*\.?"
+    titled = re.compile(
+        rf"(?i:\b(?:dr|doctor|mr|mrs|ms|prof|professor)\.?)\s+({word}(?:\s+{word}){{0,2}})"
+    )
+    related = re.compile(
+        rf"(?i:\b(?:with|by|from|to|contact|call|hire|ask))\s+"
+        rf"({proper}(?:\s+{proper}){{1,2}})"
+    )
+
+    def names(text: str) -> list[list[str]]:
+        titled_names = list(titled.finditer(text))
+        found = [match[1] for match in titled_names]
+        found += [
+            match[1]
+            for match in related.finditer(text)
+            if not any(match.start() <= title.start() < match.end() for title in titled_names)
+        ]
+        return [re.findall(r"[a-z]+", name.lower()) for name in found]
+
+    def matches(left: list[str], right: list[str]) -> bool:
+        if left[-1] != right[-1]:
+            return False
+        if len(left) == 1 or len(right) == 1:
+            return True
+
+        def token_matches(a: str, b: str) -> bool:
+            return a == b or (a[0] == b[0] and min(len(a), len(b)) == 1)
+
+        if not token_matches(left[0], right[0]):
+            return False
+        return not (left[1:-1] and right[1:-1]) or (
+            len(left) == len(right)
+            and all(token_matches(a, b) for a, b in zip(left[1:-1], right[1:-1], strict=True))
+        )
+
+    requested, offered = names(request), names(offer)
+    if require_name and not requested:
+        return False
+    return not requested or all(
+        any(matches(wanted, named) for wanted in requested) for named in offered
+    )
+
+
 def offer_matches_goal(goal: Goal, offer: str) -> bool:
+    if not named_target_fits(goal.text, offer):
+        return False
     operations = set(_OPERATION_OFFERS).union(*_OPERATION_OFFERS.values())
     requested = next((w for w in normal(goal.text).split() if w in _OPERATION_OFFERS), None)
     offered = set(normal(offer).split()) & operations
@@ -780,6 +829,8 @@ def choice_objection(
     if option not in quote or not option.strip():
         return "option_span"
     complete_offer = complete_offer or quote
+    if not named_target_fits(approved_request, complete_offer):
+        return "explicit_target"
     question_objection = choice_question_objection(complete_offer)
     if question_objection:
         return question_objection

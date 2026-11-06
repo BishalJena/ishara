@@ -175,6 +175,92 @@ def _name_scope(question: str) -> tuple[set[str], bool]:
     return specific, caller
 
 
+def referenced_provider_target(
+    request: str, sources: list[dict[str, Any]]
+) -> tuple[bool, str | None]:
+    """Resolve only an explicit provider reference to one current labelled value."""
+    reference = re.search(
+        r"\b([a-z]+)(?:\s+name)?\s+(?:(?:listed|named|shown)\s+)?(?:in|from|on)\s+"
+        r"[^.!?;\n]{0,80}\b(?:report|document|attachment|file)\b",
+        request,
+        re.I,
+    )
+    if not reference:
+        return False, None
+    requested = terms(reference[1])
+    values: dict[str, str] = {}
+    for source in sources:
+        if not source["source_id"].startswith("document:"):
+            continue
+        for field in source_fields(source):
+            label = terms(field.label)
+            if not requested <= label:
+                continue
+            if re.search(r"\b(previous|former|historical)\b", field.label, re.I):
+                continue
+            if label - requested - {"name"}:
+                return True, None
+            values.setdefault(" ".join(field.value.casefold().split()).rstrip(".! ,;"), field.value)
+    return True, next(iter(values.values())) if len(values) == 1 else None
+
+
+def retrieve_known_fields(
+    sources: list[dict[str, Any]], question: str, question_id: str
+) -> list[AnswerSpan] | None:
+    """Retrieve clear labelled facts only; the speech validator retains authority."""
+    if any(
+        source["source_id"].startswith("caller:") and source.get("question_id") == question_id
+        for source in sources
+    ):
+        return None
+    question_keys = terms(question)
+    name_subjects, caller_name_asked = _name_scope(question)
+    question_role = role(question) or "caller"
+    allowed_roles = {question_role}
+    if (
+        question_role == "doctor"
+        and re.search(r"\band\b", question, re.I)
+        and re.search(r"\b(patient|caller)\b", question, re.I)
+    ):
+        allowed_roles.add("caller")
+    candidates: dict[frozenset[str], tuple[str, AnswerSpan]] = {}
+    for source in sources:
+        if source["source_id"].startswith("caller:") and source.get("question_id") != question_id:
+            continue
+        for field in source_fields(source):
+            field_role = _field_role(field)
+            if not (field.keys & question_keys) or (field_role and field_role not in allowed_roles):
+                continue
+            if re.search(r"\b(previous|former|historical)\b", field.label, re.I) and not re.search(
+                r"\b(previous|former|historical)\b", question, re.I
+            ):
+                continue
+            if (
+                "name" in field.keys
+                and name_subjects
+                and not caller_name_asked
+                and not (field.keys & name_subjects)
+            ):
+                continue
+            if terms(field.label) - question_keys:
+                return None
+            if len(field.value) > 600:
+                return None
+            key = field.keys & question_keys
+            value = " ".join(field.value.casefold().split()).rstrip(".! ,;")
+            if key in candidates and candidates[key][0] != value:
+                return None
+            candidates.setdefault(
+                key, (value, AnswerSpan(source_id=source["source_id"], quote=field.value))
+            )
+    spans = [span for _, span in candidates.values()]
+    covered = frozenset().union(*candidates)
+    if not spans or len(spans) > 6 or question_keys - covered:
+        return None
+    _, rejection = validate_answer(sources, question, question_id, spans)
+    return spans if rejection is None else None
+
+
 def validate_answer(
     sources: list[dict[str, Any]], question: str, question_id: str, spans: list[AnswerSpan]
 ) -> tuple[str | None, str | None]:

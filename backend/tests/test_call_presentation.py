@@ -255,7 +255,7 @@ async def test_ready_summary_cannot_hide_secondary_unresolved_questions():
         update={"follow_ups": ["What is the registration number?", "Which address?"]}
     )
     result = await CallPresenter(Model()).generate(current)
-    assert result.presentation.next_step == "Still needed: What is the registration number?"
+    assert result.presentation.next_step == "Unanswered: What is the registration number?"
     assert result.presentation.key_points == ["Also unresolved: Which address?"]
 
 
@@ -342,3 +342,19 @@ def test_provider_schema_and_local_validation_allow_only_existing_eligible_claus
 async def test_recent_title_describes_the_task_instead_of_only_the_doctor_name():
     result = await CallPresenter(Model(draft(title="Dr Reed"))).generate(notes())
     assert result.presentation.title == "Booking an appointment with Dr. Reed"
+
+
+def test_task_title_keeps_the_provider_and_removes_filler():
+    from app.call_presentation import task_title
+
+    data = notes().model_copy(
+        update={"brief": "Request: Help me book an appointment with dr rao for my checkup."}
+    )
+    assert task_title(data) == "Booking an appointment with Dr. Rao"
+
+
+def test_unclear_call_does_not_invent_an_instruction_or_keep_an_acknowledgement():
+    data = notes().model_copy(update={"follow_ups": ["okay"]})
+    presentation = default_presentation(data)
+    assert presentation.next_step is None
+    assert presentation.key_points == []

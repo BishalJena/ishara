@@ -58,11 +58,23 @@ passes provenance and caller-question binding. Retained facts still pass complet
 field coverage, size, entity and historical checks; an empty selection is rejected.
 This prevents a report title from poisoning an otherwise supported identifier
 answer. Invalid factual selections, preference handoffs and stale offer provenance
-get at most one repair
-within the original inference deadline. Exhausted invalid provenance cannot invent
+get at most one repair within the original inference deadline. Exhausted invalid provenance cannot invent
 a missing caller question; genuine unknown facts and explicit constraint decisions
 retain their handoffs. Fully proven goals close only when no receiver question
 remains.
+
+Before a non-decision handoff, including a model timeout or provider failure,
+conservative retrieval can supply complete exact labelled facts. It abstains for
+missing requested fields, entity qualifiers, conflicting values, historical
+mismatches and a current live caller correction. Retrieved facts pass the same
+speech validator and are recorded as context recovery, not model quality.
+
+Explicit named providers constrain offers. An explicit provider reference to an
+attached report resolves only one unambiguous current labelled value. Unknown or
+ambiguous references cannot authorize a substitute. A whole request quoted as an
+answer to a proceed question requires a bounded wrong-action repair; it is never
+automatically converted into consent. Actual acceptance still uses all offer,
+price, time, pending-question and source checks.
 
 Reasoning about relevance and unfamiliar conversation still depends on the
 model; strict JSON alone does not establish semantic correctness.
@@ -79,7 +91,9 @@ qualifications and negation, and excludes agent completion claims. A literal
 provider; the public optional next-step field is unchanged. A deterministic
 fallback retains actual missing questions, including secondary unresolved items. The provider paragraph cannot promote
 an unclear call to success. Transcript and event details stay expandable below.
-The removed automatic-summary disclaimer is not rendered.
+The removed automatic-summary disclaimer is not rendered. Deterministic titles
+remove request filler and dangling prepositions; neutral acknowledgements do not
+become next steps, and no instruction to call again is invented.
 
 Summary work runs once per changed finished-call input, outside the live voice
 response path. Reads do not generate inference. Background summaries wait while another call is
@@ -91,7 +105,7 @@ is introduced.
 
 ## Verification
 
-The final local backend run passed **1,578 tests**, with formatting and Ruff
+The final local backend run passed **1,665 tests**, with formatting and Ruff
 checks passing. The web passed 7 unit and 14 browser tests plus its production
 build. Native verification passed 242 unit tests and four focused UI regressions;
 one optional recognition parity test was skipped. Android JVM tests, lint, debug APK and shared Swift builds passed in repository
@@ -123,6 +137,14 @@ The live-model autonomy HTTP replay passed with ten provider requests, including
 open time/fee acceptance, a bare booklet choice, explicit preference and budget
 constraints, unknown personal facts, and a confirmation with another question.
 All telephony was fake.
+
+A five-request live-provider clinical HTTP replay passed through compound facts,
+patient ID, doctor name, approval, receiver confirmation and final notes. The same
+five recorded provider envelopes also passed against the final guarded source,
+without new inference. A subsequent general live replay hit the provider's daily
+token limit and did not qualify; provider testing stopped. The mock general replay
+passes. Rate-limited unknown facts remain unresolved; complete supported document
+answers can recover independently from context. No secondary model was promoted.
 
 Four synthetic live-provider summary cases passed: a confirmed appointment with
 time, fee and instruction; an incomplete request with its missing identifier;

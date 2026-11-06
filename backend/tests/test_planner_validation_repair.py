@@ -267,6 +267,6 @@ async def test_failed_answer_scope_repair_is_never_partially_spoken():
     client = InvalidAnswerScope(repair=False)
     question = "What is the doctor's name?"
     reply = await Brain(client).reply(value, question)
-    assert len(client.calls) == 2 and reply.kind != "share"
-    assert "Avery Sample" not in reply.say and "Morgan Reed" not in reply.say
-    assert reply.follow_up == question and value.planner.current_question == question
+    assert len(client.calls) == 2 and reply.kind == "share" and reply.source == "context"
+    assert "Avery Sample" not in reply.say and reply.say == "Dr. Morgan Reed"
+    assert reply.follow_up is None and not value.planner.pending
