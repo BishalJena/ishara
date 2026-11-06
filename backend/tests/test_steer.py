@@ -533,7 +533,8 @@ async def test_without_documents_an_unsupported_document_source_defers():
     )
     decision = await Brain(groq).reply(steer_state(), "What's your policy number?")
     assert decision.kind == "defer"
-    assert len(groq.calls) == 1
+    assert len(groq.calls) == 2, "one bounded validation repair precedes the same safe defer"
+    assert "AH-4821-7732" not in decision.say
 
 
 # ---- wrapping up ----

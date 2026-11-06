@@ -61,10 +61,11 @@ async def test_failed_reselection_is_not_retried_or_spoken():
         "Is the patient a new or existing customer?",
     ],
 )
-async def test_unknown_personal_facts_never_trigger_a_preference_repair(question):
+async def test_invalid_personal_answer_repair_cannot_turn_into_an_operational_choice(question):
     client = MisencodedChoice()
     reply = await Brain(client).reply(state("Order a replacement passport."), question)
-    assert len(client.calls) == 1 and reply.kind != "accept"
+    assert len(client.calls) == 2 and reply.kind != "accept"
+    assert "Invalid answer spans: source_span" in client.calls[1]["validation_feedback"]
     assert reply.follow_up == question
 
 
@@ -219,3 +220,53 @@ async def test_repaired_confirmation_still_answers_a_real_question_before_closin
     assert len(client.calls) == 3 and reply.kind == "share" and not reply.done
     assert "side gate" in reply.say and value.planner.completed
     assert not value.planner.pending
+
+
+class InvalidAnswerScope:
+    def __init__(self, *, repair=True):
+        self.calls, self.repair = [], repair
+
+    async def complete_structured(self, system, user, model):
+        payload = json.loads(user)
+        self.calls.append(payload)
+        quotes = ["Patient name: Avery Sample", "Doctor name: Dr. Morgan Reed"]
+        if len(self.calls) > 1 and self.repair:
+            quotes.pop(0)
+        return model.model_validate(
+            {
+                "resolutions": [],
+                "action": {
+                    "kind": "answer_question",
+                    "question_id": payload["current_receiver_turn"]["source_id"],
+                    "spans": [{"source_id": "document:0", "quote": quote} for quote in quotes],
+                },
+            }
+        )
+
+
+async def test_wrong_entity_selection_is_repaired_without_weakening_answer_scope():
+    from tests.test_approved_context_repair import REPORT
+    from tests.test_approved_context_repair import state as document_state
+
+    value, client = document_state(text="Patient health summary\n" + REPORT), InvalidAnswerScope()
+    question = "What is the doctor's name?"
+    reply = await Brain(client).reply(value, question)
+    assert len(client.calls) == 2 and reply.kind == "share"
+    assert reply.say == "Doctor name: Dr. Morgan Reed"
+    assert "Avery Sample" not in reply.say and not value.planner.pending
+    feedback = client.calls[1]["validation_feedback"]
+    assert "entity_scope" in feedback
+    assert "Avery Sample" not in feedback and "Morgan Reed" not in feedback
+
+
+async def test_failed_answer_scope_repair_is_never_partially_spoken():
+    from tests.test_approved_context_repair import REPORT
+    from tests.test_approved_context_repair import state as document_state
+
+    value = document_state(text="Patient health summary\n" + REPORT)
+    client = InvalidAnswerScope(repair=False)
+    question = "What is the doctor's name?"
+    reply = await Brain(client).reply(value, question)
+    assert len(client.calls) == 2 and reply.kind != "share"
+    assert "Avery Sample" not in reply.say and "Morgan Reed" not in reply.say
+    assert reply.follow_up == question and value.planner.current_question == question

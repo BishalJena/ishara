@@ -201,9 +201,6 @@ def validate_answer(
         if span.source_id.startswith("caller:") and source.get("question_id") != question_id:
             return None, "question_binding"
         selected.append((source, exact.strip()))
-    answer = "; ".join(dict.fromkeys(quote for _, quote in selected))
-    if len(answer) > MAX_ANSWER_CHARACTERS:
-        return None, "answer_size"
     clauses = re.findall(r"[^.!?]+[.!?]?", question)
     questions: list[str] = []
     for clause in clauses:
@@ -213,6 +210,27 @@ def validate_answer(
             questions.append(clause)
     question = " ".join(questions) if questions else question
     question_keys = terms(question)
+    # Provenance is strict for every proposed span. Once established, discard
+    # inert document headings rather than treating them as answer facts. Actual
+    # labelled fields remain subject to every coverage/entity/history guard.
+    selected = [
+        (source, quote)
+        for source, quote in selected
+        if not (
+            source["source_id"].startswith("document:")
+            and source_fields(source)
+            and not any(
+                quote in field.value or field.value.rstrip(".! ,;") in quote
+                for field in source_fields(source)
+            )
+            and not (terms(quote) & question_keys)
+        )
+    ]
+    if not selected:
+        return None, "answer_scope"
+    answer = "; ".join(dict.fromkeys(quote for _, quote in selected))
+    if len(answer) > MAX_ANSWER_CHARACTERS:
+        return None, "answer_size"
     name_subjects, caller_name_asked = _name_scope(question)
     question_role = role(question) or "caller"
     allowed_roles = {question_role}
