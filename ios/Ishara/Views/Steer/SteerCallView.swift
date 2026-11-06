@@ -1,5 +1,6 @@
 import CallSession
 import SwiftUI
+import UIKit
 
 /// The one call screen for steer calls: Ishara runs the call from the typed request; the
 /// user watches the captions and steps in by typing (first) or signing. Each agent line
@@ -15,6 +16,7 @@ struct SteerCallView: View {
     /// What the user last sent, shown under its polished preview.
     @State private var lastTyped = ""
     @State private var isSigning = false
+    @State private var showingSignWords = false
     /// Lines sent from signs, so each "You" line keeps the icon of how it was made.
     @State private var signedLines: Set<String> = []
     @FocusState private var typing: Bool
@@ -23,6 +25,16 @@ struct SteerCallView: View {
         VStack(spacing: 0) {
             header
             statusPill
+            if let error = model.errorMessage {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(error).font(.footnote).foregroundStyle(.red)
+                    if !lastTyped.isEmpty {
+                        Button("Edit last reply") { typed = lastTyped; model.beginSteppingIn(); typing = true }
+                            .font(.footnote.weight(.semibold))
+                    }
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 20).padding(.bottom, 8)
+                .accessibilityIdentifier("steer.deliveryError")
+            }
             factsStrip
             captions
             composer
@@ -30,7 +42,15 @@ struct SteerCallView: View {
         .background(Color(.systemBackground))
         .task { await model.run() }
         .onAppear { model.setPresent(scenePhase == .active) }
-        .onChange(of: scenePhase) { _, phase in model.setPresent(phase == .active) }
+        .onChange(of: scenePhase) { _, phase in
+            model.setPresent(phase == .active)
+            if phase == .background, isSigning {
+                isSigning = false
+                model.endSigning()
+                model.clear()
+                if typed.isEmpty { model.cancelSteppingIn() }
+            }
+        }
         .onChange(of: model.store == nil) { _, _ in model.setPresent(scenePhase == .active) }
         .onChange(of: typing) { _, isTyping in
             if isTyping { model.beginSteppingIn() } else if typed.isEmpty { model.cancelSteppingIn() }
@@ -38,7 +58,9 @@ struct SteerCallView: View {
         .onChange(of: model.isCallOver) { _, isOver in
             if isOver {
                 typing = false
-                activity.end(outcome: "Call ended · open Ishara for the gist")
+                isSigning = false
+                model.endSigning()
+                activity.end(outcome: "Call ended · open Ishara for the summary")
             }
         }
         // A call that got through goes straight on to its gist after a beat, so the last
@@ -68,7 +90,7 @@ struct SteerCallView: View {
             }
             Spacer()
             if model.isCallOver {
-                Button("Gist", systemImage: "list.bullet.rectangle", action: onShowNotes)
+                Button("Call summary", systemImage: "list.bullet.rectangle", action: onShowNotes)
                     .buttonStyle(.borderedProminent).buttonBorderShape(.capsule)
                     .accessibilityIdentifier("steer.gist")
             } else {
@@ -174,7 +196,7 @@ struct SteerCallView: View {
                         .accessibilityElement(children: .combine)
                     }
                     if let followUp = model.followUps.last {
-                        Label("They asked for something you didn't give. Saved as a follow-up: “\(followUp)”", systemImage: "bookmark.fill")
+                        Label("Your input is needed: “\(followUp)”. Type or sign your answer below.", systemImage: "bookmark.fill")
                             .font(.footnote.weight(.medium))
                             .padding(10)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -281,28 +303,30 @@ struct SteerCallView: View {
         HStack(spacing: 8) {
             Button {
                 isSigning = true
+                showingSignWords = false
                 typing = false
-                model.beginSteppingIn()
+                model.beginSigning()
             } label: {
                 Image(systemName: "hand.raised.fill").frame(width: 24, height: 24)
             }
             .buttonStyle(.bordered).buttonBorderShape(.circle)
             .accessibilityLabel("Sign instead")
             .accessibilityIdentifier("steer.sign")
-            .disabled(model.isCallOver)
+            .disabled(!model.canSteer)
 
             HStack {
                 TextField("Type to step in…", text: $typed, axis: .vertical)
                     .lineLimit(1...4)
                     .focused($typing)
                     .submitLabel(.send)
+                    .disabled(!model.canSteer)
                     .onSubmit(sendTyped)
                     .accessibilityIdentifier("steer.field")
                 Button(action: sendTyped) {
                     Image(systemName: "arrow.up").font(.headline).frame(width: 30, height: 30)
                 }
                 .buttonStyle(.borderedProminent).buttonBorderShape(.circle)
-                .disabled(typed.trimmingCharacters(in: .whitespaces).isEmpty || model.isCallOver)
+                .disabled(typed.trimmingCharacters(in: .whitespaces).isEmpty || !model.canSteer)
                 .accessibilityIdentifier("steer.send")
             }
             .padding(.leading, 14).padding(.trailing, 6).padding(.vertical, 6)
@@ -332,47 +356,141 @@ struct SteerCallView: View {
 
     private func sendTyped() {
         let text = typed.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        guard !text.isEmpty, model.say(text) else { return }
         lastTyped = text
-        model.say(text)
         typed = ""
         typing = false
+    }
+
+    private var signingGuidance: String {
+        if let failure = model.recognition.failure { return failure }
+        guard let camera = model.recognition.camera else {
+            return AppServices.isSimulator ? "The simulator has no camera. Use a saved sign clip or type." : "Camera is off in this run. You can still type your reply."
+        }
+        if camera.isUnavailable { return "No front camera is available. You can still type." }
+        switch camera.permission {
+        case .notDetermined: return "Allow camera access to sign."
+        case .denied: return "Allow Camera for Ishara in Settings, then reopen signing."
+        case .restricted: return "Camera access is restricted on this iPhone. You can still type."
+        case .authorized: break
+        }
+        if !model.recognition.getReady.allChecksPassed { return "Move back until your face, shoulders and both hands are visible." }
+        if !model.recognition.getReady.isCalibrated { return "Rest both hands in view for two seconds to get ready." }
+        if model.showsFramingHint || model.cameraState == .cantSee { return "Keep both hands inside the camera view, then try again." }
+        if model.isReadingSign { return "Reading your sign…" }
+        if model.cameraState == .signing { return "Signing… lower your hands when finished." }
+        return model.signingHint ?? "Sign one word, then lower your hands."
+    }
+
+    private func editSigningSentence() {
+        let sentence = model.takeSigningTextForEditing()
+        if !sentence.isEmpty {
+            typed = typed.isEmpty ? sentence : typed + " " + sentence
+        }
+        isSigning = false
+        typing = true
     }
 
     private var signingPanel: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
-                CameraCard(camera: model.recognition.camera, state: model.cameraState)
-                    .frame(width: 96, height: 128)
-                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                CameraCard(camera: model.recognition.camera, state: model.cameraState, layout: .compact)
+                    .frame(width: 90, height: 160)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("Signs so far").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                        Text("Your reply").font(.subheadline.weight(.semibold))
                         Spacer()
-                        Button("Type", systemImage: "keyboard") {
-                            isSigning = false
-                            model.clear()
-                            if typed.isEmpty { model.cancelSteppingIn() }
-                        }
-                        .font(.footnote.weight(.semibold))
-                        .accessibilityIdentifier("steer.type")
+                        Button("Type", systemImage: "keyboard", action: editSigningSentence)
+                            .font(.footnote.weight(.semibold))
+                            .accessibilityIdentifier("steer.type")
                     }
-                    ChipRow(chips: model.chips, onRemove: model.removeChip)
-                    if let candidate = model.candidate {
-                        CandidateTile(sign: candidate, onAccept: model.acceptCandidate, onDismiss: model.dismissCandidate)
+                    HStack(alignment: .top, spacing: 6) {
+                        if model.isReadingSign { ProgressView().controlSize(.small) }
+                        Text(signingGuidance).font(.caption).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .accessibilityIdentifier("steer.signingGuidance")
+                    if model.recognition.camera?.permission == .denied,
+                       let url = URL(string: UIApplication.openSettingsURLString) {
+                        Link("Open camera settings", destination: url).font(.caption.weight(.semibold))
+                    }
+                    Button(showingSignWords ? "Hide words" : "All 8 words", systemImage: "hand.raised") {
+                        showingSignWords.toggle()
+                    }
+                    .font(.footnote.weight(.semibold))
+                    .accessibilityIdentifier("steer.allSignWords")
+                    if let notice = model.recognition.notice {
+                        Text(notice).font(.caption2).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
-            if let draft = model.draft {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Ishara will say").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                    Text(draft.text).font(.body.weight(.medium))
+            if !model.signSuggestions.isEmpty {
+                SignChoiceRow(signs: model.signSuggestions, onSelect: model.selectSigningWord,
+                              onDismiss: model.dismissCandidate)
+            }
+            if showingSignWords {
+                Text("Supported words · tap to add").font(.caption).foregroundStyle(.secondary)
+                FlowLayout(spacing: 6) {
+                    ForEach(ActiveCallViewModel.supportedSigningWords, id: \.rawValue) { sign in
+                        Button(sign == .thankyou ? "Thank you" : sign.rawValue.capitalized) {
+                            model.selectSigningWord(sign)
+                        }
+                        .font(.footnote.weight(.semibold))
+                        .padding(.horizontal, 12).frame(minHeight: 44)
+                        .background(Color(.secondarySystemBackground), in: Capsule())
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("signWord.\(sign.rawValue)")
+                    }
+                }
+            }
+            if !model.chips.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(model.chips) { chip in
+                            Button { model.removeChip(chip) } label: {
+                                HStack(spacing: 6) {
+                                    Text(chip.title)
+                                    Image(systemName: "xmark").font(.caption2.weight(.semibold))
+                                }
+                                .font(.footnote.weight(.medium))
+                                .padding(.horizontal, 12).frame(minHeight: 44)
+                                .background(Color.green.opacity(0.12), in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Remove \(chip.title)")
+                            .accessibilityIdentifier("chip.\(chip.sign?.rawValue ?? "unsure")")
+                        }
+                    }
+                }
+                .accessibilityIdentifier("steer.selectedWords")
+            }
+            if model.draft != nil || !model.chips.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Ishara will say").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Edit sentence", action: editSigningSentence)
+                            .font(.caption.weight(.semibold))
+                            .accessibilityIdentifier("steer.editSignedSentence")
+                    }
+                    if let draft = model.draft {
+                        Text(draft.text).font(.body.weight(.medium)).fixedSize(horizontal: false, vertical: true)
+                    } else {
+                        HStack(spacing: 8) {
+                            ProgressView().controlSize(.small)
+                            Text("Preparing your sentence…").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 .padding(12).frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
             Button {
                 if let draft = model.draft { signedLines.insert(draft.text) }
+                model.dismissCandidate()
                 model.send()
             } label: {
                 Label("Send", systemImage: "arrow.up").font(.headline).frame(maxWidth: .infinity)
@@ -382,6 +500,7 @@ struct SteerCallView: View {
             .accessibilityIdentifier("steer.sendSigned")
         }
     }
+
 }
 
 /// The filling Send bar: the proposed line fills from left to right over its window and is

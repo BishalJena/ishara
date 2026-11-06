@@ -21,12 +21,19 @@ struct CallRecord: Codable, Equatable, Identifiable, Sendable {
     let contactName: String
     /// The number dialled, when the user typed or picked one, so Home can offer it again.
     var contactNumber: String? = nil
+    var backendCallID: String? = nil
     /// Live (the user signs every reply) or delegated (Call for me).
     let mode: CallMode
     var captions: [Line]
     /// The Call for me notes (outcome, offers, answers, transcript and Bolna's summary), once
     /// loaded; updated when Bolna's summary arrives later.
     var notes: CallNotes?
+    var request: String? = nil
+
+    var displayTitle: String {
+        if let title = notes?.presentation?.title.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty { return title }
+        return CallNotes.requestTitle(request ?? notes?.brief)
+    }
 }
 
 extension CallRecord.Line {

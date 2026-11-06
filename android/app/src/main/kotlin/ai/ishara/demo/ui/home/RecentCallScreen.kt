@@ -29,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -40,11 +41,12 @@ import androidx.compose.ui.unit.dp
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RecentCallScreen(record: CallRecord?, onBack: () -> Unit, onDelete: () -> Unit) {
+fun RecentCallScreen(record: CallRecord?, onBack: () -> Unit, onDelete: () -> Unit, onRefresh: suspend (CallRecord) -> Unit = {}) {
+    LaunchedEffect(record?.id) { record?.let { onRefresh(it) } }
     val colors = steerColors()
     Column(Modifier.fillMaxSize().background(colors.groupedBackground)) {
         CenterAlignedTopAppBar(
-            title = { Text(record?.let { recentCallDate(it.date) }.orEmpty(), style = SteerType.headline) },
+            title = { Text("Call summary", style = SteerType.headline) },
             navigationIcon = {
                 IconButton(onClick = onBack, modifier = Modifier.testTag("recentCall.back")) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

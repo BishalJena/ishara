@@ -24,7 +24,6 @@ from pydantic import SecretStr
 
 from app.bolna_agent import (
     CUSTOM_LLM_FAMILY,
-    CUSTOM_LLM_MODEL,
     PLACEHOLDER_PUBLIC_BASE_URL,
     build_agent_payload,
     custom_llm_base_url,
@@ -71,13 +70,17 @@ async def _run(
     async with HttpBolnaClient(api_key, settings.bolna_agent_id, transport=transport) as client:
         if args.command == "register-llm":
             token = cast(SecretStr, settings.custom_llm_token)
-            await client.register_custom_model(CUSTOM_LLM_MODEL, base_url, token, CUSTOM_LLM_FAMILY)
-            print(f"Registered custom model {CUSTOM_LLM_MODEL} at {base_url}")
+            await client.register_custom_model(
+                settings.bolna_custom_model, base_url, token, CUSTOM_LLM_FAMILY
+            )
+            print(f"Registered custom model {settings.bolna_custom_model} at {base_url}")
             return
         webhook_url = args.webhook_url or status_webhook_url(
             cast(str, settings.public_base_url), cast(SecretStr, settings.bolna_webhook_secret)
         )
-        payload = build_agent_payload(base_url, webhook_url)
+        payload = build_agent_payload(
+            base_url, webhook_url, custom_model=settings.bolna_custom_model
+        )
         if args.command == "create":
             print(await client.create_agent(payload))
             print("Put this id in BOLNA_AGENT_ID (Heroku config and the local .env).")

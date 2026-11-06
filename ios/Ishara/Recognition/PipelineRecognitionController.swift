@@ -24,6 +24,7 @@ final class PipelineRecognitionController: RecognitionController {
 
     @ObservationIgnored private let feed: any FrameFeed
     @ObservationIgnored private let makeComponents: @Sendable () throws -> PipelineComponents
+    @ObservationIgnored private var generation = 0
     @ObservationIgnored private var worker: Task<Void, Never>?
     @ObservationIgnored private var continuation: AsyncStream<RecognitionEvent>.Continuation?
 
@@ -43,18 +44,24 @@ final class PipelineRecognitionController: RecognitionController {
 
     func start() {
         guard worker == nil else { return }
+        generation += 1
+        let run = generation
+        failure = nil
+        getReady.reset()
         let items = feed.items()
         let makeComponents = makeComponents
         worker = Task.detached { [weak self] in
+            guard !Task.isCancelled else { return }
             let components: PipelineComponents
             do {
                 components = try makeComponents()
             } catch {
-                await self?.fail(error)
+                await self?.fail(error, generation: run)
                 return
             }
+            guard !Task.isCancelled else { return }
             await Self.process(items, with: components) { output in
-                await self?.apply(output)
+                await self?.apply(output, generation: run)
             }
         }
     }
@@ -71,6 +78,7 @@ final class PipelineRecognitionController: RecognitionController {
     }
 
     func stop() {
+        generation += 1
         worker?.cancel()
         worker = nil
         feed.stop()
@@ -84,6 +92,7 @@ final class PipelineRecognitionController: RecognitionController {
     enum WorkerOutput: Sendable {
         case session(RecognitionSession.Output)
         case result(RecognitionResult)
+        case reading
         /// What the preview draws for the latest camera or video frame.
         case overlay(BodyOverlay)
     }
@@ -118,7 +127,11 @@ final class PipelineRecognitionController: RecognitionController {
             for frame in frames {
                 for output in session.process(frame) {
                     if case .segment(let clip) = output {
-                        await emit(.result(components.classifier.classify(clip)))
+                        await emit(.reading)
+                        let started = Date()
+                        let result = components.classifier.classify(clip)
+                        recognitionLog.info("sign classification ms=\(Date().timeIntervalSince(started) * 1000, privacy: .public) frames=\(clip.frames.count, privacy: .public)")
+                        await emit(.result(result))
                     } else {
                         await emit(.session(output))
                     }
@@ -140,7 +153,8 @@ final class PipelineRecognitionController: RecognitionController {
         }
     }
 
-    private func apply(_ output: WorkerOutput) {
+    private func apply(_ output: WorkerOutput, generation run: Int) {
+        guard generation == run else { return }
         switch output {
         case .session(.passed(let check)):
             getReady.pass(check)
@@ -156,12 +170,15 @@ final class PipelineRecognitionController: RecognitionController {
             break  // classified in the worker
         case .result(let result):
             continuation?.yield(.result(result))
+        case .reading:
+            continuation?.yield(.reading)
         case .overlay(let overlay):
             camera?.overlay = overlay
         }
     }
 
-    private func fail(_ error: Error) {
+    private func fail(_ error: Error, generation run: Int? = nil) {
+        if let run, generation != run { return }
         recognitionLog.error("recognition unavailable: \(String(describing: error), privacy: .public)")
         failure = "Recognition can't start: \(error.localizedDescription)"
     }

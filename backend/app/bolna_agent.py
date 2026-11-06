@@ -106,7 +106,12 @@ def _nodes() -> list[dict[str, Any]]:
     ]
 
 
-def build_agent_payload(custom_llm_base_url: str, webhook_url: str | None) -> dict[str, Any]:
+def build_agent_payload(
+    custom_llm_base_url: str,
+    webhook_url: str | None,
+    *,
+    custom_model: str = CUSTOM_LLM_MODEL,
+) -> dict[str, Any]:
     """Body for `POST /v2/agent` and `PUT /v2/agent/{id}`."""
     if not custom_llm_base_url.startswith("https://") or custom_llm_base_url.endswith("/"):
         raise ValueError("custom_llm_base_url must be https:// with no trailing slash")
@@ -115,7 +120,7 @@ def build_agent_payload(custom_llm_base_url: str, webhook_url: str | None) -> di
         "agent_flow_type": "streaming",
         "llm_config": {
             "provider": "custom",
-            "model": CUSTOM_LLM_MODEL,
+            "model": custom_model,
             "family": CUSTOM_LLM_FAMILY,
             "base_url": custom_llm_base_url,
             "max_tokens": 150,

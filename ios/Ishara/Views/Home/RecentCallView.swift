@@ -7,10 +7,11 @@ import SwiftUI
 struct RecentCallView: View {
     let history: CallHistory
     let id: UUID
+    var onRefresh: ((CallRecord) async -> Void)? = nil
 
     var body: some View {
         if let record = history.records.first(where: { $0.id == id }) {
-            content(record)
+            content(record).task(id: record.id) { await onRefresh?(record) }
         }
     }
 
@@ -19,12 +20,13 @@ struct RecentCallView: View {
             if let notes = record.notes {
                 NotesSections(notes: notes, contactName: record.contactName)
             } else {
+                Section("Call summary") { CallSummaryContent(notes: nil) }
                 Section {
                     OutcomeLabel(text: record.outcomeText, systemImage: "info.circle")
                 } header: {
                     Text("Call with \(record.contactName)")
                 }
-                Section("Captions") {
+                Section("Transcript") {
                     if record.captions.isEmpty {
                         Text("No captions in this call.").foregroundStyle(.secondary)
                     }
@@ -34,7 +36,7 @@ struct RecentCallView: View {
                 }
             }
         }
-        .navigationTitle(record.date.formatted(date: .abbreviated, time: .shortened))
+        .navigationTitle("Call summary")
         .navigationBarTitleDisplayMode(.inline)
     }
 

@@ -144,6 +144,21 @@ def test_register_llm_sends_the_token_but_never_prints_it(capsys) -> None:
     assert CUSTOM_LLM_TOKEN not in captured.out + captured.err
 
 
+@pytest.mark.parametrize("command", ["create", "update", "register-llm"])
+def test_custom_model_registration_and_agent_selection_use_the_same_setting(command) -> None:
+    recorder = Recorder(httpx.Response(200, json={"agent_id": "new-agent"}))
+    settings = _ready(bolna_custom_model="ishara-isolated")
+    assert main([command, "--yes"], settings=settings, transport=recorder.transport) == 0
+    (request,) = recorder.requests
+    body = json.loads(request.content)
+    if command == "register-llm":
+        assert body["custom_model_name"] == "ishara-isolated"
+    else:
+        config = body["agent_config"]["tasks"][0]["tools_config"]["llm_agent"]["llm_config"]
+        assert config["model"] == "ishara-isolated"
+        assert config["base_url"] == PUBLIC_URL + "/v1"
+
+
 def test_bolna_failure_exits_1_without_echoing_the_response(capsys) -> None:
     recorder = Recorder(httpx.Response(400, text='{"message": "acct-private-77"}'))
     assert main(["create", "--yes"], settings=_ready(), transport=recorder.transport) == 1

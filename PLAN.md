@@ -595,3 +595,58 @@ results and the latest measured results are in [docs/TESTING.md](docs/TESTING.md
   authorization from the founder; a task listed in §6 is not authorization by itself.
 - No keys, phone numbers, account IDs or raw account responses in Git, issues or PRs.
 - Record what actually ran (counts, timings, configs) separately from what docs claim.
+
+## General-purpose call correction — 5 November
+
+The founder clarified that Ishara is a general-purpose voice relay/agent, driven
+by the typed request, supplied documents and approved live input. The doctor
+appointment is a rehearsed example, not a hardcoded task. New steer requests use
+`general`; older client requests remain accepted, with their actual typed goal
+used in the brief. The planner can ask relevant follow-ups, remember delivered
+user replies, quote requested document facts and end when the goal is resolved.
+Completion requires operator evidence; invented facts and unapproved commitments
+remain rejected. The outage fallback is bounded and must not loop on next steps.
+Calling restrictions and the unchanged ASL model/vocabulary still apply.
+
+On 6 November the founder reaffirmed unattended completion. Sufficient context
+authorizes reasonable choices and operations that fit the request without another
+live approval. An accepted offer remains unfinished until the receiver confirms
+the work. Unknown essential facts and decisions beyond the supplied authority
+need input; an absent caller receives honest notes and the unresolved follow-up.
+The caller does not have to watch the transcript for a supported call to finish.
+
+
+## Signing interaction refinement — 6 November
+
+For the presentation, preserve the public ASL model, confidence cutoffs and
+segmentation timing. Improve the review flow: uncertain clips offer supported
+words from the original global top three, never renormalized vocabulary guesses;
+invalid framing/tracking and outside winners abstain. Misses do not create chips,
+consecutive duplicate detections do not flood the sentence, and an explicit
+manual eight-word palette provides a reliable fallback. Selected words compose
+a preview; Edit sentence preserves it into typing, with SEND still required.
+Reject out-of-frame clips before invoking the model, show the classification
+state and log inference duration. Real iPhone latency still requires measurement;
+no claim of faster general inference or continuous sign translation is made.
+
+
+## Conversation and summary correction — 6 November
+
+Receiver questions may combine several facts and people, change direction or
+add necessary questions while wrapping up. Internal source references support
+validation; they do not prescribe a spoken response or a fixed questionnaire.
+Completion considers the supplied goal, accumulated receiver evidence and
+unanswered questions on either side. The appointment example must not narrow
+the general-purpose relay.
+
+An omitted time, spending cap or routine service preference leaves Ishara free to
+choose an offered option that advances the request. It should accept a stated
+service fee when no spending limit was supplied and choose reasonable ordinary
+options without live intervention. Explicit constraints remain binding. This
+authority does not invent unknown personal facts. The summary surfaces selected
+options, times and fees as useful call details.
+
+Recent calls use short task titles. Ended and saved calls lead with a glanceable
+call summary, useful details and any next step, followed by an expandable
+transcript. Remove the automatic-summary accuracy disclaimer. Preserve actual
+missing information even when model summarization is unavailable.

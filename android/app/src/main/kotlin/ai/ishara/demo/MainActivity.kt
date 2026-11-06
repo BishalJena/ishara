@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // "Call ended · open Ishara for the gist" has done its job once the app is open.
+        // "Call ended · open Ishara for the summary" has done its job once the app is open.
         OngoingCallNotifications.cancelEnded(this)
     }
 }

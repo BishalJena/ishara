@@ -49,10 +49,12 @@ Example: typed "talk about update in my passport that I want a new passport"
 Output: They'd like to ask about updating their passport, as they want a new passport."""
 PURPOSE_TEXT: dict[Purpose, str] = {
     "doctor_appointment": "asking a clinic for a doctor's appointment",
+    "general": "a general phone conversation directed by the caller; use the live context",
 }
 
 SYSTEM_PROMPT = """\
-You write the exact words a Deaf caller will say on a phone call to a clinic receptionist.
+You write the exact words a Deaf caller will say on a phone call to another person.
+Do not assume a clinic or appointment: use the supplied purpose and conversation.
 The caller signed a few words ("chips", in order). Turn them into what the caller says.
 Rules:
 - Speak as the caller, in the first person, directly to the receptionist.

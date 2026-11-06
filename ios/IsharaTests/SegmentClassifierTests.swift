@@ -104,6 +104,27 @@ final class SegmentClassifierTests: XCTestCase {
         XCTAssertEqual(classifier.classify(clip), .candidate(.tomorrow))
     }
 
+    func testAmbiguousSupportedWordsOfferTheFullModelTopThreeForReview() {
+        let mass: [String: Double] = ["hello": 0.30, "yes": 0.25, "no": 0.20]
+        let rest = 0.25 / Double(aslBundle.glosses.count - mass.count)
+        let values = aslBundle.glosses.map { Float(log(mass[$0] ?? rest)) }
+        let (classifier, _) = asl(values)
+        XCTAssertEqual(classifier.classify(clip), .suggestions([.hello, .yes, .no]))
+    }
+
+    func testReviewDoesNotReplaceAnOutsideWinnerWithSupportedRunnerUps() {
+        let mass: [String: Double] = ["can": 0.50, "yes": 0.30, "no": 0.15]
+        let rest = 0.05 / Double(aslBundle.glosses.count - mass.count)
+        let (classifier, _) = asl(aslBundle.glosses.map { Float(log(mass[$0] ?? rest)) })
+        XCTAssertEqual(classifier.classify(clip), .unsure)
+    }
+
+    func testPartialViewSkipsModelInferenceEntirely() {
+        let (classifier, model) = asl(logits("hello", p: 0.9))
+        XCTAssertEqual(classifier.classify(rightHandLeavesMidSign), .handLeftFrame)
+        XCTAssertTrue(model.frameCounts.isEmpty)
+    }
+
     func testConfidentUnrehearsedSignIsUnsure() {
         // In the backend's vocabulary but not rehearsed: public YES clips read as can (Gate 2).
         for gloss in ["can", "morning"] {

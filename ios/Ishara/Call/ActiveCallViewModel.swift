@@ -52,9 +52,16 @@ final class ActiveCallViewModel {
     /// D8 pick-one: the latest grey-zone sign, offered as "Did you mean …?" until the user
     /// taps it, dismisses it, or the next sign replaces it. Never a chip by itself.
     private(set) var candidate: Sign?
+    private(set) var signSuggestions: [Sign] = []
+    private(set) var signingHint: String?
+    private(set) var isReadingSign = false
+    static let supportedSigningWords: [Sign] = [.hello, .thankyou, .yes, .no, .now, .please, .tomorrow, .wait]
     /// The last sign couldn't be read because a hand left the picture.
     private(set) var showsFramingHint = false
     private var userEnded = false
+    private var isStarting = false
+    private(set) var isSigningActive = false
+    @ObservationIgnored private var signingTask: Task<Void, Never>?
     /// This call's id in Recent calls.
     let recordID = UUID()
     private let placedAt = Date()
@@ -102,12 +109,13 @@ final class ActiveCallViewModel {
     var isDelegated: Bool { setup.delegation != nil }
     /// The agent runs the call and the user may step in by typing or signing.
     var isSteer: Bool { setup.isSteer }
+    var canSteer: Bool { phase == .live }
     /// D9 attended: the user watches and answers the agent's questions by sign or tap
     /// (yes / no / wait, or a time word for an open "when?").
     var isAttended: Bool { setup.delegation?.attended ?? false }
     /// Signs matter on a live call, on an attended delegated call (to answer questions) and
     /// on a steer call (to step in).
-    var watchesSigns: Bool { !isDelegated || isAttended || isSteer }
+    var watchesSigns: Bool { isSteer ? isSigningActive : (!isDelegated || isAttended) }
 
     // MARK: Steer call
 
@@ -126,7 +134,11 @@ final class ActiveCallViewModel {
     /// The user left the field empty and dismissed the keyboard.
     func cancelSteppingIn() { store?.stopComposing() }
     /// A typed line, to be polished, previewed and spoken.
-    func say(_ text: String) { store?.say(text) }
+    @discardableResult
+    func say(_ text: String) -> Bool {
+        guard canSteer else { return false }
+        return store?.say(text) ?? false
+    }
     /// Edit the previewed typed line instead of letting it be spoken.
     func editPreview() { store?.holdPreview() }
 
@@ -136,7 +148,7 @@ final class ActiveCallViewModel {
         guard isCallOver, store != nil else { return nil }
         return CallRecord(
             id: recordID, date: placedAt, contactName: setup.contact.name, contactNumber: setup.contact.phoneNumber,
-            mode: isDelegated ? .delegated : .live, captions: captions.map(CallRecord.Line.init), notes: nil)
+            backendCallID: driver.backendCallID, mode: isSteer ? .steer : isDelegated ? .delegated : .live, captions: captions.map(CallRecord.Line.init), notes: nil, request: setup.request)
     }
 
     var connectedAt: Date? { store?.connectedAt }
@@ -199,11 +211,44 @@ final class ActiveCallViewModel {
 
     var canUseQuickReplies: Bool { phase == .live && !isSpeaking }
 
+    /// Steer calls skip Get ready, so opening the sign panel owns capture and its
+    /// subscriber. Reopening creates a fresh stream; closing never sends hidden signs.
+    func beginSigning() {
+        guard isSteer, canSteer, !isSigningActive else { return }
+        isSigningActive = true
+        let events = recognition.signingEvents()
+        signingTask = Task { [weak self] in
+            for await event in events {
+                guard !Task.isCancelled else { return }
+                self?.handle(event)
+            }
+        }
+        recognition.start()
+        beginSteppingIn()
+    }
+
+    func endSigning() {
+        guard isSigningActive || signingTask != nil else { return }
+        isSigningActive = false
+        signingTask?.cancel()
+        signingTask = nil
+        recognition.stop()
+        cameraState = .watching
+        candidate = nil
+        signSuggestions = []
+        signingHint = nil
+        isReadingSign = false
+    }
+
     // MARK: Lifecycle
 
     /// Places the call, then turns recognition results into chips until the screen goes
     /// away (the calling task is cancelled).
     func run() async {
+        if isSteer {
+            await start()
+            return  // signing has its own restartable subscription
+        }
         // Subscribe before placing the call so no recognition event falls in between.
         let events = recognition.signingEvents()
         await withDiscardingTaskGroup { group in
@@ -215,7 +260,9 @@ final class ActiveCallViewModel {
     }
 
     func start() async {
-        guard store == nil, startFailure == nil else { return }
+        guard store == nil, startFailure == nil, !isStarting else { return }
+        isStarting = true
+        defer { isStarting = false }
         do {
             attach(try await driver.start(setup))
         } catch {
@@ -232,35 +279,55 @@ final class ActiveCallViewModel {
 
     func handle(_ event: RecognitionEvent) {
         guard !isEnded else { return }
+        if case .reading = event {
+            if watchesSigns { isReadingSign = true }
+            return
+        }
         guard case .result(let result) = event else {
             if case .camera(let state) = event { cameraState = state }
             return
         }
         guard watchesSigns else { return }
+        isReadingSign = false
         candidate = nil
+        signSuggestions = []
+        signingHint = nil
         showsFramingHint = false
         switch result {
         case .sign(let sign):
             accept(sign)
         case .candidate(let sign):
             candidate = sign
+            signSuggestions = [sign]
+        case .suggestions(let signs):
+            signSuggestions = Array(signs.filter { Self.supportedSigningWords.contains($0) }.prefix(3))
+            candidate = signSuggestions.first
         case .unsure:
-            addUnsure()
+            if isSteer { signingHint = "No clear match. Try again, or choose a word." }
+            else { addUnsure() }
         case .handLeftFrame:
             showsFramingHint = true
-            addUnsure()
+            if !isSteer { addUnsure() }
         }
     }
 
     /// The user tapped "Did you mean …?": the candidate counts as signed.
     func acceptCandidate() {
         guard let sign = candidate, !isEnded else { return }
-        candidate = nil
+        dismissCandidate()
+        accept(sign)
+    }
+
+    func selectSigningWord(_ sign: Sign) {
+        guard isSteer, isSigningActive, canSteer, Self.supportedSigningWords.contains(sign) else { return }
+        dismissCandidate()
+        signingHint = nil
         accept(sign)
     }
 
     func dismissCandidate() {
         candidate = nil
+        signSuggestions = []
     }
 
     private func accept(_ sign: Sign) {
@@ -269,8 +336,22 @@ final class ActiveCallViewModel {
         // On a delegated call nothing is composed; only answers reach the call. On a steer
         // call a sign is the user stepping in: the agent's proposed line is held first.
         guard !isDelegated || isSteer else { return }
+        // A held/repeated detection must not flood the sentence with the same word.
+        if isSteer, store?.chips.last?.sign == sign { return }
         if isSteer { store?.startComposing() }
         store?.add(.recognised(sign))
+    }
+
+    /// Preserve the composed sentence when the user switches to the keyboard.
+    /// Nothing is approved; the existing typed SEND flow handles the edited text.
+    func takeSigningTextForEditing() -> String {
+        let text = draft?.text ?? chips.compactMap(\.sign).map {
+            $0 == .thankyou ? "thank you" : $0.rawValue
+        }.joined(separator: " ")
+        endSigning()
+        clear()
+        beginSteppingIn()
+        return text
     }
 
     private func addUnsure() {
@@ -281,7 +362,7 @@ final class ActiveCallViewModel {
     /// Called when the user leaves the screen. Nothing is sent.
     func leave() {
         driver.close()
-        recognition.stop()
+        if isSteer { endSigning() } else { recognition.stop() }
     }
 
     // MARK: User actions
@@ -314,6 +395,7 @@ final class ActiveCallViewModel {
     func end() {
         guard !isEnded else { return }
         userEnded = true
+        endSigning()
         store?.end()
         cameraState = .watching
         candidate = nil
@@ -337,6 +419,7 @@ final class ActiveCallViewModel {
         case "stale_turn": "That reply was out of date, so it wasn't sent."
         case "already_approved": "That reply was already sent."
         case "busy_speaking": "Wait until the current reply has been spoken."
+        case "reply_not_sent": "Your reply wasn't sent. Wait for the current line to finish and check the connection before trying again."
         case "call_not_live": "The call isn't connected yet. Nothing was sent."
         case "call_ended": "The call has ended. Nothing will be sent."
         case "bad_message": "The backend didn't understand the app. Nothing was sent."

@@ -422,16 +422,22 @@ def test_looking_away_mid_window_speaks_the_line(steer) -> None:
 
 
 def test_something_not_provided_is_deferred_and_noted(steer) -> None:
-    f = steer()
+    from app.protocol import PresenceMessage
+
+    f = steer(steer_window=lambda _: 0.0)
     call_id = start_steer(f)
     with f.client.websocket_connect(f"/calls/{call_id}/ws", headers=AUTH) as ws:
         assert f.receive(ws)["type"] == "status"
+        f.client.portal.call(
+            f.manager._on_presence, f.manager._sessions[call_id], PresenceMessage(present=True)
+        )
         f.live(call_id)
         f.speak_last(call_id)
         assert (
             f.listen_turn(call_id, "Can I get his date of birth?")
             == "Date of birth is 12 March 1998."
         )
+        every(f, ws)
         assert f.listen_turn(call_id, "And his insurance number?") == DEFER_LINE
         follow_up = f.drain_until(ws, "follow_up")
         assert follow_up["text"] == "And his insurance number?"
@@ -464,9 +470,31 @@ class _ScriptedGroq:
         self.reply = reply
         self.calls: list[tuple[str, str]] = []
 
-    async def complete(self, system: str, user: str) -> str:
+    async def complete_structured(self, system, user, response_model):
         self.calls.append((system, user))
-        return self.reply
+        import json
+
+        flat = json.loads(self.reply)
+        kind = flat.pop("action")
+        resolutions = flat.pop("resolutions", [])
+        relevant = {
+            key: value for key, value in flat.items() if value is not None and key != "blocked"
+        }
+        if kind == "finish":
+            relevant["blocked"] = flat["blocked"]
+        if kind in {"answer_question", "need_caller"}:
+            pending = json.loads(user)["pending_receiver_questions"]
+            relevant["question_id"] = next(reversed(pending), "receiver:0")
+        if kind == "answer_question":
+            relevant["spans"] = [
+                {"source_id": relevant.pop("source_id"), "quote": relevant.pop("quote")}
+            ]
+        return response_model.model_validate(
+            {
+                "action": {"kind": kind, **relevant},
+                "resolutions": resolutions,
+            }
+        )
 
 
 CARD = Document(
@@ -481,25 +509,32 @@ def document_state() -> DelegateState:
 
 
 async def test_asked_for_something_in_a_document_shares_it_word_for_word():
-    groq = _ScriptedGroq('{"label": "policy number", "value": "AH-4821-7732"}')
+    groq = _ScriptedGroq(
+        '{"action":"answer_question","source_id":"document:0","quote":"AH-4821-7732","question":null,"resolutions":[],"blocked":false}'
+    )
     decision = await Brain(groq).reply(document_state(), "What's your insurance policy number?")
     assert decision.kind == "share"
-    assert decision.say == "Policy number is AH-4821-7732."
+    assert decision.say == "AH-4821-7732"
     assert "AH-4821-7732" in groq.calls[0][1], "the document text goes to the lookup"
 
 
 async def test_a_looked_up_value_not_in_the_document_is_not_said():
-    groq = _ScriptedGroq('{"label": "Policy number", "value": "AH-4821-7733"}')
+    groq = _ScriptedGroq(
+        '{"action":"answer_question","source_id":"document:0","quote":"AH-4821-7733","question":null,"resolutions":[],"blocked":false}'
+    )
     decision = await Brain(groq).reply(document_state(), "What's your policy number?")
     assert decision.kind == "defer"
     assert decision.say == DEFER_LINE
 
 
-async def test_without_documents_the_deferral_stands_and_no_lookup_is_made():
-    groq = _ScriptedGroq('{"label": "Policy number", "value": "AH-4821-7732"}')
+async def test_without_documents_an_unsupported_document_source_defers():
+    groq = _ScriptedGroq(
+        '{"action":"answer_question","source_id":"document:0","quote":"AH-4821-7732","question":null,"resolutions":[],"blocked":false}'
+    )
     decision = await Brain(groq).reply(steer_state(), "What's your policy number?")
     assert decision.kind == "defer"
-    assert groq.calls == []
+    assert len(groq.calls) == 2, "one bounded validation repair precedes the same safe defer"
+    assert "AH-4821-7732" not in decision.say
 
 
 # ---- wrapping up ----
@@ -516,9 +551,9 @@ def test_goodbye_after_an_accepted_time_closes_the_call():
     assert decision.say == CLOSE_LINE
 
 
-def test_goodbye_before_anything_was_agreed_does_not_close():
+def test_goodbye_without_agreement_closes_without_claiming_success():
     decision = RuleBrain().decide(steer_state(), "okay bye")
-    assert decision.kind != "close"
+    assert decision.kind == "close" and decision.done and decision.callback
 
 
 def test_steer_notes_say_what_was_asked_and_who_answered():

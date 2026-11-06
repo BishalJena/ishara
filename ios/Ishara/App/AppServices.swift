@@ -1,4 +1,6 @@
+import CallSession
 import Foundation
+import Observation
 
 /// Picks the call driver and recognizer for this run from the launch options and the
 /// backend configuration.
@@ -68,11 +70,68 @@ struct AppServices {
             recognition: options.replayScript.isEmpty ? recognition as? ScriptedRecognitionController : nil)
     }
 
+    func recoverRecentCalls() async {
+        guard options.driver == .live, case .success(let config) = config else { return }
+        if let notes = try? await BackendClient(config: config.backend).recentNotes() {
+            history.recover(notes)
+        }
+    }
+
+    func refreshRecentCall(_ record: CallRecord) async {
+        guard options.driver == .live, case .success(let config) = config,
+              let callID = record.backendCallID ?? record.notes?.callID else { return }
+        let client = BackendClient(config: config.backend)
+        for attempt in 0...NotesModel.maxRefreshes {
+            guard !Task.isCancelled else { return }
+            guard let notes = try? await client.notes(callID: callID) else { return }
+            history.update(record.id, notes: notes)
+            if notes.ready && (notes.presentation?.status == "ready" || notes.outcome == "no_answer") { return }
+            guard attempt < NotesModel.maxRefreshes else { return }
+            do { try await Task.sleep(for: NotesModel.refreshInterval) } catch { return }
+        }
+    }
+
     static var isSimulator: Bool {
         #if targetEnvironment(simulator)
         true
         #else
         false
         #endif
+    }
+}
+
+
+/// Backend service reachability.
+@MainActor @Observable
+final class BackendServiceStatus {
+    private(set) var message = "Checking backend…"
+    private(set) var online = false
+    private(set) var checking = false
+    private var config: BackendConfig?
+
+    func monitor(_ config: BackendConfig) async {
+        self.config = config
+        while !Task.isCancelled {
+            await check()
+            do { try await Task.sleep(for: .seconds(30)) } catch { return }
+        }
+    }
+
+    func check() async {
+        guard let config, !checking else { return }
+        checking = true
+        defer { checking = false }
+        var request = URLRequest(url: config.baseURL.appending(path: "health"))
+        request.timeoutInterval = 6
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+            online = (response as? HTTPURLResponse)?.statusCode == 200 && json?["status"] as? String == "ok"
+            let missing = json?["missing_config"] as? [String] ?? []
+            message = online ? (missing.isEmpty ? "Backend online" : "Backend online · setup incomplete") : "Backend unavailable"
+        } catch {
+            guard !Task.isCancelled else { return }
+            online = false; message = "Backend unreachable"
+        }
     }
 }

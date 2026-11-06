@@ -40,7 +40,10 @@ _PLAIN: dict[Sign, str] = {
     "hear": "I hear you.",
     "read": "I'll read it.",
 }
-_APPOINTMENT: dict[Purpose, str] = {"doctor_appointment": "a doctor's appointment"}
+_APPOINTMENT: dict[Purpose, str] = {
+    "doctor_appointment": "a doctor's appointment",
+    "general": "a doctor's appointment",
+}
 _DECLINE = "No, sorry, that doesn't work."  # already apologises, so a "sorry" chip adds nothing
 
 
@@ -90,9 +93,17 @@ def compose_template(chips: Sequence[Sign], purpose: Purpose) -> str:
         if "time" in signs:
             request.append("What time is available?")
     elif "time" in signs:
-        request.append(f"What time is available{f' {when}' if when else ''}?")
+        request.append(
+            f"What time{f' {when}' if when else ''}?"
+            if purpose == "general"
+            else f"What time is available{f' {when}' if when else ''}?"
+        )
     elif when and not only_yes:  # a lone "yes" folds the day into "Yes, tomorrow works."
-        request.append(f"Is there {'anything' if only_no else 'an appointment'} {when}?")
+        request.append(
+            f"{when[0].upper()}{when[1:]}, please."
+            if purpose == "general"
+            else f"Is there {'anything' if only_no else 'an appointment'} {when}?"
+        )
 
     lead: str | None = None
     prefix = [word for word in ("hello", "sorry") if word in signs]

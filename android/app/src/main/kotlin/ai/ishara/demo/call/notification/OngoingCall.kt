@@ -55,7 +55,7 @@ class OngoingCallController(private val context: Context) {
 
     /**
      * The call is over: the ongoing notification goes. If the user isn't looking at the app
-     * ([present] false) "Call ended · open Ishara for the gist" stays for a minute instead.
+     * ([present] false) "Call ended · open Ishara for the summary" stays for a minute instead.
      */
     fun end(present: Boolean) {
         if (!started || ended) return

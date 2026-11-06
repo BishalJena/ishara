@@ -35,6 +35,62 @@ final class CallHistoryTests: XCTestCase {
             .filter { $0.pathExtension == "json" }
     }
 
+    func testRecoveredBackendNotesPersistWithoutDuplicateCalls() {
+        let history = CallHistory(folder: folder)
+        let notes = delegatedNotes(bolna: "A recovered summary.")
+        history.recover([notes])
+        history.recover([notes])
+        XCTAssertEqual(history.records.count, 1)
+        XCTAssertEqual(history.records.first?.backendCallID, notes.callID)
+        XCTAssertEqual(CallHistory(folder: folder).records.first?.notes?.bolnaSummary, "A recovered summary.")
+        var late = notes
+        late.bolnaSummary = "The later summary."
+        history.recover([late])
+        XCTAssertEqual(history.records.count, 1)
+        XCTAssertEqual(history.records.first?.notes?.bolnaSummary, "The later summary.")
+    }
+
+    func testCanonicalPresentationRefreshPersistsWithoutChangingRecipientOrOrder() throws {
+        let history = CallHistory(folder: folder)
+        var call = record(minutesAgo: 5, notes: delegatedNotes())
+        call.contactNumber = "synthetic-recipient"
+        call.request = "Book an appointment with Dr. Rao."
+        history.save(call)
+        let newer = record(minutesAgo: 1)
+        history.save(newer)
+        var notes = delegatedNotes()
+        notes.presentation = CallPresentation(title: "Appointment with Dr. Rao", overview: "The clinic needs a registration number.",
+            keyPoints: ["No appointment confirmed."], nextStep: "Provide the registration number.")
+        history.update(call.id, notes: notes)
+        let saved = try XCTUnwrap(CallHistory(folder: folder).records.last)
+        XCTAssertEqual(saved.displayTitle, "Appointment with Dr. Rao")
+        XCTAssertEqual(saved.notes?.presentation, notes.presentation)
+        XCTAssertEqual(saved.contactNumber, call.contactNumber)
+        XCTAssertEqual(saved.date, call.date)
+        XCTAssertEqual(history.records.first?.id, newer.id)
+        XCTAssertEqual(saved.notes?.outcome, "callback")
+    }
+
+    func testLegacyCallWithoutPresentationDecodesAndUsesRequestTitle() throws {
+        var call = record(minutesAgo: 1)
+        call.request = "Please ask a plumber about a leaking pipe."
+        let encoder = JSONEncoder()
+        let data = try encoder.encode(call)
+        let decoded = try JSONDecoder().decode(CallRecord.self, from: data)
+        XCTAssertNil(decoded.notes?.presentation)
+        XCTAssertEqual(decoded.displayTitle, "Ask a plumber about a leaking pipe")
+        XCTAssertEqual(decoded.contactName, "City Clinic")
+    }
+
+    func testAttachmentMustBeReadOrExplicitlyRemovedBeforeCalling() {
+        let valid = Attachment(name: "Report.pdf", thumbnail: nil, text: "Allergies: none reported.")
+        let failed = Attachment(name: "Scan.pdf", thumbnail: nil, text: "", problem: "Unreadable scan")
+        XCTAssertNotNil(Attachment.callProblem([valid], reading: 1))
+        XCTAssertNotNil(Attachment.callProblem([valid, failed], reading: 0))
+        XCTAssertNil(Attachment.callProblem([valid], reading: 0))
+        XCTAssertNil(Attachment.callProblem([], reading: 0))
+    }
+
     func testSavedCallsSurviveARelaunch() throws {
         let history = CallHistory(folder: folder)
         let live = record(minutesAgo: 10)

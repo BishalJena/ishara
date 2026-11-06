@@ -74,7 +74,7 @@ extension XCUIApplication {
         for button in visible {
             let label = button.label.trimmingCharacters(in: .whitespaces)
             let range = NSRange(label.startIndex..., in: label)
-            XCTAssertFalse(label.isEmpty, "\(screen): button \(button.identifier) has no label", file: file, line: line)
+            XCTAssertFalse(label.isEmpty, "\(screen): button \(button.identifier) has no label\(label.isEmpty ? "\n\(debugDescription)" : "")", file: file, line: line)
             XCTAssertNil(symbolName.firstMatch(in: label, range: range),
                          "\(screen): button \(button.identifier) is read as \u{201C}\(label)\u{201D}", file: file, line: line)
         }

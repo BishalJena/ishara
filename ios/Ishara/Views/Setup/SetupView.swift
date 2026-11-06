@@ -29,6 +29,8 @@ struct SetupView: View {
     let setupProblem: String?
     let history: CallHistory?
     @Bindable var draft: SetupDraft
+    var serviceStatus: BackendServiceStatus? = nil
+    var onRefreshRecentCall: ((CallRecord) async -> Void)? = nil
     let onCall: (CallSetup) -> Void
 
     private var number: String {
@@ -79,6 +81,7 @@ struct SetupView: View {
 
     private var problem: String? {
         if let setupProblem { return setupProblem }
+        if let attachmentProblem = Attachment.callProblem(attachments, reading: reading) { return attachmentProblem }
         if !usesNumber { return "Enter a number, or pick someone." }
         if typedContact == nil { return "Enter the 10-digit number." }
         if request.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "Say what the call is about." }
@@ -119,7 +122,7 @@ struct SetupView: View {
                 call()
             }) { prompt in
                 switch prompt {
-                case .settings: SettingsSheet()
+                case .settings: SettingsSheet(serviceStatus: serviceStatus)
                 case .nameForCall: SettingsSheet(onContinueCall: { callAfterSettings = true })
                 }
             }
@@ -140,16 +143,28 @@ struct SetupView: View {
             .onChange(of: photoItem) { _, item in
                 guard let item else { return }
                 photoItem = nil
+                reading += 1
                 Task {
-                    if let data = try? await item.loadTransferable(type: Data.self) { await attach(data, name: "Photo") }
+                    defer { reading -= 1 }
+                    if let data = try? await item.loadTransferable(type: Data.self) {
+                        await attach(data, name: "Photo")
+                    } else {
+                        attachments.append(Attachment(name: "Photo", thumbnail: nil, text: "", problem: "The photo couldn’t be opened."))
+                    }
                 }
             }
             .fileImporter(isPresented: $showsFilePicker, allowedContentTypes: [.pdf, .image]) { result in
                 guard case let .success(url) = result else { return }
+                reading += 1
                 Task {
+                    defer { reading -= 1 }
                     let accessed = url.startAccessingSecurityScopedResource()
                     defer { if accessed { url.stopAccessingSecurityScopedResource() } }
-                    if let data = try? Data(contentsOf: url) { await attach(data, name: url.lastPathComponent) }
+                    if let data = try? Data(contentsOf: url) {
+                        await attach(data, name: url.lastPathComponent)
+                    } else {
+                        attachments.append(Attachment(name: url.lastPathComponent, thumbnail: nil, text: "", problem: "The file couldn’t be opened."))
+                    }
                 }
             }
         }
@@ -194,12 +209,12 @@ struct SetupView: View {
             Text("Recent").font(.title3.weight(.bold))
             ForEach(history.records) { record in
                 NavigationLink {
-                    RecentCallView(history: history, id: record.id)
+                    RecentCallView(history: history, id: record.id, onRefresh: onRefreshRecentCall)
                 } label: {
                     HStack(spacing: 12) {
                         InitialsAvatar(name: record.contactName, color: .purple)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(record.outcomeText).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                            Text(record.displayTitle).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
                             Text("\(Contact.isNumberName(record.contactName) ? Contact.display(record.contactName) : record.contactName) · \(record.date.formatted(date: .abbreviated, time: .shortened))")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
@@ -259,7 +274,7 @@ struct SetupView: View {
             }
             Divider()
 
-            TextField("What should Ishara do? e.g. Book a check-up next week, mornings only.", text: $draft.request, axis: .vertical)
+            TextField("What should Ishara do? For example, ask about a passport renewal or arrange a plumber visit.", text: $draft.request, axis: .vertical)
                 .lineLimit(3...8)
                 .font(.title3.weight(.medium))
                 .focused($focus, equals: .request)
@@ -338,7 +353,7 @@ struct SetupView: View {
             return
         }
         var setup = CallSetup(
-            contact: who, purpose: .doctorAppointment,
+            contact: who, purpose: .general,
             details: SavedDetails(name: name.trimmingCharacters(in: .whitespaces), preferredTime: .mornings),
             voice: .indianEnglish)
         setup.request = request.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -191,6 +191,17 @@ data class Brief(
 @Serializable
 data class TranscriptEntry(val speaker: CaptionSpeaker, val text: String, val at: Double)
 
+/** Canonical, concise presentation. CallNotes.outcome remains authoritative. */
+@Serializable
+data class CallPresentation(
+    val version: Int = 1,
+    val status: String = "ready",
+    val title: String,
+    val overview: String,
+    @SerialName("key_points") val keyPoints: List<String> = emptyList(),
+    @SerialName("next_step") val nextStep: String? = null,
+)
+
 /** Response of `GET /calls/{id}/notes`. */
 @Serializable
 data class CallNotes(
@@ -203,6 +214,7 @@ data class CallNotes(
     @SerialName("open_questions") val openQuestions: List<String> = emptyList(),
     val transcript: List<TranscriptEntry> = emptyList(),
     @SerialName("bolna_summary") val bolnaSummary: String? = null,
+    val presentation: CallPresentation? = null,
     @SerialName("follow_ups") val followUps: List<String> = emptyList(),
     @SerialName("stepped_in") val steppedIn: Int = 0,
 )

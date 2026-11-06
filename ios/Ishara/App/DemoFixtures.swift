@@ -48,6 +48,8 @@ extension DemoFixture {
             goal: brief.goal, name: setup.details.name, brief: brief.text,
             transcript: transcript, answers: [answer], ready: true)
         notes.bolnaSummary = "The caller booked a doctor's appointment for 10:30 tomorrow morning."
+        notes.presentation = CallPresentation(title: "Book a clinic appointment", overview: "The clinic confirmed the appointment.",
+                                             keyPoints: ["Tomorrow morning at 10:30."], nextStep: nil)
         let driver = FixtureCallDriver()
         driver.fixedNotes = notes
         return NotesModel(contactName: setup.contact.name, driver: driver)

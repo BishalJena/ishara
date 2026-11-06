@@ -29,6 +29,10 @@ struct SegmentClassifier {
 
     func classify(_ clip: RecognitionSession.SignClip) -> RecognitionResult {
         let frames = clip.frames
+        // Reject a partial view before spending time on model inference.
+        if FramingGuard.handLeftFrame(Self.framing(of: frames + clip.restAfter), restY: clip.restY) {
+            return .handLeftFrame
+        }
         let result: RecognitionResult
         switch engine {
         case let .signCLIP(encoder, matcher):
@@ -36,13 +40,7 @@ struct SegmentClassifier {
         case let .asl(model, matcher):
             result = Self.classify(frames, model: model, matcher: matcher)
         }
-        // The rest after the cut counts too: a hand that leaves the picture ends the sign there.
-        // A sign read while a hand was out of the picture is never a chip or a tile.
-        guard FramingGuard.handLeftFrame(Self.framing(of: frames + clip.restAfter), restY: clip.restY) else {
-            return result
-        }
-        recognitionLog.info("hand left the picture: \(String(describing: result), privacy: .public) shown as ?")
-        return .handLeftFrame
+        return result
     }
 
     private static func classify(_ frames: [LandmarkFrame], encoder: SignEncoder?, matcher: SignMatcher?) -> RecognitionResult {
@@ -82,10 +80,24 @@ struct SegmentClassifier {
             return Sign(rawValue: label.rawValue).map(RecognitionResult.sign) ?? .unsure
         case let .pickOne(label, p, _, top):
             log("pick one", label.rawValue, p, top, frames.count)
+            let choices = reviewChoices(top, matcher: matcher)
+            if choices.count > 1 { return .suggestions(choices) }
             return Sign(rawValue: label.rawValue).map(RecognitionResult.candidate) ?? .unsure
         case let .unsure(reason, top):
             log("unsure", reason, top.first?.p ?? 0, top, frames.count)
+            // Tracking failures and out-of-vocabulary winners still abstain. Never
+            // restrict/re-normalize the logits to manufacture a vocabulary winner.
+            if reason.hasPrefix("unsure:") {
+                let choices = reviewChoices(top, matcher: matcher)
+                if !choices.isEmpty { return .suggestions(choices) }
+            }
             return .unsure
+        }
+    }
+
+    private static func reviewChoices(_ top: [LogitsCandidate], matcher: LogitsMatcher) -> [Sign] {
+        top.prefix(3).compactMap { item in
+            matcher.bundle.vocabulary.contains(item.gloss) ? Sign(rawValue: item.gloss) : nil
         }
     }
 

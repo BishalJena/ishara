@@ -1,5 +1,7 @@
 import AVFoundation
 import XCTest
+import SwiftUI
+import UIKit
 @testable import Ishara
 
 /// Which camera view each run shows, and where tracked points land on the preview.
@@ -45,6 +47,27 @@ final class CameraCardTests: XCTestCase {
         XCTAssertEqual(CameraPlaceholder.simulator.message, "Camera preview appears on your iPhone.")
         XCTAssertEqual(CameraPlaceholder.cameraOff.message, "Camera is off in demo mode.")
         XCTAssertEqual(CameraPlaceholder.noCamera.message, "No front camera found on this iPhone.")
+    }
+
+    func testCompactSigningCardGivesTheWholeTileToTheCamera() async throws {
+        let host = UIHostingController(rootView: CameraCard(camera: camera(.authorized), state: .watching, layout: .compact).frame(width: 108, height: 192).ignoresSafeArea())
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 108, height: 192))
+        window.rootViewController = host
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true }
+        host.view.layoutIfNeeded()
+        await Task.yield()
+        host.view.layoutIfNeeded()
+        func find(_ view: UIView) -> PreviewHostView? {
+            if let preview = view as? PreviewHostView { return preview }
+            return view.subviews.lazy.compactMap { find($0) }.first
+        }
+        let preview = try XCTUnwrap(find(host.view))
+        let bounds = preview.convert(preview.bounds, to: host.view)
+        XCTAssertEqual(bounds.width, 108, accuracy: 1)
+        XCTAssertEqual(bounds.height, 192, accuracy: 1)
+        XCTAssertGreaterThanOrEqual(bounds.minX, -1)
+        XCTAssertLessThanOrEqual(bounds.maxX, 109, "The preview must not sit off-screen behind a status pill")
     }
 
     // MARK: Mapping tracked points onto the preview

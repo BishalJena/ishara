@@ -14,10 +14,10 @@ moment, and you steer it. The business just answers its ordinary phone.
   <img src="docs/media/demo-light.gif" alt="Ishara on the iPhone: typing a request to a clinic with a PDF attached, Ishara calling and introducing itself, turning down a 4 pm slot, the user tapping Ishara's line to add their own words, Ishara answering an allergy question from the PDF, the user signing THANK YOU, and the gist. Beside the phone, the part of the system at work lights up: the app, the Ishara backend, Bolna or the clinic.">
 </picture>
 
-**Live:** the iPhone app runs against the Ishara backend on Heroku, and every call is a real
+**Live:** the iPhone app runs against the Ishara backend, and every call is a real
 phone call, placed through Bolna (Deepgram listens, Sarvam speaks, Plivo connects).
 
-[The opportunity](#the-opportunity) · [How a call works](#one-call-your-way) · [Architecture](#architecture) · [Run it](#run-it) · [Deploy](#deploy) · [Pitch](PITCH.md) · [Market model](MARKET.md)
+[The opportunity](#the-opportunity) · [How a call works](#one-call-your-way) · [Architecture](#architecture) · [Run it](#run-it) · [Web companion](web/README.md) · [Deploy](#deploy) · [Pitch](PITCH.md) · [Market model](MARKET.md)
 
 ## Why Ishara
 
@@ -94,21 +94,23 @@ There is one flow. Ishara does the work by default; you take over whenever you w
    yours. Ishara introduces itself first, every time: *"Hello, I'm calling for a Deaf caller
    who is using Ishara, a sign-language app. Their replies may take a few seconds."* Then it
    states your request in its own words.
-3. **You read every word.** Both sides are captioned as they speak. Days, dates and times
+3. **Follow live if you want.** Both sides are captioned as they speak. Ishara can handle
+   the call unattended when your request and supplied context are sufficient. Days, dates and times
    collect in a strip at the top. On the lock screen and in the Dynamic Island, a Live
    Activity shows the call and lets you end it.
 4. **Ishara handles each turn.** When the other side speaks, Ishara shows you its next line
    with a **2-second bar**. Leave it, and the line is said. It accepts only offers that fit
    your request, answers questions from what you gave it (quoting your documents word for
-   word, and only when asked), and defers anything else (*"I don't have that with me.
-   Could I send it to you afterwards?"*), saved as a follow-up for you.
+   word, and only when asked). Questions can ask for several facts at once. Essential missing
+   information and choices outside your request are saved as follow-ups; ordinary acknowledgements
+   do not require your input.
 5. **Step in at any moment.** Tap Ishara's line and it drops into the text field to change.
    Or type your own reply, or switch to signing. Ishara polishes your words without adding
    facts, shows you the result for 1.5 seconds, then says it. While you compose, it keeps
    the line warm ("One moment, please"), so the other side never hangs up on silence.
-6. **After the call.** The gist opens by itself: what you asked, what was agreed (quoted
-   from the call), which answers came from Ishara and which from you, any follow-ups and
-   the full transcript. **Call again** or **Done**.
+6. **After the call.** A short call summary opens: the task, outcome, up to three useful
+   details and any next step. Recent calls use the task as their title. The transcript and
+   detailed call record are expandable below. **Call again** or **Done**.
 
 ### What Ishara will and won't say
 

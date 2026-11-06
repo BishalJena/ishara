@@ -35,6 +35,50 @@ final class LiveCallDriverTests: XCTestCase {
         await eventually { await self.transport.sent.count >= count }
     }
 
+    func testLostDialResponseRecoversTheSameCallAndItsNotesWithoutRedial() async throws {
+        let http = RecoveryHTTP(loseResponse: true)
+        let driver = LiveCallDriver(client: BackendClient(config: testBackend, http: http, transport: transport))
+        var setup = CallSetup.demo
+        setup.delegation = Delegation(brief: Brief(briefID: "recover-brief", text: "A request", goal: "A task", constraints: []), attended: false, mode: .steer)
+        let store = try await driver.start(setup)
+        await transport.push(#"{"type":"history","entries":[{"speaker":"receptionist","text":"A question","at":1},{"speaker":"agent","text":"An answer","at":2}]}"#)
+        let recovered = await eventually { store.captions.count == 2 }
+        XCTAssertTrue(recovered)
+        driver.close()
+        let notes = try await driver.notes()
+        XCTAssertEqual(notes.callID, "recovered-call")
+        let starts = await http.starts
+        XCTAssertEqual(starts, 1)
+    }
+
+    func testCancellingTheViewTaskDoesNotCancelOrForgetAnAcceptedDial() async throws {
+        let http = RecoveryHTTP(loseResponse: false)
+        let driver = LiveCallDriver(client: BackendClient(config: testBackend, http: http, transport: transport))
+        let caller = Task { try await driver.start(.demo) }
+        let requested = await eventually { await http.starts == 1 }
+        XCTAssertTrue(requested)
+        caller.cancel()
+        let store = try await caller.value
+        XCTAssertEqual(store.state, .dialing)
+        let notes = try await driver.notes()
+        XCTAssertEqual(notes.callID, "recovered-call")
+        let starts = await http.starts
+        XCTAssertEqual(starts, 1)
+        driver.close()
+    }
+
+    func testConcurrentStartsShareOneDial() async throws {
+        let http = RecoveryHTTP(loseResponse: false)
+        let driver = LiveCallDriver(client: BackendClient(config: testBackend, http: http, transport: transport))
+        let first = Task { try await driver.start(.demo) }
+        let second = Task { try await driver.start(.demo) }
+        let a = try await first.value, b = try await second.value
+        XCTAssertTrue(a === b)
+        let starts = await http.starts
+        XCTAssertEqual(starts, 1)
+        driver.close()
+    }
+
     // MARK: Starting
 
     func testStartAsksTheBackendForTheChosenContactThenOpensTheCallSocket() async throws {
@@ -48,7 +92,7 @@ final class LiveCallDriverTests: XCTestCase {
         let body = try XCTUnwrap(requests.first?.httpBody.map { String(decoding: $0, as: UTF8.self) })
         XCTAssertEqual(body, #"{"attended":false,"contact_id":"clinic","mode":"live","purpose":"doctor_appointment"}"#)
         let sockets = await transport.requests
-        XCTAssertEqual(sockets.map(\.url?.absoluteString), ["wss://backend.example.test/calls/call_1/ws"])
+        XCTAssertEqual(sockets.map(\.url?.absoluteString), ["wss://backend.example.test/calls/call_1/ws?history=1"])
         XCTAssertEqual(sockets.first?.value(forHTTPHeaderField: "Authorization"), "Bearer test-token")
         XCTAssertEqual(model.phase, .connecting(.dialing))
     }
@@ -250,5 +294,24 @@ final class LiveCallDriverTests: XCTestCase {
 
         let sockets = await transport.requests
         XCTAssertEqual(sockets.count, 1)
+    }
+}
+
+
+private actor RecoveryHTTP: HTTPClient {
+    private(set) var starts = 0
+    let loseResponse: Bool
+    init(loseResponse: Bool) { self.loseResponse = loseResponse }
+    func perform(_ request: URLRequest) async throws -> (Data, URLResponse) {
+        let path = request.url!.path
+        if path == "/calls" {
+            starts += 1
+            try await Task.sleep(for: .milliseconds(50))
+            if loseResponse { throw URLError(.networkConnectionLost) }
+        }
+        let body = path.hasSuffix("/notes")
+            ? #"{"call_id":"recovered-call","mode":"steer","ready":true,"summary":[],"transcript":[]}"#
+            : #"{"call_id":"recovered-call","state":"dialing","mode":"steer"}"#
+        return (Data(body.utf8), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!)
     }
 }

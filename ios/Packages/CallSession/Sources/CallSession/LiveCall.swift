@@ -38,7 +38,8 @@ public final class LiveCall {
         return call
     }
 
-    private init(client: BackendClient, start: CallStart, makeTurnID: @escaping () -> TurnID) {
+    /// Attaches a known call identity without placing a second telephone call.
+    public init(client: BackendClient, start: CallStart, makeTurnID: @escaping () -> TurnID = TurnID.random) {
         self.client = client
         self.callID = start.callID
         let outbox = MessageOutbox(sender: client)

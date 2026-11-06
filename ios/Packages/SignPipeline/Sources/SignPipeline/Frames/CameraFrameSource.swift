@@ -1,4 +1,5 @@
 import AVFoundation
+import Foundation
 
 /// Front-camera frames at 30 fps, 1280×720 (the Mac pilot capture settings),
 /// rotated upright and **not** mirrored: MediaPipe rejects mirrored input and the
@@ -19,6 +20,7 @@ public final class CameraFrameSource: NSObject, FrameSource, @unchecked Sendable
 
     private let session = AVCaptureSession()
     private let queue = DispatchQueue(label: "SignPipeline.CameraFrameSource")
+    private var activeStreamID: UUID?
     private var continuation: AsyncThrowingStream<VideoFrame, Error>.Continuation?
 
     public override init() {
@@ -32,10 +34,12 @@ public final class CameraFrameSource: NSObject, FrameSource, @unchecked Sendable
     public var captureSession: AVCaptureSession { session }
 
     public func frames() -> AsyncThrowingStream<VideoFrame, Error> {
-        AsyncThrowingStream(bufferingPolicy: .bufferingNewest(2)) { continuation in
+        let streamID = UUID()
+        return AsyncThrowingStream(bufferingPolicy: .bufferingNewest(2)) { continuation in
             queue.async {
                 do {
                     try self.configureIfNeeded()
+                    self.activeStreamID = streamID
                     self.continuation = continuation
                     self.session.startRunning()
                 } catch {
@@ -44,7 +48,9 @@ public final class CameraFrameSource: NSObject, FrameSource, @unchecked Sendable
             }
             continuation.onTermination = { _ in
                 self.queue.async {
+                    guard self.activeStreamID == streamID else { return }
                     self.session.stopRunning()
+                    self.activeStreamID = nil
                     self.continuation = nil
                 }
             }

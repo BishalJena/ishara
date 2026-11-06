@@ -91,8 +91,8 @@ Sign = Literal[
     "hear",
     "read",
 ]
-PURPOSES = ("doctor_appointment",)
-Purpose = Literal["doctor_appointment"]
+PURPOSES = ("doctor_appointment", "general")
+Purpose = Literal["doctor_appointment", "general"]
 
 MAX_CHIPS = 8
 MAX_SPOKEN_CHARS = 300
@@ -125,7 +125,8 @@ class _Message(BaseModel):
 # moment by typing or signing. While the app is in front, each agent line is proposed to
 # the app first and spoken when its window runs out; while it is away, lines are spoken
 # at once. The agent accepts an offer only when it fits the brief, shares only the
-# brief's details, and defers anything else as a follow-up. It never asks a question.
+# brief's details, and defers decisions outside the user's approval. It may ask the
+# other person relevant questions to achieve the caller's goal.
 CallMode = Literal["live", "delegated", "steer"]
 BriefId = Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")]
 PhoneNumber = Annotated[str, Field(pattern=r"^\+[1-9]\d{6,14}$")]
@@ -197,6 +198,14 @@ class BriefRequest(_Message):
     # its days and parts of day are the only times the agent may agree to.
     request: str | None = Field(default=None, min_length=1, max_length=MAX_REQUEST_CHARS)
 
+    @model_validator(mode="after")
+    def needs_caller_goal(self) -> BriefRequest:
+        if self.request is not None and not self.request.strip():
+            raise ValueError("The caller request cannot be blank")
+        if self.purpose == "general" and not self.request:
+            raise ValueError("A general call needs the caller's request")
+        return self
+
 
 class BriefResponse(_Message):
     brief_id: str
@@ -250,6 +259,15 @@ class TranscriptEntry(_Message):
     at: float
 
 
+class CallPresentation(_Message):
+    version: Literal[1] = 1
+    status: Literal["pending", "ready"] = "ready"
+    title: str = Field(max_length=72)
+    overview: str = Field(max_length=500)
+    key_points: list[str] = Field(default_factory=list, max_length=3)
+    next_step: str | None = Field(default=None, max_length=200)
+
+
 class CallNotes(_Message):
     call_id: str
     mode: CallMode
@@ -264,6 +282,12 @@ class CallNotes(_Message):
     # many times the user stepped in (typed or signed a line).
     follow_ups: list[str] = Field(default_factory=list)
     stepped_in: int = 0
+    presentation: CallPresentation | None = None
+
+
+class HistoryMessage(_Message):
+    type: Literal["history"] = "history"
+    entries: list[TranscriptEntry]
 
 
 # ---- app -> backend (WebSocket) ----

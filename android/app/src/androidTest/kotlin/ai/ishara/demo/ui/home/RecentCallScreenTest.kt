@@ -2,6 +2,7 @@ package ai.ishara.demo.ui.home
 
 import ai.ishara.demo.core.call.CallMode
 import ai.ishara.demo.core.call.CallNotes
+import ai.ishara.demo.core.call.CallPresentation
 import ai.ishara.demo.core.call.CaptionSpeaker
 import ai.ishara.demo.core.call.TranscriptEntry
 import ai.ishara.demo.models.CallRecord
@@ -69,13 +70,16 @@ class RecentCallScreenTest {
             openQuestions = listOf("Bring the referral?"),
             transcript = listOf(TranscriptEntry(CaptionSpeaker.RECEPTIONIST, "Four works.", 1.0)),
             bolnaSummary = "The caller booked a visit.",
+            presentation = CallPresentation(title = "Book a check-up", overview = "The clinic confirmed a visit.",
+                keyPoints = listOf("Tomorrow at four."), nextStep = "Bring the referral."),
         )
         show(record.copy(mode = CallMode.DELEGATED, notes = notes))
         compose.onNodeWithTag("notes.outcome").assertTextContains("Booked")
-        compose.onNodeWithText("Booked for tomorrow at four.").assertExists()
-        compose.onNodeWithText("Bring the referral?").assertExists()
+        compose.onNodeWithTag("notes.summaryOverview").assertTextContains("The clinic confirmed a visit.")
+        compose.onNodeWithText("Bring the referral.").assertExists()
+        compose.onNodeWithText("They said").assertDoesNotExist()
+        compose.onNodeWithTag("notes.transcriptToggle").performScrollTo().performClick()
         compose.onNodeWithText("They said").assertExists()
-        compose.onNodeWithTag("notes.bolnaSummary").performScrollTo().assertTextContains("The caller booked a visit.")
         compose.onNodeWithText("City Clinic, how can I help?").assertDoesNotExist()
     }
 

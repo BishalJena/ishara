@@ -40,7 +40,7 @@ data class OngoingCallState(
 
     companion object {
         /** iOS ends the Live Activity with this outcome. */
-        const val ENDED_OUTCOME = "Call ended · open Ishara for the gist"
+        const val ENDED_OUTCOME = "Call ended · open Ishara for the summary"
 
         fun starting(contactName: String) = OngoingCallState(
             contactName = contactName,
