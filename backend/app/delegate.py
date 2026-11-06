@@ -1204,19 +1204,18 @@ class Brain:
         )
 
     @staticmethod
+    def _stale_offer_action(state: DelegateState, heard: str, turn: PlannerTurn) -> bool:
+        action = turn.action
+        return isinstance(action, (AcceptOffer, ChooseOption)) and (
+            action.source_id != state.planner.receiver[-1].source_id or action.quote not in heard
+        )
+
+    @staticmethod
     def _repairable_encoding(state: DelegateState, heard: str, turn: PlannerTurn) -> bool:
         memory, action = state.planner, turn.action
         current = memory.receiver[-1]
-        if (
-            not any(g.kind == "external_action" and not g.evidence for g in memory.goals)
-            or any(source_id != current.source_id for source_id in memory.pending)
-            or choice_question_objection(heard)
-            or not re.search(
-                r"\b(prefer|want|choose|select|pick)\b|"
-                r"\b(?:would|do|could) you (?:please )?like\b",
-                heard,
-                re.I,
-            )
+        if not any(g.kind == "external_action" and not g.evidence for g in memory.goals) or any(
+            source_id != current.source_id for source_id in memory.pending
         ):
             return False
         approved = " ".join(
@@ -1227,6 +1226,15 @@ class Brain:
             "currency_mismatch",
             "unrequested_service",
         }:
+            return False
+        if Brain._stale_offer_action(state, heard, turn):
+            return True
+        if choice_question_objection(heard) or not re.search(
+            r"\b(prefer|want|choose|select|pick)\b|"
+            r"\b(?:would|do|could) you (?:please )?like\b",
+            heard,
+            re.I,
+        ):
             return False
         if isinstance(action, AnswerQuestion) and action.question_id in memory.pending:
             sources = json.loads(_steer_payload(state, heard))["approved_sources"]
@@ -1262,7 +1270,13 @@ class Brain:
             if attempt == 0 and self._repairable_encoding(state, heard, turn):
                 log.info("planner action rejected category=preference_provenance retry=1")
                 payload["validation_feedback"] = (
-                    "Invalid handoff or source/action encoding for an authorized offered "
+                    "Invalid stale offer action: its source/quote is not the CURRENT receiver "
+                    "turn. Prior accepted choices are already handled. Read the current turn "
+                    "and collect its exact assertions in resolutions before selecting an action. "
+                    "Use only current receiver provenance for new offers/completion; answer any "
+                    "real pending question from approved facts. Never invent a caller question."
+                    if self._stale_offer_action(state, heard, turn)
+                    else "Invalid handoff or source/action encoding for an authorized offered "
                     "preference. Omitted preferences are open, so choose a reasonable ordinary "
                     "offered option instead of need_caller. A newly chosen "
                     "default was not a caller fact. Use choose_option with the CURRENT receiver "
@@ -1452,6 +1466,9 @@ class Brain:
             else None
         )
         action = turn.domain_action()
+        if self._stale_offer_action(state, heard, turn) and not objection:
+            log.info("planner action rejected category=stale_offer_provenance")
+            return self._steer_recovery(state, heard)
         if isinstance(action, AcceptOffer):
             goal = next((g for g in memory.goals if g.goal_id == action.goal_id), None)
             if (

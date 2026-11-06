@@ -131,3 +131,91 @@ async def test_genuine_personal_handoff_is_not_reselected(question):
     reply = await Brain(client).reply(state("Order a replacement passport."), question)
     assert len(client.calls) == 1 and reply.kind != "accept"
     assert reply.follow_up == question
+
+
+class StaleAfterChoice:
+    def __init__(self, *, repair=True, question=False):
+        self.calls, self.repair, self.question = [], repair, question
+
+    async def complete_structured(self, system, user, model):
+        payload = json.loads(user)
+        self.calls.append(payload)
+        current = payload["current_receiver_turn"]
+        if len(self.calls) == 1:
+            action = {
+                "kind": "choose_option",
+                "goal_id": "goal:0",
+                "source_id": current["source_id"],
+                "quote": current["text"],
+                "option": "32-pager",
+            }
+            resolutions = []
+        elif len(self.calls) == 2 or not self.repair:
+            action = {
+                "kind": "accept_offer",
+                "goal_id": "goal:0",
+                "source_id": "receiver:0",
+                "quote": "32-pager",
+            }
+            resolutions = []
+        else:
+            action = (
+                {
+                    "kind": "answer_question",
+                    "question_id": current["source_id"],
+                    "spans": [{"source_id": "document:0", "quote": "Use the side gate"}],
+                }
+                if self.question
+                else {"kind": "finish", "blocked": False}
+            )
+            resolutions = [
+                {
+                    "goal_id": "goal:0",
+                    "source_id": current["source_id"],
+                    "quote": CONFIRMATION,
+                }
+            ]
+        return model.model_validate({"resolutions": resolutions, "action": action})
+
+
+CONFIRMATION = "Your replacement passport order for the selected booklet has been registered."
+
+
+async def test_stale_accept_after_choice_repairs_current_confirmation_proof():
+    value, client = state("Order a replacement passport."), StaleAfterChoice()
+    brain = Brain(client)
+    assert (await brain.reply(value, QUESTION)).kind == "accept"
+    reply = await brain.reply(value, CONFIRMATION)
+    assert len(client.calls) == 3 and reply.done and value.planner.completed
+    assert value.planner.goals[0].evidence.source_id == "receiver:1"
+    assert not value.planner.pending
+
+
+async def test_exhausted_stale_provenance_stays_quiet_without_inventing_a_caller_question():
+    value, client = state("Order a replacement passport."), StaleAfterChoice(repair=False)
+    brain = Brain(client)
+    await brain.reply(value, QUESTION)
+    reply = await brain.reply(value, CONFIRMATION)
+    assert len(client.calls) == 3 and not reply.done and not reply.say
+    assert reply.follow_up is None and not value.planner.pending
+    assert not value.planner.completed and value.planner.evidence_review is not None
+
+
+async def test_repaired_confirmation_still_answers_a_real_question_before_closing():
+    from dataclasses import replace
+
+    from app.protocol import Document
+
+    value, client = state("Order a replacement passport."), StaleAfterChoice(question=True)
+    value.brief = replace(
+        value.brief,
+        documents=[
+            Document(name="Synthetic instructions", text="Access instructions: Use the side gate")
+        ],
+    )
+    brain = Brain(client)
+    await brain.reply(value, QUESTION)
+    reply = await brain.reply(value, CONFIRMATION + " How will they get inside?")
+    assert len(client.calls) == 3 and reply.kind == "share" and not reply.done
+    assert "side gate" in reply.say and value.planner.completed
+    assert not value.planner.pending

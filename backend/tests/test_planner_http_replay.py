@@ -2033,3 +2033,52 @@ async def test_replay_semantic_choice_encoding_repair_uses_same_transport_budget
     else:
         assert feedback_seen == [False]
         assert rows[1]["pass"] is False and rows[1]["rejection"] == "budget"
+
+
+@pytest.mark.parametrize("http", [False, True])
+@pytest.mark.parametrize("proof_state", ["valid", "missing", "wrong_source"])
+async def test_replay_separates_verified_runtime_close_from_stale_model_action(
+    http, proof_state, capsys
+):
+    import runpy
+    from pathlib import Path
+
+    replay = runpy.run_path(str(Path(__file__).resolve().parents[2] / "scripts/planner_replay.py"))
+    run = replay["run_http"] if http else replay["run"]
+    scenario = next(item for item in replay["SCENARIOS"] if item.name == "autonomous_order")
+    run.__globals__["AUTONOMY_SCENARIOS"] = (scenario,)
+    original_mock = replay["ReplayClient"].mock
+
+    def stale_action(client, request):
+        response = original_mock(client, request)
+        if client.step.expected != "done":
+            return response
+        prompt = json.loads(json.loads(request.content)["messages"][1]["content"])
+        envelope = response.json()
+        selected = json.loads(envelope["choices"][0]["message"]["content"])
+        selected["action"] = accept_current_offer(prompt)["action"]
+        if proof_state == "missing":
+            selected["resolutions"] = []
+        elif proof_state == "wrong_source":
+            selected["resolutions"][0]["source_id"] = "receiver:invented"
+        envelope["choices"][0]["message"]["content"] = json.dumps(selected)
+        return httpx.Response(200, json=envelope)
+
+    replay["ReplayClient"].mock = stale_action
+    valid = proof_state == "valid"
+    assert await run(False, suite="autonomy") == (0 if valid else 1)
+    rows = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    closing = next(row for row in rows if row.get("step") == 2)
+    assert closing["action"] == "accept_offer"
+    assert closing["pass"] is valid
+    assert closing["action_correction"] == ("closed_from_verified_resolutions" if valid else None)
+    assert closing["model_rejection"] == "unexpected_action"
+    if valid:
+        assert closing["model_quality"] is False
+        assert closing["rejection"] is None
+        if http:
+            assert any(row.get("stage") == "notes" and row["outcome"] == "done" for row in rows)
+    else:
+        assert closing["rejection"] == "unexpected_action"
+    assert rows[-1]["corrected_model_actions"] == int(valid)
+    assert rows[-1]["model_requests"] == 2
