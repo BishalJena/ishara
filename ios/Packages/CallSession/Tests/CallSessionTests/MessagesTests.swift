@@ -9,6 +9,16 @@ final class MessagesTests: XCTestCase {
 
     // MARK: App -> backend
 
+    func testCallNotesPresentationRoundTripsAndOldNotesRemainReadable() throws {
+        let presentation = CallPresentation(title: "Passport renewal", overview: "The office needs an application ID.",
+                                            keyPoints: ["Renewal not confirmed."], nextStep: "Find the application ID.")
+        let notes = CallNotes(callID: "synthetic", mode: .steer, ready: true, outcome: "unclear", presentation: presentation)
+        let data = try JSONEncoder().encode(notes)
+        XCTAssertEqual(try JSONDecoder().decode(CallNotes.self, from: data).presentation, presentation)
+        let old = Data(#"{"call_id":"legacy","mode":"steer","ready":true}"#.utf8)
+        XCTAssertNil(try JSONDecoder().decode(CallNotes.self, from: old).presentation)
+    }
+
     func testChipsEncodesLikeBackendModel() throws {
         try assertEncodes(
             AppMessage.chips(turnID: t1, chips: [.hello, .doctor, .tomorrow]),

@@ -464,7 +464,7 @@ private fun Recent(records: List<CallRecord>, onOpen: (String) -> Unit) {
             ) {
                 InitialsAvatar(record.contactName, color = colors.purple)
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(record.outcomeText(), style = SteerType.subheadline, fontWeight = FontWeight.SemiBold, color = colors.primary)
+                    Text(record.displayTitle, style = SteerType.subheadline, fontWeight = FontWeight.SemiBold, color = colors.primary)
                     val who = if (Contact.isNumberName(record.contactName)) Contact.display(record.contactName) else record.contactName
                     Text("$who · ${recentCallDate(record.date)}", style = SteerType.caption, color = colors.secondary)
                 }

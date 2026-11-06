@@ -1,9 +1,8 @@
 import CallSession
 import SwiftUI
 
-/// The notes after a delegated call (D9): outcome, what happened, what is still open, and the
-/// full transcript. Summaries can be wrong; the transcript is what was actually said. The
-/// model loads them on its own (`NotesModel.start()`); this screen only shows them.
+/// The call summary, next step and expandable transcript. The model loads and follows
+/// the canonical presentation while this screen displays it.
 struct NotesView: View {
     let model: NotesModel
     let onDone: () -> Void
@@ -20,7 +19,7 @@ struct NotesView: View {
                     Label(failure, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red)
                 }
             }
-            .navigationTitle("Call notes")
+            .navigationTitle("Call summary")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done", action: onDone)
@@ -64,26 +63,26 @@ struct NotesSections: View {
         } header: {
             Text("Call with \(contactName)")
         }
-        if !notes.openQuestions.isEmpty || !notes.followUps.isEmpty {
+        if notes.presentation?.status != "ready" && (!notes.openQuestions.isEmpty || !notes.followUps.isEmpty) {
             Section("What needs your attention") {
                 ForEach(attentionLines, id: \.self) {
                     Label($0, systemImage: "questionmark.circle").foregroundStyle(.orange)
                 }
             }
         }
-        Section("Transcript") {
-            if notes.transcript.isEmpty {
-                Text("No transcript was captured for this call.").foregroundStyle(.secondary)
-            }
-            ForEach(Array(notes.transcript.enumerated()), id: \.offset) { _, entry in
-                TranscriptRow(speaker: entry.speaker == .agent ? "Agent (for you)" : "They said",
-                              text: entry.text, isAgent: entry.speaker == .agent)
+        Section {
+            CallSummaryDisclosure("Transcript (\(notes.transcript.count) lines)", identifier: "notes.transcript") {
+                if notes.transcript.isEmpty { Text("No transcript was captured for this call.").foregroundStyle(.secondary) }
+                ForEach(Array(notes.transcript.enumerated()), id: \.offset) { _, entry in
+                    TranscriptRow(speaker: entry.speaker == .agent ? "Agent (for you)" : "They said",
+                                  text: entry.text, isAgent: entry.speaker == .agent)
+                }
             }
         }
-        if notes.automaticSummary != nil && !notes.summary.isEmpty || notes.brief != nil {
+        if !notes.summary.isEmpty || notes.brief != nil {
             Section {
-                DisclosureGroup("Call details") {
-                    if notes.automaticSummary != nil {
+                CallSummaryDisclosure("Call details", identifier: "notes.details") {
+                    if !notes.summary.isEmpty {
                         ForEach(Array(notes.summary.enumerated()), id: \.offset) { _, line in Text(line) }
                     }
                     if let brief = notes.brief {
@@ -96,38 +95,77 @@ struct NotesSections: View {
     }
 }
 
-/// One summary presentation for just-ended and saved calls. Missing AI text never
-/// hides the transcript or makes recorded call details look like an AI summary.
+/// A single accessible toggle keeps the disclosure chevron out of the button tree.
+/// The default List disclosure exposes a separate unnamed chevron button on iOS 26.
+struct CallSummaryDisclosure<Content: View>: View {
+    let title: String
+    let identifier: String
+    let systemImage: String?
+    let font: Font
+    let content: Content
+    @State private var expanded = false
+
+    init(_ title: String, identifier: String, systemImage: String? = nil, font: Font = .body,
+         @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.identifier = identifier
+        self.systemImage = systemImage
+        self.font = font
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button { expanded.toggle() } label: {
+                HStack {
+                    if let systemImage { Label(title, systemImage: systemImage) } else { Text(title) }
+                    Spacer()
+                    Image(systemName: expanded ? "chevron.down" : "chevron.right")
+                        .imageScale(.small).foregroundStyle(.secondary).accessibilityHidden(true)
+                }
+                .font(font).frame(minHeight: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(title)
+            .accessibilityValue(expanded ? "Expanded" : "Collapsed")
+            .accessibilityIdentifier(identifier)
+            if expanded { content }
+        }
+    }
+}
+
+/// One glanceable presentation for just-ended and saved calls.
 struct CallSummaryContent: View {
     let notes: CallNotes?
     var awaitingSummary = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if let summary = notes?.automaticSummary {
-                Text(summary).accessibilityIdentifier("notes.bolnaSummary")
-                Text("Automatic summary · may be inaccurate. Read the transcript for exact words.")
-                    .font(.caption).foregroundStyle(.secondary)
-            } else {
-                Text(availability).font(.subheadline).foregroundStyle(.secondary)
-                    .accessibilityIdentifier("notes.summaryAvailability")
-                if let notes {
-                    ForEach(Array(notes.summary.enumerated()), id: \.offset) { _, line in
-                        Text(line)
-                    }
-                    if !notes.summary.isEmpty {
-                        Text("From the recorded call details.").font(.caption).foregroundStyle(.secondary)
-                    }
+            if let notes {
+                Text(notes.summaryTitle).font(.title3.weight(.semibold))
+                    .accessibilityIdentifier("notes.taskTitle")
+                Text(notes.summaryOverview).accessibilityIdentifier(notes.presentation?.status == "ready" ? "notes.summaryOverview" : "notes.summaryPendingOverview")
+                ForEach(Array((notes.presentation?.keyPoints ?? []).prefix(3).enumerated()), id: \.offset) { _, point in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text("•").foregroundStyle(.secondary)
+                        Text(point)
+                    }.font(.subheadline)
                 }
+                if let next = notes.presentation?.nextStep, !next.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Next step").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        Text(next).font(.subheadline)
+                    }.accessibilityIdentifier("notes.nextStep")
+                }
+            }
+            if awaitingSummary {
+                Text("Preparing the call summary…").font(.subheadline).foregroundStyle(.secondary)
+                    .accessibilityIdentifier("notes.summaryAvailability")
+            } else if notes == nil {
+                Text("No summary is available for this call.").foregroundStyle(.secondary)
             }
         }
         .textSelection(.enabled)
-    }
-
-    private var availability: String {
-        if notes?.outcome == "no_answer" { return "No one answered, so there is no conversation to summarize." }
-        if awaitingSummary { return "The automatic summary is being prepared. You can already read the transcript below." }
-        return "An automatic summary is not available for this call. The saved call details are shown below."
     }
 }
 

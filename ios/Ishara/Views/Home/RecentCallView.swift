@@ -7,10 +7,11 @@ import SwiftUI
 struct RecentCallView: View {
     let history: CallHistory
     let id: UUID
+    var onRefresh: ((CallRecord) async -> Void)? = nil
 
     var body: some View {
         if let record = history.records.first(where: { $0.id == id }) {
-            content(record)
+            content(record).task(id: record.id) { await onRefresh?(record) }
         }
     }
 
@@ -35,7 +36,7 @@ struct RecentCallView: View {
                 }
             }
         }
-        .navigationTitle(record.date.formatted(date: .abbreviated, time: .shortened))
+        .navigationTitle("Call summary")
         .navigationBarTitleDisplayMode(.inline)
     }
 

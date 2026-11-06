@@ -6,6 +6,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -128,7 +129,7 @@ class DelegatedCallUiTest {
         }
         assertTrue(app.captionExists("caption.agent", CALLBACK_LINE))
         app.openNotes()
-        app.waitFor("notes.outcome", "call back")
+        app.waitFor("notes.outcome", "Follow-up needed")
     }
 
     @Test
@@ -208,19 +209,22 @@ class DelegatedCallUiTest {
         app.setAttended(false)
         app.approve()
         app.openNotes()
-        app.waitFor("notes.outcome", "call back")
-        assertFalse("the summary was there before Bolna sent it", app.exists("notes.bolnaSummary"))
-        app.waitFor("notes.bolnaSummary", "The agent called to book a doctor's appointment for Riya.", 30_000)
+        app.waitFor("notes.outcome", "Follow-up needed")
+        assertFalse("the summary was there before Bolna sent it", app.exists("notes.summaryOverview"))
+        app.waitFor("notes.summaryOverview", "A follow-up is needed to finish the request.", 30_000)
     }
 
     @Test
-    fun notesMarkTheAutomaticSummaryAsFallibleAndShowTheTranscript() {
+    fun notesLeadWithCanonicalSummaryAndExpandableTranscript() {
         app.launch("IsharaFixture" to "notes")
         app.waitFor("notes.outcome", "Booked")
+        compose.onNodeWithTag("notes.summaryOverview").performScrollTo()
+        compose.onNodeWithText("The clinic confirmed the appointment.").assertExists()
+        compose.onNodeWithTag("notes.transcriptToggle").performScrollTo().performClick()
         // A transcript row: who spoke, then what they said.
         compose.onNode(hasText("They said", substring = true) and hasText("Great, you're booked for 10:30 tomorrow morning.", substring = true))
             .performScrollTo()
-        compose.onNodeWithTag("notes.bolnaSummary").performScrollTo()
-        compose.onNodeWithText("It can be wrong; the transcript is what was said.", substring = true, useUnmergedTree = true).performScrollTo()
+        compose.onNodeWithTag("notes.summaryOverview").performScrollTo()
+        compose.onNodeWithText("It can be wrong; the transcript is what was said.", substring = true, useUnmergedTree = true).assertDoesNotExist()
     }
 }

@@ -94,30 +94,32 @@ final class CallRecordingTests: XCTestCase {
         return setup
     }
 
-    private func delegatedNotes(bolna: String? = nil) -> CallNotes {
-        CallNotes(callID: "c1", mode: .delegated, ready: true, outcome: "callback", bolnaSummary: bolna)
+    private func delegatedNotes(bolna: String? = nil, presented: Bool = false) -> CallNotes {
+        CallNotes(callID: "c1", mode: .delegated, ready: true, outcome: "callback", bolnaSummary: bolna,
+                  presentation: presented ? CallPresentation(title: "Book a check-up", overview: "Registration is still needed.",
+                      keyPoints: ["No appointment confirmed."], nextStep: "Provide the registration ID.") : nil)
     }
 
-    /// The user leaves at once (no notes screen at all); Bolna's summary comes two checks
-    /// later and still reaches the saved call. Then the checking stops.
+    /// Provider text arrives first after the user leaves. The canonical presentation arrives
+    /// on the next check, persists to history and stops further polling.
     func testCallForMeNotesAreFollowedAfterTheUserLeaves() async throws {
         let (model, driver) = await placedCall(delegatedSetup())
         driver.store.receive(.status(.ended))
-        driver.notesResults = [.success(delegatedNotes()), .success(delegatedNotes()),
-                               .success(delegatedNotes(bolna: "The caller will be called back."))]
+        driver.notesResults = [.success(delegatedNotes()), .success(delegatedNotes(bolna: "The caller will be called back.")),
+                               .success(delegatedNotes(bolna: "The caller will be called back.", presented: true))]
         let history = CallHistory(folder: folder)
 
         let followed = CallFollowUp.callEnded(model, history: history, sleep: { _ in })
         model.leave()
 
-        let saved = await eventually { CallHistory(folder: self.folder).records.first?.notes?.bolnaSummary != nil }
-        XCTAssertTrue(saved, "Bolna's summary never reached the saved call")
+        let saved = await eventually { CallHistory(folder: self.folder).records.first?.notes?.presentation?.status == "ready" }
+        XCTAssertTrue(saved, "The canonical presentation never reached the saved call")
         let record = try XCTUnwrap(CallHistory(folder: folder).records.first)
         XCTAssertEqual(record.id, model.recordID)
         XCTAssertEqual(record.notes?.bolnaSummary, "The caller will be called back.")
         XCTAssertEqual(record.notes?.outcome, "callback")
         try await Task.sleep(for: .milliseconds(100))
-        XCTAssertEqual(driver.notesCalls, 3, "it kept checking after the summary was in")
+        XCTAssertEqual(driver.notesCalls, 3, "it kept checking after the canonical presentation was ready")
         // The notes screen shows this same follow-up; opening it doesn't poll again.
         await followed?.start().value
         XCTAssertEqual(followed?.notes?.bolnaSummary, "The caller will be called back.")
@@ -172,8 +174,8 @@ final class CallRecordingTests: XCTestCase {
         let record = try XCTUnwrap(model.record)
         history.save(record)
         driver.notesResults = [
-            .success(CallNotes(callID: "c1", mode: .delegated, ready: true, outcome: "callback")),
-            .success(CallNotes(callID: "c1", mode: .delegated, ready: true, outcome: "callback", bolnaSummary: "Call back.")),
+            .success(delegatedNotes(bolna: "Call back.")),
+            .success(delegatedNotes(bolna: "Call back.", presented: true)),
         ]
         let notes = NotesModel(contactName: "City Clinic", driver: driver,
                                onNotes: { history.update(record.id, notes: $0) }, sleep: { _ in })
@@ -184,6 +186,7 @@ final class CallRecordingTests: XCTestCase {
         let saved = try XCTUnwrap(CallHistory(folder: folder).records.first)
         XCTAssertEqual(saved.notes?.bolnaSummary, "Call back.")
         XCTAssertEqual(saved.notes?.outcome, "callback")
+        XCTAssertEqual(saved.notes?.presentation, delegatedNotes(presented: true).presentation)
         XCTAssertEqual(saved.captions, record.captions)
     }
 }

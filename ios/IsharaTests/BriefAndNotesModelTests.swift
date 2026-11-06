@@ -12,6 +12,19 @@ final class BriefModelTests: XCTestCase {
         model = BriefModel(setup: .demo, driver: driver, recognition: StubRecognition())
     }
 
+    func testLegacyBriefPreservesTheEntireSuppliedContext() {
+        var setup = CallSetup.demo
+        setup.request = "Book a check-up."
+        setup.callback = "callback fixture"
+        setup.sharedDetails = [Detail(label: "Patient ID", value: "DEMO-104")]
+        setup.documents = [Document(name: "Report.pdf", text: "Allergies: none reported.")]
+        let model = BriefModel(setup: setup, driver: driver, recognition: StubRecognition())
+        XCTAssertEqual(model.request.request, setup.request)
+        XCTAssertEqual(model.request.profile.callback, setup.callback)
+        XCTAssertEqual(model.request.profile.details, setup.sharedDetails)
+        XCTAssertEqual(model.request.profile.documents, setup.documents)
+    }
+
     func testSignsBecomeChipsOnceEach() {
         model.handle(.result(.sign(.tomorrow)))
         model.handle(.result(.sign(.morning)))
@@ -99,14 +112,16 @@ final class BriefModelTests: XCTestCase {
 
 @MainActor
 final class NotesModelTests: XCTestCase {
-    private func notes(ready: Bool, bolna: String? = nil) -> CallNotes {
-        CallNotes(callID: "c1", mode: .delegated, ready: ready, outcome: ready ? "booked" : nil, bolnaSummary: bolna)
+    private func notes(ready: Bool, bolna: String? = nil, presented: Bool = false) -> CallNotes {
+        CallNotes(callID: "c1", mode: .delegated, ready: ready, outcome: ready ? "booked" : nil, bolnaSummary: bolna,
+                  presentation: presented
+                    ? CallPresentation(title: "Book a check-up", overview: "The appointment was booked.") : nil)
     }
 
-    func testKeepsCheckingUntilTheCallEndedAndBolnasSummaryArrived() async {
+    func testKeepsCheckingUntilTheCallEndedAndPresentationIsReady() async {
         let driver = StubCallDriver()
         driver.notesResults = [.success(notes(ready: false)), .success(notes(ready: true)),
-                               .success(notes(ready: true, bolna: "Booked for 10:30."))]
+                               .success(notes(ready: true, bolna: "Booked for 10:30.", presented: true))]
         let model = NotesModel(contactName: "City Clinic", driver: driver, sleep: { _ in })
 
         await model.run()
@@ -119,7 +134,7 @@ final class NotesModelTests: XCTestCase {
     func testBlankSummaryKeepsPollingAndMissingSummaryStopsShowingAsPending() async {
         let driver = StubCallDriver()
         driver.notesResults = [.success(notes(ready: true, bolna: " \n")),
-                               .success(notes(ready: true, bolna: "Booked for 10:30."))]
+                               .success(notes(ready: true, bolna: "Booked for 10:30.", presented: true))]
         let model = NotesModel(contactName: "City Clinic", driver: driver, sleep: { _ in })
         await model.run()
         XCTAssertEqual(driver.notesCalls, 2)
@@ -130,7 +145,7 @@ final class NotesModelTests: XCTestCase {
         XCTAssertFalse(unavailable.awaitingSummary, "The screen must not promise a summary after polling stops")
     }
 
-    func testStopsAfterTheLastRefreshWithoutBolnasSummary() async {
+    func testStopsAfterTheLastRefreshWithoutReadyPresentation() async {
         let driver = StubCallDriver()
         driver.notesResults = [.success(notes(ready: true))]
         let model = NotesModel(contactName: "City Clinic", driver: driver, sleep: { _ in })
@@ -143,7 +158,7 @@ final class NotesModelTests: XCTestCase {
 
     func testStartPollsOnceHoweverOftenItIsAskedTo() async {
         let driver = StubCallDriver()
-        driver.notesResults = [.success(notes(ready: true)), .success(notes(ready: true, bolna: "Booked for 10:30."))]
+        driver.notesResults = [.success(notes(ready: true)), .success(notes(ready: true, bolna: "Booked for 10:30.", presented: true))]
         let model = NotesModel(contactName: "City Clinic", driver: driver, sleep: { _ in })
 
         let first = model.start()
@@ -180,11 +195,37 @@ final class NotesModelTests: XCTestCase {
         XCTAssertEqual(model.failure, "The backend no longer has this call (it may have restarted).")
     }
 
+    func testProviderSummaryDoesNotCompletePendingPresentation() async {
+        let driver = StubCallDriver()
+        var pending = notes(ready: true, bolna: "A long upstream narrative.", presented: true)
+        pending.presentation?.status = "pending"
+        var ready = pending
+        ready.presentation?.status = "ready"
+        driver.notesResults = [.success(pending), .success(ready)]
+        let model = NotesModel(contactName: "City Clinic", driver: driver, sleep: { _ in })
+        await model.run()
+        XCTAssertEqual(driver.notesCalls, 2)
+        XCTAssertTrue(model.isComplete)
+    }
+
+    func testLegacyGeneralBriefUsesRequestClauseWithoutSplittingDoctorAbbreviation() {
+        let brief = "Call on behalf of Asha, who uses the Ishara app, to carry out their approved request. "
+            + "Request: Book an appointment with Dr. Rao. Preferred: tomorrow morning. "
+            + "Reason, if asked: a routine check-up. May share: supplied report. Will not agree to unrelated requests."
+        XCTAssertEqual(CallNotes.requestTitle(brief), "Book an appointment with Dr. Rao")
+        for context in ["Preferred: tomorrow.", "Reason, if asked: a check-up.", "May share: supplied report.", "Will not agree to unrelated requests."] {
+            let brief = "Call on behalf of Asha, to carry out their approved request. Request: Book an appointment with Dr. Rao. " + context
+            XCTAssertEqual(CallNotes.requestTitle(brief), "Book an appointment with Dr. Rao")
+        }
+        let notes = CallNotes(callID: "legacy", mode: .steer, ready: true, brief: brief, outcome: "callback")
+        XCTAssertEqual(notes.summaryTitle, "Book an appointment with Dr. Rao")
+    }
+
     func testOutcomeWords() {
         XCTAssertEqual(NotesModel.describe(outcome: "booked", ready: true), "Booked")
-        XCTAssertEqual(NotesModel.describe(outcome: "callback", ready: true), "The agent will need to call back")
+        XCTAssertEqual(NotesModel.describe(outcome: "callback", ready: true), "Follow-up needed")
         XCTAssertEqual(NotesModel.describe(outcome: nil, ready: false), "The call is still being wrapped up")
-        XCTAssertEqual(NotesModel.describe(outcome: "unclear", ready: true), "Not confirmed: read the transcript")
+        XCTAssertEqual(NotesModel.describe(outcome: "unclear", ready: true), "Outcome not confirmed")
     }
 }
 

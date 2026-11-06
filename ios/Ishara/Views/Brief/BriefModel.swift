@@ -37,6 +37,7 @@ final class BriefModel {
         self.driver = driver
         self.recognition = recognition
         name = setup.details.name
+        callback = setup.callback ?? ""
     }
 
     // MARK: Derived
@@ -44,7 +45,8 @@ final class BriefModel {
     var request: BriefRequest {
         BriefRequest(
             purpose: setup.purpose, chips: chips,
-            profile: Profile(name: Self.trimmed(name) ?? "", callback: Self.trimmed(callback), notes: Self.trimmed(reason)))
+            profile: Profile(name: Self.trimmed(name) ?? "", callback: Self.trimmed(callback), notes: Self.trimmed(reason),
+                             details: setup.sharedDetails, documents: setup.documents), request: setup.request)
     }
 
     /// The brief for exactly what is on screen now, if it has been built.

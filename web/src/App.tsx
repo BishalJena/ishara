@@ -1,6 +1,7 @@
 import {useEffect, useState} from 'react';
 import {api} from './lib/api';
 import {useCall} from './lib/useCall';
+import {callTitle, summaryComplete} from './lib/summary';
 import {useBackendStatus} from './lib/useBackendStatus';
 import {BackendStatus} from './components/BackendStatus';
 import type {Contact, Notes, Profile, Record as CallRecord} from './lib/types';
@@ -73,6 +74,26 @@ export function App() {
       return next;
     });
   };
+  useEffect(() => {
+    if (!selected || selected.demo || !authenticated) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let attempts = 0;
+    const poll = async () => {
+      try {
+        const notes = await api<Notes>(`/calls/${encodeURIComponent(selected.id)}/notes`);
+        if (cancelled) return;
+        setRecords(old => {
+          const next = old.map(record => record.id === selected.id ? {...record, notes} : record);
+          try { localStorage.setItem('ishara.calls', JSON.stringify(next)); } catch { /* Optional storage. */ }
+          return next;
+        });
+        if (!summaryComplete(notes) && attempts++ < 30) timer = setTimeout(poll, 2000);
+      } catch { /* The local record remains readable if recovery has expired. */ }
+    };
+    void poll();
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [selected?.id, authenticated]);
   const home = () => { if (!active) { call.reset(); setSelected(null); } };
   const chooseMode = (value: boolean) => {
     if (active) return;
@@ -83,7 +104,7 @@ export function App() {
   return <PhoneShell demo={demo} active={active} onMode={chooseMode}>
     {authenticated === null ? <div className="loading-page"><Mark /><p>Opening Ishara…</p></div> : unlocking ? <Unlock onUnlock={() => { setAuthenticated(true); setUnlocking(false); setDemo(false); }} onExplore={() => { setUnlocking(false); setDemo(true); }} /> : displayed ? <NotesPanel key={displayed.id} record={displayed} onDone={home} onRefresh={refreshRecord} awaitingSummary={!selected && call.notesPending} /> : call.setup ? <CallPanel view={call.view} setup={call.setup} demo={call.demo} unlocked={Boolean(authenticated)} onSend={call.send} onSay={call.say} onHold={call.hold} onDone={home} notesProblem={call.notesProblem} onRetryNotes={() => void call.retryNotes()} /> : <div className="setup-scroll">
       <SetupForm demo={demo} unlocked={Boolean(authenticated)} contacts={contacts} starting={call.starting} problem={call.view.problem} profile={profile} onSettings={() => setSettings(true)} onStart={setup => void call.start(setup, demo)} />
-      {authenticated && records.length > 0 && <section className="recent-section"><header><h2>Recent</h2><button className="text-button" onClick={() => { setRecords([]); try { localStorage.removeItem('ishara.calls'); } catch { /* Storage may be unavailable. */ } }}>Clear</button></header>{records.map(record => <button className="recent-row" key={record.id} onClick={() => setSelected(record)}><span className="initial-avatar purple">{record.contact.charAt(0)}</span><span><strong>{record.notes.outcome === 'booked' ? 'Appointment booked' : 'Call with ' + record.contact}</strong><small>{record.contact} · {new Date(record.at).toLocaleDateString([], {month: 'short', day: 'numeric'})}</small></span><Icon name="arrow" size={16} /></button>)}</section>}
+      {authenticated && records.length > 0 && <section className="recent-section"><header><h2>Recent</h2><button className="text-button" onClick={() => { setRecords([]); try { localStorage.removeItem('ishara.calls'); } catch { /* Storage may be unavailable. */ } }}>Clear</button></header>{records.map(record => <button className="recent-row" key={record.id} onClick={() => setSelected(record)}><span className="initial-avatar purple">{record.contact.charAt(0)}</span><span><strong>{callTitle(record)}</strong><small>{record.contact} · {new Date(record.at).toLocaleDateString([], {month: 'short', day: 'numeric'})}</small></span><Icon name="arrow" size={16} /></button>)}</section>}
       <button className="phone-mode-label" onClick={() => setSettings(true)}>{demo ? 'Scripted demo · no phone is dialled' : 'Live calling · approved recipients'}<Icon name="settings" size={13} /></button>
     </div>}
     {settings && <Sheet title="Settings" onClose={closeSettings}><h3>About you</h3><div className="settings-fields"><label>Your name on the call<input value={profile.name} maxLength={60} autoComplete="given-name" onChange={event => setProfile(old => ({...old, name: event.target.value}))} /></label><label>Callback number (optional)<input type="tel" value={profile.callback ?? ''} maxLength={40} onChange={event => setProfile(old => ({...old, callback: event.target.value}))} /></label></div><p className="secondary">Ishara gives your callback number only if they ask how to reach you. Details stay in this browser.</p><h3>Calling mode</h3><div className="mode-switch"><button aria-pressed={demo} onClick={() => chooseMode(true)}>Scripted demo</button><button aria-pressed={!demo} onClick={() => chooseMode(false)}>Live call</button></div><p className="secondary">{demo ? 'A scripted clinic conversation. No telephone request is made.' : 'Calls come from Ishara’s Bolna number and use credits.'}</p><BackendStatus status={backendStatus} check={checkBackend} />{problem && <p className="error-message" role="alert">{problem}</p>}{authenticated ? <button className="button button-outline" onClick={() => void api('/web/logout', {}).then(() => { setAuthenticated(false); setDemo(true); closeSettings(); }).catch(() => setProblem('Couldn’t lock the desk. Check your connection and try again.'))}><Icon name="lock" />Lock live calling</button> : <button className="button button-purple" onClick={() => { setSettings(false); setUnlocking(true); }}><Icon name="lock" />Unlock live calling and signing</button>}</Sheet>}

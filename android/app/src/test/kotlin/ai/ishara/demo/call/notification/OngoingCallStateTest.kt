@@ -64,7 +64,7 @@ class OngoingCallStateTest {
         val ended = state(Phase.Ended(EndReason.RemoteEnded), listOf(receptionist), connectedAt = 5.0)
         assertNull("an ended call's timer stops", ended.timerStart)
         assertEquals("Call ended", ended.headline)
-        assertEquals("Call ended · open Ishara for the gist", ended.status)
+        assertEquals("Call ended · open Ishara for the summary", ended.status)
     }
 
     @Test

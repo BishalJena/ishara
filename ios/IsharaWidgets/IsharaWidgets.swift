@@ -111,7 +111,7 @@ private struct LockScreenCard: View {
             Text("“\(context.state.latestLine)”")
                 .font(.body.weight(.semibold)).lineLimit(3)
             HStack {
-                Text(context.state.driving == .ended ? "Open Ishara for the gist" : "Unlock to step in")
+                Text(context.state.driving == .ended ? "Open Ishara for the summary" : "Unlock to step in")
                     .font(.caption).foregroundStyle(.white.opacity(0.7))
                 Spacer()
                 if context.state.driving != .ended {

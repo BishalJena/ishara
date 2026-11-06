@@ -141,6 +141,14 @@ final class FakeCallDriver: CallDriver, OutgoingMessageSink {
            Date().timeIntervalSince(endedAt) >= delay * options.timeScale {
             notes.bolnaSummary = DelegatedDemo.automaticSummary(goal: delegation.brief.goal, name: setup.details.name)
         }
+        if isOver {
+            let prepared = options.bolnaSummaryDelay == nil || notes.bolnaSummary != nil
+            notes.presentation = CallPresentation(
+                status: prepared ? "ready" : "pending", title: CallNotes.requestTitle(setup.request ?? delegation.brief.goal),
+                overview: notes.summaryOverview,
+                keyPoints: notes.outcome == "booked" ? ["Tomorrow at 10:30.", "Bring an ID."] : [],
+                nextStep: notes.outcome == "callback" ? "Call back when you have the requested details." : nil)
+        }
         return notes
     }
 

@@ -28,6 +28,12 @@ struct CallRecord: Codable, Equatable, Identifiable, Sendable {
     /// The Call for me notes (outcome, offers, answers, transcript and Bolna's summary), once
     /// loaded; updated when Bolna's summary arrives later.
     var notes: CallNotes?
+    var request: String? = nil
+
+    var displayTitle: String {
+        if let title = notes?.presentation?.title.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty { return title }
+        return CallNotes.requestTitle(request ?? notes?.brief)
+    }
 }
 
 extension CallRecord.Line {

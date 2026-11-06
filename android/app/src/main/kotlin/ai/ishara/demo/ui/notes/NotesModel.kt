@@ -3,6 +3,7 @@ package ai.ishara.demo.ui.notes
 import ai.ishara.demo.call.CallDriver
 import ai.ishara.demo.core.call.CallCoreException
 import ai.ishara.demo.core.call.CallNotes
+import ai.ishara.demo.core.call.summaryComplete
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -41,8 +42,8 @@ class NotesModel(
 
     private var polling: Job? = null
 
-    /** Nothing more is expected: the call ended and Bolna's summary (if any) is in. */
-    val isComplete: Boolean get() = notes?.let { it.ready && it.bolnaSummary != null } ?: false
+    /** The call ended and its canonical presentation is ready. */
+    val isComplete: Boolean get() = notes?.let { it.summaryComplete } ?: false
 
     /**
      * Starts [run] once, owned by this model rather than a screen, so it goes on after the
@@ -101,11 +102,11 @@ class NotesModel(
             if (!ready) return "The call is still being wrapped up"
             return when (outcome) {
                 "booked" -> "Booked"
-                "callback" -> "The agent will need to call back"
+                "callback" -> "Follow-up needed"
                 "declined" -> "Nothing suitable was offered"
                 "no_answer" -> "Nobody answered"
                 "done" -> "Finished"
-                else -> "Not confirmed: read the transcript"
+                else -> "Outcome not confirmed"
             }
         }
     }

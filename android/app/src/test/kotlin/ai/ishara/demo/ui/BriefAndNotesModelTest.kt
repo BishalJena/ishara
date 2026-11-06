@@ -7,6 +7,7 @@ import ai.ishara.demo.core.call.BriefRequest
 import ai.ishara.demo.core.call.CallCoreException
 import ai.ishara.demo.core.call.CallMode
 import ai.ishara.demo.core.call.CallNotes
+import ai.ishara.demo.core.call.CallPresentation
 import ai.ishara.demo.core.call.CallPurpose
 import ai.ishara.demo.core.call.CallState
 import ai.ishara.demo.core.call.Profile
@@ -157,15 +158,16 @@ class BriefAndNotesModelTest {
 
     // Notes (D9 last step)
 
-    private fun notes(ready: Boolean, bolna: String? = null) =
-        CallNotes(callId = "c1", mode = CallMode.DELEGATED, ready = ready, outcome = if (ready) "booked" else null, bolnaSummary = bolna)
+    private fun notes(ready: Boolean, bolna: String? = null, presented: Boolean = false) =
+        CallNotes(callId = "c1", mode = CallMode.DELEGATED, ready = ready, outcome = if (ready) "booked" else null, bolnaSummary = bolna,
+            presentation = if (presented) CallPresentation(title = "Book a check-up", overview = "The appointment was booked.") else null)
 
     private fun TestScope.notesModel(sleep: suspend (kotlin.time.Duration) -> Unit = {}, onNotes: (CallNotes) -> Unit = {}) =
         NotesModel("City Clinic", driver, onNotes, sleep, backgroundScope)
 
     @Test
     fun keepsCheckingUntilTheCallEndedAndBolnasSummaryArrived() = runTest {
-        driver.notesResults = mutableListOf(Result.success(notes(false)), Result.success(notes(true)), Result.success(notes(true, "Booked for 10:30.")))
+        driver.notesResults = mutableListOf(Result.success(notes(false)), Result.success(notes(true)), Result.success(notes(true, "Booked for 10:30.", presented = true)))
         val model = notesModel()
 
         model.run()
@@ -178,7 +180,7 @@ class BriefAndNotesModelTest {
     @Test
     fun waitsThreeSecondsBetweenChecks() = runTest {
         val waits = mutableListOf<kotlin.time.Duration>()
-        driver.notesResults = mutableListOf(Result.success(notes(false)), Result.success(notes(true, "x")))
+        driver.notesResults = mutableListOf(Result.success(notes(false)), Result.success(notes(true, "x", presented = true)))
 
         notesModel(sleep = { waits += it }).run()
 
@@ -198,7 +200,7 @@ class BriefAndNotesModelTest {
 
     @Test
     fun startPollsOnceHoweverOftenItIsAskedTo() = runTest(main.dispatcher) {
-        driver.notesResults = mutableListOf(Result.success(notes(true)), Result.success(notes(true, "Booked for 10:30.")))
+        driver.notesResults = mutableListOf(Result.success(notes(true)), Result.success(notes(true, "Booked for 10:30.", presented = true)))
         val model = notesModel()
 
         val first = model.start()
@@ -266,14 +268,25 @@ class BriefAndNotesModelTest {
     }
 
     @Test
+    fun providerTextDoesNotCompletePendingCanonicalPresentation() = runTest {
+        val pending = notes(true, "An upstream narrative.", presented = true).let { it.copy(presentation = it.presentation!!.copy(status = "pending")) }
+        val ready = pending.copy(presentation = pending.presentation!!.copy(status = "ready"))
+        driver.notesResults = mutableListOf(Result.success(pending), Result.success(ready))
+        val model = notesModel()
+        model.run()
+        assertEquals(2, driver.notesCalls)
+        assertTrue(model.isComplete)
+    }
+
+    @Test
     fun outcomeWords() {
         assertEquals("Booked", NotesModel.describe("booked", ready = true))
-        assertEquals("The agent will need to call back", NotesModel.describe("callback", ready = true))
+        assertEquals("Follow-up needed", NotesModel.describe("callback", ready = true))
         assertEquals("Nothing suitable was offered", NotesModel.describe("declined", ready = true))
         assertEquals("Nobody answered", NotesModel.describe("no_answer", ready = true))
         assertEquals("Finished", NotesModel.describe("done", ready = true))
         assertEquals("The call is still being wrapped up", NotesModel.describe(null, ready = false))
-        assertEquals("Not confirmed: read the transcript", NotesModel.describe("unclear", ready = true))
+        assertEquals("Outcome not confirmed", NotesModel.describe("unclear", ready = true))
     }
 
     // Follow-up after the call (CallRecordingTests)
@@ -285,8 +298,9 @@ class BriefAndNotesModelTest {
         ),
     )
 
-    private fun delegatedNotes(bolna: String? = null) =
-        CallNotes(callId = "c1", mode = CallMode.DELEGATED, ready = true, outcome = "callback", bolnaSummary = bolna)
+    private fun delegatedNotes(bolna: String? = null, presented: Boolean = false) =
+        CallNotes(callId = "c1", mode = CallMode.DELEGATED, ready = true, outcome = "callback", bolnaSummary = bolna,
+            presentation = if (presented) CallPresentation(title = "Book a check-up", overview = "Follow-up needed.") else null)
 
     private suspend fun TestScope.endedCall(setup: CallSetup): ActiveCallViewModel {
         val model = ActiveCallViewModel(setup, driver, StubRecognition(), backgroundScope)
@@ -299,7 +313,7 @@ class BriefAndNotesModelTest {
     fun callForMeNotesAreFollowedAfterTheUserLeaves() = runTest(main.dispatcher) {
         val model = endedCall(delegatedSetup())
         driver.notesResults = mutableListOf(
-            Result.success(delegatedNotes()), Result.success(delegatedNotes()), Result.success(delegatedNotes("The caller will be called back.")),
+            Result.success(delegatedNotes()), Result.success(delegatedNotes()), Result.success(delegatedNotes("The caller will be called back.", presented = true)),
         )
         val folder = temporary.newFolder("CallHistory")
         val history = CallHistory(folder)
@@ -362,7 +376,7 @@ class BriefAndNotesModelTest {
         val history = CallHistory(folder)
         val record = model.record!!
         history.save(record)
-        driver.notesResults = mutableListOf(Result.success(delegatedNotes()), Result.success(delegatedNotes("Call back.")))
+        driver.notesResults = mutableListOf(Result.success(delegatedNotes()), Result.success(delegatedNotes("Call back.", presented = true)))
 
         notesModel(onNotes = { history.update(record.id, it) }).run()
 

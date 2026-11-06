@@ -1,6 +1,8 @@
 package ai.ishara.demo.ui.notes
 
 import ai.ishara.demo.core.call.CallNotes
+import ai.ishara.demo.core.call.summaryTitle
+import ai.ishara.demo.core.call.summaryOverview
 import ai.ishara.demo.core.call.CaptionSpeaker
 import ai.ishara.demo.ui.components.FormDivider
 import ai.ishara.demo.ui.components.FormSection
@@ -33,6 +35,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,9 +50,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 /**
- * The notes after a delegated call (D9, iOS `NotesView`): outcome, what happened, what is still
- * open, the brief and the full transcript. Summaries can be wrong; the transcript is what was
- * actually said. [model] loads them on its own (`NotesModel.start()`); this screen only shows them.
+ * The canonical summary, next step and expandable transcript. [model] follows updates.
  */
 @Composable
 fun NotesScreen(model: NotesModel, onDone: () -> Unit) {
@@ -70,7 +74,7 @@ fun NotesScreen(model: NotesModel, onDone: () -> Unit) {
             modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            LargeTitle("Call notes")
+            LargeTitle("Call summary")
             val notes = model.notes
             val failure = model.failure
             if (notes != null) {
@@ -96,42 +100,57 @@ fun NotesScreen(model: NotesModel, onDone: () -> Unit) {
 @Composable
 fun NotesSections(notes: CallNotes, contactName: String) {
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        FormSection(header = "Call summary") { NotesRow { CallSummaryContent(notes) } }
         FormSection(header = "Call with $contactName") {
-            NotesRow {
-                OutcomeLabel(
-                    NotesModel.describe(notes.outcome, notes.ready),
-                    booked = notes.outcome == "booked",
-                )
+            NotesRow { OutcomeLabel(NotesModel.describe(notes.outcome, notes.ready), booked = notes.outcome == "booked") }
+        }
+        val attention = (notes.openQuestions + notes.followUps).distinct()
+        if (notes.presentation?.status != "ready" && attention.isNotEmpty()) {
+            FormSection(header = "What needs your attention") {
+                NotesRows(attention) { IconLabel(it, Icons.AutoMirrored.Outlined.HelpOutline, color = IsharaColors.Orange) }
             }
         }
-        if (notes.summary.isNotEmpty()) {
-            FormSection(header = "What happened") { NotesRows(notes.summary) { Text(it, style = IsharaType.body) } }
-        }
-        if (notes.openQuestions.isNotEmpty()) {
-            FormSection(header = "Still open") {
-                NotesRows(notes.openQuestions) { IconLabel(it, Icons.AutoMirrored.Outlined.HelpOutline, color = IsharaColors.Orange) }
-            }
-        }
-        notes.brief?.let { brief ->
-            FormSection(header = "The brief you approved") { NotesRow { Text(brief, style = IsharaType.body) } }
-        }
-        FormSection(header = "Transcript") {
-            if (notes.transcript.isEmpty()) {
-                NotesRow { Text("Nothing was heard on the call.", style = IsharaType.body, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            }
+        NotesDisclosure("Transcript (${notes.transcript.size} lines)", "notes.transcriptToggle") {
+            if (notes.transcript.isEmpty()) NotesRow { Text("No transcript was captured for this call.", style = IsharaType.body) }
             NotesRows(notes.transcript) { entry ->
                 val isAgent = entry.speaker == CaptionSpeaker.AGENT
                 TranscriptRow(if (isAgent) "Agent (for you)" else "They said", entry.text, isAgent)
             }
         }
-        notes.bolnaSummary?.let { summary ->
-            FormSection(
-                header = "Automatic summary",
-                footer = "Written by the call service's AI. It can be wrong; the transcript is what was said.",
-            ) {
-                NotesRow { Text(summary, style = IsharaType.body, modifier = Modifier.testTag("notes.bolnaSummary")) }
+        if (notes.brief != null || notes.summary.isNotEmpty()) {
+            NotesDisclosure("Call details", "notes.detailsToggle") {
+                notes.brief?.let { brief -> NotesRow { Text(brief, style = IsharaType.body) } }
+                NotesRows(notes.summary) { Text(it, style = IsharaType.body) }
             }
         }
+    }
+}
+
+/** Shared by just-ended and saved calls, including the steer layout. */
+@Composable
+fun CallSummaryContent(notes: CallNotes) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.testTag("notes.summary")) {
+        Text(notes.summaryTitle, style = IsharaType.headline, modifier = Modifier.testTag("notes.taskTitle"))
+        Text(notes.summaryOverview, style = IsharaType.body,
+            modifier = Modifier.testTag(if (notes.presentation?.status == "ready") "notes.summaryOverview" else "notes.summaryPendingOverview"))
+        notes.presentation?.keyPoints?.take(3)?.forEach { Text("• $it", style = IsharaType.body) }
+        notes.presentation?.nextStep?.takeIf { it.isNotBlank() }?.let { next ->
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("notes.nextStep")) {
+                Text("Next step", style = IsharaType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(next, style = IsharaType.body)
+            }
+        }
+    }
+}
+
+@Composable
+internal fun NotesDisclosure(title: String, tag: String, content: @Composable () -> Unit) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    FormSection {
+        TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().testTag(tag)) {
+            Text("$title  ${if (expanded) "⌃" else "⌄"}", style = IsharaType.headline)
+        }
+        if (expanded) content()
     }
 }
 

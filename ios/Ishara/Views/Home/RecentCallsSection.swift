@@ -5,6 +5,7 @@ import SwiftUI
 /// away to delete it. Hidden until there is a call (or a problem) to show.
 struct RecentCallsSection: View {
     let history: CallHistory
+    var onRefresh: ((CallRecord) async -> Void)? = nil
 
     var body: some View {
         if !history.records.isEmpty || history.problem != nil {
@@ -16,7 +17,7 @@ struct RecentCallsSection: View {
                 }
                 ForEach(history.records) { record in
                     NavigationLink {
-                        RecentCallView(history: history, id: record.id)
+                        RecentCallView(history: history, id: record.id, onRefresh: onRefresh)
                     } label: {
                         RecentCallRow(record: record)
                     }
@@ -43,8 +44,9 @@ private struct RecentCallRow: View {
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text(record.contactName)
+                Text(record.displayTitle)
                     .font(.headline)
+                Text(record.contactName).font(.caption).foregroundStyle(.secondary)
                 Text(record.outcomeText)
                     .font(.subheadline)
                 Text(record.date, format: .dateTime.day().month().hour().minute())

@@ -3,6 +3,7 @@ package ai.ishara.demo.models
 import ai.ishara.demo.core.call.Caption
 import ai.ishara.demo.core.call.CallMode
 import ai.ishara.demo.core.call.CallNotes
+import ai.ishara.demo.core.call.requestTitle
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -24,7 +25,11 @@ data class CallRecord(
     val captions: List<Line>,
     /** The Call for me notes, once loaded; updated when Bolna's summary arrives later. */
     val notes: CallNotes? = null,
+    val request: String? = null,
 ) {
+    val displayTitle: String get() = notes?.presentation?.title?.trim()?.takeIf { it.isNotEmpty() }
+        ?: requestTitle(request ?: notes?.brief)
+
     /** A caption from the call screen. `CaptionSpeaker` has no user, so it isn't reused. */
     @Serializable
     data class Line(val speaker: Speaker, val text: String, val at: Double) {

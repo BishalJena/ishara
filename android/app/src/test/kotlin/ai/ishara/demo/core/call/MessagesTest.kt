@@ -17,6 +17,26 @@ import org.junit.Test
  * (the backend's `model_dump_json()` output). JSON is compared as trees, so key order doesn't matter.
  */
 class MessagesTest {
+    @Test
+    fun canonicalPresentationRoundTripsAndOldNotesDecode() {
+        val presentation = CallPresentation(title = "Appointment with Dr. Rao", overview = "Registration is still needed.",
+            keyPoints = listOf("No booking confirmed."), nextStep = "Provide the registration ID.")
+        val notes = CallNotes(callId = "synthetic", mode = CallMode.STEER, ready = true, outcome = "unclear", presentation = presentation)
+        assertEquals(notes, CoreJson.decodeFromString(CallNotes.serializer(), CoreJson.encodeToString(CallNotes.serializer(), notes)))
+        val old = CoreJson.decodeFromString(CallNotes.serializer(), """{"call_id":"legacy","mode":"steer","ready":true}""")
+        assertEquals(null, old.presentation)
+        assertEquals("The call ended without a confirmed outcome.", old.summaryOverview)
+        assertEquals(false, old.summaryComplete)
+    }
+
+    @Test
+    fun legacyGeneralBriefUsesRequestClauseAndPreservesDoctorAbbreviation() {
+        for (context in listOf("Preferred: tomorrow.", "Reason, if asked: a check-up.", "May share: supplied report.", "Will not agree to unrelated requests.")) {
+            val brief = "Call on behalf of Asha, to carry out their approved request. Request: Book an appointment with Dr. Rao. $context"
+            assertEquals("Book an appointment with Dr. Rao", requestTitle(brief))
+        }
+    }
+
     private fun <T> assertWire(serializer: KSerializer<T>, value: T, golden: String) {
         assertEquals(value, CoreJson.decodeFromString(serializer, golden))
         assertEquals(normalized(Json.parseToJsonElement(golden)), normalized(CoreJson.encodeToJsonElement(serializer, value)))

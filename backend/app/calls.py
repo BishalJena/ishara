@@ -34,6 +34,7 @@ from starlette.websockets import WebSocketDisconnect
 from app import markers
 from app.auth import require_app_token, token_matches
 from app.bolna_status import ExecutionUpdate, call_state_for
+from app.call_presentation import CallPresenter
 from app.config import Settings
 from app.contacts import parse_contacts
 from app.delegate import (
@@ -211,6 +212,7 @@ class CallManager(CallLedger):
         *,
         delivery_timeout_s: float = 10.0,
         brain: Brain | None = None,
+        presenter: CallPresenter | None = None,
         ask_timeout_s: float = ASK_TIMEOUT_S,
         end_after_done_s: float = END_AFTER_DONE_S,
         finished_ttl_s: float = FINISHED_CALL_TTL_S,
@@ -226,6 +228,7 @@ class CallManager(CallLedger):
         self._composer = composer
         self._bolna = bolna
         self._brain = brain or Brain(None)
+        self._presenter = presenter or CallPresenter(None)
         self._delivery_timeout_s = delivery_timeout_s
         self._ask_timeout_s = ask_timeout_s
         self._end_after_done_s = end_after_done_s
@@ -251,6 +254,12 @@ class CallManager(CallLedger):
     # ---- REST ----
 
     async def create_brief(self, request: BriefRequest) -> BriefResponse:
+        log.info(
+            "brief context document_count=%d document_chars=%d detail_count=%d",
+            len(request.profile.documents),
+            sum(len(d.text) for d in request.profile.documents),
+            len(request.profile.details),
+        )
         response = build_brief(request)
         self._briefs[response.brief_id] = (request, response)
         if request.request:
@@ -266,16 +275,12 @@ class CallManager(CallLedger):
         self._evict_finished()
         session = self._sessions.get(call_id)
         if session is None:
-            return self._archive.get(call_id)
-        notes = self._notes_for(session)
-        self._archive.put(notes)
-        return notes
+            notes = self._archive.get(call_id)
+            return self._presenter.present(notes) if notes else None
+        return self._notes_for(session)
 
     def recent_notes(self) -> list[CallNotes]:
-        for session in list(self._sessions.values()):
-            if session.finished:
-                self._archive.put(self._notes_for(session))
-        return self._archive.recent()
+        return [self._presenter.present(notes) for notes in self._archive.recent()]
 
     def call_for_brief(self, brief_id: str) -> StartCallResponse | None:
         call_id = self._call_by_brief.get(brief_id)
@@ -286,7 +291,7 @@ class CallManager(CallLedger):
 
     def _notes_for(self, session: CallSession) -> CallNotes:
         delegate = session.delegate if isinstance(session.delegate, DelegateState) else None
-        return build_notes(
+        notes = build_notes(
             session.call_id,
             delegate.brief if delegate else None,
             list(session.transcript),
@@ -301,9 +306,10 @@ class CallManager(CallLedger):
             goal_completed=(
                 delegate is not None
                 and delegate.outcome == "done"
-                and (not delegate.steer or delegate.planner.completed)
+                and (not delegate.uses_planner or delegate.planner.completed)
             ),
         )
+        return self._presenter.present(notes)
 
     def _recipient(self, request: StartCallRequest) -> tuple[str, str]:
         """The allowlisted number to dial and a label for the log (never the number)."""
@@ -377,12 +383,14 @@ class CallManager(CallLedger):
             session.bolna_summary = update.summary
         line = call_state_for(update.status)
         if line is None:
+            if session.finished and update.summary:
+                self._persist_presentation(session)
             return
         before = self._snapshot(session)
         session.advance(line)
         await self._publish(session, before)
         if session.finished:
-            self._archive.put(self._notes_for(session))
+            self._persist_presentation(session)
 
     # ---- app socket ----
 
@@ -580,19 +588,26 @@ class CallManager(CallLedger):
         try:
             for _attempt in range(2):
                 revision = delegate.revision
-                snapshot = copy.deepcopy(delegate) if delegate.steer else delegate
-                if delegate.steer:
-                    snapshot.caller_available = session.present
+                snapshot = copy.deepcopy(delegate) if delegate.uses_planner else delegate
+                if delegate.uses_planner:
+                    snapshot.caller_available = session.present or (
+                        delegate.attended and not delegate.steer
+                    )
                 current_heard = (
                     snapshot.planner.receiver[-1].text
-                    if delegate.steer and snapshot.planner.receiver
+                    if delegate.uses_planner and snapshot.planner.receiver
                     else heard
                 )
                 decision = await self._brain.reply(snapshot, current_heard)
                 if session.finished or delegate.composing or session.in_flight is not None:
                     return None
-                if delegate.steer and revision != delegate.revision:
+                if delegate.uses_planner and revision != delegate.revision:
                     continue
+                if not decision.say:
+                    if delegate.uses_planner:
+                        delegate.planner = snapshot.planner
+                        delegate.caller_available = snapshot.caller_available
+                    return None
                 if delegate.steer and session.present and decision.kind != "open":
                     outcome = await self._propose(session, decision.say, "agent")
                     if outcome == "held":
@@ -605,19 +620,21 @@ class CallManager(CallLedger):
                 await self._send_agent_line(session, decision.say, at=entry.at)
                 if session.finished:
                     return None
-                if delegate.steer and revision != delegate.revision:
+                if delegate.uses_planner and revision != delegate.revision:
                     continue
                 if decision.follow_up is not None:
                     await self._send(session, FollowUpMessage(text=decision.follow_up))
                     if session.finished:
                         return None
-                    if delegate.steer and revision != delegate.revision:
+                    if delegate.uses_planner and revision != delegate.revision:
                         continue
-                if delegate.steer:
+                if delegate.uses_planner:
                     delegate.planner = snapshot.planner
                     delegate.caller_available = snapshot.caller_available
                     delegate.asked_for_another_time = snapshot.asked_for_another_time
+                    delegate.follow_ups = snapshot.follow_ups
                 delegate.exchanges.append(Exchange(current_heard, decision.say))
+                delegate.record_agent_line(decision.say)
                 delegate.opened = True
                 session.transcript.append(entry)
                 if decision.follow_up is not None and decision.follow_up not in delegate.follow_ups:
@@ -634,7 +651,7 @@ class CallManager(CallLedger):
                         "callback"
                         if decision.callback
                         else "unclear"
-                        if delegate.steer and not delegate.planner.completed
+                        if delegate.uses_planner and not delegate.planner.completed
                         else "done",
                     )
                 return decision.say
@@ -834,6 +851,10 @@ class CallManager(CallLedger):
         question, options = decision.ask
         ask_id = uuid.uuid4().hex
         delegate.pending_ask = ask_id
+        if delegate.uses_planner:
+            delegate.caller_question_by_turn[f"ask-{ask_id}"] = (
+                delegate.planner.current_question_turn
+            )
         message = AskMessage(
             ask_id=ask_id,
             question=question,
@@ -897,7 +918,7 @@ class CallManager(CallLedger):
         await self._speak_line(session, spoken, f"ask-{ask_id}")
         if source == "timeout":
             self._finish_delegate(session, delegate, "callback")  # the fallback is CALLBACK_LINE
-        elif spoken.startswith("Yes"):
+        elif spoken.startswith("Yes") and not delegate.uses_planner:
             self._finish_delegate(session, delegate, "done")
 
     async def _speak_line(self, session: CallSession, text: str, turn_id: str) -> bool:
@@ -970,7 +991,7 @@ class CallManager(CallLedger):
             return
         before = self._snapshot(session)
         session.hear_caption(text)
-        if isinstance(session.delegate, DelegateState) and session.delegate.steer:
+        if isinstance(session.delegate, DelegateState):
             session.delegate.observe_receiver(text)
             self._settle_proposal(session, "cancelled", origin="agent")
         entry = self._note(session, "receptionist", text)
@@ -1008,7 +1029,8 @@ class CallManager(CallLedger):
                     # Only an answer the receptionist heard counts in the notes; one that
                     # was never delivered must not turn into "booked".
                     delegate.answers.append(spoken_text)
-                    if delegate.steer:
+                    delegate.record_agent_line(spoken_text)
+                    if delegate.uses_planner:
                         delegate.delivered_caller_reply(turn_id, spoken_text)
                     delegate.approved_user_turns.discard(turn_id)
                 if turn_id == OPENING_TURN_ID or turn_id.startswith(
@@ -1087,7 +1109,32 @@ class CallManager(CallLedger):
 
     def _mark_finished(self, session: CallSession) -> None:
         self._finished_at.setdefault(session.call_id, self._clock())
-        self._archive.put(self._notes_for(session))
+        self._persist_presentation(session)
+
+    def _persist_presentation(self, session: CallSession) -> None:
+        notes = self._notes_for(session)
+        self._archive.put(notes)
+
+        def ready(enriched: CallNotes) -> None:
+            current_session = self._sessions.get(enriched.call_id)
+            current = (
+                self._notes_for(current_session)
+                if current_session is not None
+                else self._archive.get(enriched.call_id)
+            )
+            if current is not None and self._presenter.fingerprint(
+                current
+            ) == self._presenter.fingerprint(enriched):
+                self._archive.put(enriched)
+
+        self._presenter.schedule(
+            notes,
+            ready,
+            when_idle=lambda: not any(not call.finished for call in self._sessions.values()),
+        )
+
+    async def close(self) -> None:
+        await self._presenter.close()
 
     def _evict_finished(self) -> None:
         """Drop calls that finished more than the TTL ago; active calls are never dropped."""

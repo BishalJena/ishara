@@ -19,12 +19,12 @@ struct SteerGistView: View {
                             Divider()
                             outcome(notes)
                         }
-                        if !notes.followUps.isEmpty || !notes.openQuestions.isEmpty { followUps(notes) }
+                        if notes.presentation?.status != "ready" && (!notes.followUps.isEmpty || !notes.openQuestions.isEmpty) { followUps(notes) }
                         transcript(notes)
-                        if notes.automaticSummary != nil && !notes.summary.isEmpty || notes.brief != nil {
+                        if !notes.summary.isEmpty || notes.brief != nil {
                             card("Call details", symbol: "list.bullet") {
-                                DisclosureGroup("Your request and recorded details") {
-                                    if notes.automaticSummary != nil {
+                                CallSummaryDisclosure("Your request and recorded details", identifier: "notes.details") {
+                                    if !notes.summary.isEmpty {
                                         ForEach(Array(notes.summary.enumerated()), id: \.offset) { _, line in Text(line) }
                                     }
                                     if let brief = notes.brief { Text(brief) }
@@ -40,7 +40,7 @@ struct SteerGistView: View {
                 .padding(20)
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("Call with \(model.contactName)")
+            .navigationTitle("Call summary")
             .navigationBarTitleDisplayMode(.inline)
             // The way out is the one big button at the bottom, where the thumb already is.
             .safeAreaInset(edge: .bottom) {
@@ -78,7 +78,7 @@ struct SteerGistView: View {
                 .font(.headline)
                 .foregroundStyle(notes.outcome == "booked" ? .green : .primary)
                 .accessibilityIdentifier("notes.outcome")
-            Text(steppedInText(notes)).font(.subheadline).foregroundStyle(.secondary)
+
         }
     }
 
@@ -91,15 +91,6 @@ struct SteerGistView: View {
         }
     }
 
-    private func steppedInText(_ notes: CallNotes) -> String {
-        switch notes.steppedIn {
-        case 0: "Ishara handled the whole call from what you wrote."
-        case 1: "You stepped in once; Ishara handled the rest."
-        case 2: "You stepped in twice; Ishara handled the rest."
-        default: "You stepped in \(notes.steppedIn) times; Ishara handled the rest."
-        }
-    }
-
     private func followUps(_ notes: CallNotes) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Label("What needs your attention", systemImage: "bookmark.fill")
@@ -107,8 +98,6 @@ struct SteerGistView: View {
             ForEach(notes.followUps, id: \.self) { asked in
                 VStack(alignment: .leading, spacing: 4) {
                     Text("They asked: “\(asked)”").font(.subheadline.weight(.semibold))
-                    Text("Ishara said you'd send it afterwards. It never guesses a detail you didn't give.")
-                        .font(.footnote).foregroundStyle(.secondary)
                 }
             }
             ForEach(notes.openQuestions.filter { !notes.followUps.contains($0) }, id: \.self) { question in
@@ -121,7 +110,8 @@ struct SteerGistView: View {
     }
 
     private func transcript(_ notes: CallNotes) -> some View {
-        DisclosureGroup {
+        CallSummaryDisclosure("Full transcript (\(notes.transcript.count) \(notes.transcript.count == 1 ? "line" : "lines"))",
+                              identifier: "notes.transcript", systemImage: "text.alignleft", font: .headline) {
             VStack(alignment: .leading, spacing: 12) {
                 if notes.transcript.isEmpty { Text("No transcript was captured for this call.").foregroundStyle(.secondary) }
                 ForEach(Array(notes.transcript.enumerated()), id: \.offset) { _, entry in
@@ -133,8 +123,6 @@ struct SteerGistView: View {
                 }
             }
             .padding(.top, 8)
-        } label: {
-            Label("Full transcript (\(notes.transcript.count) \(notes.transcript.count == 1 ? "line" : "lines"))", systemImage: "text.alignleft").font(.headline)
         }
         .padding(16)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))

@@ -40,6 +40,7 @@ struct AppRootView: View {
                     history: services.history,
                     draft: draft,
                     serviceStatus: services.options.driver == .live ? serviceStatus : nil,
+                    onRefreshRecentCall: services.refreshRecentCall,
                     onCall: { chosen in startSteerCall(chosen) }
                 )
             case .steerCall(let model):
@@ -65,6 +66,7 @@ struct AppRootView: View {
                     modeDescription: services.modeDescription,
                     setupProblem: services.setupProblem,
                     history: services.history,
+                    onRefreshRecentCall: services.refreshRecentCall,
                     onCall: { chosen in
                         setup = chosen
                         route = .getReady(services.makeRecognition(), delegated: false)

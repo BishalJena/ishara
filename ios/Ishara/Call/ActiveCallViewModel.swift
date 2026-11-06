@@ -148,7 +148,7 @@ final class ActiveCallViewModel {
         guard isCallOver, store != nil else { return nil }
         return CallRecord(
             id: recordID, date: placedAt, contactName: setup.contact.name, contactNumber: setup.contact.phoneNumber,
-            backendCallID: driver.backendCallID, mode: isSteer ? .steer : isDelegated ? .delegated : .live, captions: captions.map(CallRecord.Line.init), notes: nil)
+            backendCallID: driver.backendCallID, mode: isSteer ? .steer : isDelegated ? .delegated : .live, captions: captions.map(CallRecord.Line.init), notes: nil, request: setup.request)
     }
 
     var connectedAt: Date? { store?.connectedAt }

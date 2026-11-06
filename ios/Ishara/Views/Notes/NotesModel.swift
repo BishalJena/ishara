@@ -35,9 +35,9 @@ final class NotesModel {
         self.sleep = sleep
     }
 
-    /// Nothing more is expected: the call ended and Bolna's summary (if any) is in.
-    var isComplete: Bool { notes.map { $0.ready && ($0.automaticSummary != nil || $0.outcome == "no_answer") } ?? false }
-    var awaitingSummary: Bool { (isPolling || isLoading) && notes?.automaticSummary == nil && notes?.outcome != "no_answer" }
+    /// The call ended and its canonical presentation is ready.
+    var isComplete: Bool { notes.map { $0.ready && ($0.presentation?.status == "ready" || $0.outcome == "no_answer") } ?? false }
+    var awaitingSummary: Bool { (isPolling || isLoading) && notes?.presentation?.status != "ready" && notes?.outcome != "no_answer" }
 
     /// Starts `run()` once, owned by this model rather than a screen, so it goes on after the
     /// notes screen closes. Later calls hand back the same task.
@@ -87,11 +87,11 @@ final class NotesModel {
         guard ready else { return "The call is still being wrapped up" }
         return switch outcome {
         case "booked": "Booked"
-        case "callback": "The agent will need to call back"
+        case "callback": "Follow-up needed"
         case "declined": "Nothing suitable was offered"
         case "no_answer": "Nobody answered"
         case "done": "Finished"
-        default: "Not confirmed: read the transcript"
+        default: "Outcome not confirmed"
         }
     }
 }
@@ -101,5 +101,46 @@ extension CallNotes {
     var automaticSummary: String? {
         guard let text = bolnaSummary?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return nil }
         return text
+    }
+}
+
+/// Legacy records stay useful while the backend prepares their canonical presentation.
+extension CallNotes {
+    var summaryTitle: String {
+        if let title = presentation?.title.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty { return title }
+        return Self.requestTitle(brief)
+    }
+
+    static func requestTitle(_ request: String?) -> String {
+        guard var text = request?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return "Call summary" }
+        if text.hasPrefix("Call on behalf of ") {
+            if let request = text.range(of: "Request:") {
+                text = String(text[request.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+            } else if let goal = text.range(of: ", to ") {
+                text = String(text[goal.upperBound...])
+            }
+        }
+        for marker in [" Preferred:", " Reason, if asked:", " May share:", " Will not agree"] {
+            if let boundary = text.range(of: marker) { text = String(text[..<boundary.lowerBound]) }
+        }
+        for prefix in ["I would like to ", "I'd like to ", "I want to ", "Please ", "Can you "] {
+            if text.lowercased().hasPrefix(prefix.lowercased()) { text = String(text.dropFirst(prefix.count)); break }
+        }
+        let words = text.split(whereSeparator: { $0.isWhitespace || $0 == "\n" }).prefix(7)
+        let title = words.joined(separator: " ").trimmingCharacters(in: CharacterSet(charactersIn: ".!?"))
+        guard !title.isEmpty else { return "Call summary" }
+        return title.prefix(1).uppercased() + title.dropFirst()
+    }
+
+    var summaryOverview: String {
+        if let text = presentation?.overview, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return text }
+        switch outcome {
+        case "booked": return "The appointment was booked."
+        case "done": return "The request was handled."
+        case "no_answer": return "Nobody answered the call."
+        case "callback": return "A follow-up is needed to finish the request."
+        case "declined": return "No suitable offer was accepted."
+        default: return "The call ended without a confirmed outcome."
+        }
     }
 }

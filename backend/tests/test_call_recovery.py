@@ -28,8 +28,12 @@ def test_archive_survives_a_new_manager_and_is_private_and_bounded(tmp_path):
     )
     manager._archive.put(notes)
     restarted = CallManager(settings, TemplateComposer(), FakeBolna())
-    assert restarted.notes("finished") == notes
-    assert restarted.recent_notes() == [notes]
+    recovered = restarted.notes("finished")
+    assert recovered.model_dump(exclude={"presentation"}) == notes.model_dump(
+        exclude={"presentation"}
+    )
+    assert recovered.presentation.status == "ready"
+    assert restarted.recent_notes() == [recovered]
     path = tmp_path / "notes/finished.json"
     assert path.stat().st_mode & 0o777 == 0o600
     assert restarted.notes("../outside") is None
@@ -94,6 +98,7 @@ def test_history_is_opt_in_and_replays_only_the_spoken_transcript(tmp_path):
             }
             assert ws.receive_json()["type"] == "status"
         manager._sessions[call].advance(CallState.ENDED)
+        manager._mark_finished(manager._sessions[call])
         notes = client.get(f"/calls/{call}/notes", headers=AUTH).json()
         assert notes["ready"]
         assert client.get("/calls/recent", headers=AUTH).json()["calls"][0]["call_id"] == call

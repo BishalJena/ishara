@@ -207,6 +207,32 @@ public struct TranscriptEntry: Codable, Equatable, Sendable {
     }
 }
 
+/// A concise, versioned summary shared by every client. Outcome remains on CallNotes.
+public struct CallPresentation: Codable, Equatable, Sendable {
+    public var version: Int
+    public var status: String
+    public var title: String
+    public var overview: String
+    public var keyPoints: [String]
+    public var nextStep: String?
+
+    public init(version: Int = 1, status: String = "ready", title: String, overview: String,
+                keyPoints: [String] = [], nextStep: String? = nil) {
+        self.version = version
+        self.status = status
+        self.title = title
+        self.overview = overview
+        self.keyPoints = keyPoints
+        self.nextStep = nextStep
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case version, status, title, overview
+        case keyPoints = "key_points"
+        case nextStep = "next_step"
+    }
+}
+
 /// Response of `GET /calls/{id}/notes`.
 public struct CallNotes: Codable, Equatable, Sendable {
     public var callID: String
@@ -218,6 +244,7 @@ public struct CallNotes: Codable, Equatable, Sendable {
     public var openQuestions: [String]
     public var transcript: [TranscriptEntry]
     public var bolnaSummary: String?
+    public var presentation: CallPresentation?
     /// Steer calls: what the receptionist asked for that the request didn't carry, and how
     /// many times the user stepped in. Older backends omit both.
     public var followUps: [String]
@@ -226,7 +253,8 @@ public struct CallNotes: Codable, Equatable, Sendable {
     public init(
         callID: String, mode: CallMode, ready: Bool, brief: String? = nil, outcome: String? = nil,
         summary: [String] = [], openQuestions: [String] = [], transcript: [TranscriptEntry] = [],
-        bolnaSummary: String? = nil, followUps: [String] = [], steppedIn: Int = 0
+        bolnaSummary: String? = nil, followUps: [String] = [], steppedIn: Int = 0,
+        presentation: CallPresentation? = nil
     ) {
         self.callID = callID
         self.mode = mode
@@ -237,13 +265,14 @@ public struct CallNotes: Codable, Equatable, Sendable {
         self.openQuestions = openQuestions
         self.transcript = transcript
         self.bolnaSummary = bolnaSummary
+        self.presentation = presentation
         self.followUps = followUps
         self.steppedIn = steppedIn
     }
 
     enum CodingKeys: String, CodingKey {
         case callID = "call_id"
-        case mode, ready, brief, outcome, summary, transcript
+        case mode, ready, brief, outcome, summary, transcript, presentation
         case openQuestions = "open_questions"
         case bolnaSummary = "bolna_summary"
         case followUps = "follow_ups"
@@ -261,6 +290,7 @@ public struct CallNotes: Codable, Equatable, Sendable {
         openQuestions = try container.decodeIfPresent([String].self, forKey: .openQuestions) ?? []
         transcript = try container.decodeIfPresent([TranscriptEntry].self, forKey: .transcript) ?? []
         bolnaSummary = try container.decodeIfPresent(String.self, forKey: .bolnaSummary)
+        presentation = try container.decodeIfPresent(CallPresentation.self, forKey: .presentation)
         followUps = try container.decodeIfPresent([String].self, forKey: .followUps) ?? []
         steppedIn = try container.decodeIfPresent(Int.self, forKey: .steppedIn) ?? 0
     }

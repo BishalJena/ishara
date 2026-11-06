@@ -26,6 +26,7 @@ import ai.ishara.demo.recognition.RecognitionController
 import ai.ishara.demo.recognition.RecognitionEvent
 import ai.ishara.demo.recognition.ScriptedRecognitionController
 import ai.ishara.demo.ui.notes.NotesModel
+import ai.ishara.demo.core.call.CallPresentation
 import kotlinx.coroutines.flow.first
 
 /** Hands the view model a store prepared in advance; what the store sends is swallowed, so its state stays put. */
@@ -67,7 +68,8 @@ fun DemoFixture.makeNotes(): NotesModel? {
         TranscriptEntry(CaptionSpeaker.RECEPTIONIST, DelegatedDemo.CONFIRMATION, now),
     )
     val notes = DelegatedDemo.notes(brief.goal, setup.details.name, brief.text, transcript, listOf(answer), ready = true)
-        .copy(bolnaSummary = "The caller booked a doctor's appointment for 10:30 tomorrow morning.")
+        .copy(bolnaSummary = "The caller booked a doctor's appointment for 10:30 tomorrow morning.",
+            presentation = CallPresentation(title = "Book a clinic appointment", overview = "The clinic confirmed the appointment.", keyPoints = listOf("Tomorrow morning at 10:30.")))
     val driver = FixtureCallDriver().apply { fixedNotes = notes }
     return NotesModel(contactName = setup.contact.name, driver = driver)
 }

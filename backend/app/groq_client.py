@@ -9,6 +9,7 @@ Authorization header and never into errors or logs.
 from __future__ import annotations
 
 import logging
+import math
 import time
 from typing import TypeVar
 
@@ -35,11 +36,13 @@ class GroqError(Exception):
         category: str = "unavailable",
         status_code: int | None = None,
         validation_errors: tuple[str, ...] = (),
+        retry_after_s: float | None = None,
     ) -> None:
         super().__init__(message)
         self.category = category
         self.status_code = status_code
         self.validation_errors = validation_errors
+        self.retry_after_s = retry_after_s
 
 
 class _Message(BaseModel):
@@ -131,10 +134,18 @@ class GroqClient:
         except httpx.HTTPError as exc:
             raise GroqError(f"request failed: {type(exc).__name__}", category="network") from None
         if response.status_code != httpx.codes.OK:
+            retry_after = None
+            try:
+                value = float(response.headers.get("retry-after", ""))
+                if math.isfinite(value) and value >= 0:
+                    retry_after = min(value, 60)
+            except ValueError:
+                pass
             raise GroqError(
                 f"HTTP {response.status_code}",
                 category="http",
                 status_code=response.status_code,
+                retry_after_s=retry_after,
             )
         try:
             completion = _Completion.model_validate_json(response.content)
@@ -166,17 +177,24 @@ class GroqClient:
         await self._http.aclose()
 
 
-def _strict_schema(node: object) -> None:
+def _strict_schema(node: object, *, field_metadata: bool = False) -> None:
     """Every object is closed and every property required, including nullable fields."""
     if isinstance(node, dict):
+        node.pop("title", None)
+        if not field_metadata:
+            node.pop("description", None)
         if node.get("type") == "object":
             node["additionalProperties"] = False
             node["required"] = list(node.get("properties", {}))
-        for value in node.values():
-            _strict_schema(value)
-    elif isinstance(node, list):
-        for value in node:
-            _strict_schema(value)
+        for child in node.get("properties", {}).values():
+            _strict_schema(child, field_metadata=True)
+        for child in node.get("$defs", {}).values():
+            _strict_schema(child)
+        for container in ("anyOf", "oneOf", "allOf", "prefixItems"):
+            for child in node.get(container, []):
+                _strict_schema(child)
+        for key in ("items", "contains", "not", "if", "then", "else"):
+            _strict_schema(node.get(key))
 
 
 def _validation_errors(error: ValidationError, schema: dict) -> tuple[str, ...]:

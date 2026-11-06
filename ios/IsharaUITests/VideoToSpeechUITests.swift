@@ -227,7 +227,7 @@ final class VideoToSpeechUITests: XCTestCase {
         sayAfterOpening(0)
         human?.tell("Stay quiet: the agent says it will call back, then hangs up.")
         waitForReceptionistCaption()
-        expectNotes("The agent will need to call back")
+        expectNotes("Follow-up needed")
         XCTAssertFalse(app.element("ask.question").exists, "an unattended call never asks")
         if let log {
             XCTAssertEqual(Array(log.spokenLines().dropFirst(before.count).prefix(3)), [intro, opening, callbackLine])
@@ -519,7 +519,7 @@ final class VideoToSpeechUITests: XCTestCase {
         if callsRealBolna {
             // Bolna's summary comes with its final webhook, 8–16 s after the line drops. Ending
             // the test before that quits the app after its first notes fetch (28 Oct calls).
-            let summary = app.element("notes.bolnaSummary")
+            let summary = app.element("notes.summaryOverview")
             XCTAssertTrue(app.swipedUntilExists(summary, timeout: 30), "Bolna's summary never reached the notes",
                           file: file, line: line)
             human?.tell("  Bolna's summary is on the notes")

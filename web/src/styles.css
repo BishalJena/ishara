@@ -32,3 +32,12 @@
 .notes-details[open] summary {margin-bottom:18px}
 .notes-transcript > .secondary {margin-top:16px}
 .signing-word-toggle{margin:0 0 12px;font-size:13px}.signing-word-palette{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}.signing-word-palette button{min-height:44px;padding:9px 14px;border-radius:24px;background:#e5f3e9;color:#087735;font-size:14px;font-weight:600;white-space:nowrap}.signing-word-palette button:disabled{opacity:.45}.signing-choices{margin-top:12px}.signing-choices>div:first-child{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:12px;color:var(--muted)}.word-review .word-chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.word-review .word-chips button{flex-shrink:0;min-height:44px;font-size:13px;border-radius:24px;background:#e5f3e9;color:#087735}.word-review>.hint{font-size:12px;color:var(--muted);line-height:1.4}
+
+.notes-task-title { font-size: 22px; line-height: 1.25; margin: 4px 0 12px; letter-spacing: -.4px; }
+.notes-key-points { padding-left: 20px; margin: 16px 0; }
+.notes-key-points li { padding-left: 3px; margin: 8px 0; line-height: 1.5; }
+.notes-next-step { margin-top: 18px; padding: 14px 16px; border-radius: 16px; background: #f2eef9; }
+.notes-next-step h3 { margin: 0 0 6px; font-size: 12px; color: #756789; }
+.notes-next-step p { margin: 0; }
+
+.notes-outcome h2 { font-size: 16px; font-weight: 700; margin: 0; }

@@ -129,6 +129,7 @@ private fun RouteContent(navigator: AppNavigator) {
             NotesScreen(model = route.model, onDone = navigator::notesDone)
         }
         is Route.RecentCall -> RecentCallScreen(
+            onRefresh = services::refreshRecentCall,
             record = services.history.records.firstOrNull { it.id == route.recordId },
             onBack = { navigator.back() },
             onDelete = {

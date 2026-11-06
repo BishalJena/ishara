@@ -282,7 +282,7 @@ private fun DelegatedBar(
     if (isOver) {
         // The notes are what the user came back for, so they lead.
         if (onShowNotes != null) {
-            PrimaryButton("See the call notes", onShowNotes, Modifier.testTag("call.notes"), icon = Icons.Filled.Info, fillWidth = true)
+            PrimaryButton("Call summary", onShowNotes, Modifier.testTag("call.notes"), icon = Icons.Filled.Info, fillWidth = true)
         }
         BackHomeButton(onLeave, Modifier.fillMaxWidth())
     } else {
