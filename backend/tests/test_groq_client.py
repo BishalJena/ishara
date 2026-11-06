@@ -110,3 +110,146 @@ async def test_key_never_appears_in_errors_or_repr() -> None:
         errors.append(str(info.value))
     assert all(KEY not in e for e in errors)
     assert KEY not in repr(GroqClient(SecretStr(KEY), MODEL).__dict__)
+
+
+async def test_planner_uses_a_closed_strict_schema_and_separate_token_budget() -> None:
+    from app.groq_client import PLANNER_COMPLETION_TOKENS
+    from app.steer_planner import PlannerTurn
+
+    seen = []
+    turn = {
+        "action": {"kind": "need_caller"},
+        "resolutions": [],
+    }
+
+    def handler(request):
+        seen.append(json.loads(request.content))
+        return httpx.Response(200, json=completion(json.dumps(turn)))
+
+    client = client_for(handler)
+    try:
+        assert (
+            await client.complete_structured("system", "data", PlannerTurn)
+        ).action.kind == "need_caller"
+    finally:
+        await client.aclose()
+    body = seen[0]
+    assert body["max_completion_tokens"] == PLANNER_COMPLETION_TOKENS > MAX_COMPLETION_TOKENS
+    response_format = body["response_format"]
+    assert response_format["type"] == "json_schema"
+    assert response_format["json_schema"]["strict"] is True
+
+    def check_objects(node):
+        if isinstance(node, dict):
+            if node.get("type") == "object":
+                assert node["additionalProperties"] is False
+                assert set(node["required"]) == set(node["properties"])
+            for child in node.values():
+                check_objects(child)
+        elif isinstance(node, list):
+            for child in node:
+                check_objects(child)
+
+    check_objects(response_format["json_schema"]["schema"])
+
+
+@pytest.mark.parametrize(
+    "body", ["private provider response", '{"action":"secret-invalid-action"}']
+)
+async def test_structured_errors_never_expose_provider_text_in_traceback(body):
+    import traceback
+
+    from app.steer_planner import PlannerTurn
+
+    client = client_for(lambda _: httpx.Response(200, json=completion(body)))
+    try:
+        with pytest.raises(GroqError) as error:
+            await client.complete_structured("system", "data", PlannerTurn)
+        assert error.value.category == "schema"
+        rendered = "".join(traceback.format_exception(error.value))
+        assert body not in rendered
+        assert "secret-invalid-action" not in rendered
+        assert "private provider response" not in rendered
+    finally:
+        await client.aclose()
+
+
+async def test_unsupported_strict_model_never_makes_a_network_request():
+    from app.steer_planner import PlannerTurn
+
+    def unexpected_request(_):
+        pytest.fail("An unsupported structured model must fail before HTTP")
+
+    client = client_for(unexpected_request, model="unsupported")
+    try:
+        with pytest.raises(GroqError) as error:
+            await client.complete_structured("system", "data", PlannerTurn)
+        assert error.value.category == "unsupported_model"
+    finally:
+        await client.aclose()
+
+
+async def test_unexpected_finish_reason_is_categorized_without_logging_provider_text(caplog):
+    client = client_for(
+        lambda _: httpx.Response(200, json=completion(finish_reason="private-finish-value"))
+    )
+    try:
+        with caplog.at_level("INFO"), pytest.raises(GroqError) as error:
+            await client.complete("system", "data")
+        assert error.value.category == "finish_reason"
+        assert "private-finish-value" not in caplog.text
+        assert "finish=unexpected" in caplog.text
+    finally:
+        await client.aclose()
+
+
+async def test_qwen_structured_planning_explicitly_hides_reasoning_and_uses_low_effort():
+    from app.steer_planner import PlannerTurn
+
+    seen = []
+
+    def handler(request):
+        seen.append(json.loads(request.content))
+        turn = {"action": {"kind": "need_caller"}, "resolutions": []}
+        return httpx.Response(200, json=completion(json.dumps(turn)))
+
+    client = client_for(handler, model="qwen/qwen3.8-27b")
+    try:
+        await client.complete_structured("system", "data", PlannerTurn)
+    finally:
+        await client.aclose()
+    assert seen[0]["reasoning_format"] == "hidden"
+    assert seen[0]["reasoning_effort"] == "low"
+    assert "include_reasoning" not in seen[0]
+
+
+async def test_validation_diagnostics_contain_only_schema_paths_and_error_types():
+    from app.steer_planner import PlannerTurn
+
+    turn = {
+        "action": {"kind": "finish", "private-unknown-key": "private-input-value"},
+        "resolutions": [],
+    }
+    client = client_for(lambda _: httpx.Response(200, json=completion(json.dumps(turn))))
+    try:
+        with pytest.raises(GroqError) as error:
+            await client.complete_structured("system", "data", PlannerTurn)
+        diagnostics = error.value.validation_errors
+        assert diagnostics
+        assert any("Finish.blocked:missing" in value for value in diagnostics)
+        assert "private-unknown-key" not in repr(diagnostics)
+        assert "private-input-value" not in repr(diagnostics)
+        assert error.value.status_code is None
+    finally:
+        await client.aclose()
+
+
+def test_action_specific_requirements_are_visible_in_nested_json_schema():
+    from app.steer_planner import PlannerTurn
+
+    schema = PlannerTurn.model_json_schema()
+    assert "anyOf" not in schema
+    assert len(schema["properties"]["action"]["anyOf"]) == 6
+    assert set(schema["$defs"]["AnswerQuestion"]["required"]) == {"kind", "source_id", "quote"}
+    assert set(schema["$defs"]["Finish"]["required"]) == {"kind", "blocked"}
+    assert set(schema["$defs"]["NeedCaller"]["required"]) == {"kind"}

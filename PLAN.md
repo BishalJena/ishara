@@ -608,6 +608,13 @@ Completion requires operator evidence; invented facts and unapproved commitments
 remain rejected. The outage fallback is bounded and must not loop on next steps.
 Calling restrictions and the unchanged ASL model/vocabulary still apply.
 
+On 6 November the founder reaffirmed unattended completion. Sufficient context
+authorizes reasonable choices and operations that fit the request without another
+live approval. An accepted offer remains unfinished until the receiver confirms
+the work. Unknown essential facts and decisions beyond the supplied authority
+need input; an absent caller receives honest notes and the unresolved follow-up.
+The caller does not have to watch the transcript for a supported call to finish.
+
 
 ## Signing interaction refinement — 6 November
 

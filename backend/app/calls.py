@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import copy
 import logging
 import time
 import uuid
@@ -297,7 +298,11 @@ class CallManager(CallLedger):
             follow_ups=list(delegate.follow_ups) if delegate else None,
             stepped_in=delegate.stepped_in if delegate else 0,
             agent_answers=list(delegate.agent_answers) if delegate else None,
-            goal_completed=delegate is not None and delegate.outcome == "done",
+            goal_completed=(
+                delegate is not None
+                and delegate.outcome == "done"
+                and (not delegate.steer or delegate.planner.completed)
+            ),
         )
 
     def _recipient(self, request: StartCallRequest) -> tuple[str, str]:
@@ -479,7 +484,13 @@ class CallManager(CallLedger):
 
     async def _on_approve(self, session: CallSession, message: ApproveMessage) -> None:
         delegate = session.delegate
+        reply_question = None
         if isinstance(delegate, DelegateState) and delegate.steer:
+            reply_question = (
+                delegate.composing_question
+                if delegate.composing
+                else delegate.planner.current_question_turn
+            )
             pending = self._proposals.get(session.call_id)
             if pending is not None and pending.turn_id == message.turn_id:
                 # "Send now" on a proposed line: its window ends early, nothing else changes.
@@ -495,6 +506,8 @@ class CallManager(CallLedger):
         before = self._snapshot(session)
         turn = session.approve(message.turn_id, message.text)
         if isinstance(delegate, DelegateState) and delegate.steer:
+            delegate.revision += 1
+            delegate.caller_question_by_turn[message.turn_id] = reply_question
             delegate.approved_user_turns.add(message.turn_id)
         # Publish first: it cancels the timer of an approval this new turn superseded.
         await self._publish(session, before)
@@ -514,6 +527,8 @@ class CallManager(CallLedger):
             await self._send(session, StatusMessage(state=session.state))
 
     async def _on_end(self, session: CallSession) -> None:
+        if isinstance(session.delegate, DelegateState):
+            session.delegate.revision += 1
         before = self._snapshot(session)
         if not session.advance(CallState.ENDED):
             await self._send(session, StatusMessage(state=session.state))
@@ -556,50 +571,82 @@ class CallManager(CallLedger):
             # speak node; a line from here too would be said twice or over it (B24).
             return None
         if delegate.deciding:
-            # Bolna sent another receptionist turn while the brain (Groq) still thinks
-            # about the last one: one decision at a time, so one line and at most one ask.
             return None
         if delegate.steer and delegate.composing:
-            # The user is typing or signing their own reply: only cover the pause. If the
-            # receptionist wraps up meanwhile, their line is still said, then the call closes.
             if wraps_up(delegate, heard):
                 delegate.close_after_user = True
             return self._filler_if_due(session, delegate)
         delegate.deciding = True
         try:
-            decision = await self._brain.reply(delegate, heard)
-            if delegate.steer and session.present and decision.kind != "open":
-                # The user is watching: show the line and give them its window to step in.
-                outcome = await self._propose(session, decision.say, "agent")
-                if outcome == "held":
-                    delegate.exchanges.append(Exchange(heard, ""))
-                    return self._filler_if_due(session, delegate, first=True)
-                if outcome == "cancelled":
+            for _attempt in range(2):
+                revision = delegate.revision
+                snapshot = copy.deepcopy(delegate) if delegate.steer else delegate
+                if delegate.steer:
+                    snapshot.caller_available = session.present
+                current_heard = (
+                    snapshot.planner.receiver[-1].text
+                    if delegate.steer and snapshot.planner.receiver
+                    else heard
+                )
+                decision = await self._brain.reply(snapshot, current_heard)
+                if session.finished or delegate.composing or session.in_flight is not None:
                     return None
+                if delegate.steer and revision != delegate.revision:
+                    continue
+                if delegate.steer and session.present and decision.kind != "open":
+                    outcome = await self._propose(session, decision.say, "agent")
+                    if outcome == "held":
+                        return self._filler_if_due(session, delegate, first=True)
+                    if revision != delegate.revision:
+                        continue
+                    if outcome == "cancelled":
+                        return None
+                entry = TranscriptEntry(speaker="agent", text=decision.say, at=time.time())
+                await self._send_agent_line(session, decision.say, at=entry.at)
+                if session.finished:
+                    return None
+                if delegate.steer and revision != delegate.revision:
+                    continue
+                if decision.follow_up is not None:
+                    await self._send(session, FollowUpMessage(text=decision.follow_up))
+                    if session.finished:
+                        return None
+                    if delegate.steer and revision != delegate.revision:
+                        continue
+                if delegate.steer:
+                    delegate.planner = snapshot.planner
+                    delegate.caller_available = snapshot.caller_available
+                    delegate.asked_for_another_time = snapshot.asked_for_another_time
+                delegate.exchanges.append(Exchange(current_heard, decision.say))
+                delegate.opened = True
+                session.transcript.append(entry)
+                if decision.follow_up is not None and decision.follow_up not in delegate.follow_ups:
+                    delegate.follow_ups.append(decision.follow_up)
+                if decision.kind == "accept":
+                    delegate.answers.append(decision.say)
+                    delegate.agent_answers.append(decision.say)
+                if decision.ask is not None:
+                    await self._open_ask(session, delegate, decision)
+                elif decision.done:
+                    self._finish_delegate(
+                        session,
+                        delegate,
+                        "callback"
+                        if decision.callback
+                        else "unclear"
+                        if delegate.steer and not delegate.planner.completed
+                        else "done",
+                    )
+                return decision.say
+            return None
         finally:
             delegate.deciding = False
-        if session.finished:
-            return None  # the call ended while the brain was thinking
-        delegate.exchanges.append(Exchange(heard, decision.say))
-        delegate.opened = True
-        entry = self._note(session, "agent", decision.say)
-        await self._send_agent_line(session, decision.say, at=entry.at)
-        if decision.follow_up is not None:
-            delegate.follow_ups.append(decision.follow_up)
-            await self._send(session, FollowUpMessage(text=decision.follow_up))
-        if decision.kind == "accept":
-            # The agent agreed within the brief: counts like a user's "yes" in the notes.
-            delegate.answers.append(decision.say)
-            delegate.agent_answers.append(decision.say)
-        if decision.ask is not None:
-            await self._open_ask(session, delegate, decision)
-        elif decision.done:
-            self._finish_delegate(session, delegate, "callback" if decision.callback else "done")
-        return decision.say
 
     # ---- steer calls ----
 
     def _on_presence(self, session: CallSession, message: PresenceMessage) -> None:
+        if session.present != message.present and isinstance(session.delegate, DelegateState):
+            session.delegate.revision += 1
         session.present = message.present
         if not message.present:
             # The user looked away mid-window: the agent's line is spoken after all.
@@ -709,6 +756,9 @@ class CallManager(CallLedger):
             return
         pending = self._proposals.get(session.call_id)
         if message.composing:
+            delegate.revision += 1
+            if not delegate.composing:
+                delegate.composing_question = delegate.planner.current_question_turn
             delegate.composing = True
             if pending is not None and pending.turn_id == message.turn_id:
                 if pending.origin == "agent":
@@ -741,6 +791,12 @@ class CallManager(CallLedger):
                 session, ErrorMessage(code="not_steer", message="Typed lines need a steer call.")
             )
             return
+        delegate.revision += 1
+        question = (
+            delegate.composing_question
+            if delegate.composing
+            else delegate.planner.current_question_turn
+        )
         self._settle_proposal(session, "held", origin="agent")
         self._stop_cover(session)
         delegate.composing = False
@@ -754,7 +810,11 @@ class CallManager(CallLedger):
                 return
         if session.finished:
             return
-        queued = await self._speak_line(session, text, f"{SAY_TURN_PREFIX}{uuid.uuid4().hex[:8]}")
+        turn_id = f"{SAY_TURN_PREFIX}{uuid.uuid4().hex[:8]}"
+        delegate.caller_question_by_turn[turn_id] = question
+        queued = await self._speak_line(session, text, turn_id)
+        if not queued:
+            delegate.caller_question_by_turn.pop(turn_id, None)
         if not queued:
             await self._send(
                 session,
@@ -863,7 +923,10 @@ class CallManager(CallLedger):
         return True
 
     def _finish_delegate(
-        self, session: CallSession, delegate: DelegateState, outcome: Literal["done", "callback"]
+        self,
+        session: CallSession,
+        delegate: DelegateState,
+        outcome: Literal["done", "callback", "unclear"],
     ) -> None:
         if delegate.outcome is None:
             delegate.outcome = outcome
@@ -907,6 +970,9 @@ class CallManager(CallLedger):
             return
         before = self._snapshot(session)
         session.hear_caption(text)
+        if isinstance(session.delegate, DelegateState) and session.delegate.steer:
+            session.delegate.observe_receiver(text)
+            self._settle_proposal(session, "cancelled", origin="agent")
         entry = self._note(session, "receptionist", text)
         await self._publish(session, before)
         await self._send(session, CaptionMessage(text=text, at=entry.at))
@@ -942,6 +1008,8 @@ class CallManager(CallLedger):
                     # Only an answer the receptionist heard counts in the notes; one that
                     # was never delivered must not turn into "booked".
                     delegate.answers.append(spoken_text)
+                    if delegate.steer:
+                        delegate.delivered_caller_reply(turn_id, spoken_text)
                     delegate.approved_user_turns.discard(turn_id)
                 if turn_id == OPENING_TURN_ID or turn_id.startswith(
                     (COVER_TURN_PREFIX, RESUME_TURN_PREFIX)
@@ -967,7 +1035,9 @@ class CallManager(CallLedger):
         await self._speak_line(
             session, CLOSE_LINE, f"{RESUME_TURN_PREFIX}close-{uuid.uuid4().hex[:6]}"
         )
-        self._finish_delegate(session, delegate, "done")
+        self._finish_delegate(
+            session, delegate, "done" if delegate.planner.completed else "unclear"
+        )
 
     # ---- helpers ----
 

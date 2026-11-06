@@ -196,7 +196,7 @@ struct SteerCallView: View {
                         .accessibilityElement(children: .combine)
                     }
                     if let followUp = model.followUps.last {
-                        Label("They asked for something you didn't give. Saved as a follow-up: “\(followUp)”", systemImage: "bookmark.fill")
+                        Label("Your input is needed: “\(followUp)”. Type or sign your answer below.", systemImage: "bookmark.fill")
                             .font(.footnote.weight(.medium))
                             .padding(10)
                             .frame(maxWidth: .infinity, alignment: .leading)

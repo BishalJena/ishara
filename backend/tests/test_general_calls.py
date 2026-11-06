@@ -5,7 +5,7 @@ import json
 import pytest
 
 from app.delegate import (
-    ACKNOWLEDGE_LINE,
+    CLARIFY_LINE,
     NEXT_STEP_LINE,
     Brain,
     DelegateState,
@@ -33,9 +33,19 @@ class Planner:
         self.reply = reply
         self.calls = []
 
-    async def complete(self, system, user):
+    async def complete_structured(self, system, user, response_model):
         self.calls.append(json.loads(user))
-        return json.dumps(self.reply)
+        reply = dict(self.reply)
+        kind = reply.pop("action")
+        resolutions = reply.pop("resolutions", [])
+        if kind == "finish":
+            reply.setdefault("blocked", False)
+        return response_model.model_validate(
+            {
+                "action": {"kind": kind, **reply},
+                "resolutions": resolutions,
+            }
+        )
 
 
 def test_typed_goal_replaces_legacy_appointment_metadata():
@@ -64,17 +74,16 @@ def test_delivery_information_is_not_an_appointment_offer_or_a_personal_detail_q
 async def test_general_planner_can_finish_after_the_goal_is_answered():
     heard = "We will send your passport in about a month"
     planner = Planner(
-        say="Thank you for explaining. That covers the request.",
-        done=True,
-        completion_evidence=heard,
+        action="finish",
+        resolutions=[{"goal_id": "goal:0", "source_id": "receiver:0", "quote": heard}],
     )
-    reply = await Brain(planner).reply(state(), heard)
+    reply = await Brain(planner).reply(state("Ask when the passport will arrive"), heard)
     assert reply.done and not reply.callback and reply.source == "llm"
-    assert planner.calls[0]["caller_goal"].startswith("Ask how to renew a passport")
+    assert planner.calls[0]["caller_goal"] == "Ask when the passport will arrive"
 
 
 async def test_anything_else_does_not_discard_an_unanswered_part_of_the_request():
-    planner = Planner(say="What documents do I need to bring?", done=False)
+    planner = Planner(action="ask_operator", question="What documents do I need to bring?")
     reply = await Brain(planner).reply(
         state("Ask about the renewal fee and required documents"),
         "The fee is listed on the form. Anything else you would like to know?",
@@ -84,7 +93,10 @@ async def test_anything_else_does_not_discard_an_unanswered_part_of_the_request(
 
 async def test_completion_requires_operator_evidence_not_an_invented_resolution():
     planner = Planner(
-        say="Thank you for your help.", done=True, completion_evidence="Your passport has been sent"
+        action="finish",
+        resolutions=[
+            {"goal_id": "goal:0", "source_id": "receiver:0", "quote": "Your passport has been sent"}
+        ],
     )
     reply = await Brain(planner).reply(state(), "Please hold while I check")
     assert not reply.done
@@ -93,7 +105,9 @@ async def test_completion_requires_operator_evidence_not_an_invented_resolution(
 async def test_plumber_goal_and_live_user_updates_reach_the_planner():
     current = state("Ask a plumber about repairing the leaking pipe")
     current.answers.append("Please ask whether they can come tomorrow.")
-    planner = Planner(say="Could you come tomorrow to look at the pipe?", done=False)
+    planner = Planner(
+        action="ask_operator", question="Do you offer visits tomorrow to look at the pipe?"
+    )
     reply = await Brain(planner).reply(current, "I can help with the pipe")
     assert reply.source == "llm"
     assert "plumber" in planner.calls[0]["caller_goal"]
@@ -103,26 +117,28 @@ async def test_plumber_goal_and_live_user_updates_reach_the_planner():
 async def test_a_repeated_question_falls_back_without_asking_it_again():
     current = state()
     current.exchanges.append(Exchange("Let me look at that", NEXT_STEP_LINE))
-    reply = await Brain(Planner(say=NEXT_STEP_LINE, done=False)).reply(
+    reply = await Brain(Planner(action="ask_operator", question=NEXT_STEP_LINE)).reply(
         current, "It will be sent in a month"
     )
-    assert reply.say == ACKNOWLEDGE_LINE and "?" not in reply.say
+    assert reply.say == CLARIFY_LINE and reply.say != NEXT_STEP_LINE and not reply.done
 
 
 async def test_a_document_detail_can_be_quoted_for_an_unanticipated_question():
     current = state(
         documents=(Document(name="Application", text="Category: Renewal\nReference: SAMPLE-24"),)
     )
-    planner = Planner(say="", done=False, document_answer={"label": "Category", "value": "Renewal"})
+    planner = Planner(action="answer_question", source_id="document:0", quote="Renewal")
     reply = await Brain(planner).reply(current, "Which category is printed on the application?")
-    assert reply.say == "Category is Renewal." and reply.kind == "share"
-    assert planner.calls[0]["approved_documents"][0]["text"].startswith("Category:")
+    assert reply.say == "Renewal" and reply.kind == "share"
+    assert next(s for s in planner.calls[0]["approved_sources"] if s["source_id"] == "document:0")[
+        "text"
+    ].startswith("Category:")
 
 
 async def test_a_document_value_that_was_not_supplied_is_rejected():
     current = state(documents=(Document(name="Application", text="Category: Renewal"),))
     reply = await Brain(
-        Planner(say="", document_answer={"label": "Category", "value": "Replacement"})
+        Planner(action="answer_question", source_id="document:0", quote="Replacement")
     ).reply(current, "Which category is printed on the application?")
     assert reply.kind == "defer" and "Replacement" not in reply.say
 
@@ -167,7 +183,7 @@ def test_rule_fallback_recognizes_the_operator_ending_a_general_conversation(hea
 
 
 async def test_an_appointment_confirmation_can_leave_another_requested_question_open():
-    planner = Planner(say="What should I bring with me?", done=False)
+    planner = Planner(action="ask_operator", question="What should I bring with me?")
     reply = await Brain(planner).reply(
         state("Book an appointment and ask what to bring"), "Your appointment is confirmed"
     )
@@ -176,9 +192,9 @@ async def test_an_appointment_confirmation_can_leave_another_requested_question_
 
 async def test_document_quotes_keep_the_original_source_case_and_punctuation():
     current = state(documents=(Document(name="Application", text="Category: RE-NEWAL"),))
-    planner = Planner(say="", done=False, document_answer={"label": "Category", "value": "renewal"})
+    planner = Planner(action="answer_question", source_id="document:0", quote="renewal")
     reply = await Brain(planner).reply(current, "Which category is printed on the application?")
-    assert reply.say == "Category is RE-NEWAL."
+    assert reply.say == "RE-NEWAL"
 
 
 def test_a_delivered_signed_reply_is_part_of_the_agent_context():

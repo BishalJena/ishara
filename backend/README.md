@@ -36,6 +36,7 @@ Settings come from the environment or the repo-root `.env` (see `../.env.example
 | `app/auth.py` | `APP_TOKEN` and `CUSTOM_LLM_TOKEN` bearer checks |
 | `app/calls.py` | Session layer I/O: `POST /calls` (live or delegated), `POST /briefs`, `GET /calls/{id}/notes`, app WebSocket (incl. asks and answers), Bolna status webhook, `CallLedger` (V6) |
 | `app/delegate.py` | D9: the brief built only from chips and profile, the agent's brain (Groq with a rule brain fallback), the line checker that rejects invented facts, and the notes built from the transcript |
+| `app/steer_planner.py` | Private structured actions, source references, unanswered receiver questions and goal evidence for steer calls |
 | `app/sessions.py` | Pure turn and approval rules: stale turns, single-use SEND, single claim |
 | `app/contacts.py` | `ALLOWED_RECIPIENTS` parsing (`contact_id=+E164`) |
 | `app/bolna_status.py` | Bolna execution statuses → call states |
@@ -70,6 +71,40 @@ Settings come from the environment or the repo-root `.env` (see `../.env.example
 - empty `ALLOWED_RECIPIENTS` → every contact gets 403; a malformed entry stops the boot.
 
 The full check, including the spikes and shell scripts, is `../scripts/verify.sh`.
+
+## Steer planner verification
+
+Steer calls use strict JSON-schema output for private planning, separate from plain-text
+polishing. The configured model must support strict structured output. Supported model IDs
+are listed in `app/groq_client.py`; an unsupported model, timeout or invalid response defers
+an unanswered receiver question to the caller. It cannot approve a new fact or mark the
+request successful. The planner has a 2.5-second deadline and a separate 2,048-token budget.
+
+Receiver questions and delivered caller replies have instance IDs. A previous answer cannot
+authorize a later question merely because its wording matches. The initial request authorizes
+matching operations and reasonable choices within its timing, service and spending constraints.
+The agent can accept a fitting offer unattended. Acceptance does not complete the goal; each
+goal still needs receiver confirmation. Missing essential facts or unauthorized terms require
+caller input. An absent caller gets an honest closure and saved follow-up. Exact source spans
+establish where an answer came from; relevance still depends on model judgment and guards.
+The iOS and browser clients share this backend behavior and the existing `follow_up` message.
+
+Run the synthetic replay from the repository root:
+
+```sh
+backend/.venv/bin/python scripts/planner_replay.py --dry-run
+```
+
+This checks mocked provider contracts, not live model quality. After explicit authorization
+to spend provider credits, `--live` reads `GROQ_API_KEY` and `GROQ_MODEL` from the process
+environment and makes at most 12 synthetic model requests. It never dials a phone. It reports
+case results and rejection categories without printing prompts, credentials or responses.
+Live schema compatibility and planning behavior must pass before deploying a changed planner.
+Use `--interval-seconds 15` to pace fixture requests outside the production response deadline.
+Paced quality checks do not establish that an account can sustain arbitrary live-call throughput.
+Provider rate limits can still interrupt assistance; no automatic paid plan change is made.
+
+Results and limits are recorded in [the planner repair report](../docs/experiments/steer-planner-repair.md).
 
 ## Local development server (no Bolna, no cost)
 
